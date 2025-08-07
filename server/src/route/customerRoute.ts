@@ -1,27 +1,22 @@
+// server/src/route/customerRoute.ts
 import { Router } from 'express';
-import {
-    getAllCustomers,
-    getCustomerById,
-    createCustomer,
-    updateCustomer,
-    deleteCustomer,
-} from '../controller/customerController';
+import { customerController } from '../container';  // <— where your factory was wired
 
 const router = Router();
 
 // GET /api/customer/        → list all customers
-router.get('/', getAllCustomers);
+router.get('/', customerController.getAll);
 
 // GET /api/customer/:id     → get one customer by ID
-router.get('/:id', getCustomerById);
+router.get('/:id', customerController.getById);
 
 // POST /api/customer/       → create a new customer
-router.post('/', createCustomer);
+router.post('/', customerController.create);
 
 // PUT /api/customer/:id     → update an existing customer
-router.put('/:id', updateCustomer);
+router.put('/:id', customerController.update);
 
 // DELETE /api/customer/:id  → delete a customer
-router.delete('/:id', deleteCustomer);
+router.delete('/:id', customerController.delete);
 
 export default router;

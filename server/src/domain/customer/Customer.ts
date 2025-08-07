@@ -10,7 +10,7 @@ export interface Customer {
     height: string;
     streetAddress: string;
     city: string;
-    state: string;
+    stateUs: string;
     zipcode: string;
     idNumber: string;
     issueDate: string;

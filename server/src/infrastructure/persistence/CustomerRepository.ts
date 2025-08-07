@@ -1,6 +1,7 @@
-import { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
 import { Customer } from '../../domain/customer/Customer';
+import { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
 import { pool, sql } from '../db';
+
 
 export class CustomerRepository implements ICustomerRepository {
     async findAll(): Promise<Customer[]> {

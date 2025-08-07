@@ -1,5 +1,9 @@
 import { app, BrowserWindow, Menu, dialog } from 'electron'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 let mainWindow: BrowserWindow
 
@@ -12,7 +16,6 @@ function createMainWindow() {
         },
     })
 
-    // during dev
     if (process.env.NODE_ENV === 'development') {
         mainWindow.loadURL('http://localhost:5173')
     } else {

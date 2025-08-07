@@ -5,7 +5,7 @@ import {
     createPawnTicket,
     updatePawnTicket,
     deletePawnTicket,
-} from '../controller/pawnTicketController';
+} from '../controller/pawnTicket/pawnTicketController';
 
 const router = Router();
 
