@@ -42,7 +42,7 @@ function createMainWindow() {
         },
         {
             label: 'About',
-            click: () => {
+            click: () => {  
                 dialog.showMessageBox(mainWindow, {
                     type: 'info',
                     title: 'About',
