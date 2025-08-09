@@ -4,8 +4,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc"
+    "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "postbuild": "powershell -Command \"robocopy src\\infrastructure\\db\\migrations dist\\infrastructure\\db\\migrations *.sql /S > $null; exit 0\"",
+    "start:prod": "node dist/server.js",
+    "db:migrate": "ts-node src/infrastructure/db/migrations/runMigrations.ts"
   },
   "keywords": [],
   "author": "",

@@ -1,24 +1,9 @@
-// server/src/infrastructure/db/index.ts
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { Pool } from 'pg';
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-function loadSql(folder: 'command' | 'query', file: string): string {
-    return readFileSync(join(__dirname, folder, `${file}.sql`), 'utf-8');
-}
-
-export const sql = {
-    command: {
-        createCustomer: loadSql('command', 'customer/createCustomer'),
-        updateCustomer: loadSql('command', 'customer/updateCustomer'),
-        deleteCustomer: loadSql('command', 'customer/deleteCustomer'),
-        // …etc.
-    },
-    query: {
-        findAllCustomers: loadSql('query', 'customer/findAllCustomers'),
-        findCustomerById: loadSql('query', 'customer/findCustomerById'),
-        // …etc.
-    }
-};
+export const pool = new Pool({
+    user: process.env.PG_USER,
+    host: process.env.PG_HOST,
+    database: process.env.PG_DATABASE,
+    password: process.env.PG_PASSWORD,
+    port: Number(process.env.PG_PORT)
+});
