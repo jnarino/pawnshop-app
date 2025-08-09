@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
 import AppRouter from './AppRouter'
 
+
 declare global {
   interface Window {
     electronAPI?: {
