@@ -1,35 +1,40 @@
-import React, { useEffect } from 'react'
-import { MemoryRouter, useNavigate } from 'react-router-dom'
-import AppRouter from './AppRouter'
+
+import AppRouter from './AppRouter';
+export default function App() { return <AppRouter />; }
 
 
-declare global {
-  interface Window {
-    electronAPI?: {
-      onNavigate: (cb: (e: any, route: string) => void) => void
-    }
-  }
-}
+// import React, { useEffect } from 'react'
+// import { MemoryRouter, useNavigate } from 'react-router-dom'
+// import AppRouter from './AppRouter'
 
-export default function App() {
-  return (
-    <MemoryRouter>
-      <ElectronNavHandler />
-      <AppRouter />
-    </MemoryRouter>
-  )
-}
 
-function ElectronNavHandler() {
-  const navigate = useNavigate()
+// declare global {
+//   interface Window {
+//     electronAPI?: {
+//       onNavigate: (cb: (e: any, route: string) => void) => void
+//     }
+//   }
+// }
 
-  useEffect(() => {
-    if (window.electronAPI) {
-      window.electronAPI.onNavigate((_, route) => {
-        navigate(route)
-      })
-    }
-  }, [navigate])
+// export default function App() {
+//   return (
+//     <MemoryRouter>
+//       <ElectronNavHandler />
+//       <AppRouter />
+//     </MemoryRouter>
+//   )
+// }
 
-  return null
-}
+// function ElectronNavHandler() {
+//   const navigate = useNavigate()
+
+//   useEffect(() => {
+//     if (window.electronAPI) {
+//       window.electronAPI.onNavigate((_, route) => {
+//         navigate(route)
+//       })
+//     }
+//   }, [navigate])
+
+//   return null
+// }

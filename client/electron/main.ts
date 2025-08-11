@@ -1,3 +1,4 @@
+// electron/main.ts
 import { app, BrowserWindow, Menu, dialog } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -12,37 +13,38 @@ function createMainWindow() {
         width: 1024,
         height: 768,
         webPreferences: {
+            contextIsolation: true,     // security best practice
+            sandbox: true,              // security best practice
             preload: join(__dirname, 'preload.js'),
         },
     })
 
-    if (process.env.NODE_ENV === 'development') {
-        mainWindow.loadURL('http://localhost:5173')
+    const isDev = !app.isPackaged   // <-- reliable dev/prod check
+
+    if (isDev) {
+        const url = 'http://localhost:5173/#/login'
+        console.log('[Electron] Loading DEV URL:', url)
+        mainWindow.loadURL(url)
+        //mainWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
-        mainWindow.loadFile(join(__dirname, '../dist/index.html'))
+        const indexHtml = join(__dirname, '../dist/index.html')
+        console.log('[Electron] Loading PROD file:', indexHtml, 'hash=login')
+        mainWindow.loadFile(indexHtml, { hash: 'login' })  // <-- ensure /login
     }
 
-    // build the native menu
     const template: Electron.MenuItemConstructorOptions[] = [
-        {
-            label: 'File',
-            submenu: [{ role: 'quit' }],
-        },
+        { label: 'File', submenu: [{ role: 'quit' }] },
         {
             label: 'Customer',
-            click: () => {
-                mainWindow.webContents.send('navigate', '/customer')
-            },
+            click: () => mainWindow.webContents.send('navigate', '/customer'),
         },
         {
             label: 'Reports',
-            click: () => {
-                mainWindow.webContents.send('navigate', '/reports')
-            },
+            click: () => mainWindow.webContents.send('navigate', '/reports'),
         },
         {
             label: 'About',
-            click: () => {  
+            click: () => {
                 dialog.showMessageBox(mainWindow, {
                     type: 'info',
                     title: 'About',
@@ -56,11 +58,5 @@ function createMainWindow() {
 }
 
 app.whenReady().then(createMainWindow)
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
-})
-
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
-})
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow() })
