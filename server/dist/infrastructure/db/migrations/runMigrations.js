@@ -16,7 +16,9 @@ async function runMigrations() {
     // find .sql files in this folder (e.g., 0001_init.sql, 0002_users.sql)
     const files = fs_1.default.readdirSync(MIGRATIONS_DIR)
         .filter(f => f.toLowerCase().endsWith('.sql'))
-        .sort(); // lexicographic order
+        .sort();
+    console.log(`[migrations] dir: ${MIGRATIONS_DIR}`);
+    console.log(`[migrations] files: ${files.length ? files.join(', ') : '(none found)'}`);
     const client = await __1.pool.connect();
     try {
         await client.query('BEGIN');

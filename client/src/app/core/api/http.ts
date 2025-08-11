@@ -14,6 +14,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
         store.dispatch(logout());
         throw new Error('Unauthorized');
     }
-    if (!res.ok) throw new Error((await res.text().catch(() => '')) || res.statusText);
+    if (!res.ok) {
+        let msg = res.statusText;
+        try { msg = (await res.json()).error || msg; } catch { }
+        throw new Error(msg || `HTTP ${res.status}`);
+    }
     return res.json() as Promise<T>;
 }

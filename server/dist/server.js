@@ -10,6 +10,7 @@ const cors_1 = __importDefault(require("cors"));
 const customerRoute_1 = __importDefault(require("./route/customerRoute"));
 const pawnTicketRoute_1 = __importDefault(require("./route/pawnTicketRoute"));
 const runMigrations_1 = require("./infrastructure/db/migrations/runMigrations");
+const authRoute_1 = __importDefault(require("./route/authRoute"));
 async function bootstrap() {
     // 1) Run DB migrations BEFORE starting the server
     await (0, runMigrations_1.runMigrations)();
@@ -17,9 +18,11 @@ async function bootstrap() {
     const app = (0, express_1.default)();
     const port = process.env.PORT || 3000;
     // Middleware
-    app.use((0, cors_1.default)());
+    app.use((0, cors_1.default)({ origin: 'http://localhost:5173', credentials: true }));
+    app.use(require('cookie-parser')());
     app.use(express_1.default.json());
     // Routes
+    app.use('/api/auth', authRoute_1.default);
     app.use('/api/customer', customerRoute_1.default);
     app.use('/api/pawnTicket', pawnTicketRoute_1.default);
     // Health check

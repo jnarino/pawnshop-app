@@ -20,7 +20,7 @@ function createMainWindow() {
         const url = 'http://localhost:5173/#/login';
         console.log('[Electron] Loading DEV URL:', url);
         mainWindow.loadURL(url);
-        //mainWindow.webContents.openDevTools({ mode: 'detach' })
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
     else {
         const indexHtml = join(__dirname, '../dist/index.html');
