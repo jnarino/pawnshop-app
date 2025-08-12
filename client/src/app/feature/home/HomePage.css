@@ -1,0 +1,123 @@
+:root {
+  --bg: #f7fafc;
+  --text: #111827;
+  --muted: #6b7280;
+  --muted-2: #374151;
+  --ring: #06b6d4;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --brand-a: #22c55e;
+  --brand-b: #06b6d4;
+}
+
+* { box-sizing: border-box; }
+
+.home {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Header */
+.home__header {
+  padding: 20px 28px;
+  background: #111827;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.home__brand { display: flex; gap: 12px; align-items: center; }
+.home__brand-mark {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+}
+.home__brand-name { font-weight: 800; letter-spacing: .2px; }
+.home__clock { opacity: .85; }
+
+/* Main */
+.home__main { padding: 28px; max-width: 1100px; width: 100%; margin: 0 auto; }
+.home__title { font-size: 24px; margin: 0 0 10px; font-weight: 800; }
+.home__subtitle { margin: 0 0 24px; color: var(--muted-2); }
+
+/* Diamond actions */
+.home__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+/* A diamond is a square rotated 45deg. We rotate the container,
+   then rotate content back so text is readable. */
+.diamond {
+  --size: clamp(140px, 22vw, 200px);
+  position: relative;
+  display: inline-flex;
+  width: var(--size);
+  height: var(--size);
+  transform: rotate(45deg);
+  margin: 20px auto;
+  text-decoration: none;
+  outline: none;
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,.05));
+}
+.diamond::before {
+  /* the actual card surface */
+  content: "";
+  position: absolute; inset: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  transition: box-shadow 120ms ease, transform 120ms ease, border-color 120ms ease;
+}
+.diamond:focus-visible::before,
+.diamond:hover::before {
+  box-shadow: 0 10px 28px rgba(0,0,0,.10);
+  transform: scale(1.02);
+  border-color: color-mix(in srgb, var(--ring) 40%, var(--border));
+}
+
+/* content rotated back to normal */
+.diamond__inner {
+  position: relative;
+  z-index: 1;
+  transform: rotate(-45deg);
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  gap: 6px;
+  text-align: center;
+  color: var(--text);
+}
+
+.diamond__title {
+  font-weight: 800;
+  font-size: clamp(14px, 2.5vw, 18px);
+}
+.diamond__subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Recent box */
+.home__recent { margin-top: 28px; }
+.home__recent-title { font-weight: 700; margin-bottom: 12px; }
+.home__recent-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--muted);
+}
+
+/* Reduce outer spacing on very small screens */
+@media (max-width: 420px) {
+  .home__main { padding: 20px; }
+  .home__actions { gap: 18px; }
+}

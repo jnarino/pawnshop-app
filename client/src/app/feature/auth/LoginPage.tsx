@@ -3,84 +3,99 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../../core/redux/store';
 import { login, me, resetError } from '../../core/redux/authSlice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './LoginPage.css';
 
 export default function LoginPage() {
-    const dispatch = useDispatch<AppDispatch>();
-    const nav = useNavigate();
-    const { user, status, error } = useSelector((s: RootState) => s.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const nav = useNavigate();
+  const location = useLocation();
 
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPw, setShowPw] = useState(false);
+  const { status, error } = useSelector((s: RootState) => s.auth);
 
-    useEffect(() => { dispatch(me()); }, [dispatch]);
-    useEffect(() => { if (user) nav('/'); }, [user, nav]);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
-    const onSubmit = (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (status !== 'loading') dispatch(login({ username, password }));
-    };
+  // Try to restore session (cookie-based)
+  useEffect(() => {
+    dispatch(me());
+  }, [dispatch]);
 
-    return (
-        <div className="login-overlay">
-            <div className="login-backdrop" aria-hidden="true" />
-            <form onSubmit={onSubmit} role="dialog" aria-modal="true" className="login-dialog">
-                <h1 className="login-title">PawnExpress</h1>
-                <p className="login-subtitle">Sign in to continue</p>
+  const onSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (status === 'loading') return;
+    try {
+      await dispatch(login({ username, password })).unwrap(); // waits for 200 + JSON
+      const from = (location.state as any)?.from?.pathname ?? '/';
+      nav(from, { replace: true }); // <-- immediate redirect on success
+    } catch {
+      // error already in Redux; UI shows it
+    }
+  };
 
-                {error && (
-                    <div className="login-error">
-                        {error}{' '}
-                        <button type="button" className="underline" onClick={() => dispatch(resetError())}>
-                            dismiss
-                        </button>
-                    </div>
-                )}
+  return (
+    <div className="login-overlay">
+      <div className="login-backdrop" aria-hidden="true" />
+      <form onSubmit={onSubmit} role="dialog" aria-modal="true" className="login-dialog">
+        <h1 className="login-title">PawnExpress</h1>
+        <p className="login-subtitle">Sign in to continue</p>
 
-                <label className="login-label">
-                    <span>Username</span>
-                    <input
-                        className="login-input"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        autoFocus
-                        autoComplete="username"
-                    />
-                </label>
+        {error && (
+          <div className="login-error">
+            {error}{' '}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => dispatch(resetError())}
+            >
+              dismiss
+            </button>
+          </div>
+        )}
 
-                <label className="login-label">
-                    <span>Password</span>
-                    <div className="login-pw-wrap">
-                        <input
-                            className="login-input pw"
-                            type={showPw ? 'text' : 'password'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            autoComplete="current-password"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPw((v) => !v)}
-                            className="login-pw-toggle"
-                            aria-label={showPw ? 'Hide password' : 'Show password'}
-                        >
-                            {showPw ? '🙈' : '👁️'}
-                        </button>
-                    </div>
-                </label>
+        <label className="login-label">
+          <span>Username</span>
+          <input
+            className="login-input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoFocus
+            autoComplete="username"
+          />
+        </label>
 
-                <button
-                    type="submit"
-                    className="login-button"
-                    disabled={status === 'loading' || !username || !password}
-                >
-                    {status === 'loading' ? 'Signing in…' : 'Sign in'}
-                </button>
+        <label className="login-label">
+          <span>Password</span>
+          <div className="login-pw-wrap">
+            <input
+              className="login-input pw"
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              className="login-pw-toggle"
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+            >
+              {showPw ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </label>
 
-                <div className="login-foot">© {new Date().getFullYear()} PawnExpress</div>
-            </form>
-        </div>
-    );
+        <button
+          type="submit"
+          className="login-button"
+          disabled={status === 'loading' || !username || !password}
+        >
+          {status === 'loading' ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <div className="login-foot">© {new Date().getFullYear()} PawnExpress</div>
+      </form>
+    </div>
+  );
 }

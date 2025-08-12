@@ -5,12 +5,14 @@ import CustomerPage from '@/app/feature/customer/CustomerPage';
 import ReportsPage from '@/app/feature/reports/ReportsPage';
 import LoginPage from '@/app/feature/auth/LoginPage';
 import Protected from '@/app/shared/components/Protected';
+import Logout from './feature/auth/Logout';
 
 export default function AppRouter() {
   return (
     <Routes>
       {/* public */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/logout" element={<Logout />} /> 
 
       {/* protected only */}
       <Route path="/" element={<Protected><HomePage /></Protected>} />
