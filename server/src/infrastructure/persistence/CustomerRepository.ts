@@ -5,35 +5,40 @@ import { getSQL } from '../db/sqlLoader';
 import { Customer } from '../../domain/customer/Customer';
 import { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
 
-// Maps a DB row to your domain Customer object
-function mapRowToCustomer(r: any): Customer {
+// Rows are already aliased to camelCase in the SELECT queries.
+export function mapRowToCustomer(r: any): Customer { // exported for tests
     return {
         id: r.id,
-        firstName: r.first_name,
-        middleName: r.middle_name,
-        lastName: r.last_name,
-        suffix: r.suffix,
-        dateOfBirth: r.date_of_birth,
+        firstName: r.firstName,
+        middleName: r.middleName ?? undefined,
+        lastName: r.lastName,
+        suffix: r.suffix ?? undefined,
+        dateOfBirth: r.dateOfBirth,
         sex: r.sex,
-        eyeColor: r.eye_color,
+        eyeColor: r.eyeColor,
         height: r.height,
-        streetAddress: r.streetaddress,
+        streetAddress: r.streetAddress,
         city: r.city,
-        stateUs: r.us_state,
+        stateUs: r.stateUs,
         zipcode: r.zipcode,
-        idNumber: r.id_number,
-        expirationDate: r.id_expiration,
-        issueDate: r.id_issue_date,
-        issuingState: r.issuing_state,
-        phone: r.phone_number,
+        idNumber: r.idNumber,
+        expirationDate: r.expirationDate,
+        issueDate: r.issueDate,
+        issuingState: r.issuingState,
+        phone: r.phone,
         email: r.email,
     };
 }
 
 export class CustomerRepository implements ICustomerRepository {
-    async findAll(): Promise<Customer[]> {
-        const sql = getSQL('query', 'customer', 'findAllCustomers');
-        const { rows } = await pool.query(sql);
+    async findAll(limit?: number, offset?: number): Promise<Customer[]> {
+        const base = getSQL('query', 'customer', 'findAllCustomers');
+        const clauses: string[] = [];
+        const params: any[] = [];
+        if (typeof limit === 'number') { params.push(limit); clauses.push(`LIMIT $${params.length}`); }
+        if (typeof offset === 'number') { params.push(offset); clauses.push(`OFFSET $${params.length}`); }
+        const sql = `${base} ${clauses.join(' ')}`.trim();
+        const { rows } = await pool.query(sql, params);
         return rows.map(mapRowToCustomer);
     }
 
@@ -59,8 +64,8 @@ export class CustomerRepository implements ICustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
-            dto.expirationDate, // make sure matches column order in SQL
-            dto.issueDate,
+            dto.expirationDate, // id_expiration
+            dto.issueDate,      // id_issue_date
             dto.issuingState,
             dto.phone,
             dto.email,
@@ -69,7 +74,7 @@ export class CustomerRepository implements ICustomerRepository {
         return rows[0].id; // requires RETURNING id in your createCustomer.sql
     }
 
-    async update(id: string, dto: Partial<Customer>): Promise<void> {
+    async update(id: string, dto: Partial<Customer>): Promise<boolean> {
         const sql = getSQL('command', 'customer', 'updateCustomer');
         const params = [
             dto.firstName,
@@ -85,18 +90,20 @@ export class CustomerRepository implements ICustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
-            dto.expirationDate,
-            dto.issueDate,
+            dto.expirationDate, // id_expiration
+            dto.issueDate,      // id_issue_date
             dto.issuingState,
             dto.phone,
             dto.email,
             id,
         ];
-        await pool.query(sql, params);
+        const res = await pool.query(sql, params);
+        return res.rowCount === 1;
     }
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<boolean> {
         const sql = getSQL('command', 'customer', 'deleteCustomer');
-        await pool.query(sql, [id]);
+        const res = await pool.query(sql, [id]);
+        return res.rowCount === 1;
     }
 }

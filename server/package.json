@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+  "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
+  "test": "npm run clean && npm run build && node dist/tests/runTests.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "postbuild": "powershell -Command \"robocopy src\\infrastructure\\db\\migrations dist\\infrastructure\\db\\migrations *.sql /S > $null; exit 0\"",
+  "postbuild": "powershell -Command \"robocopy src\\infrastructure\\db\\migrations dist\\infrastructure\\db\\migrations *.sql /S > $null; robocopy src\\infrastructure\\db\\command dist\\infrastructure\\db\\command *.sql /S > $null; robocopy src\\infrastructure\\db\\query dist\\infrastructure\\db\\query *.sql /S > $null; exit 0\"",
     "start:prod": "node dist/server.js",
     "db:migrate": "ts-node src/infrastructure/db/migrations/runMigrations.ts"
   },
@@ -21,7 +22,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "pg": "^8.16.3"
+  "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.9",

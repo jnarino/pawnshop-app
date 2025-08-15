@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { pool } from '..';
+import { logger } from '../../log/logger';
 
 // Pick your actual folder name: 'migration' or 'migrations'
 const MIGRATIONS_DIR = path.resolve(__dirname); // .../db/migration
@@ -15,8 +17,7 @@ export async function runMigrations() {
     .filter(f => f.toLowerCase().endsWith('.sql'))
     .sort();
 
-  console.log(`[migrations] dir: ${MIGRATIONS_DIR}`);
-  console.log(`[migrations] files: ${files.length ? files.join(', ') : '(none found)'}`);
+  logger.info('[migrations] scanning', { dir: MIGRATIONS_DIR, count: files.length });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -26,25 +27,38 @@ export async function runMigrations() {
       CREATE TABLE IF NOT EXISTS migrations (
         id SERIAL PRIMARY KEY,
         name TEXT UNIQUE NOT NULL,
+        checksum TEXT,
         run_on TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
+    await client.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='migrations' AND column_name='checksum') THEN
+        ALTER TABLE migrations ADD COLUMN checksum TEXT;
+      END IF; END $$;`);
 
     for (const file of files) {
-      const { rowCount } = await client.query(
-        'SELECT 1 FROM migrations WHERE name = $1',
-        [file]
-      );
-      if (rowCount) continue;
+      const fullPath = path.join(MIGRATIONS_DIR, file);
+      const sql = fs.readFileSync(fullPath, 'utf8');
+      const checksum = crypto.createHash('sha256').update(sql).digest('hex');
+      const existing = await client.query('SELECT checksum FROM migrations WHERE name=$1', [file]);
+      if (existing.rowCount) {
+        const old = existing.rows[0].checksum;
+        if (old && old !== checksum) {
+          throw new Error(`Checksum mismatch for migration ${file}. File modified after being run.`);
+        }
+        continue;
+      }
 
-      const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
-      console.log(`🔄 Running migration: ${file}`);
+      logger.info('migration_run', { file });
+      const started = Date.now();
 
       // run each file in its own savepoint so one bad file doesn't kill the whole batch
       await client.query('SAVEPOINT before_migration');
       try {
-        await client.query(sql);
-        await client.query('INSERT INTO migrations (name) VALUES ($1)', [file]);
+  await client.query(sql);
+  await client.query('INSERT INTO migrations (name, checksum) VALUES ($1,$2)', [file, checksum]);
+  const elapsed = Date.now() - started;
+  logger.info('migration_applied', { file, ms: elapsed });
       } catch (err) {
         await client.query('ROLLBACK TO SAVEPOINT before_migration');
         throw new Error(`Migration failed (${file}): ${(err as Error).message}`);
@@ -52,7 +66,7 @@ export async function runMigrations() {
     }
 
     await client.query('COMMIT');
-    console.log('✅ Migrations complete');
+  logger.info('migrations_complete');
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

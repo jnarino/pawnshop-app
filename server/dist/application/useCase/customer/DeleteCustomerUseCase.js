@@ -5,8 +5,6 @@ class DeleteCustomerUseCase {
     constructor(repo) {
         this.repo = repo;
     }
-    async execute(id) {
-        return this.repo.delete(id);
-    }
+    async execute(id) { return this.repo.delete(id); }
 }
 exports.DeleteCustomerUseCase = DeleteCustomerUseCase;

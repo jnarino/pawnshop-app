@@ -6,17 +6,11 @@ import { UpdateCustomerUseCase } from './application/useCase/customer/UpdateCust
 import { DeleteCustomerUseCase } from './application/useCase/customer/DeleteCustomerUseCase';
 import { makeCustomerController } from './controller/customer/customerControllerFactory';
 
-const customerRepo = new CustomerRepository();
-const listUseCase = new ListCustomersUseCase(customerRepo);
-const getUseCase = new GetCustomerUseCase(customerRepo);
-const createUseCase = new CreateCustomerUseCase(customerRepo);
-const updateUseCase = new UpdateCustomerUseCase(customerRepo);
-const deleteUseCase = new DeleteCustomerUseCase(customerRepo);
-
+const repo = new CustomerRepository();
 export const customerController = makeCustomerController({
-    list: listUseCase,
-    get: getUseCase,
-    create: createUseCase,
-    update: updateUseCase,
-    delete: deleteUseCase,
+    list: new ListCustomersUseCase(repo),
+    get: new GetCustomerUseCase(repo),
+    create: new CreateCustomerUseCase(repo),
+    update: new UpdateCustomerUseCase(repo),
+    delete: new DeleteCustomerUseCase(repo),
 });

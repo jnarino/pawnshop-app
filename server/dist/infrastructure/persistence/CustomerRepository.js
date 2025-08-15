@@ -2,36 +2,48 @@
 // server/src/infrastructure/persistence/CustomerRepository.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomerRepository = void 0;
+exports.mapRowToCustomer = mapRowToCustomer;
 const db_1 = require("../db");
 const sqlLoader_1 = require("../db/sqlLoader");
-// Maps a DB row to your domain Customer object
+// Rows are already aliased to camelCase in the SELECT queries.
 function mapRowToCustomer(r) {
     return {
         id: r.id,
-        firstName: r.first_name,
-        middleName: r.middle_name,
-        lastName: r.last_name,
-        suffix: r.suffix,
-        dateOfBirth: r.date_of_birth,
+        firstName: r.firstName,
+        middleName: r.middleName ?? undefined,
+        lastName: r.lastName,
+        suffix: r.suffix ?? undefined,
+        dateOfBirth: r.dateOfBirth,
         sex: r.sex,
-        eyeColor: r.eye_color,
+        eyeColor: r.eyeColor,
         height: r.height,
-        streetAddress: r.streetaddress,
+        streetAddress: r.streetAddress,
         city: r.city,
-        stateUs: r.us_state,
+        stateUs: r.stateUs,
         zipcode: r.zipcode,
-        idNumber: r.id_number,
-        expirationDate: r.id_expiration,
-        issueDate: r.id_issue_date,
-        issuingState: r.issuing_state,
-        phone: r.phone_number,
+        idNumber: r.idNumber,
+        expirationDate: r.expirationDate,
+        issueDate: r.issueDate,
+        issuingState: r.issuingState,
+        phone: r.phone,
         email: r.email,
     };
 }
 class CustomerRepository {
-    async findAll() {
-        const sql = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers');
-        const { rows } = await db_1.pool.query(sql);
+    async findAll(limit, offset) {
+        const base = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers');
+        const clauses = [];
+        const params = [];
+        if (typeof limit === 'number') {
+            params.push(limit);
+            clauses.push(`LIMIT $${params.length}`);
+        }
+        if (typeof offset === 'number') {
+            params.push(offset);
+            clauses.push(`OFFSET $${params.length}`);
+        }
+        const sql = `${base} ${clauses.join(' ')}`.trim();
+        const { rows } = await db_1.pool.query(sql, params);
         return rows.map(mapRowToCustomer);
     }
     async findById(id) {
@@ -55,8 +67,8 @@ class CustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
-            dto.expirationDate, // make sure matches column order in SQL
-            dto.issueDate,
+            dto.expirationDate, // id_expiration
+            dto.issueDate, // id_issue_date
             dto.issuingState,
             dto.phone,
             dto.email,
@@ -80,18 +92,20 @@ class CustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
-            dto.expirationDate,
-            dto.issueDate,
+            dto.expirationDate, // id_expiration
+            dto.issueDate, // id_issue_date
             dto.issuingState,
             dto.phone,
             dto.email,
             id,
         ];
-        await db_1.pool.query(sql, params);
+        const res = await db_1.pool.query(sql, params);
+        return res.rowCount === 1;
     }
     async delete(id) {
         const sql = (0, sqlLoader_1.getSQL)('command', 'customer', 'deleteCustomer');
-        await db_1.pool.query(sql, [id]);
+        const res = await db_1.pool.query(sql, [id]);
+        return res.rowCount === 1;
     }
 }
 exports.CustomerRepository = CustomerRepository;

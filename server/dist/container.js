@@ -8,16 +8,11 @@ const CreateCustomerUseCase_1 = require("./application/useCase/customer/CreateCu
 const UpdateCustomerUseCase_1 = require("./application/useCase/customer/UpdateCustomerUseCase");
 const DeleteCustomerUseCase_1 = require("./application/useCase/customer/DeleteCustomerUseCase");
 const customerControllerFactory_1 = require("./controller/customer/customerControllerFactory");
-const customerRepo = new CustomerRepository_1.CustomerRepository();
-const listUseCase = new ListCustomersUseCase_1.ListCustomersUseCase(customerRepo);
-const getUseCase = new GetCustomerUseCase_1.GetCustomerUseCase(customerRepo);
-const createUseCase = new CreateCustomerUseCase_1.CreateCustomerUseCase(customerRepo);
-const updateUseCase = new UpdateCustomerUseCase_1.UpdateCustomerUseCase(customerRepo);
-const deleteUseCase = new DeleteCustomerUseCase_1.DeleteCustomerUseCase(customerRepo);
+const repo = new CustomerRepository_1.CustomerRepository();
 exports.customerController = (0, customerControllerFactory_1.makeCustomerController)({
-    list: listUseCase,
-    get: getUseCase,
-    create: createUseCase,
-    update: updateUseCase,
-    delete: deleteUseCase,
+    list: new ListCustomersUseCase_1.ListCustomersUseCase(repo),
+    get: new GetCustomerUseCase_1.GetCustomerUseCase(repo),
+    create: new CreateCustomerUseCase_1.CreateCustomerUseCase(repo),
+    update: new UpdateCustomerUseCase_1.UpdateCustomerUseCase(repo),
+    delete: new DeleteCustomerUseCase_1.DeleteCustomerUseCase(repo),
 });

@@ -5,8 +5,8 @@ class UpdateCustomerUseCase {
     constructor(repo) {
         this.repo = repo;
     }
-    async execute(id, dto) {
-        return this.repo.update(id, dto);
+    async execute(id, partial) {
+        return this.repo.update(id, partial);
     }
 }
 exports.UpdateCustomerUseCase = UpdateCustomerUseCase;

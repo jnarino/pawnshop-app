@@ -1,9 +1,15 @@
 import { Pool } from 'pg';
+import { config } from '../../config';
+import { logger } from '../log/logger';
 
 export const pool = new Pool({
-    user: process.env.PG_USER,
-    host: process.env.PG_HOST,
-    database: process.env.PG_DATABASE,
-    password: process.env.PG_PASSWORD,
-    port: Number(process.env.PG_PORT)
+    user: config.db.user,
+    host: config.db.host,
+    database: config.db.database,
+    password: config.db.password,
+    port: config.db.port,
+});
+
+pool.on('error', (err) => {
+    logger.error('db_pool_error', { message: err.message });
 });

@@ -1,14 +1,14 @@
 // server/src/route/customerRoute.ts
 import { Router } from 'express';
-import { customerController } from '../container';  // <— where your factory was wired
+import { customerController } from '../container';  // wired controller
 
 const router = Router();
 
 // GET /api/customer/        → list all customers
-router.get('/', customerController.getAll);
+router.get('/', customerController.list);
 
 // GET /api/customer/:id     → get one customer by ID
-router.get('/:id', customerController.getById);
+router.get('/:id', customerController.get);
 
 // POST /api/customer/       → create a new customer
 router.post('/', customerController.create);
@@ -17,6 +17,6 @@ router.post('/', customerController.create);
 router.put('/:id', customerController.update);
 
 // DELETE /api/customer/:id  → delete a customer
-router.delete('/:id', customerController.delete);
+router.delete('/:id', customerController.remove);
 
 export default router;
