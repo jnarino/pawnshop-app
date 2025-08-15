@@ -44,8 +44,9 @@ export default function HomePage() {
                 <p className="home__subtitle">Choose an action to get started.</p>
 
                 <div className="home__actions">
-                    <Diamond to="/customer" title="Customers" subtitle="Create / find" />
-                    <Diamond to="/reports" title="Reports" subtitle="Daily & exports" />
+                    <Diamond to="/Pawn" title="Pawn" subtitle="Pawn / Buy" />
+                    <Diamond to="/Payments" title="Payments" subtitle="Pay Pawn" />
+                    <Diamond to="/Sales" title="Sales" subtitle="Sale" />
                     <Diamond to="/logout" title="Sign out" subtitle="Back to login" />
                 </div>
 
