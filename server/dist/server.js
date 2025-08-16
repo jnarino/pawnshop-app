@@ -12,6 +12,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const authRoute_1 = __importDefault(require("./route/authRoute"));
 const customerRoute_1 = __importDefault(require("./route/customerRoute"));
 const pawnTicketRoute_1 = __importDefault(require("./route/pawnTicketRoute"));
+const inventoryRoute_1 = __importDefault(require("./route/inventoryRoute"));
 const runMigrations_1 = require("./infrastructure/db/migrations/runMigrations");
 const db_1 = require("./infrastructure/db");
 const errorHandler_1 = require("./infrastructure/http/errorHandler");
@@ -34,6 +35,7 @@ function createApp() {
     app.use('/api/auth', authRoute_1.default);
     app.use('/api/customer', customerRoute_1.default);
     app.use('/api/pawnTicket', pawnTicketRoute_1.default);
+    app.use('/api/inventory', inventoryRoute_1.default);
     app.get('/api/health', (_req, res) => res.json({ ok: true }));
     app.get('/api/ready', async (_req, res) => { try {
         await db_1.pool.query('SELECT 1');

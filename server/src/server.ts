@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import authRoute from './route/authRoute';
 import customerRoute from './route/customerRoute';
 import pawnTicketRoute from './route/pawnTicketRoute';
+import inventoryRoute from './route/inventoryRoute';
 import { runMigrations } from './infrastructure/db/migrations/runMigrations';
 import { pool } from './infrastructure/db';
 import { notFound, errorHandler } from './infrastructure/http/errorHandler';
@@ -31,6 +32,7 @@ export function createApp() {
   app.use('/api/auth', authRoute);
   app.use('/api/customer', customerRoute);
   app.use('/api/pawnTicket', pawnTicketRoute);
+  app.use('/api/inventory', inventoryRoute);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/ready', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ready: true }); } catch { res.status(503).json({ ready: false }); } });

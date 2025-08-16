@@ -1,0 +1,20 @@
+UPDATE inventory_item SET
+  type = COALESCE($1, type),
+  status = COALESCE($2, status),
+  category_id = COALESCE($3, category_id),
+  subcategory_id = COALESCE($4, subcategory_id),
+  brand = COALESCE($5, brand),
+  model = COALESCE($6, model),
+  serial_number = COALESCE($7, serial_number),
+  color = COALESCE($8, color),
+  item_condition = COALESCE($9, item_condition),
+  quantity = COALESCE($10, quantity),
+  amount = COALESCE($11, amount),
+  resale = COALESCE($12, resale),
+  item_replace = COALESCE($13, item_replace),
+  bin = COALESCE($14, bin),
+  owner_tag = COALESCE($15, owner_tag),
+  item_description = COALESCE($16, item_description),
+  firearm_attributes = COALESCE($17, firearm_attributes),
+  jewelry_attributes = COALESCE($18, jewelry_attributes)
+WHERE id = $19;
