@@ -1,15 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerCreateTypeValidator = registerCreateTypeValidator;
 exports.validateCreateInventoryItem = validateCreateInventoryItem;
 exports.validateUpdateInventoryItem = validateUpdateInventoryItem;
 exports.sanitizeInventoryItem = sanitizeInventoryItem;
 const errors_1 = require("../errors");
+const inventoryStatusTransitions_1 = require("../../domain/inventory/inventoryStatusTransitions");
 const NUM = (v) => typeof v === 'number' && !isNaN(v);
 const POS_INT = (v) => Number.isInteger(v) && v > 0;
 const NON_NEG = (v) => typeof v === 'number' && v >= 0;
-function validateCreateInventoryItem(input) {
-    if (!input.type)
-        throw new errors_1.ValidationError('type is required');
+const createTypeValidators = {
+    FIREARM: (dto) => { if (!dto.firearm)
+        throw new errors_1.ValidationError('firearm attributes required for FIREARM type'); },
+    JEWELRY: (dto) => { if (!dto.jewelry)
+        throw new errors_1.ValidationError('jewelry attributes required for JEWELRY type'); },
+};
+function registerCreateTypeValidator(type, fn) { createTypeValidators[type] = fn; }
+function baseNumericValidation(input) {
     if (input.quantity !== undefined && !POS_INT(input.quantity))
         throw new errors_1.ValidationError('quantity must be positive integer');
     if (input.amount !== undefined && !NON_NEG(input.amount))
@@ -18,24 +25,25 @@ function validateCreateInventoryItem(input) {
         throw new errors_1.ValidationError('resale must be non-negative number');
     if (input.itemReplace !== undefined && !NON_NEG(input.itemReplace))
         throw new errors_1.ValidationError('itemReplace must be non-negative number');
-    if (input.type === 'FIREARM' && !input.firearm)
-        throw new errors_1.ValidationError('firearm attributes required for FIREARM type');
-    if (input.type === 'JEWELRY' && !input.jewelry)
-        throw new errors_1.ValidationError('jewelry attributes required for JEWELRY type');
+}
+function validateCreateInventoryItem(input) {
+    if (!input.type)
+        throw new errors_1.ValidationError('type is required');
+    baseNumericValidation(input);
+    const validator = createTypeValidators[input.type];
+    if (validator)
+        validator(input);
     return sanitizeInventoryItem(input);
 }
 function validateUpdateInventoryItem(input) {
-    if (input.quantity !== undefined && !POS_INT(input.quantity))
-        throw new errors_1.ValidationError('quantity must be positive integer');
-    for (const f of ['amount', 'resale', 'itemReplace']) {
-        const v = input[f];
-        if (v !== undefined && !NON_NEG(v))
-            throw new errors_1.ValidationError(`${f} must be non-negative number`);
-    }
-    if (input.type === 'FIREARM' && !input.firearm)
+    baseNumericValidation(input);
+    if (input.type === 'FIREARM' && input.firearm === undefined)
         throw new errors_1.ValidationError('firearm attributes required when changing type to FIREARM');
-    if (input.type === 'JEWELRY' && !input.jewelry)
+    if (input.type === 'JEWELRY' && input.jewelry === undefined)
         throw new errors_1.ValidationError('jewelry attributes required when changing type to JEWELRY');
+    if (input.status && input.currentStatus && !(0, inventoryStatusTransitions_1.canTransition)(input.currentStatus, input.status)) {
+        throw new errors_1.ValidationError(`invalid status transition ${input.currentStatus} -> ${input.status}`);
+    }
     return sanitizeInventoryItem(input);
 }
 function sanitizeInventoryItem(item) {

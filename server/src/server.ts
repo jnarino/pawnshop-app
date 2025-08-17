@@ -7,6 +7,7 @@ import authRoute from './route/authRoute';
 import customerRoute from './route/customerRoute';
 import pawnTicketRoute from './route/pawnTicketRoute';
 import inventoryRoute from './route/inventoryRoute';
+import inventoryStatusRoute from './route/inventoryStatusRoute';
 import { runMigrations } from './infrastructure/db/migrations/runMigrations';
 import { pool } from './infrastructure/db';
 import { notFound, errorHandler } from './infrastructure/http/errorHandler';
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/customer', customerRoute);
   app.use('/api/pawnTicket', pawnTicketRoute);
   app.use('/api/inventory', inventoryRoute);
+  app.use('/api/inventory-status', inventoryStatusRoute);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/ready', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ready: true }); } catch { res.status(503).json({ ready: false }); } });
@@ -42,9 +44,30 @@ export function createApp() {
   return app;
 }
 
+async function ensureDbReady() {
+  const { retries, backoffMs } = config.dbConnect;
+  let attempt = 0;
+  // simple linear backoff (could add jitter later)
+  while (true) {
+    try {
+      await pool.query('SELECT 1');
+      if (!SKIP_MIGRATIONS) { logger.info('startup_migrations'); await runMigrations(); }
+      return;
+    } catch (e) {
+      attempt++;
+      if (attempt > retries) {
+        logger.error('startup_db_failed', { attempts: attempt, error: (e as any)?.message });
+        throw e;
+      }
+      logger.warn('startup_db_retry', { attempt, remaining: retries - attempt, backoffMs });
+      await new Promise(r => setTimeout(r, backoffMs));
+    }
+  }
+}
+
 async function start() {
-  logger.info('startup_begin', { env: config.nodeEnv, port: config.port, build: config.buildId });
-  if (!SKIP_MIGRATIONS) { logger.info('startup_migrations'); await runMigrations(); }
+  logger.info('startup_begin', { env: config.nodeEnv, port: config.port, build: config.buildId, dbRetries: config.dbConnect.retries });
+  await ensureDbReady();
   const app = createApp();
   const server = app.listen(config.port, () => logger.info('startup_listening', { url: `http://localhost:${config.port}` }));
   const shutdown = (signal: string) => {

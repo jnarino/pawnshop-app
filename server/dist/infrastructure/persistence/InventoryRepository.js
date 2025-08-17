@@ -8,7 +8,7 @@ const sqlLoader_1 = require("../db/sqlLoader");
 // Exported for testing (mapping tests)
 function mapRowToInventoryItem(r) {
     return {
-        id: r.id,
+        id: typeof r.id === 'number' ? String(r.id) : r.id,
         type: r.type,
         status: r.status,
         categoryId: r.categoryId ?? undefined,
@@ -35,7 +35,7 @@ class InventoryRepository {
     async create(dto) {
         const sql = (0, sqlLoader_1.getSQL)('command', 'inventory', 'createInventoryItem');
         const params = [
-            dto.type,
+            dto.type, // maps to inventory_item_type
             dto.status ?? 'in_inventory',
             dto.categoryId,
             dto.subcategoryId,
@@ -82,8 +82,15 @@ class InventoryRepository {
     }
     async update(id, dto) {
         const sql = (0, sqlLoader_1.getSQL)('command', 'inventory', 'updateInventoryItem');
+        const serialize = (val) => {
+            if (val === null)
+                return null; // explicit clear
+            if (val === undefined)
+                return undefined; // ignore (COALESCE/CASE will skip because param is undefined -> treated as NULL? we differentiate by building text)
+            return JSON.stringify(val);
+        };
         const params = [
-            dto.type,
+            dto.type, // inventory_item_type
             dto.status,
             dto.categoryId,
             dto.subcategoryId,
@@ -99,8 +106,8 @@ class InventoryRepository {
             dto.bin,
             dto.ownerTag,
             dto.itemDescription,
-            dto.firearm ? JSON.stringify(dto.firearm) : undefined,
-            dto.jewelry ? JSON.stringify(dto.jewelry) : undefined,
+            serialize(dto.firearm),
+            serialize(dto.jewelry),
             id,
         ];
         const res = await db_1.pool.query(sql, params);

@@ -13,6 +13,7 @@ const authRoute_1 = __importDefault(require("./route/authRoute"));
 const customerRoute_1 = __importDefault(require("./route/customerRoute"));
 const pawnTicketRoute_1 = __importDefault(require("./route/pawnTicketRoute"));
 const inventoryRoute_1 = __importDefault(require("./route/inventoryRoute"));
+const inventoryStatusRoute_1 = __importDefault(require("./route/inventoryStatusRoute"));
 const runMigrations_1 = require("./infrastructure/db/migrations/runMigrations");
 const db_1 = require("./infrastructure/db");
 const errorHandler_1 = require("./infrastructure/http/errorHandler");
@@ -36,6 +37,7 @@ function createApp() {
     app.use('/api/customer', customerRoute_1.default);
     app.use('/api/pawnTicket', pawnTicketRoute_1.default);
     app.use('/api/inventory', inventoryRoute_1.default);
+    app.use('/api/inventory-status', inventoryStatusRoute_1.default);
     app.get('/api/health', (_req, res) => res.json({ ok: true }));
     app.get('/api/ready', async (_req, res) => { try {
         await db_1.pool.query('SELECT 1');
@@ -48,12 +50,33 @@ function createApp() {
     app.use(errorHandler_1.errorHandler);
     return app;
 }
-async function start() {
-    logger_1.logger.info('startup_begin', { env: config_1.config.nodeEnv, port: config_1.config.port, build: config_1.config.buildId });
-    if (!SKIP_MIGRATIONS) {
-        logger_1.logger.info('startup_migrations');
-        await (0, runMigrations_1.runMigrations)();
+async function ensureDbReady() {
+    const { retries, backoffMs } = config_1.config.dbConnect;
+    let attempt = 0;
+    // simple linear backoff (could add jitter later)
+    while (true) {
+        try {
+            await db_1.pool.query('SELECT 1');
+            if (!SKIP_MIGRATIONS) {
+                logger_1.logger.info('startup_migrations');
+                await (0, runMigrations_1.runMigrations)();
+            }
+            return;
+        }
+        catch (e) {
+            attempt++;
+            if (attempt > retries) {
+                logger_1.logger.error('startup_db_failed', { attempts: attempt, error: e?.message });
+                throw e;
+            }
+            logger_1.logger.warn('startup_db_retry', { attempt, remaining: retries - attempt, backoffMs });
+            await new Promise(r => setTimeout(r, backoffMs));
+        }
     }
+}
+async function start() {
+    logger_1.logger.info('startup_begin', { env: config_1.config.nodeEnv, port: config_1.config.port, build: config_1.config.buildId, dbRetries: config_1.config.dbConnect.retries });
+    await ensureDbReady();
     const app = createApp();
     const server = app.listen(config_1.config.port, () => logger_1.logger.info('startup_listening', { url: `http://localhost:${config_1.config.port}` }));
     const shutdown = (signal) => {

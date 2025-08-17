@@ -4,20 +4,27 @@
 // be modeled later (likely via a linking table pawn_ticket_inventory or a nullable FK on a join table)
 // to allow future scenarios like partial item grouping, multiple tickets history, etc.
 
-export type InventoryItemType = 'FIREARM' | 'JEWELRY' | 'GENERIC';
+// Known inventory statuses seeded in lookup table. We keep a separate union for
+// compile-time convenience but expose InventoryItemStatus as a wide `string`
+// so new rows added (via admin UI + lookup table) do not force an immediate deploy.
+export type KnownInventoryItemStatus =
+  | 'in_inventory'
+  | 'in_pawn'
+  | 'for_sale'
+  | 'sold'
+  | 'scrapped';
 
-export type InventoryItemStatus =
-  | 'in_inventory' // In shop inventory, not pledged
-  | 'in_pawn'      // Currently pledged / part of an active pawn ticket
-  | 'for_sale'     // Available for retail sale
-  | 'sold'         // Sold to end customer
-  | 'scrapped';    // Scrapped / destroyed / written off
+// Public status type (future-proof): any string; validation / transition logic
+// will apply rules only to the known subset and allow unknown values through.
+export type InventoryItemStatus = string;
+
+export type InventoryItemType = 'FIREARM' | 'JEWELRY' | 'GENERIC';
 
 // Shared / base attributes across all inventory items.
 export interface BaseInventoryItem {
   id: string;
   type: InventoryItemType;
-  status: InventoryItemStatus;
+  status: InventoryItemStatus; // FK to inventory_item_status_lu(code)
   // Hierarchical categories (categoryId parent, subcategoryId child). Additional depth will use chaining later.
   categoryId?: string;
   subcategoryId?: string;

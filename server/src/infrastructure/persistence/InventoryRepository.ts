@@ -7,7 +7,7 @@ import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } 
 // Exported for testing (mapping tests)
 export function mapRowToInventoryItem(r: any): InventoryItem {
   return {
-    id: r.id,
+    id: typeof r.id === 'number' ? String(r.id) : r.id,
     type: r.type,
     status: r.status,
     categoryId: r.categoryId ?? undefined,
@@ -35,7 +35,7 @@ export class InventoryRepository implements IInventoryRepository {
   async create(dto: CreateInventoryItemDTO): Promise<string> {
     const sql = getSQL('command','inventory','createInventoryItem');
     const params = [
-      dto.type,
+  dto.type, // maps to inventory_item_type
       dto.status ?? 'in_inventory',
       dto.categoryId,
       dto.subcategoryId,
@@ -78,8 +78,13 @@ export class InventoryRepository implements IInventoryRepository {
 
   async update(id: string, dto: UpdateInventoryItemDTO): Promise<boolean> {
     const sql = getSQL('command','inventory','updateInventoryItem');
+    const serialize = (val: any) => {
+      if (val === null) return null; // explicit clear
+      if (val === undefined) return undefined; // ignore (COALESCE/CASE will skip because param is undefined -> treated as NULL? we differentiate by building text)
+      return JSON.stringify(val);
+    };
     const params = [
-      dto.type,
+  dto.type, // inventory_item_type
       dto.status,
       dto.categoryId,
       dto.subcategoryId,
@@ -95,8 +100,8 @@ export class InventoryRepository implements IInventoryRepository {
       dto.bin,
       dto.ownerTag,
       dto.itemDescription,
-      dto.firearm ? JSON.stringify(dto.firearm) : undefined,
-      dto.jewelry ? JSON.stringify(dto.jewelry) : undefined,
+      serialize(dto.firearm),
+      serialize(dto.jewelry),
       id,
     ];
     const res = await pool.query(sql, params);

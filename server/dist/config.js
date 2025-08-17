@@ -28,6 +28,10 @@ function loadConfig(env = process.env) {
     const jsonLimit = env.JSON_LIMIT || '1mb';
     const shutdownTimeoutMs = Number(env.SHUTDOWN_TIMEOUT_MS || 8000);
     const maxPageSize = Math.min(Number(env.MAX_PAGE_SIZE || 100), 500); // hard cap 500
+    const dbConnect = {
+        retries: Math.max(0, Number(env.DB_CONNECT_RETRIES ?? 5)),
+        backoffMs: Math.max(100, Number(env.DB_CONNECT_BACKOFF_MS ?? 1000)),
+    };
     const testDefaults = nodeEnv === 'test';
     const db = {
         user: requireEnv('PG_USER', env, 'test_user', testDefaults),
@@ -36,7 +40,7 @@ function loadConfig(env = process.env) {
         password: requireEnv('PG_PASSWORD', env, 'test_pw', testDefaults),
         port: Number(requireEnv('PG_PORT', env, '5432', testDefaults)) || 5432,
     };
-    cached = { nodeEnv, port, jsonLimit, db, shutdownTimeoutMs, maxPageSize, buildId: crypto_1.default.randomUUID() };
+    cached = { nodeEnv, port, jsonLimit, db, shutdownTimeoutMs, maxPageSize, buildId: crypto_1.default.randomUUID(), dbConnect };
     return cached;
 }
 exports.config = loadConfig();

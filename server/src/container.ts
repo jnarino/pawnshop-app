@@ -12,10 +12,16 @@ import { GetInventoryItemUseCase } from './application/useCase/inventory/GetInve
 import { ListInventoryItemsUseCase } from './application/useCase/inventory/ListInventoryItemsUseCase';
 import { UpdateInventoryItemUseCase } from './application/useCase/inventory/UpdateInventoryItemUseCase';
 import { makeInventoryController } from './controller/inventory/inventoryControllerFactory';
+import { InventoryStatusRepository } from './infrastructure/persistence/InventoryStatusRepository';
+import { ListInventoryStatusesUseCase } from './application/useCase/inventory/status/ListInventoryStatusesUseCase';
+import { CreateInventoryStatusUseCase } from './application/useCase/inventory/status/CreateInventoryStatusUseCase';
+import { DeactivateInventoryStatusUseCase } from './application/useCase/inventory/status/DeactivateInventoryStatusUseCase';
+import { makeInventoryStatusController } from './controller/inventory/inventoryStatusControllerFactory';
 
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
+const statusRepo = new InventoryStatusRepository();
 export const customerController = makeCustomerController({
     list: new ListCustomersUseCase(repo),
     get: new GetCustomerUseCase(repo),
@@ -30,4 +36,10 @@ export const inventoryController = makeInventoryController({
     create: new CreateInventoryItemUseCase(inventoryRepo),
     update: new UpdateInventoryItemUseCase(inventoryRepo),
     delete: new DeleteInventoryItemUseCase(inventoryRepo),
+});
+
+export const inventoryStatusController = makeInventoryStatusController({
+    list: new ListInventoryStatusesUseCase(statusRepo),
+    create: new CreateInventoryStatusUseCase(statusRepo),
+    deactivate: new DeactivateInventoryStatusUseCase(statusRepo),
 });

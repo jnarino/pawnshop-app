@@ -1,6 +1,6 @@
 SELECT
   id,
-  type,
+  inventory_item_type AS "type",
   status,
   category_id     AS "categoryId",
   subcategory_id  AS "subcategoryId",

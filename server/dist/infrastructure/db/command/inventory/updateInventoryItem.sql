@@ -1,5 +1,5 @@
 UPDATE inventory_item SET
-  type = COALESCE($1, type),
+  inventory_item_type = COALESCE($1, inventory_item_type),
   status = COALESCE($2, status),
   category_id = COALESCE($3, category_id),
   subcategory_id = COALESCE($4, subcategory_id),
@@ -15,6 +15,6 @@ UPDATE inventory_item SET
   bin = COALESCE($14, bin),
   owner_tag = COALESCE($15, owner_tag),
   item_description = COALESCE($16, item_description),
-  firearm_attributes = COALESCE($17, firearm_attributes),
-  jewelry_attributes = COALESCE($18, jewelry_attributes)
+  firearm_attributes = CASE WHEN $17 IS NOT NULL THEN $17 ELSE firearm_attributes END,
+  jewelry_attributes = CASE WHEN $18 IS NOT NULL THEN $18 ELSE jewelry_attributes END
 WHERE id = $19;
