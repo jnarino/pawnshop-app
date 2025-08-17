@@ -6,8 +6,10 @@ class CreateInventoryItemUseCase {
     constructor(repo) {
         this.repo = repo;
     }
-    async execute(input) {
+    async execute(input, opts) {
         const cleaned = (0, inventoryValidation_1.validateCreateInventoryItem)(input);
+        if (opts?.forceInPawn)
+            cleaned.status = 'in_pawn';
         return this.repo.create(cleaned);
     }
 }

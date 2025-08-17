@@ -1,62 +1,43 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllPawnTickets = getAllPawnTickets;
-exports.getPawnTicketById = getPawnTicketById;
-exports.createPawnTicket = createPawnTicket;
-exports.updatePawnTicket = updatePawnTicket;
-exports.deletePawnTicket = deletePawnTicket;
-// GET /api/pawnTicket/
-async function getAllPawnTickets(req, res, next) {
-    try {
-        // const tickets = await pawnService.listPawnTickets();
-        //  res.json(tickets);
+exports.makePawnTicketController = makePawnTicketController;
+const errors_1 = require("../../application/errors");
+function makePawnTicketController(deps) {
+    const wrap = (fn) => async (req, res, next) => { try {
+        await fn(req, res);
     }
-    catch (err) {
-        next(err);
-    }
-}
-// GET /api/pawnTicket/:id
-async function getPawnTicketById(req, res, next) {
-    try {
-        const id = req.params.id;
-        //  const ticket = await pawnService.getPawnTicketById(id);
-        //  res.json(ticket);
-    }
-    catch (err) {
-        next(err);
-    }
-}
-// POST /api/pawnTicket/
-async function createPawnTicket(req, res, next) {
-    try {
-        const dto = req.body;
-        // const newId = await pawnCommands.createPawnTicket(dto);
-        //  res.status(201).json({ id: newId });
-    }
-    catch (err) {
-        next(err);
-    }
-}
-// PUT /api/pawnTicket/:id
-async function updatePawnTicket(req, res, next) {
-    try {
-        const id = req.params.id;
-        const updates = req.body;
-        //  await pawnCommands.updatePawnTicket(id, updates);
-        res.sendStatus(204);
-    }
-    catch (err) {
-        next(err);
-    }
-}
-// DELETE /api/pawnTicket/:id
-async function deletePawnTicket(req, res, next) {
-    try {
-        const id = req.params.id;
-        //  await pawnCommands.deletePawnTicket(id);
-        res.sendStatus(204);
-    }
-    catch (err) {
-        next(err);
-    }
+    catch (e) {
+        next(e);
+    } };
+    return {
+        create: wrap(async (req, res) => {
+            const id = await deps.create.execute(req.body);
+            res.status(201).json({ id });
+        }),
+        search: wrap(async (req, res) => {
+            const results = await deps.search.execute({
+                customerId: req.query.customerId,
+                type: req.query.type,
+                startDate: req.query.startDate,
+                endDate: req.query.endDate,
+                limit: req.query.limit ? Number(req.query.limit) : undefined,
+                offset: req.query.offset ? Number(req.query.offset) : undefined,
+            });
+            res.json(results);
+        }),
+        get: wrap(async (req, res) => {
+            const ticket = await deps.get.execute(req.params.id);
+            if (!ticket)
+                throw new errors_1.NotFoundError('pawnTicket not found');
+            res.json(ticket);
+        }),
+        updateDates: wrap(async (req, res) => {
+            const ok = await deps.updateDates.execute(req.params.id, req.body.maturityDate, req.body.defaultDate);
+            res.sendStatus(ok ? 204 : 404);
+        }),
+        remove: wrap(async (req, res) => {
+            const ok = await deps.delete.execute(req.params.id);
+            res.sendStatus(ok ? 204 : 404);
+        }),
+    };
 }

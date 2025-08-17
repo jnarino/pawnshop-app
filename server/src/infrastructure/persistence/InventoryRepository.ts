@@ -8,6 +8,7 @@ import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } 
 export function mapRowToInventoryItem(r: any): InventoryItem {
   return {
     id: typeof r.id === 'number' ? String(r.id) : r.id,
+    inventoryNumber: r.inventoryNumber ?? undefined,
     type: r.type,
     status: r.status,
     categoryId: r.categoryId ?? undefined,
@@ -53,6 +54,7 @@ export class InventoryRepository implements IInventoryRepository {
       dto.itemDescription,
       dto.firearm ? JSON.stringify(dto.firearm) : null,
       dto.jewelry ? JSON.stringify(dto.jewelry) : null,
+  dto.inventoryNumber ?? null,
     ];
     const { rows } = await pool.query(sql, params);
     return rows[0].id;

@@ -1,6 +1,7 @@
 import { InventoryItem } from './InventoryItem';
 
 export interface CreateInventoryItemDTO {
+    inventoryNumber?: string; // externally assigned (e.g., controlNumber-seq)
     type: InventoryItem['type'];
     status?: InventoryItem['status'];
     categoryId?: string; subcategoryId?: string;

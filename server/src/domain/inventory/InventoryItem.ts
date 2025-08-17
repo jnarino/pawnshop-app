@@ -23,6 +23,7 @@ export type InventoryItemType = 'FIREARM' | 'JEWELRY' | 'GENERIC';
 // Shared / base attributes across all inventory items.
 export interface BaseInventoryItem {
   id: string;
+  inventoryNumber?: string;       // Derived number tied to pawn ticket control number (e.g., 1000-1)
   type: InventoryItemType;
   status: InventoryItemStatus; // FK to inventory_item_status_lu(code)
   // Hierarchical categories (categoryId parent, subcategoryId child). Additional depth will use chaining later.

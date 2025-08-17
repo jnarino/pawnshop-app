@@ -1,27 +1,15 @@
 import { Router } from 'express';
-import {
-    getAllPawnTickets,
-    getPawnTicketById,
-    createPawnTicket,
-    updatePawnTicket,
-    deletePawnTicket,
-} from '../controller/pawnTicket/pawnTicketController';
+import { pawnTicketController } from '../container';
+import type { PawnTicketController } from '../controller/pawnTicket/pawnTicketController';
 
-const router = Router();
+export function buildPawnTicketRoute(controller: PawnTicketController) {
+    const router = Router();
+    router.get('/', controller.search); // search/list
+    router.post('/', controller.create);
+    router.get('/:id', controller.get);
+    router.put('/:id/dates', controller.updateDates);
+    router.delete('/:id', controller.remove);
+    return router;
+}
 
-// GET /api/pawnTicket/        → list all pawn tickets
-router.get('/', getAllPawnTickets);
-
-// GET /api/pawnTicket/:id     → get one pawn ticket by ID
-router.get('/:id', getPawnTicketById);
-
-// POST /api/pawnTicket/       → create a new pawn ticket
-router.post('/', createPawnTicket);
-
-// PUT /api/pawnTicket/:id     → update an existing pawn ticket
-router.put('/:id', updatePawnTicket);
-
-// DELETE /api/pawnTicket/:id  → delete a pawn ticket
-router.delete('/:id', deletePawnTicket);
-
-export default router;
+export default buildPawnTicketRoute(pawnTicketController);

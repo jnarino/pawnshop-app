@@ -1,5 +1,6 @@
 SELECT
   id,
+  inventory_number AS "inventoryNumber",
   inventory_item_type AS "type",
   status,
   category_id     AS "categoryId",

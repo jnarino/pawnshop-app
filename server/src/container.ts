@@ -17,11 +17,19 @@ import { ListInventoryStatusesUseCase } from './application/useCase/inventory/st
 import { CreateInventoryStatusUseCase } from './application/useCase/inventory/status/CreateInventoryStatusUseCase';
 import { DeactivateInventoryStatusUseCase } from './application/useCase/inventory/status/DeactivateInventoryStatusUseCase';
 import { makeInventoryStatusController } from './controller/inventory/inventoryStatusControllerFactory';
+import { PawnTicketRepository } from './infrastructure/persistence/PawnTicketRepository';
+import { CreatePawnTicketUseCase } from './application/useCase/pawnTicket/CreatePawnTicketUseCase';
+import { GetPawnTicketUseCase } from './application/useCase/pawnTicket/GetPawnTicketUseCase';
+import { UpdatePawnTicketDatesUseCase } from './application/useCase/pawnTicket/UpdatePawnTicketDatesUseCase';
+import { DeletePawnTicketUseCase } from './application/useCase/pawnTicket/DeletePawnTicketUseCase';
+import { makePawnTicketController } from './controller/pawnTicket/pawnTicketController';
+import { SearchPawnTicketsUseCase } from './application/useCase/pawnTicket/SearchPawnTicketsUseCase';
 
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
 const statusRepo = new InventoryStatusRepository();
+const pawnTicketRepo = new PawnTicketRepository();
 export const customerController = makeCustomerController({
     list: new ListCustomersUseCase(repo),
     get: new GetCustomerUseCase(repo),
@@ -42,4 +50,12 @@ export const inventoryStatusController = makeInventoryStatusController({
     list: new ListInventoryStatusesUseCase(statusRepo),
     create: new CreateInventoryStatusUseCase(statusRepo),
     deactivate: new DeactivateInventoryStatusUseCase(statusRepo),
+});
+
+export const pawnTicketController = makePawnTicketController({
+    create: new CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase(inventoryRepo)),
+    get: new GetPawnTicketUseCase(pawnTicketRepo),
+    updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
+    delete: new DeletePawnTicketUseCase(pawnTicketRepo),
+    search: new SearchPawnTicketsUseCase(pawnTicketRepo),
 });

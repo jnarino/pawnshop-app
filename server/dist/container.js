@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
+exports.pawnTicketController = exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
 const CustomerRepository_1 = require("./infrastructure/persistence/CustomerRepository");
 const ListCustomersUseCase_1 = require("./application/useCase/customer/ListCustomersUseCase");
 const GetCustomerUseCase_1 = require("./application/useCase/customer/GetCustomerUseCase");
@@ -20,9 +20,17 @@ const ListInventoryStatusesUseCase_1 = require("./application/useCase/inventory/
 const CreateInventoryStatusUseCase_1 = require("./application/useCase/inventory/status/CreateInventoryStatusUseCase");
 const DeactivateInventoryStatusUseCase_1 = require("./application/useCase/inventory/status/DeactivateInventoryStatusUseCase");
 const inventoryStatusControllerFactory_1 = require("./controller/inventory/inventoryStatusControllerFactory");
+const PawnTicketRepository_1 = require("./infrastructure/persistence/PawnTicketRepository");
+const CreatePawnTicketUseCase_1 = require("./application/useCase/pawnTicket/CreatePawnTicketUseCase");
+const GetPawnTicketUseCase_1 = require("./application/useCase/pawnTicket/GetPawnTicketUseCase");
+const UpdatePawnTicketDatesUseCase_1 = require("./application/useCase/pawnTicket/UpdatePawnTicketDatesUseCase");
+const DeletePawnTicketUseCase_1 = require("./application/useCase/pawnTicket/DeletePawnTicketUseCase");
+const pawnTicketController_1 = require("./controller/pawnTicket/pawnTicketController");
+const SearchPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/SearchPawnTicketsUseCase");
 const repo = new CustomerRepository_1.CustomerRepository();
 const inventoryRepo = new InventoryRepository_1.InventoryRepository();
 const statusRepo = new InventoryStatusRepository_1.InventoryStatusRepository();
+const pawnTicketRepo = new PawnTicketRepository_1.PawnTicketRepository();
 exports.customerController = (0, customerControllerFactory_1.makeCustomerController)({
     list: new ListCustomersUseCase_1.ListCustomersUseCase(repo),
     get: new GetCustomerUseCase_1.GetCustomerUseCase(repo),
@@ -41,4 +49,11 @@ exports.inventoryStatusController = (0, inventoryStatusControllerFactory_1.makeI
     list: new ListInventoryStatusesUseCase_1.ListInventoryStatusesUseCase(statusRepo),
     create: new CreateInventoryStatusUseCase_1.CreateInventoryStatusUseCase(statusRepo),
     deactivate: new DeactivateInventoryStatusUseCase_1.DeactivateInventoryStatusUseCase(statusRepo),
+});
+exports.pawnTicketController = (0, pawnTicketController_1.makePawnTicketController)({
+    create: new CreatePawnTicketUseCase_1.CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(inventoryRepo)),
+    get: new GetPawnTicketUseCase_1.GetPawnTicketUseCase(pawnTicketRepo),
+    updateDates: new UpdatePawnTicketDatesUseCase_1.UpdatePawnTicketDatesUseCase(pawnTicketRepo),
+    delete: new DeletePawnTicketUseCase_1.DeletePawnTicketUseCase(pawnTicketRepo),
+    search: new SearchPawnTicketsUseCase_1.SearchPawnTicketsUseCase(pawnTicketRepo),
 });
