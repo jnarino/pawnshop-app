@@ -8,11 +8,9 @@ import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } 
 export function mapRowToInventoryItem(r: any): InventoryItem {
   return {
     id: typeof r.id === 'number' ? String(r.id) : r.id,
-    inventoryNumber: r.inventoryNumber ?? undefined,
-    type: r.type,
+    inventoryNumber: r.inventoryNumber,
     status: r.status,
-    categoryId: r.categoryId ?? undefined,
-    subcategoryId: r.subcategoryId ?? undefined,
+    categoryId: r.categoryId,
     brand: r.brand ?? undefined,
     model: r.model ?? undefined,
     serialNumber: r.serialNumber ?? undefined,
@@ -22,11 +20,10 @@ export function mapRowToInventoryItem(r: any): InventoryItem {
     amount: r.amount !== null ? Number(r.amount) : undefined,
     resale: r.resale !== null ? Number(r.resale) : undefined,
     itemReplace: r.itemReplace !== null ? Number(r.itemReplace) : undefined,
-    bin: r.bin ?? undefined,
+    binNumber: r.binNumber ?? undefined,
     ownerTag: r.ownerTag ?? undefined,
     itemDescription: r.itemDescription ?? undefined,
-    firearm: r.firearm ?? undefined,
-    jewelry: r.jewelry ?? undefined,
+    attributes: r.attributes ?? {},
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
@@ -36,25 +33,22 @@ export class InventoryRepository implements IInventoryRepository {
   async create(dto: CreateInventoryItemDTO): Promise<string> {
     const sql = getSQL('command','inventory','createInventoryItem');
     const params = [
-  dto.type, // maps to inventory_item_type
       dto.status ?? 'in_inventory',
       dto.categoryId,
-      dto.subcategoryId,
       dto.brand,
       dto.model,
       dto.serialNumber,
       dto.color,
       dto.itemCondition,
-      dto.quantity,
+      dto.quantity ?? 1,
       dto.amount,
       dto.resale,
       dto.itemReplace,
-      dto.bin,
+      dto.binNumber,
       dto.ownerTag,
       dto.itemDescription,
-      dto.firearm ? JSON.stringify(dto.firearm) : null,
-      dto.jewelry ? JSON.stringify(dto.jewelry) : null,
-  dto.inventoryNumber ?? null,
+      dto.attributes ? JSON.stringify(dto.attributes) : JSON.stringify({}),
+      dto.inventoryNumber ?? null,
     ];
     const { rows } = await pool.query(sql, params);
     return rows[0].id;
@@ -68,7 +62,7 @@ export class InventoryRepository implements IInventoryRepository {
   }
 
   async findAll(limit?: number, offset?: number): Promise<InventoryItem[]> {
-    const base = getSQL('query','inventory','findAllInventoryItems');
+  const base = getSQL('query','inventory','findAllInventoryItems');
     const clauses: string[] = [];
     const params: any[] = [];
     if (typeof limit === 'number') { params.push(limit); clauses.push(`LIMIT $${params.length}`); }
@@ -80,16 +74,9 @@ export class InventoryRepository implements IInventoryRepository {
 
   async update(id: string, dto: UpdateInventoryItemDTO): Promise<boolean> {
     const sql = getSQL('command','inventory','updateInventoryItem');
-    const serialize = (val: any) => {
-      if (val === null) return null; // explicit clear
-      if (val === undefined) return undefined; // ignore (COALESCE/CASE will skip because param is undefined -> treated as NULL? we differentiate by building text)
-      return JSON.stringify(val);
-    };
     const params = [
-  dto.type, // inventory_item_type
       dto.status,
       dto.categoryId,
-      dto.subcategoryId,
       dto.brand,
       dto.model,
       dto.serialNumber,
@@ -99,11 +86,10 @@ export class InventoryRepository implements IInventoryRepository {
       dto.amount,
       dto.resale,
       dto.itemReplace,
-      dto.bin,
+      dto.binNumber,
       dto.ownerTag,
       dto.itemDescription,
-      serialize(dto.firearm),
-      serialize(dto.jewelry),
+      dto.attributes ? JSON.stringify(dto.attributes) : undefined,
       id,
     ];
     const res = await pool.query(sql, params);

@@ -14,11 +14,12 @@ SET
   state_us        = $11,
   zip_code        = $12,
   id_number       = $13,
-  id_expiration   = $14,
-  id_issue_date   = $15,
-  issuing_state   = $16,
-  phone_number    = $17,
-  email           = $18,
+  ss_number       = $14,
+  id_expiration   = $15,
+  id_issue_date   = $16,
+  issuing_state   = $17,
+  phone_number    = $18,
+  email           = $19,
   updated_at      = now()
-WHERE id = $19
+WHERE id = $20
 RETURNING id;

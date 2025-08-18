@@ -28,6 +28,8 @@ class CreatePawnTicketUseCase {
                     status: 'in_pawn',
                     inventoryNumber: `${base}-${i + 1}`,
                 };
+                if (!dto.categoryId)
+                    throw new errors_1.ValidationError('categoryId required for new inventory item');
                 const id = await this.createInventoryItem.execute(dto, { forceInPawn: true });
                 created.push(id);
             }

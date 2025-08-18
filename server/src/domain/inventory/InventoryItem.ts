@@ -1,88 +1,33 @@
-// Inventory Item Domain Model
-// Supports three primary types: FIREARM, JEWELRY, GENERIC (which will later branch into many sub-categories)
-// A single inventory item MAY or MAY NOT be associated with a pawn ticket. That relationship will
-// be modeled later (likely via a linking table pawn_ticket_inventory or a nullable FK on a join table)
-// to allow future scenarios like partial item grouping, multiple tickets history, etc.
+// Inventory Item Domain Model (post schema rebase 0001)
+// Simplified: no explicit type column. Category tree + free-form attributes JSON capture
+// subtype semantics (e.g., firearm, jewelry). Any UI-specific grouping logic should infer
+// from category path or attribute presence.
 
-// Known inventory statuses seeded in lookup table. We keep a separate union for
-// compile-time convenience but expose InventoryItemStatus as a wide `string`
-// so new rows added (via admin UI + lookup table) do not force an immediate deploy.
-export type KnownInventoryItemStatus =
-  | 'in_inventory'
-  | 'in_pawn'
-  | 'for_sale'
-  | 'sold'
-  | 'scrapped';
+export type InventoryItemStatus = string; // FK to inventory_item_status(code)
 
-// Public status type (future-proof): any string; validation / transition logic
-// will apply rules only to the known subset and allow unknown values through.
-export type InventoryItemStatus = string;
-
-export type InventoryItemType = 'FIREARM' | 'JEWELRY' | 'GENERIC';
-
-// Shared / base attributes across all inventory items.
-export interface BaseInventoryItem {
+export interface InventoryItem {
   id: string;
-  inventoryNumber?: string;       // Derived number tied to pawn ticket control number (e.g., 1000-1)
-  type: InventoryItemType;
-  status: InventoryItemStatus; // FK to inventory_item_status_lu(code)
-  // Hierarchical categories (categoryId parent, subcategoryId child). Additional depth will use chaining later.
-  categoryId?: string;
-  subcategoryId?: string;
+  inventoryNumber: string;       // Required globally-unique human-facing number (e.g., 1000-1)
+  status: InventoryItemStatus;
+  categoryId: string;            // Leaf category id
   brand?: string;
   model?: string;
-  serialNumber?: string; // firearms / electronics / instruments / tools
+  serialNumber?: string;
   color?: string;
-  itemCondition?: string;    // free-form now; could become enum later
-  quantity: number;          // default 1; >1 for grouped identical items
-  amount?: number;           // amount currently tied to (loan/pricing context)
-  resale?: number;           // estimated resale value
-  itemReplace?: number;      // replacement value (insurance)
-  bin?: string;              // physical storage location
-  ownerTag?: string;         // legacy owner # / tag
-  itemDescription?: string;  // long text description
-  createdAt: string;         // ISO timestamp
-  updatedAt: string;         // ISO timestamp
+  itemCondition?: string;
+  quantity: number;              // >0
+  amount?: number;
+  resale?: number;
+  itemReplace?: number;
+  binNumber?: string;            // physical storage location (bin_number)
+  ownerTag?: string;
+  itemDescription?: string;
+  attributes: Record<string, any>; // Arbitrary structured attributes (firearm/jewelry/etc.)
+  createdAt: string;
+  updatedAt: string;
 }
 
-// FIREARM specific attributes
-export interface FirearmAttributes {
-  action?: string;        // e.g., SEMI-AUTO, BOLT, REVOLVER
-  finish?: string;        // e.g., BLUED, STAINLESS
-  numberOfBarrels?: number;
-  barrelLength?: number;  // inches
-  caliberGauge?: string;  // e.g., 9MM, 12GA
-  importer?: string;
-}
-
-// Jewelry stone detail (multiple allowed)
-export interface JewelryStone {
-  quantity?: number; // count of this stone grouping
-  type?: string;     // e.g., DIAMOND, EMERALD
-  shape?: string;    // ROUND, PRINCESS, OVAL, etc.
-  carat?: number;    // total carat for the stone/group
-  color?: string;    // color grade
-  clarity?: string;  // clarity grade
-  weight?: number;   // optional separate weight (carat or grams depending on UI)
-  length?: number;   // mm
-  width?: number;    // mm
-}
-
-// JEWELRY specific attributes
-export interface JewelryAttributes {
-  metal?: string;      // GOLD, SILVER, PLATINUM
-  karat?: string;      // 10K, 14K, 18K
-  weight?: number;     // numeric weight
-  weightUnit?: string; // GRAMS, DWT (store raw but UI can convert)
-  gender?: string;     // M, F, UNISEX
-  style?: string;      // ring style, chain type, etc.
-  size?: string;       // ring size / length
-  stones?: JewelryStone[]; // optional stones array
-}
-
-// Main Inventory Item interface aggregating optional specialized attributes
-export interface InventoryItem extends BaseInventoryItem {
-  firearm?: FirearmAttributes; // present when type === 'FIREARM'
-  jewelry?: JewelryAttributes; // present when type === 'JEWELRY'
-  // Future: generic-specific structured attributes can be added here without schema churn
-}
+// Backward-compat helper types (legacy code/tests may still import these symbols). They are now aliases.
+export type FirearmAttributes = Record<string, any>;
+export type JewelryAttributes = Record<string, any>;
+export interface JewelryStone { [k: string]: any; }

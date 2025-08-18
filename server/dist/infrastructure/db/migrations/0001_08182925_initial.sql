@@ -120,12 +120,12 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS inventory_category (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  code TEXT NOT NULL,                        -- machine-friendly (e.g., 'power_tools')
+  code TEXT NOT NULL,                       
   parent_id UUID REFERENCES inventory_category(id) ON DELETE CASCADE,
-  path LTREE,                                -- e.g., tools.power_tools.hammer
-  depth INT,
+  path LTREE,                              
+  depth INT GENERATED ALWAYS AS (nlevel(path)) STORED,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),  -- ← comma added
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), 
   CONSTRAINT inventory_category_unique_sibling UNIQUE (parent_id, name),
   CONSTRAINT inventory_category_code_sibling   UNIQUE (parent_id, code)
 );
@@ -145,7 +145,6 @@ BEGIN
     SELECT path INTO parent_path FROM inventory_category WHERE id = NEW.parent_id;
     NEW.path := parent_path || replace(NEW.code, '-', '_')::ltree;
   END IF;
-  NEW.depth := nlevel(NEW.path);
   RETURN NEW;
 END $$ LANGUAGE plpgsql;
 
@@ -233,7 +232,7 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 -- Pawn tickets (lookup type, no enum)
 -------------------------
 CREATE TABLE IF NOT EXISTS pawn_transaction_type (
-  code TEXT PRIMARY KEY,         -- 'PAWN', 'PURCHASE', (add more later)
+  code TEXT PRIMARY KEY,        
   description TEXT,
   active BOOLEAN NOT NULL DEFAULT true,
   sort_order INT NOT NULL DEFAULT 0,
@@ -252,26 +251,20 @@ ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS pawn_ticket (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  control_number TEXT,                       -- e.g., "1000" used in your inventory_number pattern
+  control_number TEXT,                     
   transaction_type TEXT NOT NULL REFERENCES pawn_transaction_type(code),
   customer_id UUID NOT NULL REFERENCES customer(id) ON DELETE RESTRICT,
-
   amount_financed NUMERIC(12,2),
   finance_charge NUMERIC(12,2),
   periodic_rate NUMERIC(6,4),
   total_of_payments NUMERIC(12,2),
   apr NUMERIC(9,2),
-
   purchase_trade_value NUMERIC(12,2),
-
   transaction_date TIMESTAMPTZ NOT NULL DEFAULT now(),
   maturity_date TIMESTAMPTZ NOT NULL,
   default_date TIMESTAMPTZ NOT NULL,
-
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  -- NOTE: CHECKs compare the row's transaction_type text (FK) for consistency
   CONSTRAINT pawn_ticket_finance_charge_min CHECK (finance_charge IS NULL OR finance_charge >= 5.00),
   CONSTRAINT pawn_ticket_amount_consistency CHECK (
     (transaction_type = 'PAWN'

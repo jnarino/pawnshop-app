@@ -9,13 +9,8 @@ const inventoryStatusTransitions_1 = require("../../domain/inventory/inventorySt
 const NUM = (v) => typeof v === 'number' && !isNaN(v);
 const POS_INT = (v) => Number.isInteger(v) && v > 0;
 const NON_NEG = (v) => typeof v === 'number' && v >= 0;
-const createTypeValidators = {
-    FIREARM: (dto) => { if (!dto.firearm)
-        throw new errors_1.ValidationError('firearm attributes required for FIREARM type'); },
-    JEWELRY: (dto) => { if (!dto.jewelry)
-        throw new errors_1.ValidationError('jewelry attributes required for JEWELRY type'); },
-};
-function registerCreateTypeValidator(type, fn) { createTypeValidators[type] = fn; }
+// Type-specific validators removed in new schema (attributes JSON + category drive semantics)
+function registerCreateTypeValidator(_type, _fn) { }
 function baseNumericValidation(input) {
     if (input.quantity !== undefined && !POS_INT(input.quantity))
         throw new errors_1.ValidationError('quantity must be positive integer');
@@ -27,20 +22,17 @@ function baseNumericValidation(input) {
         throw new errors_1.ValidationError('itemReplace must be non-negative number');
 }
 function validateCreateInventoryItem(input) {
-    if (!input.type)
-        throw new errors_1.ValidationError('type is required');
+    if (!input.categoryId)
+        throw new errors_1.ValidationError('categoryId required');
     baseNumericValidation(input);
-    const validator = createTypeValidators[input.type];
-    if (validator)
-        validator(input);
+    if (input.quantity === undefined)
+        input.quantity = 1;
+    if (!input.attributes)
+        input.attributes = {};
     return sanitizeInventoryItem(input);
 }
 function validateUpdateInventoryItem(input) {
     baseNumericValidation(input);
-    if (input.type === 'FIREARM' && input.firearm === undefined)
-        throw new errors_1.ValidationError('firearm attributes required when changing type to FIREARM');
-    if (input.type === 'JEWELRY' && input.jewelry === undefined)
-        throw new errors_1.ValidationError('jewelry attributes required when changing type to JEWELRY');
     if (input.status && input.currentStatus && !(0, inventoryStatusTransitions_1.canTransition)(input.currentStatus, input.status)) {
         throw new errors_1.ValidationError(`invalid status transition ${input.currentStatus} -> ${input.status}`);
     }
@@ -50,6 +42,7 @@ function sanitizeInventoryItem(item) {
     const trim = (v) => typeof v === 'string' ? v.trim() : v;
     const out = { ...item };
     for (const k of Object.keys(out))
-        out[k] = trim(out[k]);
+        if (k !== 'attributes')
+            out[k] = trim(out[k]);
     return out;
 }

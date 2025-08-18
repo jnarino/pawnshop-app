@@ -21,7 +21,8 @@ export function mapRowToCustomer(r: any): Customer { // exported for tests
         city: r.city,
         stateUs: r.stateUs,
         zipcode: r.zipcode,
-        idNumber: r.idNumber,
+    idNumber: r.idNumber,
+    ssNumber: r.ssNumber ?? undefined,
         expirationDate: r.expirationDate,
         issueDate: r.issueDate,
         issuingState: r.issuingState,
@@ -64,6 +65,7 @@ export class CustomerRepository implements ICustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
+            dto.ssNumber,
             dto.expirationDate, // id_expiration
             dto.issueDate,      // id_issue_date
             dto.issuingState,
@@ -90,6 +92,7 @@ export class CustomerRepository implements ICustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
+            dto.ssNumber,
             dto.expirationDate, // id_expiration
             dto.issueDate,      // id_issue_date
             dto.issuingState,

@@ -1,10 +1,8 @@
 SELECT
   id,
   inventory_number AS "inventoryNumber",
-  inventory_item_type AS "type",
   status,
   category_id     AS "categoryId",
-  subcategory_id  AS "subcategoryId",
   brand           AS "brand",
   model           AS "model",
   serial_number   AS "serialNumber",
@@ -14,11 +12,10 @@ SELECT
   amount          AS "amount",
   resale          AS "resale",
   item_replace    AS "itemReplace",
-  bin             AS "bin",
+  bin_number      AS "binNumber",
   owner_tag       AS "ownerTag",
   item_description AS "itemDescription",
-  firearm_attributes AS "firearm",
-  jewelry_attributes AS "jewelry",
+  attributes      AS "attributes",
   created_at      AS "createdAt",
   updated_at      AS "updatedAt"
 FROM inventory_item

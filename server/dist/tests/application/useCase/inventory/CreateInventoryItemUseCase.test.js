@@ -17,25 +17,16 @@ class InMemoryInventoryRepo {
     async update() { return true; }
     async delete() { return true; }
 }
-(0, testHarness_1.test)('application/useCase/inventory: CreateInventoryItemUseCase creates firearm', async () => {
+(0, testHarness_1.test)('application/useCase/inventory: CreateInventoryItemUseCase creates item with attributes', async () => {
     const repo = new InMemoryInventoryRepo();
     const uc = new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(repo);
     const id = await uc.execute({
-        type: 'FIREARM',
-        categoryId: '1',
+        categoryId: 'cat1',
         itemCondition: 'Good',
         quantity: 1,
         itemReplace: 500,
-        itemDescription: 'Test firearm',
-        firearm: { caliberGauge: '9MM' }
+        itemDescription: 'Test item',
+        attributes: { caliberGauge: '9MM' }
     });
     assert_1.default.strictEqual(id, '1');
-});
-(0, testHarness_1.test)('application/useCase/inventory: CreateInventoryItemUseCase missing firearm attrs', async () => {
-    const repo = new InMemoryInventoryRepo();
-    const uc = new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(repo);
-    await assert_1.default.rejects(() => uc.execute({
-        type: 'FIREARM',
-        quantity: 1,
-    }), /firearm/);
 });

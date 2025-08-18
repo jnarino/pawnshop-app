@@ -22,6 +22,7 @@ function mapRowToCustomer(r) {
         stateUs: r.stateUs,
         zipcode: r.zipcode,
         idNumber: r.idNumber,
+        ssNumber: r.ssNumber ?? undefined,
         expirationDate: r.expirationDate,
         issueDate: r.issueDate,
         issuingState: r.issuingState,
@@ -67,6 +68,7 @@ class CustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
+            dto.ssNumber,
             dto.expirationDate, // id_expiration
             dto.issueDate, // id_issue_date
             dto.issuingState,
@@ -92,6 +94,7 @@ class CustomerRepository {
             dto.stateUs,
             dto.zipcode,
             dto.idNumber,
+            dto.ssNumber,
             dto.expirationDate, // id_expiration
             dto.issueDate, // id_issue_date
             dto.issuingState,

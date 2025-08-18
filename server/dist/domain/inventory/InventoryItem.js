@@ -1,7 +1,6 @@
 "use strict";
-// Inventory Item Domain Model
-// Supports three primary types: FIREARM, JEWELRY, GENERIC (which will later branch into many sub-categories)
-// A single inventory item MAY or MAY NOT be associated with a pawn ticket. That relationship will
-// be modeled later (likely via a linking table pawn_ticket_inventory or a nullable FK on a join table)
-// to allow future scenarios like partial item grouping, multiple tickets history, etc.
+// Inventory Item Domain Model (post schema rebase 0001)
+// Simplified: no explicit type column. Category tree + free-form attributes JSON capture
+// subtype semantics (e.g., firearm, jewelry). Any UI-specific grouping logic should infer
+// from category path or attribute presence.
 Object.defineProperty(exports, "__esModule", { value: true });

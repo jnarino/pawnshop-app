@@ -13,26 +13,16 @@ class InMemoryInventoryRepo implements IInventoryRepository {
   async delete() { return true; }
 }
 
-test('application/useCase/inventory: CreateInventoryItemUseCase creates firearm', async () => {
+test('application/useCase/inventory: CreateInventoryItemUseCase creates item with attributes', async () => {
   const repo = new InMemoryInventoryRepo();
   const uc = new CreateInventoryItemUseCase(repo);
   const id = await uc.execute({
-    type: 'FIREARM',
-    categoryId: '1',
+    categoryId: 'cat1',
     itemCondition: 'Good',
     quantity: 1,
     itemReplace: 500,
-    itemDescription: 'Test firearm',
-    firearm: { caliberGauge: '9MM' }
-  } as any);
+    itemDescription: 'Test item',
+    attributes: { caliberGauge: '9MM' }
+  });
   assert.strictEqual(id, '1');
-});
-
-test('application/useCase/inventory: CreateInventoryItemUseCase missing firearm attrs', async () => {
-  const repo = new InMemoryInventoryRepo();
-  const uc = new CreateInventoryItemUseCase(repo);
-  await assert.rejects(() => uc.execute({
-    type: 'FIREARM',
-    quantity: 1,
-  } as any), /firearm/);
 });

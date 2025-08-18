@@ -13,6 +13,7 @@ SELECT
   state_us        AS "stateUs",
   zip_code        AS "zipcode",
   id_number       AS "idNumber",
+  ss_number       AS "ssNumber",
   id_expiration   AS "expirationDate",
   id_issue_date   AS "issueDate",
   issuing_state   AS "issuingState",

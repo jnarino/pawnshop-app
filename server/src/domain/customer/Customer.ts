@@ -13,6 +13,7 @@ export interface Customer {
     stateUs: string;
     zipcode: string;
     idNumber: string;
+    ssNumber?: string; // maps to ss_number
     issueDate: string;
     expirationDate: string;
     issuingState: string;

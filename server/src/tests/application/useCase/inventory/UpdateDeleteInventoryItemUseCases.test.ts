@@ -23,7 +23,7 @@ function makeRepoWithItem() {
 
 test('application/useCase/inventory: UpdateInventoryItemUseCase updates fields', async () => {
   const { repo, create } = makeRepoWithItem();
-  const id = await create.execute({ type: 'FIREARM', firearm: { caliberGauge: '9MM' }, quantity:1 } as any);
+  const id = await create.execute({ categoryId: 'c1', attributes: { caliberGauge: '9MM' }, quantity:1 } as any);
   const updateUC = new UpdateInventoryItemUseCase(repo);
   const ok = await updateUC.execute(id, { itemCondition: 'Excellent', quantity: 2 });
   assert.strictEqual(ok, true);
@@ -41,7 +41,7 @@ test('application/useCase/inventory: UpdateInventoryItemUseCase returns false on
 
 test('application/useCase/inventory: DeleteInventoryItemUseCase deletes item', async () => {
   const { repo, create } = makeRepoWithItem();
-  const id = await create.execute({ type: 'JEWELRY', jewelry: { metal: 'Gold' }, quantity:1 } as any);
+  const id = await create.execute({ categoryId: 'c2', attributes: { metal: 'Gold' }, quantity:1 } as any);
   const delUC = new DeleteInventoryItemUseCase(repo);
   const ok = await delUC.execute(id);
   assert.strictEqual(ok, true);

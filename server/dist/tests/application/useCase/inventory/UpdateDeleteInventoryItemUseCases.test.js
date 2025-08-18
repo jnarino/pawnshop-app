@@ -27,7 +27,7 @@ function makeRepoWithItem() {
 }
 (0, testHarness_1.test)('application/useCase/inventory: UpdateInventoryItemUseCase updates fields', async () => {
     const { repo, create } = makeRepoWithItem();
-    const id = await create.execute({ type: 'FIREARM', firearm: { caliberGauge: '9MM' }, quantity: 1 });
+    const id = await create.execute({ categoryId: 'c1', attributes: { caliberGauge: '9MM' }, quantity: 1 });
     const updateUC = new UpdateInventoryItemUseCase_1.UpdateInventoryItemUseCase(repo);
     const ok = await updateUC.execute(id, { itemCondition: 'Excellent', quantity: 2 });
     assert_1.default.strictEqual(ok, true);
@@ -43,7 +43,7 @@ function makeRepoWithItem() {
 });
 (0, testHarness_1.test)('application/useCase/inventory: DeleteInventoryItemUseCase deletes item', async () => {
     const { repo, create } = makeRepoWithItem();
-    const id = await create.execute({ type: 'JEWELRY', jewelry: { metal: 'Gold' }, quantity: 1 });
+    const id = await create.execute({ categoryId: 'c2', attributes: { metal: 'Gold' }, quantity: 1 });
     const delUC = new DeleteInventoryItemUseCase_1.DeleteInventoryItemUseCase(repo);
     const ok = await delUC.execute(id);
     assert_1.default.strictEqual(ok, true);

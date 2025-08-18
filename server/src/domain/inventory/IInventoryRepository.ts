@@ -2,13 +2,11 @@ import { InventoryItem } from './InventoryItem';
 
 export interface CreateInventoryItemDTO {
     inventoryNumber?: string; // externally assigned (e.g., controlNumber-seq)
-    type: InventoryItem['type'];
     status?: InventoryItem['status'];
-    categoryId?: string; subcategoryId?: string;
+    categoryId: string; // required now (leaf category)
     brand?: string; model?: string; serialNumber?: string; color?: string; itemCondition?: string;
-    quantity?: number; amount?: number; resale?: number; itemReplace?: number; bin?: string; ownerTag?: string; itemDescription?: string;
-    firearm?: InventoryItem['firearm'];
-    jewelry?: InventoryItem['jewelry'];
+    quantity?: number; amount?: number; resale?: number; itemReplace?: number; binNumber?: string; ownerTag?: string; itemDescription?: string;
+    attributes?: Record<string, any>; // merged flexible attributes
 }
 
 export interface UpdateInventoryItemDTO extends Partial<CreateInventoryItemDTO> {

@@ -2,13 +2,12 @@ import assert from 'assert';
 import { mapRowToInventoryItem } from '../../../infrastructure/persistence/InventoryRepository';
 import { test } from '../../testHarness';
 
-test('infrastructure/persistence: mapRowToInventoryItem firearm', () => {
+test('infrastructure/persistence: mapRowToInventoryItem basic', () => {
   const row: any = {
     id: '10',
-    type: 'FIREARM',
+    inventoryNumber: '1000-1',
     status: 'in_inventory',
     categoryId: '1',
-    subcategoryId: '2',
     brand: 'Glock',
     model: '19',
     serialNumber: 'SN123',
@@ -18,41 +17,35 @@ test('infrastructure/persistence: mapRowToInventoryItem firearm', () => {
     amount: 100,
     resale: 300,
     itemReplace: 450.75,
-    bin: 'A1',
+    binNumber: 'A1',
     ownerTag: 'OWN1',
     itemDescription: '9mm pistol',
-    firearm: { caliberGauge: '9MM', finish: 'Black' },
-    jewelry: null,
+    attributes: { caliberGauge: '9MM', finish: 'Black' },
     createdAt: '2025-08-15T12:00:00Z',
     updatedAt: '2025-08-15T12:10:00Z'
   };
   const mapped = mapRowToInventoryItem(row);
   assert.strictEqual(mapped.id, '10');
-  assert.strictEqual(mapped.type, 'FIREARM');
-  assert.ok(mapped.firearm);
-  assert.strictEqual(mapped.jewelry, undefined);
+  assert.strictEqual(mapped.inventoryNumber, '1000-1');
+  assert.strictEqual(mapped.attributes.caliberGauge, '9MM');
 });
 
-test('infrastructure/persistence: mapRowToInventoryItem jewelry', () => {
+test('infrastructure/persistence: mapRowToInventoryItem attributes only', () => {
   const row: any = {
     id: '11',
-    type: 'JEWELRY',
+    inventoryNumber: '1000-2',
     status: 'for_sale',
     categoryId: '5',
-    subcategoryId: null,
     quantity: 1,
     itemReplace: 1250,
     itemDescription: 'Gold ring',
-    firearm: null,
-    jewelry: { metal: 'Gold', weight: 15.2, stones: [{ type: 'Diamond' }] },
+    attributes: { metal: 'Gold', weight: 15.2, stones: [{ type: 'Diamond' }] },
     createdAt: '2025-08-16T10:00:00Z',
     updatedAt: '2025-08-16T10:05:00Z'
   };
   const mapped = mapRowToInventoryItem(row);
   assert.strictEqual(mapped.id, '11');
   assert.strictEqual(mapped.categoryId, '5');
-  assert.strictEqual(mapped.subcategoryId, undefined);
   assert.strictEqual(mapped.itemReplace, 1250);
-  assert.ok(mapped.jewelry);
-  assert.strictEqual(mapped.firearm, undefined);
+  assert.ok(Array.isArray(mapped.attributes.stones));
 });

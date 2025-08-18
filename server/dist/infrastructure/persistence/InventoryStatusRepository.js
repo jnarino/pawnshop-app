@@ -30,11 +30,11 @@ class InventoryStatusRepository {
         };
     }
     async insert(input) {
-        await db_1.pool.query(`INSERT INTO inventory_item_status_lu(code, description, is_terminal, sort_order, active)
+        await db_1.pool.query(`INSERT INTO inventory_item_status(code, description, is_terminal, sort_order, active)
        VALUES ($1,$2,$3,$4,true)`, [input.code, input.description ?? null, input.isTerminal, input.sortOrder]);
     }
     async deactivate(code) {
-        await db_1.pool.query(`UPDATE inventory_item_status_lu SET active = false, updated_at = now() WHERE code = $1`, [code]);
+        await db_1.pool.query(`UPDATE inventory_item_status SET active = false, updated_at = now() WHERE code = $1`, [code]);
     }
 }
 exports.InventoryStatusRepository = InventoryStatusRepository;

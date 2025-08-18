@@ -29,14 +29,14 @@ export class InventoryStatusRepository {
   }
   async insert(input: { code: string; description?: string; isTerminal: boolean; sortOrder: number; }) {
     await pool.query(
-      `INSERT INTO inventory_item_status_lu(code, description, is_terminal, sort_order, active)
+      `INSERT INTO inventory_item_status(code, description, is_terminal, sort_order, active)
        VALUES ($1,$2,$3,$4,true)`,
       [input.code, input.description ?? null, input.isTerminal, input.sortOrder]
     );
   }
   async deactivate(code: string) {
     await pool.query(
-      `UPDATE inventory_item_status_lu SET active = false, updated_at = now() WHERE code = $1`,
+      `UPDATE inventory_item_status SET active = false, updated_at = now() WHERE code = $1`,
       [code]
     );
   }
