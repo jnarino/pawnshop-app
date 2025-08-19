@@ -21,13 +21,17 @@ export function mapRowToCustomer(r: any): Customer { // exported for tests
         city: r.city,
         stateUs: r.stateUs,
         zipcode: r.zipcode,
-    idNumber: r.idNumber,
-    ssNumber: r.ssNumber ?? undefined,
+        idNumber: r.idNumber,
+        ssNumber: r.ssNumber ?? undefined,
         expirationDate: r.expirationDate,
         issueDate: r.issueDate,
         issuingState: r.issuingState,
         phone: r.phone,
         email: r.email,
+        hairColor: r.hairColor,
+        weight: r.weight,
+        race: r.race,
+        country: r.country,
     };
 }
 
@@ -66,11 +70,15 @@ export class CustomerRepository implements ICustomerRepository {
             dto.zipcode,
             dto.idNumber,
             dto.ssNumber,
-            dto.expirationDate, // id_expiration
-            dto.issueDate,      // id_issue_date
+            dto.expirationDate,
+            dto.issueDate,
             dto.issuingState,
             dto.phone,
             dto.email,
+            (dto as any).hairColor,
+            (dto as any).weight,
+            (dto as any).race,
+            (dto as any).country,
         ];
         const { rows } = await pool.query(sql, params);
         return rows[0].id; // requires RETURNING id in your createCustomer.sql
@@ -93,11 +101,15 @@ export class CustomerRepository implements ICustomerRepository {
             dto.zipcode,
             dto.idNumber,
             dto.ssNumber,
-            dto.expirationDate, // id_expiration
-            dto.issueDate,      // id_issue_date
+            dto.expirationDate,
+            dto.issueDate,
             dto.issuingState,
             dto.phone,
             dto.email,
+            (dto as any).hairColor,
+            (dto as any).weight,
+            (dto as any).race,
+            (dto as any).country,
             id,
         ];
         const res = await pool.query(sql, params);

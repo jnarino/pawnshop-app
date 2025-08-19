@@ -20,6 +20,10 @@ SET
   issuing_state   = $17,
   phone_number    = $18,
   email           = $19,
+  hair_color      = $20,
+  weight          = $21,
+  race            = $22,
+  country         = $23,
   updated_at      = now()
-WHERE id = $20
+WHERE id = $24
 RETURNING id;

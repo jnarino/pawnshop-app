@@ -18,6 +18,10 @@ SELECT
   id_issue_date   AS "issueDate",
   issuing_state   AS "issuingState",
   phone_number    AS "phone",
-  email
+  email,
+  hair_color      AS "hairColor",
+  weight,
+  race,
+  country
 FROM customer
 WHERE id = $1;

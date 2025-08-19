@@ -4,12 +4,12 @@ INSERT INTO customer (
   date_of_birth, sex, eye_color, height, street_address,
   city, state_us, zip_code, id_number, ss_number,
   id_expiration, id_issue_date, issuing_state,
-  phone_number, email
+  phone_number, email, hair_color, weight, race, country
 ) VALUES (
   $1, $2, $3, $4,
   $5, $6, $7, $8, $9,
   $10, $11, $12, $13, $14,
   $15, $16, $17,
-  $18, $19
+  $18, $19, $20, $21, $22, $23
 )
 RETURNING id;

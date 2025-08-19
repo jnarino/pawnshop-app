@@ -190,10 +190,7 @@ ON CONFLICT DO NOTHING;
 -----------------------------
 CREATE TABLE IF NOT EXISTS inventory_item (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  -- single leaf category reference
   category_id UUID NOT NULL REFERENCES inventory_category(id) ON DELETE RESTRICT,
-
   status TEXT NOT NULL DEFAULT 'in_inventory' REFERENCES inventory_item_status(code),
   brand TEXT,
   model TEXT,
@@ -210,7 +207,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   attributes JSONB NOT NULL DEFAULT '{}'::jsonb, 
   inventory_number TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Constraints & indexes

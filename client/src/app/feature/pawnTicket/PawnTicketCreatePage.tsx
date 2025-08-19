@@ -40,7 +40,7 @@ export default function PawnTicketCreatePage() {
                 <div className="pawn-panel">
                     <CustomerPicker
                         onSelected={(id) => { setCustomerId(id); setActive('newPawn'); }}
-                        onCreateNew={(id) => { setCustomerId(id); setActive('newPawn'); }}
+                        onCreateNew={(id) => { setCustomerId(id); /* stay on customer tab until saved */ }}
                     />
                     <p className="hint">Pick an existing customer or create a new one to continue.</p>
                 </div>

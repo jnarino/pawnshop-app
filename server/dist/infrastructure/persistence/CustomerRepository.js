@@ -28,6 +28,10 @@ function mapRowToCustomer(r) {
         issuingState: r.issuingState,
         phone: r.phone,
         email: r.email,
+        hairColor: r.hairColor,
+        weight: r.weight,
+        race: r.race,
+        country: r.country,
     };
 }
 class CustomerRepository {
@@ -69,11 +73,15 @@ class CustomerRepository {
             dto.zipcode,
             dto.idNumber,
             dto.ssNumber,
-            dto.expirationDate, // id_expiration
-            dto.issueDate, // id_issue_date
+            dto.expirationDate,
+            dto.issueDate,
             dto.issuingState,
             dto.phone,
             dto.email,
+            dto.hairColor,
+            dto.weight,
+            dto.race,
+            dto.country,
         ];
         const { rows } = await db_1.pool.query(sql, params);
         return rows[0].id; // requires RETURNING id in your createCustomer.sql
@@ -95,11 +103,15 @@ class CustomerRepository {
             dto.zipcode,
             dto.idNumber,
             dto.ssNumber,
-            dto.expirationDate, // id_expiration
-            dto.issueDate, // id_issue_date
+            dto.expirationDate,
+            dto.issueDate,
             dto.issuingState,
             dto.phone,
             dto.email,
+            dto.hairColor,
+            dto.weight,
+            dto.race,
+            dto.country,
             id,
         ];
         const res = await db_1.pool.query(sql, params);
