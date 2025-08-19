@@ -41,8 +41,12 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
     e?.preventDefault();
     setError(null); setLoading(true); setResults([]);
     try {
-      // For now we fetch all (limit 100) then filter client-side since backend lacks search params yet.
-      const res = await fetch('http://localhost:3000/api/customer?limit=100', { credentials: 'include' });
+      const params = new URLSearchParams();
+      if (form.firstName) params.append('firstName', form.firstName.trim());
+      if (form.lastName) params.append('lastName', form.lastName.trim());
+      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth);
+      params.append('limit', '100');
+      const res = await fetch(`http://localhost:3000/api/customer?${params.toString()}`, { credentials: 'include' });
       const data = await res.json();
       const mapped: CustomerRecord[] = (data || []).map((c: any) => ({
         id: c.id,
@@ -67,16 +71,7 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
         issueDate: c.issueDate ?? c.id_issue_date,
         expirationDate: c.expirationDate ?? c.id_expiration,
       }));
-      const lf = form.firstName.trim().toLowerCase();
-      const ll = form.lastName.trim().toLowerCase();
-      const dob = (form.dateOfBirth || '').trim();
-      const filtered = mapped.filter(m => {
-        if (lf && !m.firstName.toLowerCase().startsWith(lf)) return false;
-        if (ll && !m.lastName.toLowerCase().startsWith(ll)) return false;
-        if (dob && m.dateOfBirth !== dob) return false;
-        return true;
-      });
-      setResults(filtered);
+  setResults(mapped);
     } catch (err: any) {
       setError(err.message || 'Search failed');
     } finally { setLoading(false); }

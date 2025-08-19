@@ -1,7 +1,7 @@
 import { Customer } from './Customer';
 
 export interface ICustomerRepository {
-    findAll(limit?: number, offset?: number): Promise<Customer[]>;
+    findAll(limit?: number, offset?: number, filters?: { firstName?: string; lastName?: string; dateOfBirth?: string }): Promise<Customer[]>;
     findById(id: string): Promise<Customer | null>;
     create(dto: Omit<Customer, 'id'>): Promise<string>;
     /** Returns true if a record was updated */

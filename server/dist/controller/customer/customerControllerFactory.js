@@ -17,7 +17,12 @@ function wrap(fn) {
 }
 function makeCustomerController(deps) {
     return {
-        list: wrap(async (req, res) => { const pg = parsePagination(req); const data = await deps.list.execute(pg); res.json(data); }),
+        list: wrap(async (req, res) => {
+            const pg = parsePagination(req);
+            const { firstName, lastName, dateOfBirth } = req.query;
+            const data = await deps.list.execute({ ...pg, firstName, lastName, dateOfBirth });
+            res.json(data);
+        }),
         get: wrap(async (req, res) => { const c = await deps.get.execute(req.params.id); if (!c) {
             res.sendStatus(404);
             return;

@@ -8,7 +8,14 @@ class ListCustomersUseCase {
     }
     async execute(params = {}) {
         const { limit, offset } = (0, pagination_1.validatePagination)(params);
-        return this.repo.findAll(limit, offset);
+        const filters = {};
+        if (params.firstName)
+            filters.firstName = params.firstName.trim();
+        if (params.lastName)
+            filters.lastName = params.lastName.trim();
+        if (params.dateOfBirth)
+            filters.dateOfBirth = params.dateOfBirth.trim();
+        return this.repo.findAll(limit, offset, filters);
     }
 }
 exports.ListCustomersUseCase = ListCustomersUseCase;

@@ -35,19 +35,44 @@ function mapRowToCustomer(r) {
     };
 }
 class CustomerRepository {
-    async findAll(limit, offset) {
-        const base = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers');
-        const clauses = [];
+    async findAll(limit, offset, filters) {
+        const base = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers'); // ends with ORDER BY
+        const where = [];
         const params = [];
+        if (filters?.firstName) {
+            params.push(filters.firstName + '%');
+            where.push(`first_name ILIKE $${params.length}`);
+        }
+        if (filters?.lastName) {
+            params.push(filters.lastName + '%');
+            where.push(`last_name ILIKE $${params.length}`);
+        }
+        if (filters?.dateOfBirth) {
+            params.push(filters.dateOfBirth);
+            where.push(`date_of_birth = $${params.length}`);
+        }
+        let sql = base;
+        if (where.length) {
+            // Insert WHERE before ORDER BY (base query ends with ORDER BY last_name, first_name)
+            const idx = sql.toUpperCase().lastIndexOf('ORDER BY');
+            if (idx !== -1) {
+                const before = sql.substring(0, idx).trimEnd();
+                const order = sql.substring(idx);
+                sql = `${before} WHERE ${where.join(' AND ')}\n${order}`;
+            }
+            else {
+                sql = `${sql} WHERE ${where.join(' AND ')}`;
+            }
+        }
+        // Pagination
         if (typeof limit === 'number') {
             params.push(limit);
-            clauses.push(`LIMIT $${params.length}`);
+            sql += ` LIMIT $${params.length}`;
         }
         if (typeof offset === 'number') {
             params.push(offset);
-            clauses.push(`OFFSET $${params.length}`);
+            sql += ` OFFSET $${params.length}`;
         }
-        const sql = `${base} ${clauses.join(' ')}`.trim();
         const { rows } = await db_1.pool.query(sql, params);
         return rows.map(mapRowToCustomer);
     }
