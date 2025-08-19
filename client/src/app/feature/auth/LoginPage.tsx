@@ -26,7 +26,10 @@ export default function LoginPage() {
     e?.preventDefault();
     if (status === 'loading') return;
     try {
-      await dispatch(login({ username, password })).unwrap(); // waits for 200 + JSON
+  await dispatch(login({ username, password })).unwrap(); // waits for 200 + JSON
+  // Explicitly notify Electron main (in addition to AuthMenuSync fallback)
+  // @ts-ignore
+  if (window.electronAPI?.authChanged) window.electronAPI.authChanged(true);
       const from = (location.state as any)?.from?.pathname ?? '/';
       nav(from, { replace: true }); // <-- immediate redirect on success
     } catch {

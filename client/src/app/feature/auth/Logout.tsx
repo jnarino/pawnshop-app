@@ -12,8 +12,15 @@ export default function Logout() {
         (async () => {
             try {
                 await dispatch<any>(logout());
+                // @ts-ignore
+                if (window.electronAPI?.authChanged) window.electronAPI.authChanged(false);
             } finally {
+                // Navigate then hard refresh to clear any lingering component state
                 navigate('/login', { replace: true });
+                setTimeout(() => {
+                    if (window.location.hash !== '#/login') window.location.hash = '#/login';
+                    window.location.reload();
+                }, 50);
             }
         })();
     }, [navigate, dispatch]);

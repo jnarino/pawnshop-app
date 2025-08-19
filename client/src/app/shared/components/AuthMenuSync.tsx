@@ -5,9 +5,7 @@ import { RootState } from '@/app/core/redux/store';
 /**
  * Synchronizes auth state to Electron main process so menu can update (login/logout + disabled items).
  */
-declare global {
-  interface Window { electronAPI?: { onNavigate?: (cb: any)=>void; authChanged?: (authed: boolean)=>void } }
-}
+// global declaration moved to electron/preload.ts
 
 export default function AuthMenuSync() {
   const user = useSelector((s: RootState) => s.auth.user);

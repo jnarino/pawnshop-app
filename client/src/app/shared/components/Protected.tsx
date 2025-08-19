@@ -21,5 +21,10 @@ export default function Protected({ children }: { children: JSX.Element }) {
     }, [user, dispatch]);
 
     if (!checked) return null;       // could render a spinner
+    // Notify Electron once auth known
+    // @ts-ignore
+    if (typeof window !== 'undefined' && window.electronAPI?.authChanged) {
+        window.electronAPI.authChanged(!!user);
+    }
     return user ? children : <Navigate to="/login" replace />;
 }

@@ -1,7 +1,25 @@
 
 import AppRouter from './AppRouter';
 import AuthMenuSync from './shared/components/AuthMenuSync';
-export default function App() { return <><AuthMenuSync /><AppRouter /></>; }
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+function ElectronNavHandler() {
+	const navigate = useNavigate();
+	useEffect(() => {
+		// @ts-ignore preload injection
+		if (window.electronAPI?.onNavigate) {
+			// Avoid duplicate handlers: remove previous then add
+			const handler = (_: any, route: string) => {
+				if (route && typeof route === 'string') navigate(route);
+			};
+			window.electronAPI.onNavigate(handler);
+		}
+	}, [navigate]);
+	return null;
+}
+
+export default function App() { return <><AuthMenuSync /><ElectronNavHandler /><AppRouter /></>; }
 
 
 // import React, { useEffect } from 'react'
