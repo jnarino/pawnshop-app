@@ -1,6 +1,7 @@
 
 import AppRouter from './AppRouter';
-export default function App() { return <AppRouter />; }
+import AuthMenuSync from './shared/components/AuthMenuSync';
+export default function App() { return <><AuthMenuSync /><AppRouter /></>; }
 
 
 // import React, { useEffect } from 'react'

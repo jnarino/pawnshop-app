@@ -36,7 +36,8 @@ function mapRowToCustomer(r) {
 }
 class CustomerRepository {
     async findAll(limit, offset, filters) {
-        const base = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers'); // ends with ORDER BY
+        const baseRaw = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers'); // may end with semicolon
+        const base = baseRaw.replace(/;\s*$/, '');
         const where = [];
         const params = [];
         if (filters?.firstName) {
@@ -67,11 +68,11 @@ class CustomerRepository {
         // Pagination
         if (typeof limit === 'number') {
             params.push(limit);
-            sql += ` LIMIT $${params.length}`;
+            sql += `\nLIMIT $${params.length}`;
         }
         if (typeof offset === 'number') {
             params.push(offset);
-            sql += ` OFFSET $${params.length}`;
+            sql += `\nOFFSET $${params.length}`;
         }
         const { rows } = await db_1.pool.query(sql, params);
         return rows.map(mapRowToCustomer);
