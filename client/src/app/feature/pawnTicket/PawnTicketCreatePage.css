@@ -1,0 +1,27 @@
+.pawn-flow { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+.pawn-flow__title { margin: 0 0 1rem; }
+.pawn-flow__steps { display:flex; gap:1rem; margin-bottom:1.25rem; }
+.pawn-flow__step { padding: .5rem .75rem; border-radius: 4px; background:#eee; font-size:.875rem; }
+.pawn-flow__step.active { background:#2563eb; color:#fff; }
+.pawn-flow__step.done { background:#16a34a; color:#fff; }
+.customer-picker { border:1px solid #ddd; padding:1rem; border-radius:6px; background:#fafafa; }
+.customer-picker__search { display:flex; gap:.5rem; margin-bottom:.75rem; }
+.customer-picker__list { list-style:none; margin:0; padding:0; max-height:260px; overflow:auto; }
+.customer-picker__list li { margin:0 0 .25rem; }
+.customer-picker__list button { background:#fff; border:1px solid #ccc; padding:.4rem .6rem; border-radius:4px; width:100%; text-align:left; }
+.pawn-ticket-form { border:1px solid #ddd; padding:1rem; border-radius:6px; background:#fafafa; }
+.pawn-ticket-form form { display:flex; flex-direction:column; gap:.85rem; }
+.pawn-ticket-form .row { display:flex; flex-direction:column; gap:.25rem; }
+.pawn-ticket-form input, .pawn-ticket-form select { padding:.5rem; border:1px solid #bbb; border-radius:4px; }
+.items { border:1px dashed #bbb; padding:.75rem; border-radius:4px; display:flex; flex-direction:column; gap:.5rem; }
+.item-row { display:grid; grid-template-columns: 130px 1fr 110px auto; gap:.5rem; }
+.error { color:#b91c1c; font-size:.875rem; }
+.success { color:#166534; font-size:.875rem; }
+/* New tabbed layout */
+.pawn-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:1rem; }
+.pawn-tab { background:#222; color:#eee; border:0; padding:.45rem .75rem; font-size:.75rem; letter-spacing:.5px; border-radius:3px; cursor:pointer; }
+.pawn-tab.is-active { background:#facc15; color:#222; font-weight:600; }
+.pawn-tab:disabled { background:#555; color:#999; cursor:not-allowed; }
+.pawn-panel { border:2px solid #222; background:#fff; padding:1rem; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+.pawn-panel.placeholder { color:#555; font-style:italic; }
+.panel-header { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
