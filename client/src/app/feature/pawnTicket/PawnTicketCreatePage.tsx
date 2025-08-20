@@ -22,7 +22,6 @@ export default function PawnTicketCreatePage() {
 
     return (
         <div className="pawn-flow">
-            <h1 className="pawn-flow__title">New Pawn Transaction</h1>
             <nav className="pawn-tabs" aria-label="Pawn ticket steps">
                 {tabs.map(t => (
                     <button
