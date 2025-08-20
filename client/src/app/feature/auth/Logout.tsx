@@ -16,9 +16,9 @@ export default function Logout() {
                 if (window.electronAPI?.authChanged) window.electronAPI.authChanged(false);
             } finally {
                 // Navigate then hard refresh to clear any lingering component state
-                navigate('/login', { replace: true });
+                navigate('/test', { replace: true });
                 setTimeout(() => {
-                    if (window.location.hash !== '#/login') window.location.hash = '#/login';
+                    if (window.location.hash !== '#/test') window.location.hash = '#/test';
                     window.location.reload();
                 }, 50);
             }
