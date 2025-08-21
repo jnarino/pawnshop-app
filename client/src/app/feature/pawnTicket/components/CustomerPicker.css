@@ -1,0 +1,73 @@
+.cp-status {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #6ecf68;
+}
+
+.idscan-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+
+.idscan-modal {
+  background: #222;
+  border: 2px solid #ffcc33;
+  padding: 18px 22px;
+  width: 380px;
+  max-width: 90vw;
+  font-family: sans-serif;
+  box-shadow: 0 0 18px rgba(0,0,0,.6);
+}
+
+.idscan-modal h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: #ffdd55;
+  letter-spacing: .5px;
+}
+
+.idscan-status {
+  background: #333;
+  border: 1px solid #444;
+  padding: 10px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-size: .9rem;
+  color: #eee;
+  margin-bottom: 8px;
+}
+
+.idscan-waiting { color: #9ecbff; }
+.idscan-success { color: #6ecf68; }
+.idscan-timeout,
+.idscan-error { color: #ff7676; }
+
+.idscan-hint {
+  font-size: .7rem;
+  opacity: .8;
+  margin-bottom: 12px;
+}
+
+.idscan-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.idscan-actions button {
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.idscan-actions button:hover {
+  background: #555;
+}

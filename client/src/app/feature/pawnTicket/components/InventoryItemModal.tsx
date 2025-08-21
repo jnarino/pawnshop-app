@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useBarcodeScan } from '../../../shared/hooks/useBarcodeScan';
 
 export interface InventoryItemDraft {
   id?: string; // local uuid
@@ -33,6 +34,7 @@ const jewelrySubcats = ['','Necklace','Ring','Bracelet','Earrings','Pendant','Ch
 export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
+  const [barcodeMode, setBarcodeMode] = useState(false);
   useEffect(()=> { if (open) setDraft(initial ? { ...initial } : { ...DEFAULT_ITEM }); }, [open, initial]);
 
   function update<K extends keyof InventoryItemDraft>(k: K, v: InventoryItemDraft[K]) { setDraft(d=> ({ ...d, [k]: v })); }
@@ -52,6 +54,19 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   }
 
   const isJewelry = draft.type.trim().toLowerCase() === 'jewelry';
+
+  useBarcodeScan({
+    enabled: barcodeMode,
+    onBarcode: (code) => {
+      setDraft(i => ({
+        ...i,
+        serial: i.serial || code,
+        // inventoryNumber: i.inventoryNumber || code // Uncomment if inventoryNumber should also be set
+      }));
+      setBarcodeMode(false);
+    },
+    allowRegex: /^[A-Z0-9\-]+$/i
+  });
 
   if (!open) return null;
   return (
@@ -136,6 +151,13 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <button type="submit">{initial ? 'Update' : 'Add Item'}</button>
           </div>
         </form>
+        <div className="toolbar">
+          <button type="button" onClick={() => setBarcodeMode(m=>!m)}
+            style={{ background: barcodeMode ? '#c33' : '#444' }}>
+            {barcodeMode ? 'Stop Scan' : 'Scan Barcode'}
+          </button>
+          {/* ...other buttons... */}
+        </div>
       </div>
     </div>
   );

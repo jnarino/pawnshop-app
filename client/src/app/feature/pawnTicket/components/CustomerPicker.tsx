@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useId, useState, useMemo } from 'react';
+
+import { AamvaData } from '../../../shared/hooks/useIdScan';
+import React from 'react';
+import { CustomerIdScanModal } from './CustomerIdScanModal';
+import './CustomerIdScanModal.css'; // add
 
 // --- Types -----------------------------------------------------------------
 interface CustomerRecord {
@@ -269,6 +274,8 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
   const [editingNew, setEditingNew] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const disableSearch = !form.firstName && !form.lastName && !form.dateOfBirth;
   const { feet: heightFeet, inches: heightInches } = useMemo(() => deriveHeightParts(form.height), [form.height]);
@@ -276,6 +283,26 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
   function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) {
     setForm(prev => ({ ...prev, [k]: v }));
   }
+
+  const applyAamva = React.useCallback((d: AamvaData) => {
+    setForm(f => ({
+      ...f,
+      firstName: d.firstName ?? f.firstName,
+      middleName: d.middleName ?? f.middleName,
+      lastName: d.lastName ?? f.lastName,
+      dateOfBirth: d.dateOfBirth ?? f.dateOfBirth,
+      issueDate: d.issueDate ?? f.issueDate,
+      expirationDate: d.expirationDate ?? f.expirationDate,
+      streetAddress: d.streetAddress ?? f.streetAddress,
+      city: d.city ?? f.city,
+      stateUs: d.stateUs ?? f.stateUs,
+      zipcode: d.zipcode ?? f.zipcode,
+      sex: d.sex ?? f.sex,
+      height: d.height ?? f.height,
+      idNumber: d.idNumber ?? f.idNumber,
+      country: d.country ?? f.country
+    }));
+  }, []);
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
@@ -362,8 +389,14 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
               <button type="button" onClick={clearAll} disabled={saving}>Cancel</button>
             </>
           )}
+          {editingNew && (
+            <button type="button" onClick={() => setScanModalOpen(true)}>
+              Scan ID
+            </button>
+          )}
         </div>
         {saveError && <div className="error" role="alert" style={{ marginTop: 8 }}>{saveError}</div>}
+        {statusMessage && <div className="cp-status">{statusMessage}</div>}
 
         {/* Datalists */}
         <datalist id="eyeColors">{EYE_COLORS.map(c => <option key={c} value={c} />)}</datalist>
@@ -374,6 +407,11 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
       {!editingNew && (
         <ResultsTable results={results} loading={loading} error={error} onPick={(id, rec) => { onSelected(id); setForm(rec); }} />
       )}
+      <CustomerIdScanModal
+        open={scanModalOpen}
+        onClose={() => setScanModalOpen(false)}
+        onScanned={(data: AamvaData) => applyAamva(data)}
+      />
     </div>
   );
 }
