@@ -5,10 +5,10 @@ export interface AamvaData {
   firstName?: string;
   middleName?: string;
   lastName?: string;
-  dateOfBirth?: string;      // YYYY-MM-DD
-  issueDate?: string;        // YYYY-MM-DD
-  expirationDate?: string;   // YYYY-MM-DD
-  sex?: string;              // 'M' | 'F' | 'X'
+  dateOfBirth?: string;
+  issueDate?: string;
+  expirationDate?: string;
+  sex?: string;
   streetAddress?: string;
   city?: string;
   stateUs?: string;
@@ -16,8 +16,9 @@ export interface AamvaData {
   idNumber?: string;
   eyeColor?: string;
   hairColor?: string;
-  height?: string;           // e.g. "5'10\""
+  height?: string;
   country?: string;
+  weight?: string; // <--- ADDED
 }
 
 const AAMVA_DATE = (v?: string) => {
@@ -138,45 +139,39 @@ function parseSimpleLines(raw: string): AamvaData | null {
   return data;
 }
 
-// NEW fallback parser for non-ANSI line-based licenses (like your sample)
+// UPDATED fallback parser for non-ANSI line-based licenses (like your sample)
 function parseSimpleLinesFallback(raw: string): AamvaData | null {
-  // Normalize & split
   const lines = raw
     .replace(/\r/g, '\n')
     .split('\n')
     .map(l => l.trim());
 
-  // Keep original lines for positional indexing
   if (lines.length < 8) return null;
 
-  // Remove trailing empty/hash markers only for scanning, keep indexing separate
-  // Identify state (2 letters) line
   const stateIdx = lines.findIndex(l => /^[A-Z]{2}$/.test(l));
   if (stateIdx === -1) return null;
 
-  // Helper safe accessor
   const safe = (i: number) => (i >= 0 && i < lines.length ? lines[i].trim() : '');
 
   const state = safe(stateIdx);
-  const dobRaw = safe(stateIdx + 1);         // YYYYMMDD
-  const nameLine = safe(stateIdx + 2);       // LAST,FIRST[,MIDDLE]
-  const issueRaw = safe(stateIdx + 3);       // MMDDYYYY
-  const expRaw = safe(stateIdx + 4);         // MMDDYYYY
+  const dobRaw = safe(stateIdx + 1);
+  const nameLine = safe(stateIdx + 2);
+  const issueRaw = safe(stateIdx + 3);
+  const expRaw = safe(stateIdx + 4);
   const cityLine = safe(stateIdx + 5);
   const addr1Line = safe(stateIdx + 6);
 
-  // License / ID number heuristic:
-  // Often first line (before state) starts with a letter + digits (e.g. S250821640300)
+  // UPDATED: accept alphanumeric ID (letters allowed) and KEEP letters (no stripping).
+  // Exclude the 2‑letter state line by requiring length >= 6.
   let idNumber: string | undefined;
   for (let i = 0; i < stateIdx; i++) {
     const cand = lines[i];
-    if (/^[A-Z]\d{5,}$/.test(cand)) {
-      idNumber = cand.replace(/^[A-Z]/, ''); // strip leading letter S
+    if (/^[A-Z0-9]{6,}$/.test(cand)) {
+      idNumber = cand; // keep as-is (e.g. S250821640300)
       break;
     }
   }
 
-  // ZIP: first 5(+4) digit line after address
   let zipLine: string | undefined;
   for (let i = stateIdx + 5; i < lines.length; i++) {
     const l = lines[i];
@@ -186,25 +181,20 @@ function parseSimpleLinesFallback(raw: string): AamvaData | null {
     }
   }
 
-  // Sex: single-letter M/F/X
   const sexLine = lines.find(l => /^[MFX]$/.test(l));
-  // Height: pattern "069 IN" or "70 IN"
   const heightLine = lines.find(l => /\b\d{2,3}\s?IN\b/i.test(l));
+  const weightLine = lines.find(l => /\b\d{2,3}\s?LBS\b/i.test(l));
 
   const parseDate = (v: string): string | undefined => {
     const d = v.replace(/\D/g, '');
     if (d.length !== 8) return;
-    // If starts with 19/20 treat as YYYYMMDD else assume MMDDYYYY
     if (/^(19|20)/.test(d)) return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
     return `${d.slice(4,8)}-${d.slice(0,2)}-${d.slice(2,4)}`;
   };
 
-  let lastName = '';
-  let firstName = '';
-  let middleName: string | undefined;
+  let lastName = '', firstName = '', middleName: string | undefined;
   if (nameLine.includes(',')) {
     const parts = nameLine.split(',').map(p => p.trim()).filter(Boolean);
-    // Expected: LAST, FIRST, MIDDLE (your sample)
     lastName = parts[0] || '';
     firstName = parts[1] || '';
     middleName = parts[2];
@@ -215,40 +205,38 @@ function parseSimpleLinesFallback(raw: string): AamvaData | null {
     middleName = parts.slice(2).join(' ') || undefined;
   }
 
-  const height = (() => {
-    if (!heightLine) return undefined;
+  let height: string | undefined;
+  if (heightLine) {
     const m = heightLine.match(/(\d{2,3})\s?IN/i);
-    if (!m) return undefined;
-    const inches = parseInt(m[1], 10);
-    if (!inches) return undefined;
-    const ft = Math.floor(inches / 12);
-    const inch = inches % 12;
-    return `${ft}'${inch}"`;
-  })();
+    if (m) {
+      const inches = parseInt(m[1], 10);
+      if (inches > 0) {
+        const ft = Math.floor(inches / 12);
+        const inch = inches % 12;
+        height = `${ft}'${inch}"`;
+      }
+    }
+  }
 
-  const dob = parseDate(dobRaw);
-  const issueDate = parseDate(issueRaw);
-  const expDate = parseDate(expRaw);
-
-  const zipcode = zipLine ? zipLine.replace(/\D/g, '').slice(0, 5) : undefined;
+  const weight = weightLine ? weightLine.replace(/\D/g, '') : undefined;
 
   const data: AamvaData = {
     firstName: firstName || undefined,
     middleName,
     lastName: lastName || undefined,
-    dateOfBirth: dob,
-    issueDate,
-    expirationDate: expDate,
+    dateOfBirth: parseDate(dobRaw),
+    issueDate: parseDate(issueRaw),
+    expirationDate: parseDate(expRaw),
     city: cityLine || undefined,
     streetAddress: addr1Line || undefined,
     stateUs: /^[A-Z]{2}$/.test(state) ? state : undefined,
-    zipcode,
+    zipcode: zipLine ? zipLine.replace(/\D/g, '').slice(0, 5) : undefined,
     sex: sexLine || undefined,
     height,
-    idNumber
+    idNumber,
+    weight: weight || undefined
   };
 
-  // Require core fields
   if (!data.firstName || !data.lastName || !data.dateOfBirth) return null;
   return data;
 }

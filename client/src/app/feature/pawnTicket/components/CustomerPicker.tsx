@@ -300,7 +300,8 @@ export default function CustomerPicker({ onSelected, onCreateNew }: Props) {
       sex: d.sex ?? f.sex,
       height: d.height ?? f.height,
       idNumber: d.idNumber ?? f.idNumber,
-      country: d.country ?? f.country
+      country: d.country ?? f.country,
+      weight: d.weight ?? f.weight,
     }));
   }, []);
 
