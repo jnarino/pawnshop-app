@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.pawnTicketController = exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
+exports.categoryController = exports.pawnTicketController = exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
 const CustomerRepository_1 = require("./infrastructure/persistence/CustomerRepository");
 const ListCustomersUseCase_1 = require("./application/useCase/customer/ListCustomersUseCase");
 const GetCustomerUseCase_1 = require("./application/useCase/customer/GetCustomerUseCase");
@@ -27,10 +27,15 @@ const UpdatePawnTicketDatesUseCase_1 = require("./application/useCase/pawnTicket
 const DeletePawnTicketUseCase_1 = require("./application/useCase/pawnTicket/DeletePawnTicketUseCase");
 const pawnTicketController_1 = require("./controller/pawnTicket/pawnTicketController");
 const SearchPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/SearchPawnTicketsUseCase");
+const CategoryRepository_1 = require("./infrastructure/persistence/CategoryRepository");
+const ListCategoriesTreeUseCase_1 = require("./application/useCase/category/ListCategoriesTreeUseCase");
+const categoryControllerFactory_1 = require("./controller/category/categoryControllerFactory");
 const repo = new CustomerRepository_1.CustomerRepository();
 const inventoryRepo = new InventoryRepository_1.InventoryRepository();
 const statusRepo = new InventoryStatusRepository_1.InventoryStatusRepository();
 const pawnTicketRepo = new PawnTicketRepository_1.PawnTicketRepository();
+// Categories (same pattern as others)
+const categoryRepo = new CategoryRepository_1.CategoryRepository();
 exports.customerController = (0, customerControllerFactory_1.makeCustomerController)({
     list: new ListCustomersUseCase_1.ListCustomersUseCase(repo),
     get: new GetCustomerUseCase_1.GetCustomerUseCase(repo),
@@ -56,4 +61,7 @@ exports.pawnTicketController = (0, pawnTicketController_1.makePawnTicketControll
     updateDates: new UpdatePawnTicketDatesUseCase_1.UpdatePawnTicketDatesUseCase(pawnTicketRepo),
     delete: new DeletePawnTicketUseCase_1.DeletePawnTicketUseCase(pawnTicketRepo),
     search: new SearchPawnTicketsUseCase_1.SearchPawnTicketsUseCase(pawnTicketRepo),
+});
+exports.categoryController = (0, categoryControllerFactory_1.makeCategoryController)({
+    tree: new ListCategoriesTreeUseCase_1.ListCategoriesTreeUseCase(categoryRepo),
 });

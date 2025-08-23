@@ -22,6 +22,8 @@ const logger_1 = require("./infrastructure/log/logger");
 const requestId_1 = require("./infrastructure/http/requestId");
 const accessLog_1 = require("./infrastructure/http/accessLog");
 const securityHeaders_1 = require("./infrastructure/http/securityHeaders");
+const container_1 = require("./container");
+const categoryRoute_1 = require("./route/categoryRoute");
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
 let activeRequests = 0;
 function createApp() {
@@ -38,6 +40,7 @@ function createApp() {
     app.use('/api/pawnTicket', pawnTicketRoute_1.default);
     app.use('/api/inventory', inventoryRoute_1.default);
     app.use('/api/inventory-status', inventoryStatusRoute_1.default);
+    app.use('/inventory/categories', (0, categoryRoute_1.buildCategoryRoute)(container_1.categoryController));
     app.get('/api/health', (_req, res) => res.json({ ok: true }));
     app.get('/api/ready', async (_req, res) => { try {
         await db_1.pool.query('SELECT 1');

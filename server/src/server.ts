@@ -16,6 +16,8 @@ import { logger } from './infrastructure/log/logger';
 import { requestIdMiddleware } from './infrastructure/http/requestId';
 import { accessLog } from './infrastructure/http/accessLog';
 import { securityHeaders } from './infrastructure/http/securityHeaders';
+import { categoryController } from './container';
+import { buildCategoryRoute } from './route/categoryRoute';
 
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
 let activeRequests = 0;
@@ -35,6 +37,8 @@ export function createApp() {
   app.use('/api/pawnTicket', pawnTicketRoute);
   app.use('/api/inventory', inventoryRoute);
   app.use('/api/inventory-status', inventoryStatusRoute);
+  app.use('/inventory/categories', buildCategoryRoute(categoryController));
+
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/ready', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ready: true }); } catch { res.status(503).json({ ready: false }); } });

@@ -24,12 +24,16 @@ import { UpdatePawnTicketDatesUseCase } from './application/useCase/pawnTicket/U
 import { DeletePawnTicketUseCase } from './application/useCase/pawnTicket/DeletePawnTicketUseCase';
 import { makePawnTicketController } from './controller/pawnTicket/pawnTicketController';
 import { SearchPawnTicketsUseCase } from './application/useCase/pawnTicket/SearchPawnTicketsUseCase';
-
+import { CategoryRepository } from './infrastructure/persistence/CategoryRepository';
+import { ListCategoriesTreeUseCase } from './application/useCase/category/ListCategoriesTreeUseCase';
+import { makeCategoryController } from './controller/category/categoryControllerFactory';
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
 const statusRepo = new InventoryStatusRepository();
 const pawnTicketRepo = new PawnTicketRepository();
+// Categories (same pattern as others)
+const categoryRepo = new CategoryRepository();
 export const customerController = makeCustomerController({
     list: new ListCustomersUseCase(repo),
     get: new GetCustomerUseCase(repo),
@@ -58,4 +62,8 @@ export const pawnTicketController = makePawnTicketController({
     updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
     delete: new DeletePawnTicketUseCase(pawnTicketRepo),
     search: new SearchPawnTicketsUseCase(pawnTicketRepo),
+});
+
+export const categoryController = makeCategoryController({
+    tree: new ListCategoriesTreeUseCase(categoryRepo) as any,
 });
