@@ -1,0 +1,55 @@
+name: Release (prod)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-installer-win:
+    name: Build Windows installer
+    runs-on: windows-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (main + renderer)
+        run: |
+          npm run build:main
+          npm run build:renderer
+
+      - name: Package (NSIS)
+        run: npm run dist:win
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PawnExpress-Installer
+          path: client/dist/*.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: client/dist/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
