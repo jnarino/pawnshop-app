@@ -3,7 +3,7 @@ import { useCallback, useId, useState, useMemo } from 'react';
 import { AamvaData } from '../../../shared/hooks/useIdScan';
 import React from 'react';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
-import './CustomerIdScanModal.css'; // add
+import './CustomerIdScanModal.css';
 
 // --- Types -----------------------------------------------------------------
 interface CustomerRecord {

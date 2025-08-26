@@ -29,7 +29,7 @@ export type CustomerDTO = {
 /**
  * 2️⃣ Domain type (frontend preferred camelCase)
  */
-export type Customer = {
+export interface Customer {
     id: string;
     firstName: string;
     middleName?: string | null;
@@ -39,17 +39,22 @@ export type Customer = {
     sex?: string | null;
     eyeColor?: string | null;
     height?: string | null;
-    streetAddress: string;
-    city: string;
-    stateUs: string;
-    zipcode: string;
-    idNumber: string;
+    streetAddress?: string | null;
+    city?: string | null;
+    hairColor?: string | null;
+    stateUs?: string | null;
+    zipcode?: string | null;
+    country?: string | null;
+    race?: string | null;
+    idNumber?: string | null;
+    ssNumber?: string | null;
+    weight?: string | null;
     issueDate: string;
-    expirationDate: string;
-    issuingState: string;
+    expirationDate?: string | null;
+    issuingState?: string | null;
     phone: string;
     email?: string | null;
-};
+}
 
 /**
  * 3️⃣ Zod schema for runtime validation (matches DTO)
