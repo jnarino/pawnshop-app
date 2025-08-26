@@ -1,5 +1,5 @@
 import { ICustomerRepository } from '../../../domain/customer/ICustomerRepository';
-import { Customer } from '../../../domain/customer/Customer';
+import type { Customer } from '../../../domain/customer/Customer';
 
 export class UpdateCustomerUseCase {
     constructor(private repo: ICustomerRepository) { }

@@ -2,19 +2,24 @@ import assert from 'assert';
 import { CreateCustomerUseCase } from '../../../../application/useCase/customer/CreateCustomerUseCase';
 import { ICustomerRepository } from '../../../../domain/customer/ICustomerRepository';
 import { ValidationError } from '../../../../application/errors';
-import { Customer } from '../../../../domain/customer/Customer';
 import { test } from '../../../testHarness';
+import { Customer } from '../../../../domain/customer/Customer';
 
 class MockRepo implements ICustomerRepository {
   data: Customer[] = [];
   async findAll() { return this.data; }
   async findById(id: string) { return this.data.find(c => c.id === id) || null; }
-  async create(dto: Omit<Customer,'id'>) { const id = 'new-id'; this.data.push({ id, ...dto }); return id; }
+  async create(dto: Omit<Customer, 'id'>) { const id = 'new-id'; this.data.push({ id, ...dto }); return id; }
   async update() { return true; }
   async delete() { return true; }
+  async findByDobAndIdNumber(dateOfBirth: string, idNumber: string): Promise<Customer | null> {
+    // Reuse the mock’s data via findAll so we don’t duplicate storage logic
+    const all = await this.findAll();
+    return all.find(c => c.dateOfBirth === dateOfBirth && c.idNumber === idNumber) ?? null;
+  }
 }
 
-const base: Omit<Customer,'id'> = {
+const base: Omit<Customer, 'id'> = {
   firstName: 'Jane',
   lastName: 'Smith',
   dateOfBirth: '1980-05-05',

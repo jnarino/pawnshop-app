@@ -1,5 +1,5 @@
-import { PawnTicketRepository } from '../../../infrastructure/persistence/PawnTicketRepository';
-import { CreatePawnTicketInput } from '../../../domain/pawnTicket/PawnTicket';
+import type { IPawnTicketRepository } from '../../../domain/pawnTicket/IPawnTicketRepository';
+import type { CreatePawnTicketInput } from '../../../domain/pawnTicket/PawnTicket';
 import { ValidationError } from '../../errors';
 import { CreateInventoryItemUseCase } from '../inventory/CreateInventoryItemUseCase';
 import { CreateInventoryItemDTO } from '../../../domain/inventory/IInventoryRepository';
@@ -10,12 +10,12 @@ export interface CreatePawnTicketWithItemsInput extends CreatePawnTicketInput {
 }
 
 export class CreatePawnTicketUseCase {
-  constructor(private repo: PawnTicketRepository, private createInventoryItem: CreateInventoryItemUseCase) {}
+  constructor(private repo: IPawnTicketRepository, private createInventoryItem: CreateInventoryItemUseCase) { }
   async execute(input: CreatePawnTicketWithItemsInput): Promise<string> {
     if (!input.customerId) throw new ValidationError('customerId required');
-  const hasProvidedIds = Array.isArray(input.inventoryItemIds) && input.inventoryItemIds.length > 0;
-  const hasNewItems = Array.isArray(input.newInventoryItems) && input.newInventoryItems.length > 0;
-  if (!hasProvidedIds && !hasNewItems) throw new ValidationError('at least one inventory item required');
+    const hasProvidedIds = Array.isArray(input.inventoryItemIds) && input.inventoryItemIds.length > 0;
+    const hasNewItems = Array.isArray(input.newInventoryItems) && input.newInventoryItems.length > 0;
+    if (!hasProvidedIds && !hasNewItems) throw new ValidationError('at least one inventory item required');
     // Determine inventory item IDs: either provided or created from newInventoryItems
     let inventoryIds: string[] = [];
     if (Array.isArray(input.newInventoryItems) && input.newInventoryItems.length) {
@@ -27,7 +27,7 @@ export class CreatePawnTicketUseCase {
         const dto: CreateInventoryItemDTO = {
           ...input.newInventoryItems[i],
           status: 'in_pawn',
-          inventoryNumber: `${base}-${i+1}`,
+          inventoryNumber: `${base}-${i + 1}`,
         };
         if (!dto.categoryId) throw new ValidationError('categoryId required for new inventory item');
         const id = await this.createInventoryItem.execute(dto, { forceInPawn: true });

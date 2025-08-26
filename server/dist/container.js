@@ -30,6 +30,7 @@ const SearchPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/Sea
 const CategoryRepository_1 = require("./infrastructure/persistence/CategoryRepository");
 const ListCategoriesTreeUseCase_1 = require("./application/useCase/category/ListCategoriesTreeUseCase");
 const categoryControllerFactory_1 = require("./controller/category/categoryControllerFactory");
+const FindAllPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/FindAllPawnTicketsUseCase");
 const repo = new CustomerRepository_1.CustomerRepository();
 const inventoryRepo = new InventoryRepository_1.InventoryRepository();
 const statusRepo = new InventoryStatusRepository_1.InventoryStatusRepository();
@@ -56,6 +57,7 @@ exports.inventoryStatusController = (0, inventoryStatusControllerFactory_1.makeI
     deactivate: new DeactivateInventoryStatusUseCase_1.DeactivateInventoryStatusUseCase(statusRepo),
 });
 exports.pawnTicketController = (0, pawnTicketController_1.makePawnTicketController)({
+    findAll: new FindAllPawnTicketsUseCase_1.FindAllPawnTicketsUseCase(pawnTicketRepo),
     create: new CreatePawnTicketUseCase_1.CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(inventoryRepo)),
     get: new GetPawnTicketUseCase_1.GetPawnTicketUseCase(pawnTicketRepo),
     updateDates: new UpdatePawnTicketDatesUseCase_1.UpdatePawnTicketDatesUseCase(pawnTicketRepo),

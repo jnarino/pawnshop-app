@@ -16,6 +16,11 @@ class MockRepo {
     async create(dto) { const id = 'new-id'; this.data.push({ id, ...dto }); return id; }
     async update() { return true; }
     async delete() { return true; }
+    async findByDobAndIdNumber(dateOfBirth, idNumber) {
+        // Reuse the mock’s data via findAll so we don’t duplicate storage logic
+        const all = await this.findAll();
+        return all.find(c => c.dateOfBirth === dateOfBirth && c.idNumber === idNumber) ?? null;
+    }
 }
 const base = {
     firstName: 'Jane',

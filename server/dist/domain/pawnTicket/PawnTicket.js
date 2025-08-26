@@ -82,6 +82,7 @@ function buildPawnTicket(id, input, now = new Date()) {
         controlNumber: input.controlNumber,
         type: input.type,
         customerId: input.customerId,
+        pawnStatus: 'active',
         inventoryItemIds: input.inventoryItemIds,
         amountFinanced,
         financeCharge,

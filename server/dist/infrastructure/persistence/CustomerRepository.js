@@ -35,6 +35,11 @@ function mapRowToCustomer(r) {
     };
 }
 class CustomerRepository {
+    async findByDobAndIdNumber(dateOfBirth, idNumber) {
+        const sql = (0, sqlLoader_1.getSQL)('query', 'customer', 'findCustomerByDobAndIdNumber');
+        const { rows } = await db_1.pool.query(sql, [dateOfBirth, idNumber]);
+        return rows[0] ? mapRowToCustomer(rows[0]) : null;
+    }
     async findAll(limit, offset, filters) {
         const baseRaw = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers'); // may end with semicolon
         const base = baseRaw.replace(/;\s*$/, '');

@@ -5,8 +5,10 @@ import { UpdatePawnTicketDatesUseCase } from '../../application/useCase/pawnTick
 import { DeletePawnTicketUseCase } from '../../application/useCase/pawnTicket/DeletePawnTicketUseCase';
 import { SearchPawnTicketsUseCase } from '../../application/useCase/pawnTicket/SearchPawnTicketsUseCase';
 import { ValidationError, NotFoundError } from '../../application/errors';
+import { FindAllPawnTicketsUseCase } from '../../application/useCase/pawnTicket/FindAllPawnTicketsUseCase';
 
 export interface PawnTicketController {
+    findAll: (req: Request, res: Response, next: NextFunction) => Promise<void>;
     search: (req: Request, res: Response, next: NextFunction) => Promise<void>;
     create: (req: Request, res: Response, next: NextFunction) => Promise<void>;
     get: (req: Request, res: Response, next: NextFunction) => Promise<void>;
@@ -15,29 +17,39 @@ export interface PawnTicketController {
 }
 
 export function makePawnTicketController(deps: {
+    findAll: FindAllPawnTicketsUseCase;
     create: CreatePawnTicketUseCase;
     get: GetPawnTicketUseCase;
     updateDates: UpdatePawnTicketDatesUseCase;
     delete: DeletePawnTicketUseCase;
-        search: SearchPawnTicketsUseCase;
+    search: SearchPawnTicketsUseCase;
 }): PawnTicketController {
     const wrap = (fn: any) => async (req: Request, res: Response, next: NextFunction) => { try { await fn(req, res); } catch (e) { next(e); } };
     return {
+        findAll: wrap(async (req: Request, res: Response) => {
+            const { limit, offset, customerId, pawnStatus } = req.query as any;
+            const data = await deps.findAll.execute(
+                limit ? Number(limit) : undefined,
+                offset ? Number(offset) : undefined,
+                { customerId, pawnStatus }
+            );
+            res.json(data);
+        }),
         create: wrap(async (req: Request, res: Response) => {
             const id = await deps.create.execute(req.body);
             res.status(201).json({ id });
         }),
-            search: wrap(async (req: Request, res: Response) => {
-                const results = await deps.search.execute({
-                    customerId: req.query.customerId as string | undefined,
-                    type: req.query.type as any,
-                    startDate: req.query.startDate as string | undefined,
-                    endDate: req.query.endDate as string | undefined,
-                    limit: req.query.limit ? Number(req.query.limit) : undefined,
-                    offset: req.query.offset ? Number(req.query.offset) : undefined,
-                });
-                res.json(results);
-            }),
+        search: wrap(async (req: Request, res: Response) => {
+            const results = await deps.search.execute({
+                customerId: req.query.customerId as string | undefined,
+                type: req.query.type as any,
+                startDate: req.query.startDate as string | undefined,
+                endDate: req.query.endDate as string | undefined,
+                limit: req.query.limit ? Number(req.query.limit) : undefined,
+                offset: req.query.offset ? Number(req.query.offset) : undefined,
+            });
+            res.json(results);
+        }),
         get: wrap(async (req: Request, res: Response) => {
             const ticket = await deps.get.execute(req.params.id);
             if (!ticket) throw new NotFoundError('pawnTicket not found');

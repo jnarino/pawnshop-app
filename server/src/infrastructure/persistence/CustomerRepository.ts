@@ -36,9 +36,15 @@ export function mapRowToCustomer(r: any): Customer { // exported for tests
 }
 
 export class CustomerRepository implements ICustomerRepository {
+    async findByDobAndIdNumber(dateOfBirth: string, idNumber: string): Promise<Customer | null> {
+        const sql = getSQL('query', 'customer', 'findCustomerByDobAndIdNumber');
+        const { rows } = await pool.query(sql, [dateOfBirth, idNumber]);
+        return rows[0] ? mapRowToCustomer(rows[0]) : null;
+    }
+
     async findAll(limit?: number, offset?: number, filters?: { firstName?: string; lastName?: string; dateOfBirth?: string }): Promise<Customer[]> {
-    const baseRaw = getSQL('query', 'customer', 'findAllCustomers'); // may end with semicolon
-    const base = baseRaw.replace(/;\s*$/, '');
+        const baseRaw = getSQL('query', 'customer', 'findAllCustomers'); // may end with semicolon
+        const base = baseRaw.replace(/;\s*$/, '');
         const where: string[] = [];
         const params: any[] = [];
         if (filters?.firstName) { params.push(filters.firstName + '%'); where.push(`first_name ILIKE $${params.length}`); }
@@ -57,8 +63,8 @@ export class CustomerRepository implements ICustomerRepository {
             }
         }
         // Pagination
-    if (typeof limit === 'number') { params.push(limit); sql += `\nLIMIT $${params.length}`; }
-    if (typeof offset === 'number') { params.push(offset); sql += `\nOFFSET $${params.length}`; }
+        if (typeof limit === 'number') { params.push(limit); sql += `\nLIMIT $${params.length}`; }
+        if (typeof offset === 'number') { params.push(offset); sql += `\nOFFSET $${params.length}`; }
         const { rows } = await pool.query(sql, params);
         return rows.map(mapRowToCustomer);
     }

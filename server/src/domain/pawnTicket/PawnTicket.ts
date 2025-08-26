@@ -11,12 +11,15 @@
 // For PURCHASE transactions: purchaseTradeValue required; finance-related fields are null.
 
 export type PawnTicketType = 'PAWN' | 'PURCHASE';
+export type PawnStatus = 'active' | 'defaulted' | 'police hold' | 'confiscation';
+
 
 export interface PawnTicket {
   id: string;
   controlNumber?: string;            // human-readable control / form number
   type: PawnTicketType;
   customerId: string;
+  pawnStatus: PawnStatus;
   inventoryItemIds: string[];        // pledged or purchased items
 
   // Core financials (pawn only)
@@ -118,6 +121,7 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     controlNumber: input.controlNumber,
     type: input.type,
     customerId: input.customerId,
+    pawnStatus: 'active',
     inventoryItemIds: input.inventoryItemIds,
     amountFinanced,
     financeCharge,

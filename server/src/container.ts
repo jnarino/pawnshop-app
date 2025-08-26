@@ -27,6 +27,7 @@ import { SearchPawnTicketsUseCase } from './application/useCase/pawnTicket/Searc
 import { CategoryRepository } from './infrastructure/persistence/CategoryRepository';
 import { ListCategoriesTreeUseCase } from './application/useCase/category/ListCategoriesTreeUseCase';
 import { makeCategoryController } from './controller/category/categoryControllerFactory';
+import { FindAllPawnTicketsUseCase } from './application/useCase/pawnTicket/FindAllPawnTicketsUseCase';
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
@@ -57,6 +58,7 @@ export const inventoryStatusController = makeInventoryStatusController({
 });
 
 export const pawnTicketController = makePawnTicketController({
+    findAll: new FindAllPawnTicketsUseCase(pawnTicketRepo),
     create: new CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase(inventoryRepo)),
     get: new GetPawnTicketUseCase(pawnTicketRepo),
     updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),

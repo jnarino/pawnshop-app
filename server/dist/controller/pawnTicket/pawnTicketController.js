@@ -10,6 +10,11 @@ function makePawnTicketController(deps) {
         next(e);
     } };
     return {
+        findAll: wrap(async (req, res) => {
+            const { limit, offset, customerId, pawnStatus } = req.query;
+            const data = await deps.findAll.execute(limit ? Number(limit) : undefined, offset ? Number(offset) : undefined, { customerId, pawnStatus });
+            res.json(data);
+        }),
         create: wrap(async (req, res) => {
             const id = await deps.create.execute(req.body);
             res.status(201).json({ id });
