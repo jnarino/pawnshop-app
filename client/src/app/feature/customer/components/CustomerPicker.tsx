@@ -5,6 +5,7 @@ import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
+import './CustomerPicker.css'; // add this line
 
 // --- Props -----------------------------------------------------------------
 interface Props {
@@ -17,9 +18,9 @@ interface Props {
 // --- Constants -------------------------------------------------------------
 const EYE_COLORS = ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Amber', 'Black'] as const;
 const HAIR_COLORS = ['Brown', 'Black', 'Blonde', 'Red', 'Gray', 'White', 'Bald', 'Auburn'] as const;
-const RACES = ['White','Black or African American','Asian','Native American','Pacific Islander','Hispanic','Other'] as const;
+const RACES = ['White', 'Black or African American', 'Asian', 'Native American', 'Pacific Islander', 'Hispanic', 'Other'] as const;
 const COUNTRIES = ['United States', 'Canada', 'Mexico', 'United Kingdom', 'China', 'India', 'Brazil'] as const;
-const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] as const;
+const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
 
 // --- Utilities -------------------------------------------------------------
 function formatPhone(raw: string): string {
@@ -264,17 +265,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     }
   }
 
-  const layoutColumns = editingNew ? '1fr' : '1fr 420px';
+  const containerClass = 'customer-lookup' + (editingNew ? ' is-editing-new' : '');
 
   return (
-    <div className="customer-lookup" style={{ display: 'grid', gridTemplateColumns: layoutColumns, gap: 16 }}>
+    <div className={containerClass}>
       <form onSubmit={search} aria-label="Customer search / create">
         <IdentityContactSection form={form} update={update} editing={editingNew} />
         <AddressSection form={form} update={update} editing={editingNew} />
         <GovernmentIdSection form={form} update={update} editing={editingNew} />
         <PhysicalTraitsSection form={form} update={update} editing={editingNew} setHeight={setHeight} heightFeet={heightFeet} heightInches={heightInches} />
 
-        <div className="actions-row" style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <div className="actions-row">
           {!editingNew && (
             <>
               <button type="submit" disabled={disableSearch || loading}>{loading ? 'Searching…' : 'Find'}</button>
@@ -286,11 +287,12 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
             <>
               <button type="button" onClick={saveNew} disabled={saving}>{saving ? 'Saving…' : 'Save Customer'}</button>
               <button type="button" onClick={clearAll} disabled={saving}>Cancel</button>
+              <button type="button" onClick={() => setScanModalOpen(true)}>Scan ID</button>
             </>
           )}
-          {editingNew && <button type="button" onClick={() => setScanModalOpen(true)}>Scan ID</button>}
         </div>
-        {saveError && <div className="error" role="alert" style={{ marginTop: 8 }}>{saveError}</div>}
+
+        {saveError && <div className="error" role="alert">{saveError}</div>}
         {statusMessage && <div className="cp-status">{statusMessage}</div>}
 
         <datalist id="eyeColors">{EYE_COLORS.map(c => <option key={c} value={c} />)}</datalist>
