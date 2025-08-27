@@ -3,15 +3,16 @@ import React, { useState } from 'react';
 import './PawnTicketCreatePage.css';
 
 import NewPawnTab from './components/NewPawnTab';
-import type { Customer } from '../../../../../server/src/domain/customer/Customer'; // type-only
-import CustomerPicker from './components/CustomerPicker';
+// Use client DTO type (don’t import server domain types in the client)
+import type { Customer as CustomerDto } from '../customer/types';
+import CustomerPicker from '../../feature/customer/components/CustomerPicker';
 
 type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'history';
 
 export default function PawnTicketCreatePage() {
     const [customerId, setCustomerId] = useState<string | null>(null);
     const [active, setActive] = useState<TabKey>('customer');
-    const [customer, setCustomer] = useState<Customer | null>(null);
+    const [customer, setCustomer] = useState<CustomerDto | null>(null);
 
     function goto(tab: TabKey) { setActive(tab); }
 
@@ -23,20 +24,9 @@ export default function PawnTicketCreatePage() {
         { key: 'history', label: '5 History', disabled: !customerId },
     ];
 
-    const submit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!customer) { alert('Select a customer'); return; }
-        // build your payload without embedding a customer form
-        const payload = {
-            // ...other fields...
-            customerId: customer.id,
-            // inventoryItemIds / newInventoryItems as needed
-        };
-        // ...post to API...
-    };
-
     return (
-        <form onSubmit={submit}>
+        // Note: no outer <form> to avoid nesting with CustomerPicker’s form
+        <div className="pawn-flow-page">
             <div className="pawn-flow">
                 <nav className="pawn-tabs" aria-label="Pawn ticket steps">
                     {tabs.map(t => (
@@ -54,8 +44,10 @@ export default function PawnTicketCreatePage() {
                 {active === 'customer' && (
                     <div className="pawn-panel">
                         <CustomerPicker
+                            value={customer}
+                            onChange={setCustomer}
                             onSelected={(id) => { setCustomerId(id); setActive('newPawn'); }}
-                            onCreateNew={(id) => { setCustomerId(id); /* stay on customer tab until saved */ }}
+                            onCreateNew={(tempId) => { setCustomerId(tempId); /* stay on customer tab until saved */ }}
                         />
                         <p className="hint">Pick an existing customer or create a new one to continue.</p>
                     </div>
@@ -92,16 +84,6 @@ export default function PawnTicketCreatePage() {
                     </div>
                 )}
             </div>
-            {/* Reusable picker */}
-            <CustomerPicker onSelected={function (id: string): void {
-                throw new Error('Function not implemented.');
-            }} onCreateNew={function (id: string): void {
-                throw new Error('Function not implemented.');
-            }} />
-
-            {/* ...existing pawn ticket fields... */}
-
-            <button type="submit">Create Ticket</button>
-        </form>
+        </div>
     );
 }

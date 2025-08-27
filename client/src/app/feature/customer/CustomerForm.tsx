@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCustomerIdSearch, NotFoundInfo } from '../../shared/hooks/useCustomerIdSearch';
-import CustomerNotFoundModal from '../pawnTicket/components/CustomerNotFoundModal';
+import CustomerNotFoundModal from './components/CustomerNotFoundModal';
 
 export function CustomerForm() {
   const [form, setForm] = useState<any>({});

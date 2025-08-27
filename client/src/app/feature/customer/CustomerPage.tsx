@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CustomerPicker } from './components/CustomerPicker';
-import { Customer } from '../../../../../server/src/domain/customer/Customer';
+
+import type { Customer } from './types'; // use client type, not server
+import CustomerPicker from './components/CustomerPicker';
 
 
 export default function CustomerPage() {
@@ -8,8 +9,8 @@ export default function CustomerPage() {
     return (
         <div>
             <h2>Customers</h2>
-            <CustomerPicker value={picked} onChange={setPicked} />
-            {/* render details/edit using picked */}
+           {/* <CustomerPicker value={picked} onChange={setPicked} /> */}
+
         </div>
     );
 }
