@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useBarcodeScan } from '../../../shared/hooks/useBarcodeScan';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { JEWELRY_COLORS, JEWELRY_METALS, KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 
 export interface InventoryItemDraft {
   id?: string; // local uuid
@@ -61,6 +62,17 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     }
     onSave({ ...draft, id: draft.id || crypto.randomUUID() });
   }
+
+  // Helpers
+  const canonicalMetalKey = useMemo(() => {
+    const m = (draft.metal || '').trim().toLowerCase();
+    if (!m) return undefined;
+    return Object.keys(KARAT_OPTIONS_BY_METAL).find(k => k.toLowerCase() === m);
+  }, [draft.metal]);
+
+  const karatOptions = useMemo(() => {
+    return canonicalMetalKey ? KARAT_OPTIONS_BY_METAL[canonicalMetalKey] : [];
+  }, [canonicalMetalKey]);
 
   // Auto-show extras based on selected Type code
   const isJewelry = (draft.type || '').toLowerCase() === 'jewelry';
@@ -137,12 +149,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 {brandOptions.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
               </select>
             </label>
-
-            {/* Optional free subcategory 2 if you still use it */}
-            <label>Subcategory 2
-              <input value={draft.sub2 || ''} onChange={e => update('sub2', e.target.value)} />
-            </label>
-
             <label>Model
               <input value={draft.model || ''} onChange={e => update('model', e.target.value)} />
             </label>
@@ -150,7 +156,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <input value={draft.serial || ''} onChange={e => update('serial', e.target.value)} />
             </label>
             <label>Color
-              <input value={draft.color || ''} onChange={e => update('color', e.target.value)} />
+              <input list="jewelryColors" value={draft.color || ''} onChange={e => update('color', e.target.value)} />
             </label>
             <label>Owner
               <input value={draft.ownerNumber || ''} onChange={e => update('ownerNumber', e.target.value)} />
@@ -165,10 +171,21 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             {/* Jewelry extras */}
             {isJewelry && <>
               <label>Metal
-                <input value={draft.metal || ''} onChange={e => update('metal', e.target.value)} />
+                <input
+                  list="jewelryMetals"
+                  value={draft.metal || ''}
+                  onChange={e => setDraft(d => ({ ...d, metal: e.target.value, karat: undefined }))}
+                />
               </label>
-              <label>Karat
-                <input value={draft.karat || ''} onChange={e => update('karat', e.target.value)} />
+              <label>Karat / Fineness
+                {karatOptions.length > 0 ? (
+                  <select value={draft.karat || ''} onChange={e => update('karat', e.target.value)}>
+                    <option value="" />
+                    {karatOptions.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                ) : (
+                  <input value={draft.karat || ''} onChange={e => update('karat', e.target.value)} placeholder="e.g. 14K, .925" />
+                )}
               </label>
               <label>Weight
                 <div className="flex">
@@ -218,6 +235,14 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <button type="button" onClick={onCancel}>Cancel</button>
             <button type="submit">{initial ? 'Update' : 'Add Item'}</button>
           </div>
+
+          {/* Datalists for autofill */}
+          <datalist id="jewelryColors">
+            {JEWELRY_COLORS.map(c => <option key={c} value={c} />)}
+          </datalist>
+          <datalist id="jewelryMetals">
+            {JEWELRY_METALS.map(m => <option key={m} value={m} />)}
+          </datalist>
         </form>
 
         <div className="toolbar">
