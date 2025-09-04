@@ -1,33 +1,37 @@
 import { useMemo, useState } from 'react';
 import InventoryItemModal, { InventoryItemDraft } from './InventoryItemModal';
+import type { PawnDraft } from '../types';
 
 interface Props {
   customerId: string;
+  draft: PawnDraft;
+  setDraft: React.Dispatch<React.SetStateAction<PawnDraft>>;
   onBack(): void;
 }
 
-export default function PawnTicketForm({ customerId, onBack }: Props) {
-  const [type, setType] = useState<'PAWN' | 'PURCHASE'>('PAWN');
-  // Rate in percent for the UI; submit converts to decimal
-  const [ratePercent, setRatePercent] = useState<string>('25'); // default 25%
-  const [controlNumber, setControlNumber] = useState('');
-  const [items, setItems] = useState<InventoryItemDraft[]>([]);
+export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: Props) {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
+  const updateDraft = (patch: Partial<PawnDraft>) =>
+    setDraft(prev => ({ ...prev, ...patch }));
+
   function upsertItem(item: InventoryItemDraft) {
-    setItems(prev => {
-      const idx = prev.findIndex(p => p.id === item.id);
-      if (idx === -1) return [...prev, item];
-      const copy = [...prev];
-      copy[idx] = item;
-      return copy;
+    setDraft(prev => {
+      const idx = prev.items.findIndex(p => p.id === item.id);
+      if (idx === -1) return { ...prev, items: [...prev.items, item] };
+      const next = [...prev.items];
+      next[idx] = item;
+      return { ...prev, items: next };
     });
   }
-  function removeItem(id?: string) { if (!id) return; setItems(prev => prev.filter(it => it.id !== id)); }
+  function removeItem(id?: string) {
+    if (!id) return;
+    setDraft(prev => ({ ...prev, items: prev.items.filter(it => it.id !== id) }));
+  }
   function openNewItem() { setEditingItem(null); setItemModalOpen(true); }
   function openEditItem(it: InventoryItemDraft) { setEditingItem(it); setItemModalOpen(true); }
 
@@ -43,23 +47,23 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
 
   // Derived totals
   const itemsTotal = useMemo(
-    () => (items ?? []).reduce((sum, it) => sum + toMoney(it.amount) * toQty((it as any).quantity), 0),
-    [items]
+    () => (draft.items ?? []).reduce((sum, it) => sum + toMoney(it.amount) * toQty((it as any).quantity), 0),
+    [draft.items]
   );
 
   // Clamp rate percent between 10 and 25
   function setClampedRatePercent(v: string) {
     const num = parseFloat(v);
-    if (!Number.isFinite(num)) { setRatePercent(''); return; }
+    if (!Number.isFinite(num)) { updateDraft({ ratePercent: '' }); return; }
     const clamped = Math.min(25, Math.max(10, num));
-    setRatePercent(String(clamped));
+    updateDraft({ ratePercent: String(clamped) });
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setSaving(true); setCreatedId(null);
     try {
-      const newInventoryItems = items.map(it => ({
+      const newInventoryItems = draft.items.map(it => ({
         categoryId: it.type,
         itemDescription: buildDescription(it),
         amount: it.amount ? Number(toMoney(it.amount)) : undefined,
@@ -81,15 +85,15 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
       }));
 
       const body: any = {
-        type,
-        customerId,
-        controlNumber: controlNumber || undefined,
+        type: draft.type,
+        customerId,                              // whichever customer is currently selected
+        controlNumber: draft.controlNumber || undefined,
         newInventoryItems,
       };
 
-      if (type === 'PAWN') {
+      if (draft.type === 'PAWN') {
         body.amountFinanced = itemsTotal;                         // auto-sum
-        body.periodicRate = (parseFloat(ratePercent) || 0) / 100; // convert percent -> decimal
+        body.periodicRate = (parseFloat(draft.ratePercent) || 0) / 100; // percent -> decimal
       }
 
       const res = await fetch('http://localhost:3000/api/pawnTicket', {
@@ -115,17 +119,17 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
       <form onSubmit={submit} className="pawn-ticket-layout">
         <section className="pawn-ticket-left">
           <div className="row"><label>Type
-            <select value={type} onChange={e => setType(e.target.value as any)}>
+            <select value={draft.type} onChange={e => updateDraft({ type: e.target.value as PawnDraft['type'] })}>
               <option value="PAWN">Pawn</option>
               <option value="PURCHASE">Purchase</option>
             </select>
           </label></div>
 
           <div className="row"><label>Control #
-            <input value={controlNumber} onChange={e => setControlNumber(e.target.value)} placeholder="e.g. 1000" />
+            <input value={draft.controlNumber} onChange={e => updateDraft({ controlNumber: e.target.value })} placeholder="e.g. 1000" />
           </label></div>
 
-          {type === 'PAWN' && <>
+          {draft.type === 'PAWN' && <>
             <div className="row"><label>Amount Financed
               <input
                 value={itemsTotal.toFixed(2)}
@@ -142,7 +146,7 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
                   min={10}
                   max={25}
                   step="0.01"
-                  value={ratePercent}
+                  value={draft.ratePercent}
                   onChange={e => setClampedRatePercent(e.target.value)}
                   placeholder="25"
                   aria-label="Rate percent"
@@ -172,7 +176,7 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
             <table className="items-table">
               <thead><tr><th>Type</th><th>Brand</th><th>Desc</th><th>Amount</th><th /></tr></thead>
               <tbody>
-                {items.map(it => (
+                {draft.items.map(it => (
                   <tr key={it.id}>
                     <td>{it.type}</td>
                     <td>{it.brand || ''}</td>
@@ -186,7 +190,7 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
                     </td>
                   </tr>
                 ))}
-                {items.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', fontStyle: 'italic' }}>No items</td></tr>}
+                {draft.items.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', fontStyle: 'italic' }}>No items</td></tr>}
               </tbody>
             </table>
           </div>
@@ -195,7 +199,7 @@ export default function PawnTicketForm({ customerId, onBack }: Props) {
           {createdId && <div className="success" style={{ marginTop: 8 }}>Created Ticket ID: {createdId}</div>}
 
           <div className="actions-row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>
-            <button type="submit" disabled={saving || (type === 'PAWN' && itemsTotal <= 0)}>Save Pawn Ticket</button>
+            <button type="submit" disabled={saving || (draft.type === 'PAWN' && itemsTotal <= 0)}>Save Pawn Ticket</button>
           </div>
         </section>
       </form>
