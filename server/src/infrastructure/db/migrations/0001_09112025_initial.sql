@@ -91,8 +91,8 @@ CREATE INDEX IF NOT EXISTS session_user_idx ON session(user_id);
 INSERT INTO app_user (username, password_hash, first_name, last_name, is_active)
 VALUES (
 		'admin',
-    '$argon2id$v=19$m=65536,t=3,p=4$oMsE07oMFJ3aaU5sjkoxmA$E+zNFg6jX8oOT1sqf647JfRRWo956qHXGnTo8zdV7YM',
-    'System','Admin', TRUE
+        '$argon2id$v=19$m=65536,t=3,p=4$oMsE07oMFJ3aaU5sjkoxmA$E+zNFg6jX8oOT1sqf647JfRRWo956qHXGnTo8zdV7YM',
+        'System','Admin', TRUE
 )
 ON CONFLICT (username) DO NOTHING;
 

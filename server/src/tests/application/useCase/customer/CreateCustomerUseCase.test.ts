@@ -29,15 +29,16 @@ const base: Omit<Customer, 'id'> = {
   streetAddress: '1 First St',
   city: 'Metro',
   stateUs: 'CA',
-  zipcode: '90001',
+
+  zipCode: '90001',
   idNumber: 'ID999',
-  issueDate: '2020-01-01',
-  expirationDate: '2030-01-01',
-  issuingState: 'CA',
-  phone: '555-2222',
+  idIssueDate: '2020-01-01',
+  idExpiration: '2030-01-01',
+  idState: 'CA',
+  phoneNumber: '555-2222',
   email: 'jane@example.com',
   middleName: undefined,
-  suffix: undefined,
+
 };
 
 test('application/useCase/customer: CreateCustomerUseCase creates customer', async () => {

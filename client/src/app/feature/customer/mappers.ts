@@ -1,6 +1,6 @@
 import type { Customer as CustomerDto } from './types';
 
-// UI form model (kept internal to the feature)
+// UI form model updated to new naming.
 export interface CustomerRecord {
   id?: string;
   firstName: string;
@@ -8,23 +8,22 @@ export interface CustomerRecord {
   lastName: string;
   dateOfBirth?: string;
   sex?: string;
-  height?: string; // e.g. 5'11"
+  height?: string;
   streetAddress?: string;
   city?: string;
   stateUs?: string;
-  zipcode?: string;
-  phone?: string;
+  zipCode?: string;        // was zipcode
+  phoneNumber?: string;    // was phone
   email?: string;
   hairColor?: string;
   eyeColor?: string;
   race?: string;
-  country?: string;
   weight?: string;
   ssNumber?: string;
   idNumber?: string;
-  issueDate?: string;
-  expirationDate?: string;
-  issuingState?: string;
+  idIssueDate?: string;    // was issueDate
+  idExpiration?: string;   // was expirationDate
+  idState?: string;        // was issuingState
 }
 
 // DTO -> UI
@@ -33,27 +32,26 @@ export function dtoToRecord(c?: CustomerDto | null): CustomerRecord {
   return {
     id: c.id,
     firstName: c.firstName,
-    middleName: (c as any).middleName ?? undefined,
+    middleName: c.middleName ?? undefined,
     lastName: c.lastName,
-    dateOfBirth: (c as any).dateOfBirth ?? undefined,
-    sex: (c as any).sex ?? undefined,
-    height: (c as any).height ?? undefined,
-    streetAddress: (c as any).streetAddress ?? undefined,
-    city: (c as any).city ?? undefined,
-    stateUs: (c as any).stateUs ?? undefined,
-    zipcode: (c as any).zipcode ?? undefined,
-    phone: (c as any).phone ?? undefined,
-    email: (c as any).email ?? undefined,
-    hairColor: (c as any).hairColor ?? undefined,
-    eyeColor: (c as any).eyeColor ?? undefined,
-    race: (c as any).race ?? undefined,
-    country: (c as any).country ?? undefined,
-    weight: (c as any).weight ?? undefined,
-    ssNumber: (c as any).ssNumber ?? undefined,
-    idNumber: (c as any).idNumber ?? undefined,
-    issueDate: (c as any).issueDate ?? undefined,
-    expirationDate: (c as any).expirationDate ?? undefined,
-    issuingState: (c as any).issuingState ?? undefined,
+    dateOfBirth: c.dateOfBirth ?? undefined,
+    sex: c.sex ?? undefined,
+    height: c.height ?? undefined,
+    streetAddress: c.streetAddress ?? undefined,
+    city: c.city ?? undefined,
+    stateUs: c.stateUs ?? undefined,
+    zipCode: c.zipCode ?? undefined,
+    phoneNumber: c.phoneNumber ?? undefined,
+    email: c.email ?? undefined,
+    hairColor: c.hairColor ?? undefined,
+    eyeColor: c.eyeColor ?? undefined,
+    race: c.race ?? undefined,
+    weight: c.weight ?? undefined,
+    ssNumber: c.ssNumber ?? undefined,
+    idNumber: c.idNumber ?? undefined,
+    idIssueDate: c.idIssueDate ?? undefined,
+    idExpiration: c.idExpiration ?? undefined,
+    idState: c.idState ?? undefined,
   };
 }
 
@@ -64,54 +62,59 @@ export function recordToDto(r: CustomerRecord, id?: string): CustomerDto {
     firstName: r.firstName,
     middleName: r.middleName ?? null,
     lastName: r.lastName,
-    suffix: null as any,
-    dateOfBirth: r.dateOfBirth ?? '',
-    sex: (r.sex ?? null) as any,
-    eyeColor: (r.eyeColor ?? null) as any,
-    height: (r.height ?? null) as any,
-    streetAddress: r.streetAddress ?? null as any,
-    city: r.city ?? null as any,
-    hairColor: (r.hairColor ?? null) as any,
-    stateUs: r.stateUs ?? null as any,
-    zipcode: r.zipcode ?? null as any,
-    country: (r.country ?? null) as any,
-    race: (r.race ?? null) as any,
-    idNumber: (r.idNumber ?? null) as any,
-    ssNumber: (r.ssNumber ?? null) as any,
-    weight: (r.weight ?? null) as any,
-    issueDate: r.issueDate ?? '',
-    expirationDate: (r.expirationDate ?? null) as any,
-    issuingState: (r.issuingState ?? null) as any,
-    phone: r.phone ?? '',
-    email: (r.email ?? null) as any,
-  };
+    dateOfBirth: r.dateOfBirth ?? null,
+    sex: r.sex ?? null,
+    height: r.height ?? null,
+    weight: r.weight ?? null,
+    hairColor: r.hairColor ?? null,
+    eyeColor: r.eyeColor ?? null,
+    race: r.race ?? null,
+    streetAddress: r.streetAddress ?? null,
+    city: r.city ?? null,
+    stateUs: r.stateUs ?? null,
+    zipCode: r.zipCode ?? null,
+    phoneNumber: r.phoneNumber ?? null,
+    email: r.email ?? null,
+    idNumber: r.idNumber ?? null,
+    idIssueDate: r.idIssueDate ?? null,
+    idExpiration: r.idExpiration ?? null,
+    idState: r.idState ?? null,
+    ssNumber: r.ssNumber ?? null,
+    // unused optional fields set null
+    idType: null,
+    marks: null,
+    birthCity: null,
+    birthState: null,
+    birthCountry: null,
+    createdAt: undefined,
+    updatedAt: undefined,
+  } as CustomerDto;
 }
 
-// Optional: normalize snake_case API payloads -> CustomerRecord
+// API snake_case -> UI record (tolerates old & new)
 export function apiToRecordLoose(c: any): CustomerRecord {
   return {
     id: c.id,
-    firstName: c.firstName ?? c.first_name,
+    firstName: c.firstName ?? c.first_name ?? '',
     middleName: c.middleName ?? c.middle_name ?? undefined,
-    lastName: c.lastName ?? c.last_name,
-    dateOfBirth: c.dateOfBirth ?? c.date_of_birth,
+    lastName: c.lastName ?? c.last_name ?? '',
+    dateOfBirth: c.dateOfBirth ?? c.date_of_birth ?? undefined,
     sex: c.sex ?? undefined,
     height: c.height ?? undefined,
-    streetAddress: c.streetAddress ?? c.street_address,
+    streetAddress: c.streetAddress ?? c.street_address ?? undefined,
     city: c.city ?? undefined,
-    stateUs: c.stateUs ?? c.state_us,
-    zipcode: c.zipcode ?? c.zip_code,
-    phone: c.phone ?? c.phone_number,
+    stateUs: c.stateUs ?? c.state_us ?? undefined,
+    zipCode: c.zipCode ?? c.zip_code ?? undefined,
+    phoneNumber: c.phoneNumber ?? c.phone_number ?? undefined,
     email: c.email ?? undefined,
-    hairColor: c.hairColor ?? c.hair_color,
-    eyeColor: c.eyeColor ?? c.eye_color,
+    hairColor: c.hairColor ?? c.hair_color ?? undefined,
+    eyeColor: c.eyeColor ?? c.eye_color ?? undefined,
     race: c.race ?? undefined,
-    country: c.country ?? undefined,
     weight: c.weight ?? undefined,
-    ssNumber: c.ssNumber ?? c.ss_number,
-    idNumber: c.idNumber ?? c.id_number,
-    issueDate: c.issueDate ?? c.id_issue_date,
-    expirationDate: c.expirationDate ?? c.id_expiration,
-    issuingState: c.issuing_state ?? c.issuingState,
+    ssNumber: c.ssNumber ?? c.ss_number ?? undefined,
+    idNumber: c.idNumber ?? c.id_number ?? undefined,
+    idIssueDate: c.idIssueDate ?? c.id_issue_date ?? undefined,
+    idExpiration: c.idExpiration ?? c.id_expiration ?? undefined,
+    idState: c.idState ?? c.id_state ?? undefined,
   };
 }

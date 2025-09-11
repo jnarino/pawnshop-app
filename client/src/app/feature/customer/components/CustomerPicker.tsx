@@ -19,7 +19,6 @@ interface Props {
 const EYE_COLORS = ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Amber', 'Black'] as const;
 const HAIR_COLORS = ['Brown', 'Black', 'Blonde', 'Red', 'Gray', 'White', 'Bald', 'Auburn'] as const;
 const RACES = ['White', 'Black or African American', 'Asian', 'Native American', 'Pacific Islander', 'Hispanic', 'Other'] as const;
-const COUNTRIES = ['United States', 'Canada', 'Mexico', 'United Kingdom', 'China', 'India', 'Brazil'] as const;
 const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
 
 // --- Utilities -------------------------------------------------------------
@@ -54,7 +53,7 @@ const IdentityContactSection = ({ form, update, editing }: SectionProps) => (
       <label>Middle <input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" /></label>
       <label>Last Name * <input value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Last" /></label>
       <label>Date of Birth <input type="date" value={form.dateOfBirth || ''} onChange={e => update('dateOfBirth', e.target.value || undefined)} /></label>
-      <label>Phone <input value={form.phone || ''} onChange={e => update('phone', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" /></label>
+      <label>Phone <input value={form.phoneNumber || ''} onChange={e => update('phoneNumber', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" /></label>
       <label>Email <input value={form.email || ''} onChange={e => update('email', e.target.value)} disabled={!editing} /></label>
     </div>
   </fieldset>
@@ -71,7 +70,7 @@ const AddressSection = ({ form, update, editing }: SectionProps) => (
           {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
-      <label>Zip <input value={form.zipcode || ''} onChange={e => update('zipcode', e.target.value)} disabled={!editing} /></label>
+      <label>Zip <input value={form.zipCode || ''} onChange={e => update('zipCode', e.target.value)} disabled={!editing} /></label>
     </div>
   </fieldset>
 );
@@ -87,16 +86,16 @@ const GovernmentIdSection = ({ form, update, editing }: SectionProps) => (
         <input value={form.ssNumber || ''} onChange={e => update('ssNumber', e.target.value)} disabled={!editing} />
       </label>
       <label>Issuing State
-        <select value={form.issuingState || ''} onChange={e => update('issuingState', e.target.value)} disabled={!editing}>
+        <select value={form.idState || ''} onChange={e => update('idState', e.target.value)} disabled={!editing}>
           <option value="" />
           {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
       <label>ID Issue Date
-        <input type="date" value={form.issueDate || ''} onChange={e => update('issueDate', e.target.value)} disabled={!editing} />
+        <input type="date" value={form.idIssueDate || ''} onChange={e => update('idIssueDate', e.target.value)} disabled={!editing} />
       </label>
       <label>ID Expiration
-        <input type="date" value={form.expirationDate || ''} onChange={e => update('expirationDate', e.target.value)} disabled={!editing} />
+        <input type="date" value={form.idExpiration || ''} onChange={e => update('idExpiration', e.target.value)} disabled={!editing} />
       </label>
     </div>
   </fieldset>
@@ -121,7 +120,6 @@ const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, h
       <label>Hair Color <input list="hairColors" value={form.hairColor || ''} onChange={e => update('hairColor', e.target.value)} disabled={!editing} /></label>
       <label>Eye Color <input list="eyeColors" value={form.eyeColor || ''} onChange={e => update('eyeColor', e.target.value)} disabled={!editing} /></label>
       <label>Race <input list="races" value={form.race || ''} onChange={e => update('race', e.target.value)} disabled={!editing} /></label>
-      <label>Country <input list="countries" value={form.country || ''} onChange={e => update('country', e.target.value)} disabled={!editing} /></label>
     </div>
   </fieldset>
 );
@@ -143,7 +141,7 @@ const ResultsTable = ({ results, loading, error, onPick }: ResultsProps) => (
               <td style={tdStyle}>{r.dateOfBirth || ''}</td>
               <td style={tdStyle}>{r.city || ''}</td>
               <td style={tdStyle}>{r.stateUs || ''}</td>
-              <td style={tdStyle}>{r.phone || ''}</td>
+              <td style={tdStyle}>{r.phoneNumber || ''}</td>
             </tr>
           ))}
           {results.length === 0 && !loading && (
@@ -191,18 +189,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         middleName: d.middleName ?? f.middleName,
         lastName: d.lastName ?? f.lastName,
         dateOfBirth: d.dateOfBirth ?? f.dateOfBirth,
-        issueDate: d.issueDate ?? f.issueDate,
-        expirationDate: d.expirationDate ?? f.expirationDate,
+        idIssueDate: d.issueDate ?? f.idIssueDate,
+        idExpiration: d.expirationDate ?? f.idExpiration,
         streetAddress: d.streetAddress ?? f.streetAddress,
         city: d.city ?? f.city,
         stateUs: d.stateUs ?? f.stateUs,
-        zipcode: d.zipcode ?? f.zipcode,
+        zipCode: d.zipcode ?? f.zipCode,
         sex: d.sex ?? f.sex,
         height: d.height ?? f.height,
         idNumber: d.idNumber ?? f.idNumber,
-        country: d.country ?? f.country,
         weight: d.weight ?? f.weight,
-      };
+      } as CustomerRecord;
       onChange?.(recordToDto(next, next.id));
       return next;
     });
@@ -298,7 +295,6 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         <datalist id="eyeColors">{EYE_COLORS.map(c => <option key={c} value={c} />)}</datalist>
         <datalist id="hairColors">{HAIR_COLORS.map(c => <option key={c} value={c} />)}</datalist>
         <datalist id="races">{RACES.map(c => <option key={c} value={c} />)}</datalist>
-        <datalist id="countries">{COUNTRIES.map(c => <option key={c} value={c} />)}</datalist>
       </form>
 
       {!editingNew && (

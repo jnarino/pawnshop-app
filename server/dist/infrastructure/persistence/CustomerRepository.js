@@ -1,156 +1,209 @@
 "use strict";
 // server/src/infrastructure/persistence/CustomerRepository.ts
+// Updated for expanded customer schema.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomerRepository = void 0;
 exports.mapRowToCustomer = mapRowToCustomer;
 const db_1 = require("../db");
-const sqlLoader_1 = require("../db/sqlLoader");
-// Rows are already aliased to camelCase in the SELECT queries.
-function mapRowToCustomer(r) {
+// Map camelCase -> snake_case DB columns
+const COL_MAP = {
+    oldCustomerPk: 'old_customer_pk',
+    oldCustomerId: 'old_customer_id',
+    firstName: 'first_name',
+    middleName: 'middle_name',
+    lastName: 'last_name',
+    streetAddress: 'street_address',
+    city: 'city',
+    stateUs: 'state_us',
+    zipCode: 'zip_code',
+    phoneNumber: 'phone_number',
+    height: 'height',
+    weight: 'weight',
+    hairColor: 'hair_color',
+    eyeColor: 'eye_color',
+    race: 'race',
+    sex: 'sex',
+    marks: 'marks',
+    dateOfBirth: 'date_of_birth',
+    birthCity: 'birth_city',
+    birthState: 'birth_state',
+    birthCountry: 'birth_country',
+    idType: 'id_type',
+    idNumber: 'id_number',
+    idExpiration: 'id_expiration',
+    idIssueDate: 'id_issue_date',
+    ssNumber: 'ss_number',
+    idAddress: 'id_address',
+    idCity: 'id_city',
+    idState: 'id_state',
+    idZip: 'id_zip',
+    employerName: 'employer_name',
+    employerAddress: 'employer_address',
+    employerCity: 'employer_city',
+    employerState: 'employer_state',
+    employerZip: 'employer_zip',
+    employerPhoneNumber: 'employer_phone_number',
+    description: 'description',
+    fflNumber: 'ffl_number',
+    locked: 'locked',
+    taxId: 'tax_id',
+    cellPhone: 'cell_phone',
+    email: 'email',
+    enteredAt: 'entered_at',
+    military: 'military',
+    fflExpireDate: 'ffl_expire_date',
+    taxExempt: 'tax_exempt'
+};
+const SELECT_COLUMNS = [
+    'id',
+    ...Object.values(COL_MAP),
+    'created_at',
+    'updated_at'
+].join(', ');
+function mapRow(r) {
+    if (!r)
+        return r;
     return {
         id: r.id,
-        firstName: r.firstName,
-        middleName: r.middleName ?? undefined,
-        lastName: r.lastName,
-        suffix: r.suffix ?? undefined,
-        dateOfBirth: r.dateOfBirth,
-        sex: r.sex,
-        eyeColor: r.eyeColor,
-        height: r.height,
-        streetAddress: r.streetAddress,
-        city: r.city,
-        stateUs: r.stateUs,
-        zipcode: r.zipcode,
-        idNumber: r.idNumber,
-        ssNumber: r.ssNumber ?? undefined,
-        expirationDate: r.expirationDate,
-        issueDate: r.issueDate,
-        issuingState: r.issuingState,
-        phone: r.phone,
-        email: r.email,
-        hairColor: r.hairColor,
-        weight: r.weight,
-        race: r.race,
-        country: r.country,
+        oldCustomerPk: r.old_customer_pk ?? null,
+        oldCustomerId: r.old_customer_id ?? null,
+        firstName: r.first_name,
+        middleName: r.middle_name ?? null,
+        lastName: r.last_name,
+        streetAddress: r.street_address ?? null,
+        city: r.city ?? null,
+        stateUs: r.state_us ?? null,
+        zipCode: r.zip_code ?? null,
+        phoneNumber: r.phone_number ?? null,
+        height: r.height ?? null,
+        weight: r.weight ?? null,
+        hairColor: r.hair_color ?? null,
+        eyeColor: r.eye_color ?? null,
+        race: r.race ?? null,
+        sex: r.sex ?? null,
+        marks: r.marks ?? null,
+        dateOfBirth: r.date_of_birth ? r.date_of_birth.toISOString?.().substring(0, 10) : null,
+        birthCity: r.birth_city ?? null,
+        birthState: r.birth_state ?? null,
+        birthCountry: r.birth_country ?? null,
+        idType: r.id_type ?? null,
+        idNumber: r.id_number ?? null,
+        idExpiration: r.id_expiration ? r.id_expiration.toISOString?.().substring(0, 10) : null,
+        idIssueDate: r.id_issue_date ? r.id_issue_date.toISOString?.().substring(0, 10) : null,
+        ssNumber: r.ss_number ?? null,
+        idAddress: r.id_address ?? null,
+        idCity: r.id_city ?? null,
+        idState: r.id_state ?? null,
+        idZip: r.id_zip ?? null,
+        employerName: r.employer_name ?? null,
+        employerAddress: r.employer_address ?? null,
+        employerCity: r.employer_city ?? null,
+        employerState: r.employer_state ?? null,
+        employerZip: r.employer_zip ?? null,
+        employerPhoneNumber: r.employer_phone_number ?? null,
+        description: r.description ?? null,
+        fflNumber: r.ffl_number ?? null,
+        locked: r.locked ?? null,
+        taxId: r.tax_id ?? null,
+        cellPhone: r.cell_phone ?? null,
+        email: r.email ?? null,
+        enteredAt: r.entered_at ? r.entered_at.toISOString?.() : null,
+        military: r.military ?? null,
+        fflExpireDate: r.ffl_expire_date ? r.ffl_expire_date.toISOString?.().substring(0, 10) : null,
+        taxExempt: r.tax_exempt ?? null,
+        createdAt: r.created_at ? r.created_at.toISOString?.() : undefined,
+        updatedAt: r.updated_at ? r.updated_at.toISOString?.() : undefined,
     };
 }
+// Test helper (back-compat with earlier tests importing mapRowToCustomer)
+function mapRowToCustomer(r) { return mapRow(r); }
+function buildInsert(dto) {
+    const columns = [];
+    const placeholders = [];
+    const values = [];
+    Object.entries(COL_MAP).forEach(([camel, snake]) => {
+        const val = dto[camel];
+        if (val !== undefined) {
+            columns.push(snake);
+            values.push(val);
+            placeholders.push(`$${values.length}`);
+        }
+    });
+    if (!columns.includes('first_name'))
+        throw new Error('firstName required');
+    if (!columns.includes('last_name'))
+        throw new Error('lastName required');
+    const sql = `INSERT INTO customer (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`;
+    return { sql, values };
+}
+function buildUpdate(id, dto) {
+    const sets = [];
+    const values = [];
+    Object.entries(COL_MAP).forEach(([camel, snake]) => {
+        if (dto[camel] !== undefined) {
+            values.push(dto[camel]);
+            sets.push(`${snake} = $${values.length}`);
+        }
+    });
+    if (!sets.length)
+        return null;
+    values.push(id);
+    const sql = `UPDATE customer SET ${sets.join(', ')}, updated_at = now() WHERE id = $${values.length}`;
+    return { sql, values };
+}
 class CustomerRepository {
-    async findByDobAndIdNumber(dateOfBirth, idNumber) {
-        const sql = (0, sqlLoader_1.getSQL)('query', 'customer', 'findCustomerByDobAndIdNumber');
-        const { rows } = await db_1.pool.query(sql, [dateOfBirth, idNumber]);
-        return rows[0] ? mapRowToCustomer(rows[0]) : null;
-    }
     async findAll(limit, offset, filters) {
-        const baseRaw = (0, sqlLoader_1.getSQL)('query', 'customer', 'findAllCustomers'); // may end with semicolon
-        const base = baseRaw.replace(/;\s*$/, '');
-        const where = [];
+        const conditions = [];
         const params = [];
         if (filters?.firstName) {
             params.push(filters.firstName + '%');
-            where.push(`first_name ILIKE $${params.length}`);
+            conditions.push(`first_name ILIKE $${params.length}`);
         }
         if (filters?.lastName) {
             params.push(filters.lastName + '%');
-            where.push(`last_name ILIKE $${params.length}`);
+            conditions.push(`last_name ILIKE $${params.length}`);
         }
         if (filters?.dateOfBirth) {
             params.push(filters.dateOfBirth);
-            where.push(`date_of_birth = $${params.length}`);
+            conditions.push(`date_of_birth = $${params.length}`);
         }
-        let sql = base;
-        if (where.length) {
-            // Insert WHERE before ORDER BY (base query ends with ORDER BY last_name, first_name)
-            const idx = sql.toUpperCase().lastIndexOf('ORDER BY');
-            if (idx !== -1) {
-                const before = sql.substring(0, idx).trimEnd();
-                const order = sql.substring(idx);
-                sql = `${before} WHERE ${where.join(' AND ')}\n${order}`;
-            }
-            else {
-                sql = `${sql} WHERE ${where.join(' AND ')}`;
-            }
-        }
-        // Pagination
+        let sql = `SELECT ${SELECT_COLUMNS} FROM customer`;
+        if (conditions.length)
+            sql += ` WHERE ${conditions.join(' AND ')}`;
+        sql += ' ORDER BY last_name, first_name';
         if (typeof limit === 'number') {
             params.push(limit);
-            sql += `\nLIMIT $${params.length}`;
+            sql += ` LIMIT $${params.length}`;
         }
         if (typeof offset === 'number') {
             params.push(offset);
-            sql += `\nOFFSET $${params.length}`;
+            sql += ` OFFSET $${params.length}`;
         }
         const { rows } = await db_1.pool.query(sql, params);
-        return rows.map(mapRowToCustomer);
+        return rows.map(mapRow);
     }
     async findById(id) {
-        const sql = (0, sqlLoader_1.getSQL)('query', 'customer', 'findCustomerById');
-        const { rows } = await db_1.pool.query(sql, [id]);
-        return rows[0] ? mapRowToCustomer(rows[0]) : null;
+        const { rows } = await db_1.pool.query(`SELECT ${SELECT_COLUMNS} FROM customer WHERE id = $1`, [id]);
+        return rows[0] ? mapRow(rows[0]) : null;
+    }
+    async findByDobAndIdNumber(dateOfBirth, idNumber) {
+        const { rows } = await db_1.pool.query(`SELECT ${SELECT_COLUMNS} FROM customer WHERE date_of_birth = $1 AND id_number = $2 LIMIT 1`, [dateOfBirth, idNumber]);
+        return rows[0] ? mapRow(rows[0]) : null;
     }
     async create(dto) {
-        const sql = (0, sqlLoader_1.getSQL)('command', 'customer', 'createCustomer');
-        const params = [
-            dto.firstName,
-            dto.middleName,
-            dto.lastName,
-            dto.suffix,
-            dto.dateOfBirth,
-            dto.sex,
-            dto.eyeColor,
-            dto.height,
-            dto.streetAddress,
-            dto.city,
-            dto.stateUs,
-            dto.zipcode,
-            dto.idNumber,
-            dto.ssNumber,
-            dto.expirationDate,
-            dto.issueDate,
-            dto.issuingState,
-            dto.phone,
-            dto.email,
-            dto.hairColor,
-            dto.weight,
-            dto.race,
-            dto.country,
-        ];
-        const { rows } = await db_1.pool.query(sql, params);
-        return rows[0].id; // requires RETURNING id in your createCustomer.sql
+        const { sql, values } = buildInsert(dto);
+        const { rows } = await db_1.pool.query(sql, values);
+        return rows[0].id;
     }
     async update(id, dto) {
-        const sql = (0, sqlLoader_1.getSQL)('command', 'customer', 'updateCustomer');
-        const params = [
-            dto.firstName,
-            dto.middleName,
-            dto.lastName,
-            dto.suffix,
-            dto.dateOfBirth,
-            dto.sex,
-            dto.eyeColor,
-            dto.height,
-            dto.streetAddress,
-            dto.city,
-            dto.stateUs,
-            dto.zipcode,
-            dto.idNumber,
-            dto.ssNumber,
-            dto.expirationDate,
-            dto.issueDate,
-            dto.issuingState,
-            dto.phone,
-            dto.email,
-            dto.hairColor,
-            dto.weight,
-            dto.race,
-            dto.country,
-            id,
-        ];
-        const res = await db_1.pool.query(sql, params);
+        const built = buildUpdate(id, dto);
+        if (!built)
+            return true; // nothing to update
+        const res = await db_1.pool.query(built.sql, built.values);
         return res.rowCount === 1;
     }
     async delete(id) {
-        const sql = (0, sqlLoader_1.getSQL)('command', 'customer', 'deleteCustomer');
-        const res = await db_1.pool.query(sql, [id]);
+        const res = await db_1.pool.query('DELETE FROM customer WHERE id = $1', [id]);
         return res.rowCount === 1;
     }
 }
