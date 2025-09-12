@@ -7,6 +7,10 @@ import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
 import './CustomerPicker.css';
 
+// Centralized config (env override with safe defaults)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const CUSTOMER_SEARCH_LIMIT = Number(import.meta.env.VITE_CUSTOMER_SEARCH_LIMIT || 100);
+
 interface Props {
   value?: CustomerDto | null;
   onChange?: (c: CustomerDto | null) => void;
@@ -245,10 +249,10 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       const params = new URLSearchParams();
       if (form.firstName) params.append('firstName', form.firstName.trim());
       if (form.lastName) params.append('lastName', form.lastName.trim());
-      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth as string); // cast to satisfy TS
-      if (form.idNumber) params.append('idNumber', form.idNumber as string); // cast
-      params.append('limit', '100');
-      const res = await fetch(`http://localhost:3000/api/customer?${params.toString()}`, { credentials: 'include' });
+      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth as string);
+      if (form.idNumber) params.append('idNumber', form.idNumber as string);
+      params.append('limit', String(CUSTOMER_SEARCH_LIMIT));
+      const res = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
       const data = await res.json();
       setResults((Array.isArray(data) ? data : []).map(apiToRecordLoose));
     } catch (err: any) {
@@ -277,7 +281,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       setSaving(true);
       const payload = { ...form } as any;
       delete payload.id;
-      const res = await fetch('http://localhost:3000/api/customer', {
+      const res = await fetch(`${API_BASE_URL}/api/customer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

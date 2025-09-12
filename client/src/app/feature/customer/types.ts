@@ -169,60 +169,68 @@ export const CustomerDTOSchema = z.object({
 /**
  * 4️⃣ Mapper function — validates & converts snake_case → camelCase
  */
-export const toCustomer = (dto: CustomerDTO): Customer => {
-    const d = CustomerDTOSchema.parse(dto); // throws if invalid
+// Mapping of snake_case DTO keys to camelCase Customer keys (excluding id, created/updated timestamps handled specially)
+const SNAKE_TO_CAMEL: Record<string, keyof Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>> = {
+  old_customer_pk: 'oldCustomerPk',
+  old_customer_id: 'oldCustomerId',
+  first_name: 'firstName',
+  middle_name: 'middleName',
+  last_name: 'lastName',
+  street_address: 'streetAddress',
+  city: 'city',
+  state_us: 'stateUs',
+  zip_code: 'zipCode',
+  phone_number: 'phoneNumber',
+  height: 'height',
+  weight: 'weight',
+  hair_color: 'hairColor',
+  eye_color: 'eyeColor',
+  race: 'race',
+  sex: 'sex',
+  marks: 'marks',
+  date_of_birth: 'dateOfBirth',
+  birth_city: 'birthCity',
+  birth_state: 'birthState',
+  birth_country: 'birthCountry',
+  id_type: 'idType',
+  id_number: 'idNumber',
+  id_expiration: 'idExpiration',
+  id_issue_date: 'idIssueDate',
+  ss_number: 'ssNumber',
+  id_address: 'idAddress',
+  id_city: 'idCity',
+  id_state: 'idState',
+  id_zip: 'idZip',
+  employer_name: 'employerName',
+  employer_address: 'employerAddress',
+  employer_city: 'employerCity',
+  employer_state: 'employerState',
+  employer_zip: 'employerZip',
+  employer_phone_number: 'employerPhoneNumber',
+  description: 'description',
+  ffl_number: 'fflNumber',
+  locked: 'locked',
+  tax_id: 'taxId',
+  cell_phone: 'cellPhone',
+  email: 'email',
+  entered_at: 'enteredAt',
+  military: 'military',
+  ffl_expire_date: 'fflExpireDate',
+  tax_exempt: 'taxExempt'
+};
 
-    return {
-        id: d.id,
-        oldCustomerPk: d.old_customer_pk ?? null,
-        oldCustomerId: d.old_customer_id ?? null,
-        firstName: d.first_name,
-        middleName: d.middle_name ?? null,
-        lastName: d.last_name,
-        streetAddress: d.street_address ?? null,
-        city: d.city ?? null,
-        stateUs: d.state_us ?? null,
-        zipCode: d.zip_code ?? null,
-        phoneNumber: d.phone_number ?? null,
-        height: d.height ?? null,
-        weight: d.weight ?? null,
-        hairColor: d.hair_color ?? null,
-        eyeColor: d.eye_color ?? null,
-        race: d.race ?? null,
-        sex: d.sex ?? null,
-        marks: d.marks ?? null,
-        dateOfBirth: d.date_of_birth ?? null,
-        birthCity: d.birth_city ?? null,
-        birthState: d.birth_state ?? null,
-        birthCountry: d.birth_country ?? null,
-        idType: d.id_type ?? null,
-        idNumber: d.id_number ?? null,
-        idExpiration: d.id_expiration ?? null,
-        idIssueDate: d.id_issue_date ?? null,
-        ssNumber: d.ss_number ?? null,
-        idAddress: d.id_address ?? null,
-        idCity: d.id_city ?? null,
-        idState: d.id_state ?? null,
-        idZip: d.id_zip ?? null,
-        employerName: d.employer_name ?? null,
-        employerAddress: d.employer_address ?? null,
-        employerCity: d.employer_city ?? null,
-        employerState: d.employer_state ?? null,
-        employerZip: d.employer_zip ?? null,
-        employerPhoneNumber: d.employer_phone_number ?? null,
-        description: d.description ?? null,
-        fflNumber: d.ffl_number ?? null,
-        locked: d.locked ?? null,
-        taxId: d.tax_id ?? null,
-        cellPhone: d.cell_phone ?? null,
-        email: d.email ?? null,
-        enteredAt: d.entered_at ?? null,
-        military: d.military ?? null,
-        fflExpireDate: d.ffl_expire_date ?? null,
-        taxExempt: d.tax_exempt ?? null,
-        createdAt: d.created_at ?? undefined,
-        updatedAt: d.updated_at ?? undefined,
-    };
+export const toCustomer = (dto: CustomerDTO): Customer => {
+  const d = CustomerDTOSchema.parse(dto); // validation
+  const base: any = { id: d.id };
+  for (const [snake, camel] of Object.entries(SNAKE_TO_CAMEL)) {
+    const val = (d as any)[snake];
+    // created/updated timestamps handled after loop, others default to null when absent
+    base[camel] = val ?? null;
+  }
+  // Adjust createdAt/updatedAt to undefined (rather than null) when absent to match existing semantics
+  base.createdAt = d.created_at ?? undefined;
+  base.updatedAt = d.updated_at ?? undefined;
+  return base as Customer;
 };
 
 /**
