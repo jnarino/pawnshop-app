@@ -159,35 +159,64 @@ const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, h
   </fieldset>
 );
 
-interface ResultsProps { results: CustomerRecord[]; loading: boolean; error: string | null; onPick(id: string, r: CustomerRecord): void; }
-const ResultsTable = ({ results, loading, error, onPick }: ResultsProps) => (
-  <aside className="customer-lookup__results" aria-live="polite">
-    <div className="results-header">Matches ({results.length})</div>
-    {error && <div className="error">{error}</div>}
-    <div className="results-table-wrapper">
-      <table className="results-table">
-        <thead>
-          <tr><th>Name</th><th>DOB</th><th>City</th><th>State</th><th>Phone</th></tr>
-        </thead>
-        <tbody>
-          {results.map(r => (
-            <tr key={r.id} onDoubleClick={() => r.id && onPick(r.id, r)} className={r.id ? 'can-select' : ''}>
-              <td>{r.lastName}, {r.firstName}</td>
-              <td>{r.dateOfBirth || ''}</td>
-              <td>{r.city || ''}</td>
-              <td>{r.stateUs || ''}</td>
-              <td>{r.phoneNumber || ''}</td>
-            </tr>
-          ))}
-          {results.length === 0 && !loading && (
-            <tr><td colSpan={5} className="no-results">No results</td></tr>
+interface SearchResultsModalProps {
+  open: boolean;
+  results: CustomerRecord[];
+  loading: boolean;
+  error: string | null;
+  fromScan: boolean;
+  canAddFromScan: boolean;
+  onSelect(id: string, rec: CustomerRecord): void;
+  onAddFromScan(): void;
+  onClose(): void;
+}
+const SearchResultsModal = ({ open, results, loading, error, fromScan, canAddFromScan, onSelect, onAddFromScan, onClose }: SearchResultsModalProps) => {
+  if (!open) return null;
+  return (
+    <div className="cust-modal-overlay" role="dialog" aria-modal="true">
+      <div className="cust-modal">
+        <div className="cust-modal__header">
+          <h4>Customer Search Results</h4>
+          <button type="button" className="close-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="cust-modal__body">
+          {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
+          {loading && <div>Searching…</div>}
+          {!loading && results.length > 0 && (
+            <table className="results-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem' }}>
+              <thead><tr><th>Name</th><th>DOB</th><th>City</th><th>State</th><th>Phone</th></tr></thead>
+              <tbody>
+                {results.map(r => (
+                  <tr key={r.id} className={r.id ? 'can-select' : ''} onDoubleClick={() => r.id && onSelect(r.id, r)} onClick={() => r.id && onSelect(r.id, r)}>
+                    <td>{r.lastName}, {r.firstName}</td>
+                    <td>{r.dateOfBirth || ''}</td>
+                    <td>{r.city || ''}</td>
+                    <td>{r.stateUs || ''}</td>
+                    <td>{r.phoneNumber || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </tbody>
-      </table>
+          {!loading && results.length === 0 && (
+            <div style={{ padding: '12px 4px' }}>
+              <p style={{ margin: 0, fontWeight: 600 }}>No customer found.</p>
+              {fromScan && canAddFromScan && (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ margin: '0 0 6px' }}>Customer not found, would you like to add it as a new customer?</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={onAddFromScan}>Yes</button>
+                    <button type="button" onClick={onClose}>No</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-    <p className="hint">Double-click a row to load it into the form.</p>
-  </aside>
-);
+  );
+};
 
 // main
 export default function CustomerPicker({ value, onChange, onSelected, onCreateNew }: Props) {
@@ -201,50 +230,38 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [useIdAddr, setUseIdAddr] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [searchFromScan, setSearchFromScan] = useState(false);
+  const [lastScanData, setLastScanData] = useState<AamvaData | null>(null);
 
   React.useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
 
   const disableSearch = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
   const { feet: heightFeet, inches: heightInches } = useMemo(() => deriveHeightParts(form.height ?? undefined), [form.height]);
 
-  function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) {
-    setForm(prev => ({ ...prev, [k]: v }));
-  }
+  function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) { setForm(prev => ({ ...prev, [k]: v })); }
   const setHeight = (feet: string, inches: string) => update('height', normalizeHeight(feet, inches));
 
   const applyAamva = React.useCallback((d: AamvaData) => {
+    setLastScanData(d);
     setForm(f => {
-      const next: CustomerRecord = {
-        ...f,
-        firstName: d.firstName ?? f.firstName,
-        middleName: d.middleName ?? f.middleName,
-        lastName: d.lastName ?? f.lastName,
-        dateOfBirth: d.dateOfBirth ?? f.dateOfBirth,
-        idIssueDate: d.issueDate ?? f.idIssueDate,
-        idExpiration: d.expirationDate ?? f.idExpiration,
-        streetAddress: d.streetAddress ?? f.streetAddress,
-        city: d.city ?? f.city,
-        stateUs: d.stateUs ?? f.stateUs,
-        zipCode: d.zipcode ?? f.zipCode,
-        sex: d.sex ?? f.sex,
-        height: d.height ?? f.height,
-        idNumber: d.idNumber ?? f.idNumber,
-        weight: d.weight ?? f.weight,
-      };
-      // Only populate eye/hair color if scanner provides AND form doesn't already have a value
+      const next: CustomerRecord = { ...f, firstName: d.firstName ?? f.firstName, middleName: d.middleName ?? f.middleName, lastName: d.lastName ?? f.lastName, dateOfBirth: d.dateOfBirth ?? f.dateOfBirth, idIssueDate: d.issueDate ?? f.idIssueDate, idExpiration: d.expirationDate ?? f.idExpiration, streetAddress: d.streetAddress ?? f.streetAddress, city: d.city ?? f.city, stateUs: d.stateUs ?? f.stateUs, zipCode: d.zipcode ?? f.zipCode, sex: d.sex ?? f.sex, height: d.height ?? f.height, idNumber: d.idNumber ?? f.idNumber, weight: d.weight ?? f.weight };
       if (d.eyeColor && !f.eyeColor) next.eyeColor = d.eyeColor;
       if (d.hairColor && !f.hairColor) next.hairColor = d.hairColor;
       onChange?.(recordToDto(next, next.id));
       return next;
     });
+    // Automatically search after scanning
+    setTimeout(() => { search(undefined, { fromScan: true }); }, 0);
   }, [onChange]);
 
-  async function search(e?: React.FormEvent) {
+  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean }) {
     e?.preventDefault();
     if (disableSearch && !form.idNumber) return;
     setError(null);
     setLoading(true);
     setResults([]);
+    setSearchFromScan(!!opts?.fromScan);
     try {
       const params = new URLSearchParams();
       if (form.firstName) params.append('firstName', form.firstName.trim());
@@ -254,11 +271,13 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       params.append('limit', String(CUSTOMER_SEARCH_LIMIT));
       const res = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
       const data = await res.json();
-      setResults((Array.isArray(data) ? data : []).map(apiToRecordLoose));
+      const mapped = (Array.isArray(data) ? data : []).map(apiToRecordLoose);
+      setResults(mapped);
     } catch (err: any) {
       setError(err.message || 'Search failed');
     } finally {
       setLoading(false);
+      setSearchModalOpen(true);
     }
   }
 
@@ -268,45 +287,33 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     setEditingNew(false);
     setSaveError(null);
     setUseIdAddr(false);
+    setLastScanData(null);
+  }
+
+  function handleAddFromScan() {
+    setEditingNew(true);
+    setSearchModalOpen(false);
   }
 
   async function saveNew() {
-    if (saving) return;
-    setSaveError(null);
-    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.dateOfBirth) {
-      setSaveError('First, Last, and Date of Birth are required');
-      return;
-    }
+    if (saving) return; setSaveError(null);
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.dateOfBirth) { setSaveError('First, Last, and Date of Birth are required'); return; }
     try {
       setSaving(true);
-      const payload = { ...form } as any;
-      delete payload.id;
-      const res = await fetch(`${API_BASE_URL}/api/customer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
+      const payload = { ...form } as any; delete payload.id;
+      const res = await fetch(`${API_BASE_URL}/api/customer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) throw new Error((await res.text()) || 'Save failed');
-      const data = await res.json();
-      const newId = data?.id ?? form.id;
-      setEditingNew(false);
-      onSelected?.(newId);
-      onChange?.(recordToDto(form, newId));
-      setStatusMessage('Customer saved.');
-      setTimeout(() => setStatusMessage(''), 2500);
-    } catch (e: any) {
-      setSaveError(e.message || 'Save failed');
-    } finally {
-      setSaving(false);
-    }
+      const data = await res.json(); const newId = data?.id ?? form.id;
+      setEditingNew(false); onSelected?.(newId); onChange?.(recordToDto(form, newId)); setStatusMessage('Customer saved.'); setTimeout(() => setStatusMessage(''), 2500);
+    } catch (e: any) { setSaveError(e.message || 'Save failed'); } finally { setSaving(false); }
   }
 
   const containerClass = 'customer-lookup' + (editingNew ? ' is-editing-new' : '');
+  const canAddFromScan = !!lastScanData && results.length === 0;
 
   return (
     <div className={containerClass}>
-      <form onSubmit={search} aria-label="Customer search / create">
+      <form onSubmit={(e) => search(e)} aria-label="Customer search / create">
         <IdentityContactSection form={form} update={update} editing={editingNew} />
         <AddressSection form={form} update={update} editing={editingNew} useIdAddr={useIdAddr} setUseIdAddr={setUseIdAddr} />
         <GovernmentIdSection form={form} update={update} editing={editingNew} />
@@ -325,13 +332,13 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
               <button type="submit" disabled={disableSearch || loading}>{loading ? 'Searching…' : 'Find'}</button>
               <button type="button" onClick={clearAll} disabled={loading}>Clear</button>
               <button type="button" onClick={() => { setEditingNew(true); setResults([]); onCreateNew?.(crypto.randomUUID()); }} disabled={loading}>Add New</button>
+              <button type="button" onClick={() => setScanModalOpen(true)}>Scan ID</button>
             </>
           )}
           {editingNew && (
             <>
               <button type="button" onClick={saveNew} disabled={saving}>{saving ? 'Saving…' : 'Save Customer'}</button>
               <button type="button" onClick={clearAll} disabled={saving}>Cancel</button>
-              <button type="button" onClick={() => setScanModalOpen(true)}>Scan ID</button>
             </>
           )}
         </div>
@@ -345,18 +352,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         <datalist id="idTypes">{ID_TYPES.map(c => <option key={c} value={c} />)}</datalist>
       </form>
 
-      {!editingNew && (
-        <ResultsTable
-          results={results}
-          loading={loading}
-          error={error}
-          onPick={(id, rec) => {
-            onSelected?.(id);
-            setForm(rec);
-            onChange?.(recordToDto(rec, id));
-          }}
-        />
-      )}
+      <SearchResultsModal
+        open={searchModalOpen}
+        results={results}
+        loading={loading}
+        error={error}
+        fromScan={searchFromScan}
+        canAddFromScan={canAddFromScan}
+        onSelect={(id, rec) => { onSelected?.(id); setForm(rec); onChange?.(recordToDto(rec, id)); setSearchModalOpen(false); }}
+        onAddFromScan={handleAddFromScan}
+        onClose={() => setSearchModalOpen(false)}
+      />
 
       <CustomerIdScanModal
         open={scanModalOpen}
