@@ -5,23 +5,22 @@ import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
-import './CustomerPicker.css'; // add this line
+import './CustomerPicker.css';
 
-// --- Props -----------------------------------------------------------------
 interface Props {
   value?: CustomerDto | null;
   onChange?: (c: CustomerDto | null) => void;
-  onCreateNew?(tempId: string): void;      // optional
-  onSelected?(id: string): void;            // optional (back-compat)
+  onCreateNew?(tempId: string): void;
+  onSelected?(id: string): void;
 }
 
-// --- Constants -------------------------------------------------------------
 const EYE_COLORS = ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Amber', 'Black'] as const;
 const HAIR_COLORS = ['Brown', 'Black', 'Blonde', 'Red', 'Gray', 'White', 'Bald', 'Auburn'] as const;
 const RACES = ['White', 'Black or African American', 'Asian', 'Native American', 'Pacific Islander', 'Hispanic', 'Other'] as const;
-const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
+const US_STATES = ['', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
+const ID_TYPES = ['Driver License', 'State ID', 'Passport', 'US Military ID', 'Social Security Card', 'Green Card', 'Other'] as const;
 
-// --- Utilities -------------------------------------------------------------
+// utils
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
   if (!digits) return '';
@@ -43,51 +42,69 @@ function normalizeHeight(feet: string, inches: string): string | undefined {
   return `${f || '0'}'${i || '0'}"`;
 }
 
-// --- Sub Components --------------------------------------------------------
+// sections
 interface SectionProps { form: CustomerRecord; update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]): void; editing: boolean; }
 const IdentityContactSection = ({ form, update, editing }: SectionProps) => (
-  <fieldset className="customer-identity">
-    <legend>Identity & Contact</legend>
-    <div className="grid cols-4 gap" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr 1fr', gap: 10 }}>
-      <label>First Name <input value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="First" /></label>
-      <label>Middle <input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" /></label>
-      <label>Last Name * <input value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Last" /></label>
-      <label>Date of Birth <input type="date" value={form.dateOfBirth || ''} onChange={e => update('dateOfBirth', e.target.value || undefined)} /></label>
-      <label>Phone <input value={form.phoneNumber || ''} onChange={e => update('phoneNumber', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" /></label>
-      <label>Email <input value={form.email || ''} onChange={e => update('email', e.target.value)} disabled={!editing} /></label>
+  <fieldset className="card section">
+    <legend>Personal Information</legend>
+    <div className="grid cols-4 gap">
+      <label>First Name<input value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="First" /></label>
+      <label>Middle<input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" /></label>
+      <label>Last Name *<input value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Last" /></label>
+      <label>Date of Birth<input type="date" value={form.dateOfBirth || ''} onChange={e => update('dateOfBirth', e.target.value || undefined)} /></label>
+
+      <label>Phone (primary)<input value={form.phoneNumber || ''} onChange={e => update('phoneNumber', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" /></label>
+      <label>Cell Phone<input value={form.cellPhone || ''} onChange={e => update('cellPhone', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 987-6543" /></label>
+      <label>Email<input value={form.email || ''} onChange={e => update('email', e.target.value)} disabled={!editing} /></label>
+      <label>SS Number<input value={form.ssNumber || ''} onChange={e => update('ssNumber', e.target.value)} disabled={!editing} placeholder="###-##-####" /></label>
     </div>
   </fieldset>
 );
-const AddressSection = ({ form, update, editing }: SectionProps) => (
-  <fieldset className="top-margin">
+
+interface AddressProps extends SectionProps { useIdAddr: boolean; setUseIdAddr(v: boolean): void; }
+const AddressSection = ({ form, update, editing, useIdAddr, setUseIdAddr }: AddressProps) => (
+  <fieldset className="card section">
     <legend>Address</legend>
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 120px 120px', gap: 10 }}>
-      <label>Street Address <input value={form.streetAddress || ''} onChange={e => update('streetAddress', e.target.value)} disabled={!editing} /></label>
-      <label>City <input value={form.city || ''} onChange={e => update('city', e.target.value)} disabled={!editing} /></label>
+
+    <div className="checkbox-row">
+      <input id="sameAsId" type="checkbox" checked={useIdAddr} onChange={e => {
+        const checked = e.target.checked;
+        setUseIdAddr(checked);
+        if (checked) {
+          update('streetAddress', form.idAddress || '');
+          update('city', form.idCity || '');
+          update('stateUs', form.idState || '');
+          update('zipCode', form.idZip || '');
+        }
+      }} />
+      <label htmlFor="sameAsId">Use ID address as primary address</label>
+    </div>
+
+    <div className="grid cols-4 gap">
+      <label className="col-span-2">Street Address<input value={form.streetAddress || ''} onChange={e => update('streetAddress', e.target.value)} disabled={!editing || useIdAddr} /></label>
+      <label>City<input value={form.city || ''} onChange={e => update('city', e.target.value)} disabled={!editing || useIdAddr} /></label>
       <label>State
-        <select value={form.stateUs || ''} onChange={e => update('stateUs', e.target.value)} disabled={!editing}>
-          <option value="" />
+        <select value={form.stateUs || ''} onChange={e => update('stateUs', e.target.value)} disabled={!editing || useIdAddr}>
           {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
-      <label>Zip <input value={form.zipCode || ''} onChange={e => update('zipCode', e.target.value)} disabled={!editing} /></label>
+      <label>Zip<input value={form.zipCode || ''} onChange={e => update('zipCode', e.target.value)} disabled={!editing || useIdAddr} /></label>
     </div>
   </fieldset>
 );
+
 const GovernmentIdSection = ({ form, update, editing }: SectionProps) => (
-  <fieldset className="top-margin">
+  <fieldset className="card section">
     <legend>Government ID</legend>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px 1fr 1fr', gap: 10 }}>
-      <label>ID Number
-        {/* Allow entering ID Number for search even when not editing */}
-        <input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} />
+    <div className="grid cols-4 gap">
+      <label>ID Type
+        <input list="idTypes" value={form.idType || ''} onChange={e => update('idType', e.target.value)} disabled={!editing} />
       </label>
-      <label>SS Number
-        <input value={form.ssNumber || ''} onChange={e => update('ssNumber', e.target.value)} disabled={!editing} />
+      <label>ID Number
+        <input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} />
       </label>
       <label>Issuing State
         <select value={form.idState || ''} onChange={e => update('idState', e.target.value)} disabled={!editing}>
-          <option value="" />
           {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
@@ -97,14 +114,19 @@ const GovernmentIdSection = ({ form, update, editing }: SectionProps) => (
       <label>ID Expiration
         <input type="date" value={form.idExpiration || ''} onChange={e => update('idExpiration', e.target.value)} disabled={!editing} />
       </label>
+
+      <label className="col-span-2">ID Address<input value={form.idAddress || ''} onChange={e => update('idAddress', e.target.value)} disabled={!editing} /></label>
+      <label>ID City<input value={form.idCity || ''} onChange={e => update('idCity', e.target.value)} disabled={!editing} /></label>
+      <label>ID Zip<input value={form.idZip || ''} onChange={e => update('idZip', e.target.value)} disabled={!editing} /></label>
     </div>
   </fieldset>
 );
+
 interface PhysicalProps extends SectionProps { setHeight(feet: string, inches: string): void; heightFeet: string; heightInches: string; }
 const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, heightInches }: PhysicalProps) => (
-  <fieldset className="top-margin">
-    <legend>Physical Traits</legend>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10 }}>
+  <fieldset className="card section">
+    <legend>Physical Traits & Birth</legend>
+    <div className="grid cols-5 gap">
       <label>Sex
         <select value={form.sex || ''} onChange={e => update('sex', e.target.value || undefined)} disabled={!editing}>
           <option value="">--</option><option value="M">M</option><option value="F">F</option><option value="O">Other</option>
@@ -119,7 +141,16 @@ const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, h
       <label>Weight <input value={form.weight || ''} onChange={e => update('weight', e.target.value)} disabled={!editing} placeholder="lbs" /></label>
       <label>Hair Color <input list="hairColors" value={form.hairColor || ''} onChange={e => update('hairColor', e.target.value)} disabled={!editing} /></label>
       <label>Eye Color <input list="eyeColors" value={form.eyeColor || ''} onChange={e => update('eyeColor', e.target.value)} disabled={!editing} /></label>
+
       <label>Race <input list="races" value={form.race || ''} onChange={e => update('race', e.target.value)} disabled={!editing} /></label>
+      <label>Birth City<input value={form.birthCity || ''} onChange={e => update('birthCity', e.target.value)} disabled={!editing} /></label>
+      <label>Birth State
+        <select value={form.birthState || ''} onChange={e => update('birthState', e.target.value)} disabled={!editing}>
+          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+      <label>Birth Country<input value={form.birthCountry || ''} onChange={e => update('birthCountry', e.target.value)} disabled={!editing} /></label>
+      <label className="col-span-2">Marks<textarea value={form.marks || ''} onChange={e => update('marks', e.target.value)} disabled={!editing} rows={2} /></label>
     </div>
   </fieldset>
 );
@@ -127,37 +158,34 @@ const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, h
 interface ResultsProps { results: CustomerRecord[]; loading: boolean; error: string | null; onPick(id: string, r: CustomerRecord): void; }
 const ResultsTable = ({ results, loading, error, onPick }: ResultsProps) => (
   <aside className="customer-lookup__results" aria-live="polite">
-    <div className="results-header" style={{ fontWeight: 600, marginBottom: 6 }}>Matches ({results.length})</div>
-    {error && <div className="error" style={{ marginBottom: 6 }}>{error}</div>}
-    <div className="results-table-wrapper" style={{ maxHeight: 420, overflow: 'auto', border: '1px solid #ddd', borderRadius: 6 }}>
-      <table className="results-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead style={{ position: 'sticky', top: 0, background: '#fafafa' }}>
-          <tr><th style={thStyle}>Name</th><th style={thStyle}>DOB</th><th style={thStyle}>City</th><th style={thStyle}>State</th><th style={thStyle}>Phone</th></tr>
+    <div className="results-header">Matches ({results.length})</div>
+    {error && <div className="error">{error}</div>}
+    <div className="results-table-wrapper">
+      <table className="results-table">
+        <thead>
+          <tr><th>Name</th><th>DOB</th><th>City</th><th>State</th><th>Phone</th></tr>
         </thead>
         <tbody>
           {results.map(r => (
             <tr key={r.id} onDoubleClick={() => r.id && onPick(r.id, r)} className={r.id ? 'can-select' : ''}>
-              <td style={tdStyle}>{r.lastName}, {r.firstName}</td>
-              <td style={tdStyle}>{r.dateOfBirth || ''}</td>
-              <td style={tdStyle}>{r.city || ''}</td>
-              <td style={tdStyle}>{r.stateUs || ''}</td>
-              <td style={tdStyle}>{r.phoneNumber || ''}</td>
+              <td>{r.lastName}, {r.firstName}</td>
+              <td>{r.dateOfBirth || ''}</td>
+              <td>{r.city || ''}</td>
+              <td>{r.stateUs || ''}</td>
+              <td>{r.phoneNumber || ''}</td>
             </tr>
           ))}
           {results.length === 0 && !loading && (
-            <tr><td colSpan={5} style={{ textAlign: 'center', fontStyle: 'italic', padding: 16 }}>No results</td></tr>
+            <tr><td colSpan={5} className="no-results">No results</td></tr>
           )}
         </tbody>
       </table>
     </div>
-    <p className="hint" style={{ marginTop: 6, color: '#666' }}>Double-click a row to load it into the form.</p>
+    <p className="hint">Double-click a row to load it into the form.</p>
   </aside>
 );
 
-const thStyle: React.CSSProperties = { textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' };
-const tdStyle: React.CSSProperties = { padding: 8, borderBottom: '1px solid #f2f2f2' };
-
-// --- Main Component --------------------------------------------------------
+// main
 export default function CustomerPicker({ value, onChange, onSelected, onCreateNew }: Props) {
   const [form, setForm] = useState<CustomerRecord>(() => dtoToRecord(value ?? null));
   const [results, setResults] = useState<CustomerRecord[]>([]);
@@ -168,22 +196,21 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [saveError, setSaveError] = useState<string | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [useIdAddr, setUseIdAddr] = useState(false);
 
-  // Keep form in sync with value
   React.useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
 
   const disableSearch = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
-  const { feet: heightFeet, inches: heightInches } = useMemo(() => deriveHeightParts(form.height), [form.height]);
+  const { feet: heightFeet, inches: heightInches } = useMemo(() => deriveHeightParts(form.height ?? undefined), [form.height]);
 
   function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) {
     setForm(prev => ({ ...prev, [k]: v }));
   }
   const setHeight = (feet: string, inches: string) => update('height', normalizeHeight(feet, inches));
 
-  // When scanning, update the form and emit to parent so the page sees the new data immediately
   const applyAamva = React.useCallback((d: AamvaData) => {
     setForm(f => {
-      const next = {
+      const next: CustomerRecord = {
         ...f,
         firstName: d.firstName ?? f.firstName,
         middleName: d.middleName ?? f.middleName,
@@ -199,7 +226,10 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         height: d.height ?? f.height,
         idNumber: d.idNumber ?? f.idNumber,
         weight: d.weight ?? f.weight,
-      } as CustomerRecord;
+      };
+      // Only populate eye/hair color if scanner provides AND form doesn't already have a value
+      if (d.eyeColor && !f.eyeColor) next.eyeColor = d.eyeColor;
+      if (d.hairColor && !f.hairColor) next.hairColor = d.hairColor;
       onChange?.(recordToDto(next, next.id));
       return next;
     });
@@ -207,7 +237,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
-    if (disableSearch && !form.idNumber) return; // allow search by ID Number too
+    if (disableSearch && !form.idNumber) return;
     setError(null);
     setLoading(true);
     setResults([]);
@@ -215,8 +245,8 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       const params = new URLSearchParams();
       if (form.firstName) params.append('firstName', form.firstName.trim());
       if (form.lastName) params.append('lastName', form.lastName.trim());
-      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth);
-      if (form.idNumber) params.append('idNumber', form.idNumber.trim());
+      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth as string); // cast to satisfy TS
+      if (form.idNumber) params.append('idNumber', form.idNumber as string); // cast
       params.append('limit', '100');
       const res = await fetch(`http://localhost:3000/api/customer?${params.toString()}`, { credentials: 'include' });
       const data = await res.json();
@@ -229,16 +259,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   }
 
   function clearAll() {
-    setForm({ firstName: '', lastName: '', dateOfBirth: undefined, sex: '' });
+    setForm({ firstName: '', lastName: '', dateOfBirth: undefined, sex: '' } as any);
     setResults([]);
     setEditingNew(false);
     setSaveError(null);
+    setUseIdAddr(false);
   }
 
   async function saveNew() {
     if (saving) return;
     setSaveError(null);
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.dateOfBirth) {
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.dateOfBirth) {
       setSaveError('First, Last, and Date of Birth are required');
       return;
     }
@@ -247,14 +278,19 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       const payload = { ...form } as any;
       delete payload.id;
       const res = await fetch('http://localhost:3000/api/customer', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error((await res.text()) || 'Save failed');
-      const data = await res.json(); // expects { id: string } or full customer
+      const data = await res.json();
       const newId = data?.id ?? form.id;
       setEditingNew(false);
       onSelected?.(newId);
       onChange?.(recordToDto(form, newId));
+      setStatusMessage('Customer saved.');
+      setTimeout(() => setStatusMessage(''), 2500);
     } catch (e: any) {
       setSaveError(e.message || 'Save failed');
     } finally {
@@ -268,9 +304,16 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     <div className={containerClass}>
       <form onSubmit={search} aria-label="Customer search / create">
         <IdentityContactSection form={form} update={update} editing={editingNew} />
-        <AddressSection form={form} update={update} editing={editingNew} />
+        <AddressSection form={form} update={update} editing={editingNew} useIdAddr={useIdAddr} setUseIdAddr={setUseIdAddr} />
         <GovernmentIdSection form={form} update={update} editing={editingNew} />
         <PhysicalTraitsSection form={form} update={update} editing={editingNew} setHeight={setHeight} heightFeet={heightFeet} heightInches={heightInches} />
+
+        <fieldset className="card section">
+          <legend>Notes</legend>
+          <label className="block">
+            <textarea value={form.description || ''} onChange={e => update('description', e.target.value)} rows={3} placeholder="Notes / description" />
+          </label>
+        </fieldset>
 
         <div className="actions-row">
           {!editingNew && (
@@ -295,6 +338,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         <datalist id="eyeColors">{EYE_COLORS.map(c => <option key={c} value={c} />)}</datalist>
         <datalist id="hairColors">{HAIR_COLORS.map(c => <option key={c} value={c} />)}</datalist>
         <datalist id="races">{RACES.map(c => <option key={c} value={c} />)}</datalist>
+        <datalist id="idTypes">{ID_TYPES.map(c => <option key={c} value={c} />)}</datalist>
       </form>
 
       {!editingNew && (
