@@ -5,7 +5,7 @@ import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
-import './CustomerPicker.css';
+import './customerPicker.css'; // ← ensure the case matches the actual filename
 
 // Centralized config (env override with safe defaults)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -258,6 +258,10 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [useIdAddr, setUseIdAddr] = useState(false);
+
+  // NEW: track whether the upcoming modal should render compact “not found”
+  const [modalEmpty, setModalEmpty] = useState(false);
+
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchFromScan, setSearchFromScan] = useState(false);
   const [lastScanData, setLastScanData] = useState<AamvaData | null>(null);
@@ -298,13 +302,27 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       idNumber: d.idNumber ?? f.idNumber,
     }));
     setSearchFromScan(true);
-    setTimeout(() => { search(undefined, { fromScan: true, force: true }); }, 25);
+    // Removed force flag; search will itself guard against empty criteria
+    setTimeout(() => { search(undefined, { fromScan: true }); }, 25);
   }, []);
 
-  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean; force?: boolean }) {
+  // Removed 'force' option; safeguard against empty criteria causing full list
+  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean }) {
     e?.preventDefault();
     const noCriteria = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
-    if (noCriteria && !opts?.force) return;
+
+    // If no criteria and invoked from scan, treat as not found (compact modal) without querying all customers
+    if (noCriteria) {
+      if (opts?.fromScan) {
+        setError(null);
+        setResults([]);
+        setModalEmpty(true);
+        setSearchFromScan(true);
+        setLoading(false);
+        setSearchModalOpen(true);
+      }
+      return;
+    }
 
     setError(null);
     setLoading(true);
@@ -318,12 +336,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth as string);
       if (form.idNumber) params.append('idNumber', form.idNumber as string);
       params.append('limit', String(CUSTOMER_SEARCH_LIMIT));
+
       const res = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
       const data = await res.json();
       const mapped = (Array.isArray(data) ? data : []).map(apiToRecordLoose);
+
       setResults(mapped);
+      setModalEmpty(mapped.length === 0);
     } catch (err: any) {
       setError(err.message || 'Search failed');
+      setResults([]);
+      setModalEmpty(true);
     } finally {
       setLoading(false);
       setSearchModalOpen(true);
@@ -337,6 +360,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     setSaveError(null);
     setUseIdAddr(false);
     setLastScanData(null);
+    setModalEmpty(false);
   }
 
   function handleAddFromScan() {
@@ -367,16 +391,28 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     try {
       setSaving(true);
       const payload = { ...form } as any; delete payload.id;
-      const res = await fetch(`${API_BASE_URL}/api/customer`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
+      const res = await fetch(`${API_BASE_URL}/api/customer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
       if (!res.ok) throw new Error((await res.text()) || 'Save failed');
       const data = await res.json(); const newId = data?.id ?? form.id;
-      setEditingNew(false); onSelected?.(newId); onChange?.(recordToDto(form, newId)); setStatusMessage('Customer saved.'); setTimeout(() => setStatusMessage(''), 2500);
-    } catch (e: any) { setSaveError(e.message || 'Save failed'); } finally { setSaving(false); }
+      setEditingNew(false);
+      onSelected?.(newId);
+      onChange?.(recordToDto(form, newId));
+      setStatusMessage('Customer saved.');
+      setTimeout(() => setStatusMessage(''), 2500);
+    } catch (e: any) {
+      setSaveError(e.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const containerClass = 'customer-lookup' + (editingNew ? ' is-editing-new' : '');
-  const empty = results.length === 0;           // <- any empty search
-  const canAddFromScan = !!lastScanData && empty;
+  const canAddFromScan = !!lastScanData && modalEmpty;
 
   return (
     <div className={containerClass}>
@@ -421,7 +457,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
       <SearchResultsModal
         open={searchModalOpen}
-        empty={empty}
+        empty={modalEmpty}
         fromScan={searchFromScan}
         canAddFromScan={canAddFromScan}
         results={results}
