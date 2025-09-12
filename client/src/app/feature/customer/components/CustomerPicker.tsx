@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import React from 'react';
 import { AamvaData } from '../../../shared/hooks/useIdScan';
 import './CustomerIdScanModal.css';
@@ -159,35 +159,53 @@ const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, h
   </fieldset>
 );
 
+/** Results modal */
 interface SearchResultsModalProps {
   open: boolean;
+  empty: boolean;
+  fromScan: boolean;
+  canAddFromScan: boolean;
   results: CustomerRecord[];
   loading: boolean;
   error: string | null;
-  fromScan: boolean;
-  canAddFromScan: boolean;
-  onSelect(id: string, rec: CustomerRecord): void;
+  onSelect(id: string, r: CustomerRecord): void;
   onAddFromScan(): void;
   onClose(): void;
 }
-const SearchResultsModal = ({ open, results, loading, error, fromScan, canAddFromScan, onSelect, onAddFromScan, onClose }: SearchResultsModalProps) => {
+const SearchResultsModal = ({
+  open, empty, fromScan, canAddFromScan, results, loading, error, onSelect, onAddFromScan, onClose
+}: SearchResultsModalProps) => {
   if (!open) return null;
+  const isCompact = !loading && empty; // ALWAYS compact when empty
+
   return (
-    <div className="cust-modal-overlay" role="dialog" aria-modal="true">
-      <div className="cust-modal">
+    <div
+      className={"cust-modal-overlay" + (isCompact ? ' is-compact' : '')}
+      onClick={onClose}
+    >
+      <div
+        className={"cust-modal" + (isCompact ? ' cust-modal--compact' : '')}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="cust-modal__header">
-          <h4>Customer Search Results</h4>
+          <h4>{isCompact ? 'Customer Search' : 'Customer Search Results'}</h4>
           <button type="button" className="close-btn" onClick={onClose}>×</button>
         </div>
         <div className="cust-modal__body">
           {error && <div className="error" style={{ marginBottom: 8 }}>{error}</div>}
           {loading && <div>Searching…</div>}
-          {!loading && results.length > 0 && (
+
+          {!loading && !isCompact && results.length > 0 && (
             <table className="results-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem' }}>
               <thead><tr><th>Name</th><th>DOB</th><th>City</th><th>State</th><th>Phone</th></tr></thead>
               <tbody>
                 {results.map(r => (
-                  <tr key={r.id} className={r.id ? 'can-select' : ''} onDoubleClick={() => r.id && onSelect(r.id, r)} onClick={() => r.id && onSelect(r.id, r)}>
+                  <tr
+                    key={r.id}
+                    className={r.id ? 'can-select' : ''}
+                    onDoubleClick={() => r.id && onSelect(r.id, r)}
+                    onClick={() => r.id && onSelect(r.id, r)}
+                  >
                     <td>{r.lastName}, {r.firstName}</td>
                     <td>{r.dateOfBirth || ''}</td>
                     <td>{r.city || ''}</td>
@@ -198,17 +216,27 @@ const SearchResultsModal = ({ open, results, loading, error, fromScan, canAddFro
               </tbody>
             </table>
           )}
-          {!loading && results.length === 0 && (
-            <div style={{ padding: '12px 4px' }}>
-              <p style={{ margin: 0, fontWeight: 600 }}>No customer found.</p>
+
+          {!loading && isCompact && (
+            <div style={{ padding: '10px 4px' }}>
+              {!fromScan && (
+                <p style={{ margin: 0, fontWeight: 600, textAlign: 'center' }}>Customer not found.</p>
+              )}
+
               {fromScan && canAddFromScan && (
-                <div style={{ marginTop: 8 }}>
-                  <p style={{ margin: '0 0 6px' }}>Customer not found, would you like to add it as a new customer?</p>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                <>
+                  <p style={{ margin: '0 0 14px', fontWeight: 600, textAlign: 'center' }}>
+                    Customer not found. Add as a new customer?
+                  </p>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                     <button type="button" onClick={onAddFromScan}>Yes</button>
                     <button type="button" onClick={onClose}>No</button>
                   </div>
-                </div>
+                </>
+              )}
+
+              {fromScan && !canAddFromScan && (
+                <p style={{ margin: 0, fontWeight: 600, textAlign: 'center' }}>Customer not found.</p>
               )}
             </div>
           )}
@@ -234,34 +262,55 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [searchFromScan, setSearchFromScan] = useState(false);
   const [lastScanData, setLastScanData] = useState<AamvaData | null>(null);
 
-  React.useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
+  useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
+
+  // ESC closes modals
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (searchModalOpen) { setSearchModalOpen(false); e.stopPropagation(); return; }
+        if (scanModalOpen) { setScanModalOpen(false); e.stopPropagation(); }
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [searchModalOpen, scanModalOpen]);
 
   const disableSearch = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
-  const { feet: heightFeet, inches: heightInches } = useMemo(() => deriveHeightParts(form.height ?? undefined), [form.height]);
+
+  const { feet: heightFeet, inches: heightInches } = useMemo(
+    () => deriveHeightParts(form.height ?? undefined),
+    [form.height]
+  );
 
   function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) { setForm(prev => ({ ...prev, [k]: v })); }
   const setHeight = (feet: string, inches: string) => update('height', normalizeHeight(feet, inches));
 
+  // After scanning: update minimal fields to query reliably, then search
   const applyAamva = React.useCallback((d: AamvaData) => {
-    setLastScanData(d);
-    setForm(f => {
-      const next: CustomerRecord = { ...f, firstName: d.firstName ?? f.firstName, middleName: d.middleName ?? f.middleName, lastName: d.lastName ?? f.lastName, dateOfBirth: d.dateOfBirth ?? f.dateOfBirth, idIssueDate: d.issueDate ?? f.idIssueDate, idExpiration: d.expirationDate ?? f.idExpiration, streetAddress: d.streetAddress ?? f.streetAddress, city: d.city ?? f.city, stateUs: d.stateUs ?? f.stateUs, zipCode: d.zipcode ?? f.zipCode, sex: d.sex ?? f.sex, height: d.height ?? f.height, idNumber: d.idNumber ?? f.idNumber, weight: d.weight ?? f.weight };
-      if (d.eyeColor && !f.eyeColor) next.eyeColor = d.eyeColor;
-      if (d.hairColor && !f.hairColor) next.hairColor = d.hairColor;
-      onChange?.(recordToDto(next, next.id));
-      return next;
-    });
-    // Automatically search after scanning
-    setTimeout(() => { search(undefined, { fromScan: true }); }, 0);
-  }, [onChange]);
+    setLastScanData(d); // retain full data for potential add
+    setForm(f => ({
+      ...f,
+      firstName: d.firstName ?? f.firstName,
+      middleName: d.middleName ?? f.middleName,
+      lastName: d.lastName ?? f.lastName,
+      dateOfBirth: d.dateOfBirth ?? f.dateOfBirth,
+      idNumber: d.idNumber ?? f.idNumber,
+    }));
+    setSearchFromScan(true);
+    setTimeout(() => { search(undefined, { fromScan: true, force: true }); }, 25);
+  }, []);
 
-  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean }) {
+  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean; force?: boolean }) {
     e?.preventDefault();
-    if (disableSearch && !form.idNumber) return;
+    const noCriteria = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
+    if (noCriteria && !opts?.force) return;
+
     setError(null);
     setLoading(true);
     setResults([]);
     setSearchFromScan(!!opts?.fromScan);
+
     try {
       const params = new URLSearchParams();
       if (form.firstName) params.append('firstName', form.firstName.trim());
@@ -291,6 +340,23 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   }
 
   function handleAddFromScan() {
+    if (lastScanData) {
+      const d = lastScanData;
+      setForm(prev => ({
+        ...prev,
+        idIssueDate: d.issueDate ?? prev.idIssueDate,
+        idExpiration: d.expirationDate ?? prev.idExpiration,
+        streetAddress: d.streetAddress ?? prev.streetAddress,
+        city: d.city ?? prev.city,
+        stateUs: d.stateUs ?? prev.stateUs,
+        zipCode: d.zipcode ?? prev.zipCode,
+        sex: d.sex ?? prev.sex,
+        height: d.height ?? prev.height,
+        weight: d.weight ?? prev.weight,
+        eyeColor: prev.eyeColor || d.eyeColor,
+        hairColor: prev.hairColor || d.hairColor,
+      }));
+    }
     setEditingNew(true);
     setSearchModalOpen(false);
   }
@@ -309,7 +375,8 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   }
 
   const containerClass = 'customer-lookup' + (editingNew ? ' is-editing-new' : '');
-  const canAddFromScan = !!lastScanData && results.length === 0;
+  const empty = results.length === 0;           // <- any empty search
+  const canAddFromScan = !!lastScanData && empty;
 
   return (
     <div className={containerClass}>
@@ -354,11 +421,12 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
       <SearchResultsModal
         open={searchModalOpen}
+        empty={empty}
+        fromScan={searchFromScan}
+        canAddFromScan={canAddFromScan}
         results={results}
         loading={loading}
         error={error}
-        fromScan={searchFromScan}
-        canAddFromScan={canAddFromScan}
         onSelect={(id, rec) => { onSelected?.(id); setForm(rec); onChange?.(recordToDto(rec, id)); setSearchModalOpen(false); }}
         onAddFromScan={handleAddFromScan}
         onClose={() => setSearchModalOpen(false)}
