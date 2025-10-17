@@ -87,18 +87,25 @@ CREATE TABLE IF NOT EXISTS session (
 
 CREATE INDEX IF NOT EXISTS session_user_idx ON session(user_id);
 
--- Seed admin (replace hash with your Argon2id if needed)
-INSERT INTO app_user (username, password_hash, first_name, last_name, is_active)
-VALUES (
-		'admin',
-        '$argon2id$v=19$m=65536,t=3,p=4$oMsE07oMFJ3aaU5sjkoxmA$E+zNFg6jX8oOT1sqf647JfRRWo956qHXGnTo8zdV7YM',
-        'System','Admin', TRUE
-)
-ON CONFLICT (username) DO NOTHING;
+-- Seed / ensure admin user (idempotent)
+DO $$
+DECLARE
+  v_user_id uuid;
+BEGIN
+  INSERT INTO app_user (username, password_hash, first_name, last_name, is_active)
+  VALUES (
+    'admin',
+    '$argon2id$v=19$m=65536,t=3,p=4$oMsE07oMFJ3aaU5sjkoxmA$E+zNFg6jX8oOT1sqf647JfRRWo956qHXGnTo8zdV7YM',
+    'System','Admin', TRUE
+  )
+  ON CONFLICT (username) DO UPDATE SET is_active = TRUE
+  RETURNING id INTO v_user_id;
 
-INSERT INTO app_user_role (user_id, role_id)
-SELECT u.id, 1 FROM app_user u WHERE u.username = 'admin'
-ON CONFLICT DO NOTHING;
+  INSERT INTO app_user_role (user_id, role_id)
+  VALUES (v_user_id, 1)
+  ON CONFLICT (user_id, role_id) DO NOTHING;
+END
+$$ LANGUAGE plpgsql;
 
 -----------------------
 -- Customer
@@ -115,6 +122,7 @@ CREATE TABLE IF NOT EXISTS customer (
   middle_name         TEXT,
   last_name           TEXT NOT NULL,
   street_address      TEXT,
+  suite_number        TEXT,
   city                TEXT,
   state_us            TEXT,
   zip_code            TEXT,
@@ -138,6 +146,7 @@ CREATE TABLE IF NOT EXISTS customer (
   id_issue_date       DATE,
   ss_number           TEXT,
   id_address          TEXT,
+  id_suite_number     TEXT,
   id_city             TEXT,
   id_state            TEXT,
   id_zip              TEXT,
@@ -145,6 +154,7 @@ CREATE TABLE IF NOT EXISTS customer (
   -- Employer
   employer_name         TEXT,
   employer_address      TEXT,
+  employer_suite_number TEXT,
   employer_city         TEXT,
   employer_state        TEXT,
   employer_zip          TEXT,
@@ -162,17 +172,15 @@ CREATE TABLE IF NOT EXISTS customer (
   ffl_expire_date     DATE,
   tax_exempt          BOOLEAN DEFAULT FALSE,
 
-  -- housekeeping
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS customer_name_idx ON customer (last_name, first_name);
 CREATE INDEX IF NOT EXISTS customer_dob_idx  ON customer (date_of_birth);
 
----------------------------------------
+-------------------------------
 -- Inventory: hierarchical categories
----------------------------------------
+-------------------------------
 CREATE TABLE IF NOT EXISTS inventory_category (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -185,15 +193,17 @@ CREATE TABLE IF NOT EXISTS inventory_category (
   CONSTRAINT inventory_category_unique_sibling UNIQUE (parent_id, name),
   CONSTRAINT inventory_category_code_sibling   UNIQUE (parent_id, code)
 );
-
+DROP TRIGGER IF EXISTS trg_inventory_category_updated ON inventory_category;
 CREATE TRIGGER trg_inventory_category_updated
 BEFORE UPDATE ON inventory_category
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_inventory_category_path_ins ON inventory_category;
 CREATE TRIGGER trg_inventory_category_path_ins
 BEFORE INSERT ON inventory_category
 FOR EACH ROW EXECUTE PROCEDURE inventory_category_set_path();
 
+DROP TRIGGER IF EXISTS trg_inventory_category_path_upd ON inventory_category;
 CREATE TRIGGER trg_inventory_category_path_upd
 BEFORE UPDATE OF parent_id, code ON inventory_category
 FOR EACH ROW EXECUTE PROCEDURE inventory_category_set_path();
@@ -202,29 +212,37 @@ CREATE INDEX IF NOT EXISTS inventory_category_path_gist ON inventory_category US
 CREATE INDEX IF NOT EXISTS inventory_category_parent_idx ON inventory_category(parent_id);
 
 ------------------------------------
--- Inventory: item status (lookup)
+-- Inventory status (letter codes)
 ------------------------------------
-CREATE TABLE IF NOT EXISTS inventory_item_status (
-  code TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS inventory_status (
+  code TEXT PRIMARY KEY,     -- 'B','C','D','H','I','J','L','O','P','S','T','U','V'
   description TEXT,
-  is_terminal BOOLEAN NOT NULL DEFAULT false,
+  is_terminal BOOLEAN NOT NULL DEFAULT FALSE,
   sort_order INT NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT true,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE TRIGGER trg_inventory_item_status_updated
-BEFORE UPDATE ON inventory_item_status
+DROP TRIGGER IF EXISTS trg_inventory_status_updated ON inventory_status;
+CREATE TRIGGER trg_inventory_status_updated
+BEFORE UPDATE ON inventory_status
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
-INSERT INTO inventory_item_status(code, description, is_terminal, sort_order)
+INSERT INTO inventory_status(code, description, sort_order)
 VALUES
-  ('in_inventory','Item physically in inventory', false, 10),
-  ('in_pawn','Item pledged / on active pawn ticket', false, 20),
-  ('for_sale','Item available for sale', false, 30),
-  ('sold','Item sold / ownership transferred', true, 40),
-  ('scrapped','Item disposed / written off', true, 50)
+  ('B', NULL, 10),
+  ('C', NULL, 20),
+  ('D', NULL, 30),
+  ('H', NULL, 40),
+  ('I', NULL, 50),  -- default for new items
+  ('J', NULL, 60),
+  ('L', NULL, 70),
+  ('O', NULL, 80),
+  ('P', NULL, 90),
+  ('S', NULL, 100),
+  ('T', NULL, 110),
+  ('U', NULL, 120),
+  ('V', NULL, 130)
 ON CONFLICT DO NOTHING;
 
 -----------------------------
@@ -233,21 +251,38 @@ ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS inventory_item (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id UUID NOT NULL REFERENCES inventory_category(id) ON DELETE RESTRICT,
-  status TEXT NOT NULL DEFAULT 'in_inventory' REFERENCES inventory_item_status(code),
+
+  status TEXT NOT NULL DEFAULT 'I' REFERENCES inventory_status(code),
+
   brand TEXT,
   model TEXT,
   serial_number TEXT,
   color TEXT,
   item_condition TEXT,
+
   quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
-  amount NUMERIC(12,2),
+
+  price_amount NUMERIC(12,2),
   resale NUMERIC(12,2),
   item_replace NUMERIC(12,2),
-  bin_number TEXT,
-  owner_tag TEXT,
+
+  owner_mark TEXT,
   item_description TEXT,
+
+  -- JSON payload for guns/jewelry extras from Composite3/4
+  extra JSONB NOT NULL DEFAULT '{}'::jsonb,
   attributes JSONB NOT NULL DEFAULT '{}'::jsonb,
-  inventory_number TEXT NOT NULL,
+
+  -- Legacy linkages
+  legacy_inventory_number TEXT,       -- INVNUM
+  legacy_item_guid TEXT,              -- Items_ID
+  legacy_category_description TEXT,   -- Composite
+  legacy_brand_color_description TEXT,-- Composit2
+
+  inventory_number TEXT UNIQUE,
+
+  last_updated_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -255,13 +290,11 @@ CREATE TABLE IF NOT EXISTS inventory_item (
 CREATE UNIQUE INDEX IF NOT EXISTS inventory_item_serial_unique
   ON inventory_item(serial_number) WHERE serial_number IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS inventory_item_number_unique
-  ON inventory_item(inventory_number);
-
-CREATE INDEX IF NOT EXISTS inventory_item_category_idx    ON inventory_item(category_id);
-CREATE INDEX IF NOT EXISTS inventory_item_status_idx      ON inventory_item(status);
+CREATE INDEX IF NOT EXISTS inventory_item_category_idx ON inventory_item(category_id);
+CREATE INDEX IF NOT EXISTS inventory_item_status_idx   ON inventory_item(status);
 CREATE INDEX IF NOT EXISTS inventory_item_brand_model_idx ON inventory_item(brand, model);
 
+DROP TRIGGER IF EXISTS trg_inventory_item_updated ON inventory_item;
 CREATE TRIGGER trg_inventory_item_updated
 BEFORE UPDATE ON inventory_item
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -270,14 +303,14 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 -- Pawn transaction types (lookup)
 -------------------------
 CREATE TABLE IF NOT EXISTS pawn_transaction_type (
-  code TEXT PRIMARY KEY,
+  code TEXT PRIMARY KEY,      -- 'PAWN' | 'PURCHASE'
   description TEXT,
   active BOOLEAN NOT NULL DEFAULT true,
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
+DROP TRIGGER IF EXISTS trg_pawn_transaction_type_updated ON pawn_transaction_type;
 CREATE TRIGGER trg_pawn_transaction_type_updated
 BEFORE UPDATE ON pawn_transaction_type
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -307,9 +340,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   maturity_date TIMESTAMPTZ NOT NULL,
   default_date TIMESTAMPTZ NOT NULL,
 
-  -- Inlined from your later migration
   pawn_status TEXT NOT NULL DEFAULT 'active',
-
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -332,12 +363,12 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
     pawn_status IN ('active','defaulted','police hold','confiscation')
   )
 );
-
 CREATE INDEX IF NOT EXISTS pawn_ticket_customer_idx     ON pawn_ticket(customer_id);
 CREATE INDEX IF NOT EXISTS pawn_ticket_type_idx         ON pawn_ticket(transaction_type);
 CREATE INDEX IF NOT EXISTS pawn_ticket_transaction_idx  ON pawn_ticket(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_pawn_ticket_pawn_status  ON pawn_ticket(pawn_status);
 
+DROP TRIGGER IF EXISTS pawn_ticket_updated ON pawn_ticket;
 CREATE TRIGGER pawn_ticket_updated
 BEFORE UPDATE ON pawn_ticket
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -348,4 +379,261 @@ CREATE TABLE IF NOT EXISTS pawn_ticket_item (
   PRIMARY KEY (pawn_ticket_id, inventory_item_id)
 );
 
-COMMIT;
+-----------------------------------
+-- Store Transactions (header + tenders)
+-----------------------------------
+CREATE TABLE IF NOT EXISTS store_transaction_type (
+  id SMALLINT PRIMARY KEY,
+  code TEXT UNIQUE,         -- legacy code e.g. 'SS','SL','P','B','BV','PV',...
+  name TEXT NOT NULL,
+  cash_dir SMALLINT NOT NULL DEFAULT 0, -- +1 adds cash, -1 removes, 0 neutral
+  active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO store_transaction_type(id, code, name, cash_dir) VALUES
+  (1,  'SS','Retail sale',               +1),
+  (2,  'SL','Layaway deposit',           +1),
+  (3,  'PPP','Pawn payment',             +1),
+  (4,  'PPU','Pawn redemption payment',  +1),
+  (5,  'P',  'Pawn (cash out)',          -1),
+  (6,  'B',  'Buy (cash out)',           -1),
+  (7,  'BV', 'Voided buy (reverse)',     +1),
+  (8,  'MZ', 'Cash from bank/main',      +1),
+  (9,  'MO', 'Cash to main',             -1),
+  (10, 'MA', 'Bank deposit / to bank',   -1),
+  (11, 'MB', 'Main balancing entry',      0),
+  (12, 'T',  'Commission/other (no cash)',0),
+  (13, 'PD', 'Defaulted (no cash)',       0),
+  (14, 'PV', 'Voided pawn (reverse)',    +1)  -- <== added for voided pawns
+ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS tender_type (
+  id SMALLINT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  legacy_code TEXT UNIQUE,
+  active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO tender_type(id, name, legacy_code) VALUES
+  (1, 'CASH',            '1001'),
+  (2, 'AMERICAN EXPRESS','35001'),
+  (3, 'DEBIT',           '36001'),
+  (4, 'DISCOVER',        '37001'),
+  (5, 'MASTER CARD',     '38001'),
+  (6, 'VISA',            '39001'),
+  (7, 'CHECK',           '287001'),
+  (8, 'CASH PASS',       '1186001')
+ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS store_transaction (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- legacy keys for traceability
+  legacy_acct_pk BIGINT,
+  legacy_ticketnum TEXT,
+  legacy_cus_fk TEXT,
+  legacy_usr_fk TEXT,
+
+  customer_id UUID REFERENCES customer(id) ON DELETE SET NULL,
+  clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
+
+  type_id SMALLINT NOT NULL REFERENCES store_transaction_type(id),
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  amount NUMERIC(12,2),
+  tax_sales NUMERIC(12,2),
+  state_tax NUMERIC(12,2),
+  county_tax NUMERIC(12,2),
+  local_tax NUMERIC(12,2),
+  tender_change NUMERIC(12,2),
+
+  gun_proc_fee NUMERIC(12,2),  -- from SOLD.GunProcFee when applicable
+
+  note TEXT,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_store_tx_time ON store_transaction(occurred_at);
+CREATE INDEX IF NOT EXISTS idx_store_tx_type_id ON store_transaction(type_id);
+
+DROP TRIGGER IF EXISTS trg_store_tx_updated ON store_transaction;
+CREATE TRIGGER trg_store_tx_updated
+BEFORE UPDATE ON store_transaction
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TABLE IF NOT EXISTS store_transaction_tender (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_transaction_id UUID NOT NULL REFERENCES store_transaction(id) ON DELETE CASCADE,
+  sequence SMALLINT NOT NULL DEFAULT 1,
+  tender_type_id SMALLINT NOT NULL REFERENCES tender_type(id),
+  amount NUMERIC(12,2) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_store_tx_tender_tx ON store_transaction_tender(store_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_store_tx_tender_type ON store_transaction_tender(tender_type_id);
+
+-----------------------------------
+-- Store transaction LINE ITEMS (map: sitems)
+-----------------------------------
+CREATE TABLE IF NOT EXISTS store_transaction_item (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_transaction_id UUID NOT NULL REFERENCES store_transaction(id) ON DELETE CASCADE,
+  sequence SMALLINT NOT NULL DEFAULT 1,                        -- sitems row order
+  inventory_item_id UUID REFERENCES inventory_item(id) ON DELETE SET NULL,
+
+  description TEXT,                                            -- DESCRIPT
+  quantity NUMERIC(12,2) NOT NULL DEFAULT 1,                   -- NUMBERSOLD
+  line_amount NUMERIC(12,2),                                   -- AMOUNT
+  line_cost NUMERIC(12,2),                                     -- COST
+  tax_exempt BOOLEAN,                                          -- TAXEXEMPT
+  county_tax_exempt BOOLEAN,                                   -- CountyTaxExempt
+  returned BOOLEAN,                                            -- RETURNSOLD
+  status TEXT,                                                 -- Status (e.g. 'S','L','V')
+
+  -- Legacy linkage for import/traceability
+  legacy_sitem_pk BIGINT,                                      -- sItem_PK
+  legacy_items_pk BIGINT,                                      -- items_pk
+  legacy_items_guid TEXT,                                      -- Items_ID
+  legacy_invnum TEXT,                                          -- INVNUM
+  legacy_vendor_pk BIGINT,                                     -- ven_pk
+  legacy_from_customer_pk BIGINT,                              -- from_cusPK
+  legacy_cflag INT,                                            -- cFlag
+  legacy_sit_id TEXT,                                          -- SIT_id (GUID-ish)
+  legacy_sales_loc TEXT,                                       -- SalesLoc
+  legacy_last_updated_usr TEXT,                                -- LastUpdatedUSR_ID
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_store_tx_item_tx ON store_transaction_item(store_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_store_tx_item_inventory ON store_transaction_item(inventory_item_id);
+
+-----------------------
+-- Layaway (maps: SOLD with STATUS='L' + SL deposits)
+-----------------------
+CREATE TABLE IF NOT EXISTS layaway_agreement (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- the retail sale transaction that created the layaway (SOLD row with STATUS='L')
+  sale_store_tx_id UUID NOT NULL UNIQUE REFERENCES store_transaction(id) ON DELETE CASCADE,
+
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','completed','voided','defaulted')),
+
+  service_charge_percent NUMERIC(9,4),     -- SRVCHGPERC
+  service_charge_grace_days INT,           -- SRVCHGGRAC
+  service_charge_amount NUMERIC(12,2),     -- SRVCHGAMT
+  deposit NUMERIC(12,2),                   -- DEPOSIT
+  period_days INT,                         -- PERIOD
+  late_fee NUMERIC(12,2),                  -- Laylate
+  message TEXT,                            -- sld_Message / NOTE
+  reminder BOOLEAN,                        -- Reminder (if you used it as boolean)
+
+  -- optional: carry totals to simplify reporting
+  county_taxable NUMERIC(12,2),            -- CountyTaxable
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+DROP TRIGGER IF EXISTS trg_layaway_agreement_updated ON layaway_agreement;
+CREATE TRIGGER trg_layaway_agreement_updated
+BEFORE UPDATE ON layaway_agreement
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+-- Each layaway deposit is its own store_transaction (type 'SL').
+-- This table links those payments to the agreement.
+CREATE TABLE IF NOT EXISTS layaway_payment (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  layaway_agreement_id UUID NOT NULL REFERENCES layaway_agreement(id) ON DELETE CASCADE,
+  store_transaction_id UUID NOT NULL UNIQUE REFERENCES store_transaction(id) ON DELETE CASCADE,
+  amount NUMERIC(12,2),              -- convenience; equals sum of tenders on the tx
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_layaway_payment_agreement ON layaway_payment(layaway_agreement_id);
+
+-----------------------
+-- ATF Bound Book (gunlog)
+-----------------------
+CREATE TABLE IF NOT EXISTS gunlog (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  gunlog_number  INTEGER NOT NULL,
+  CONSTRAINT gunlog_number_unique UNIQUE (gunlog_number),
+
+  inventory_item_id UUID REFERENCES inventory_item(id) ON DELETE SET NULL,
+
+  manufacturer    TEXT NOT NULL,
+  importer        TEXT,
+  model           TEXT,
+  serial_number   TEXT NOT NULL,
+  caliber_gauge   TEXT NOT NULL,
+  firearm_type    TEXT NOT NULL,
+  firearm_action  TEXT NOT NULL,
+
+  acquisition_date        TIMESTAMPTZ NOT NULL,
+  acquisition_customer_id UUID REFERENCES customer(id) ON DELETE SET NULL,
+
+  acq_name_full   TEXT NOT NULL,
+  acq_addr1       TEXT,
+  acq_suite_number TEXT,
+  acq_addr2       TEXT,
+  acq_city        TEXT,
+  acq_state       TEXT,
+  acq_zip         TEXT,
+  acq_id_type     TEXT,
+  acq_id_number   TEXT,
+
+  disposition_date        TIMESTAMPTZ,
+  disposition_customer_id UUID REFERENCES customer(id) ON DELETE SET NULL,
+
+  disp_name_full  TEXT,
+  disp_addr1      TEXT,
+  disp_suite_number TEXT,
+  disp_addr2      TEXT,
+  disp_city       TEXT,
+  disp_state      TEXT,
+  disp_zip        TEXT,
+  disp_id_type    TEXT,
+  disp_id_number  TEXT,
+
+  acquisition_store_tx_id  UUID REFERENCES store_transaction(id) ON DELETE SET NULL,
+  disposition_store_tx_id  UUID REFERENCES store_transaction(id) ON DELETE SET NULL,
+
+  status          TEXT NOT NULL DEFAULT 'active'
+                  CHECK (status IN ('active','voided','corrected')),
+  supersedes_id   UUID REFERENCES gunlog(id) ON DELETE SET NULL,
+  notes           TEXT,
+
+  last_updated_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
+
+  -- legacy linkage
+  legacy_gunlog_pk        BIGINT,
+  legacy_gunlognum        INTEGER,
+  legacy_prev_gunlogrec   BIGINT,
+  legacy_next_gunlogrec   BIGINT,
+  legacy_invnum           TEXT,
+  legacy_transnum         TEXT,
+  legacy_changed          BOOLEAN,
+  legacy_voided           BOOLEAN,
+  legacy_nicstn           TEXT,
+  legacy_pickdate         TIMESTAMPTZ,
+  legacy_gun_id           TEXT,
+  legacy_last_updated_usr TEXT,
+
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_gunlog_legacy_pk       ON gunlog(legacy_gunlog_pk);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_serial         ON gunlog(serial_number);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_acq_date       ON gunlog(acquisition_date);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_disp_date      ON gunlog(disposition_date);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_inventory      ON gunlog(inventory_item_id);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_invnum  ON gunlog(legacy_invnum);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_trans   ON gunlog(legacy_transnum);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_prev    ON gunlog(legacy_prev_gunlogrec);
+CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_next    ON gunlog(legacy_next_gunlogrec);
+
+DROP TRIGGER IF EXISTS trg_gunlog_updated ON gunlog;
+CREATE TRIGGER trg_gunlog_updated
+BEFORE UPDATE ON gunlog
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
