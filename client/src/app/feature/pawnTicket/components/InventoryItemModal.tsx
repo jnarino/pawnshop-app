@@ -35,18 +35,49 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
+  
+  // Filter state for autocomplete
+  const [typeFilter, setTypeFilter] = useState('');
+  const [subcat1Filter, setSubcat1Filter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
 
   // Load categories from DB
   const { loading: catLoading, error: catError, typeOptions, subcat1OptionsFor, brandOptionsFor } = useInventoryCategories();
   const subcat1Options = useMemo(() => subcat1OptionsFor(draft.type), [draft.type, subcat1OptionsFor]);
   const brandOptions = useMemo(() => brandOptionsFor(draft.sub1), [draft.sub1, brandOptionsFor]);
 
+  // Filtered options for autocomplete
+  const filteredTypeOptions = useMemo(() => 
+    typeOptions.filter(t => t.name.toUpperCase().includes(typeFilter.toUpperCase())),
+    [typeOptions, typeFilter]
+  );
+  
+  const filteredSubcat1Options = useMemo(() => 
+    subcat1Options.filter(s => s.name.toUpperCase().includes(subcat1Filter.toUpperCase())),
+    [subcat1Options, subcat1Filter]
+  );
+  
+  const filteredBrandOptions = useMemo(() => 
+    brandOptions.filter(b => b.name.toUpperCase().includes(brandFilter.toUpperCase())),
+    [brandOptions, brandFilter]
+  );
+
   useEffect(() => {
-    if (open) setDraft(initial ? { ...initial } : { ...DEFAULT_ITEM });
+    if (open) {
+      setDraft(initial ? { ...initial } : { ...DEFAULT_ITEM });
+      setTypeFilter('');
+      setSubcat1Filter('');
+      setBrandFilter('');
+    }
   }, [open, initial]);
 
   function update<K extends keyof InventoryItemDraft>(k: K, v: InventoryItemDraft[K]) {
-    setDraft(d => ({ ...d, [k]: v }));
+    // For string values, convert to uppercase except for ownerNumber and description
+    if (typeof v === 'string' && k !== 'description' && k !== 'ownerNumber') {
+      setDraft(d => ({ ...d, [k]: v.toUpperCase() }));
+    } else {
+      setDraft(d => ({ ...d, [k]: v }));
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -117,6 +148,38 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     allowRegex: /^[A-Z0-9\-]+$/i
   });
 
+  // Handlers for autocomplete fields
+  const handleTypeInput = (value: string) => {
+    setTypeFilter(value);
+    const matchedType = typeOptions.find(t => t.name.toUpperCase() === value.toUpperCase());
+    if (matchedType) {
+      onTypeChange(matchedType.code);
+    } else {
+      // Just update the filter, not the actual type until a match is selected
+      setDraft(prev => ({ ...prev, type: value.toUpperCase() }));
+    }
+  };
+
+  const handleSubcat1Input = (value: string) => {
+    setSubcat1Filter(value);
+    const matchedSubcat = subcat1Options.find(s => s.name.toUpperCase() === value.toUpperCase());
+    if (matchedSubcat) {
+      onSub1Change(matchedSubcat.code);
+    } else {
+      setDraft(prev => ({ ...prev, sub1: value.toUpperCase() }));
+    }
+  };
+
+  const handleBrandInput = (value: string) => {
+    setBrandFilter(value);
+    const matchedBrand = brandOptions.find(b => b.name.toUpperCase() === value.toUpperCase());
+    if (matchedBrand) {
+      onBrandChange(matchedBrand.code);
+    } else {
+      setDraft(prev => ({ ...prev, sub3: undefined, brand: value.toUpperCase() }));
+    }
+  };
+
   if (!open) return null;
   return (
     <div className="pawn-modal__backdrop" role="dialog" aria-modal="true" aria-label={initial ? 'Edit Item' : 'New Item'}>
@@ -126,29 +189,48 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
         </header>
         <form onSubmit={handleSubmit} className="pawn-item-form">
           <div className="pawn-item-grid">
-            {/* Type (top-level category) */}
+            {/* Type (top-level category) - with autocomplete */}
             <label>Type
-              <select value={draft.type} onChange={e => onTypeChange(e.target.value)} disabled={catLoading}>
-                <option value="" />
-                {typeOptions.map(t => <option key={t.code} value={t.code}>{t.name}</option>)}
-              </select>
+              <input 
+                list="typeOptions"
+                value={typeFilter || draft.type || ''}
+                onChange={e => handleTypeInput(e.target.value)}
+                disabled={catLoading}
+                placeholder="Select or type"
+              />
+              <datalist id="typeOptions">
+                {filteredTypeOptions.map(t => <option key={t.code} value={t.name} />)}
+              </datalist>
             </label>
 
-            {/* Subcategory 1 (child of Type) */}
+            {/* Subcategory 1 - with autocomplete */}
             <label>Subcategory 1
-              <select value={draft.sub1 || ''} onChange={e => onSub1Change(e.target.value)} disabled={!draft.type || catLoading}>
-                <option value="" />
-                {subcat1Options.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
-              </select>
+              <input 
+                list="subcat1Options"
+                value={subcat1Filter || (draft.sub1 ? subcat1Options.find(s => s.code === draft.sub1)?.name : '') || ''}
+                onChange={e => handleSubcat1Input(e.target.value)}
+                disabled={!draft.type || catLoading}
+                placeholder="Select or type"
+              />
+              <datalist id="subcat1Options">
+                {filteredSubcat1Options.map(s => <option key={s.code} value={s.name} />)}
+              </datalist>
             </label>
 
-            {/* Brand (mapped to subcategory 3) */}
+            {/* Brand - with autocomplete */}
             <label>Brand
-              <select value={draft.sub3 || ''} onChange={e => onBrandChange(e.target.value)} disabled={!draft.sub1 || catLoading}>
-                <option value="" />
-                {brandOptions.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
-              </select>
+              <input 
+                list="brandOptions"
+                value={brandFilter || draft.brand || ''}
+                onChange={e => handleBrandInput(e.target.value)}
+                disabled={!draft.sub1 || catLoading}
+                placeholder="Select or type"
+              />
+              <datalist id="brandOptions">
+                {filteredBrandOptions.map(b => <option key={b.code} value={b.name} />)}
+              </datalist>
             </label>
+
             <label>Model
               <input value={draft.model || ''} onChange={e => update('model', e.target.value)} />
             </label>
@@ -174,7 +256,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 <input
                   list="jewelryMetals"
                   value={draft.metal || ''}
-                  onChange={e => setDraft(d => ({ ...d, metal: e.target.value, karat: undefined }))}
+                  onChange={e => setDraft(d => ({ ...d, metal: e.target.value.toUpperCase(), karat: undefined }))}
                 />
               </label>
               <label>Karat / Fineness
@@ -238,10 +320,10 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
           {/* Datalists for autofill */}
           <datalist id="jewelryColors">
-            {JEWELRY_COLORS.map(c => <option key={c} value={c} />)}
+            {JEWELRY_COLORS.map(c => <option key={c} value={c.toUpperCase()} />)}
           </datalist>
           <datalist id="jewelryMetals">
-            {JEWELRY_METALS.map(m => <option key={m} value={m} />)}
+            {JEWELRY_METALS.map(m => <option key={m} value={m.toUpperCase()} />)}
           </datalist>
         </form>
 
