@@ -4,7 +4,6 @@ import { AamvaData } from '../../../shared/hooks/useIdScan';
 import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
 import { IdConflictModal } from './IdConflictModal';
-import { ReviewCustomerModal } from './ReviewCustomerModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
 import './customerPicker.css'; // ← ensure the case matches the actual filename
@@ -272,10 +271,6 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [idConflictModalOpen, setIdConflictModalOpen] = useState(false);
   const [foundCustomerWithDifferentId, setFoundCustomerWithDifferentId] = useState<{ customer: CustomerRecord; scannedIdNumber: string } | null>(null);
 
-  // Add state for review modal
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [pendingCustomer, setPendingCustomer] = useState<CustomerRecord | null>(null);
-
   const scanSearchInFlight = useRef(false);
   const manualSearchInFlight = useRef(false);
   const lastScanQueryKey = useRef<string | null>(null);
@@ -410,10 +405,12 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       idZip: scan.zipcode || customer.idZip,
     };
     setForm(merged);
-    setPendingCustomer(merged);
-    setReviewModalOpen(true);
-    setStatusMessage('Existing customer loaded from scan.');
-    setEditingNew(true);
+    setEditingNew(false);
+    if (merged.id) {
+      onSelected?.(merged.id);
+      onChange?.(recordToDto(merged, merged.id));
+      setStatusMessage('Customer ready for pawn.');
+    }
   };
 
   // Handle ID conflict resolution - Update ID
@@ -454,23 +451,6 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     setIdConflictModalOpen(false);
     setFoundCustomerWithDifferentId(null);
     clearAll();
-  };
-
-  // Handle review modal - Proceed
-  const handleProceedToPawn = () => {
-    if (!pendingCustomer) return;
-    onSelected?.(pendingCustomer.id!);
-    onChange?.(recordToDto(pendingCustomer, pendingCustomer.id!));
-    setEditingNew(false);
-    setReviewModalOpen(false);
-    setStatusMessage('Customer ready for pawn.');
-  };
-
-  // Handle review modal - Edit
-  const handleEditBeforePawn = () => {
-    setReviewModalOpen(false);
-    setEditingNew(true);
-    setStatusMessage('Edit customer information before continuing.');
   };
 
   function clearAll() {
@@ -646,13 +626,6 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         onUpdateId={handleUpdateId}
         onKeepExisting={handleKeepExistingId}
         onCancel={handleCancelIdConflict}
-      />
-
-      <ReviewCustomerModal
-        open={reviewModalOpen}
-        customerName={pendingCustomer ? `${pendingCustomer.firstName} ${pendingCustomer.lastName}` : ''}
-        onProceed={handleProceedToPawn}
-        onEdit={handleEditBeforePawn}
       />
     </div>
   );
