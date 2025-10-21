@@ -3,6 +3,8 @@ import React from 'react';
 import { AamvaData } from '../../../shared/hooks/useIdScan';
 import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
+import { IdConflictModal } from './IdConflictModal';
+import { ReviewCustomerModal } from './ReviewCustomerModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
 import './customerPicker.css'; // ← ensure the case matches the actual filename
@@ -266,6 +268,14 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [searchFromScan, setSearchFromScan] = useState(false);
   const [lastScanData, setLastScanData] = useState<AamvaData | null>(null);
 
+  // Add new state for ID conflict handling
+  const [idConflictModalOpen, setIdConflictModalOpen] = useState(false);
+  const [foundCustomerWithDifferentId, setFoundCustomerWithDifferentId] = useState<{ customer: CustomerRecord; scannedIdNumber: string } | null>(null);
+
+  // Add state for review modal
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [pendingCustomer, setPendingCustomer] = useState<CustomerRecord | null>(null);
+
   useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
 
   // ESC closes modals
@@ -291,67 +301,167 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const setHeight = (feet: string, inches: string) => update('height', normalizeHeight(feet, inches));
 
   // After scanning: update minimal fields to query reliably, then search
-  const applyAamva = React.useCallback((d: AamvaData) => {
-    setLastScanData(d); // retain full data for potential add
-    setForm(f => ({
-      ...f,
-      firstName: d.firstName ?? f.firstName,
-      middleName: d.middleName ?? f.middleName,
-      lastName: d.lastName ?? f.lastName,
-      dateOfBirth: d.dateOfBirth ?? f.dateOfBirth,
-      idNumber: d.idNumber ?? f.idNumber,
-    }));
-    setSearchFromScan(true);
-    // Removed force flag; search will itself guard against empty criteria
-    setTimeout(() => { search(undefined, { fromScan: true }); }, 25);
-  }, []);
+  const applyAamva = React.useCallback(async (d: AamvaData) => {
+    console.log('[IDScan] parsed', d);
+    setLastScanData(d);
+    const scannedFirst = d.firstName?.trim() || '';
+    const scannedLast = d.lastName?.trim() || '';
+    const scannedDob = d.dateOfBirth || '';
+    const scannedIdNumber = d.idNumber || '';
 
-  // Removed 'force' option; safeguard against empty criteria causing full list
-  async function search(e?: React.FormEvent, opts?: { fromScan?: boolean }) {
-    e?.preventDefault();
-    const noCriteria = !form.firstName && !form.lastName && !form.dateOfBirth && !form.idNumber;
-
-    // If no criteria and invoked from scan, treat as not found (compact modal) without querying all customers
-    if (noCriteria) {
-      if (opts?.fromScan) {
-        setError(null);
-        setResults([]);
-        setModalEmpty(true);
-        setSearchFromScan(true);
-        setLoading(false);
-        setSearchModalOpen(true);
-      }
+    if (!scannedFirst || !scannedLast || !scannedDob) {
+      setError('Scan missing required name or date of birth information.');
       return;
     }
 
-    setError(null);
-    setLoading(true);
-    setResults([]);
-    setSearchFromScan(!!opts?.fromScan);
-
     try {
+      setLoading(true);
+      setError(null);
       const params = new URLSearchParams();
-      if (form.firstName) params.append('firstName', form.firstName.trim());
-      if (form.lastName) params.append('lastName', form.lastName.trim());
-      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth as string);
-      if (form.idNumber) params.append('idNumber', form.idNumber as string);
-      params.append('limit', String(CUSTOMER_SEARCH_LIMIT));
+      params.append('firstName', scannedFirst);
+      params.append('lastName', scannedLast);
+      params.append('dateOfBirth', scannedDob);
+      params.append('limit', '10');
+      const resp = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
+      if (!resp.ok) throw new Error('Customer lookup failed');
+      const payload = await resp.json();
+      const matches = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);
 
-      const res = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
-      const data = await res.json();
-      const mapped = (Array.isArray(data) ? data : []).map(apiToRecordLoose);
+      if (!matches.length) {
+        populateFormFromScan(d);
+        setEditingNew(true);
+        setStatusMessage('Scanned data loaded for new customer.');
+        return;
+      }
 
-      setResults(mapped);
-      setModalEmpty(mapped.length === 0);
+      if (matches.length === 1) {
+        const match = matches[0];
+        const dbId = match.idNumber?.trim() || '';
+        if (dbId && scannedIdNumber && dbId.toUpperCase() !== scannedIdNumber.toUpperCase()) {
+          setFoundCustomerWithDifferentId({ customer: match, scannedIdNumber });
+          setIdConflictModalOpen(true);
+          return;
+        }
+        loadCustomerFromScan(match, d);
+        return;
+      }
+
+      setResults(matches);
+      setModalEmpty(false);
+      setSearchFromScan(true);
+      setSearchModalOpen(true);
     } catch (err: any) {
-      setError(err.message || 'Search failed');
-      setResults([]);
-      setModalEmpty(true);
+      setError(err.message || 'Scan search failed');
+      setSearchModalOpen(true);
     } finally {
       setLoading(false);
-      setSearchModalOpen(true);
     }
-  }
+  }, []);
+
+  // Populate form with all scanned data for new customer
+  const populateFormFromScan = (d: AamvaData) => {
+    setForm(prev => ({
+      ...prev,
+      firstName: d.firstName || '',
+      middleName: d.middleName || '',
+      lastName: d.lastName || '',
+      dateOfBirth: d.dateOfBirth || undefined,
+      idNumber: d.idNumber || '',
+      idState: d.stateUs || prev.idState,
+      idIssueDate: d.issueDate || prev.idIssueDate,
+      idExpiration: d.expirationDate || prev.idExpiration,
+      streetAddress: d.streetAddress || prev.streetAddress,
+      city: d.city || prev.city,
+      stateUs: d.stateUs || prev.stateUs,
+      zipCode: d.zipcode || prev.zipCode,
+      idAddress: d.streetAddress || prev.idAddress,
+      idCity: d.city || prev.idCity,
+      idZip: d.zipcode || prev.idZip,
+      sex: d.sex || prev.sex,
+      height: d.height || prev.height,
+      eyeColor: d.eyeColor || prev.eyeColor,
+      hairColor: d.hairColor || prev.hairColor,
+    }));
+  };
+
+  // Load existing customer and merge with scan data
+  const loadCustomerFromScan = (customer: CustomerRecord, scan: AamvaData) => {
+    const merged = {
+      ...customer,
+      idNumber: scan.idNumber || customer.idNumber,
+      idExpiration: scan.expirationDate || customer.idExpiration,
+      idIssueDate: scan.issueDate || customer.idIssueDate,
+      streetAddress: scan.streetAddress || customer.streetAddress,
+      city: scan.city || customer.city,
+      stateUs: scan.stateUs || customer.stateUs,
+      zipCode: scan.zipcode || customer.zipCode,
+      idAddress: scan.streetAddress || customer.idAddress,
+      idCity: scan.city || customer.idCity,
+      idZip: scan.zipcode || customer.idZip,
+    };
+    setForm(merged);
+    setPendingCustomer(merged);
+    setReviewModalOpen(true);
+    setStatusMessage('Existing customer loaded from scan.');
+    setEditingNew(true);
+  };
+
+  // Handle ID conflict resolution - Update ID
+  const handleUpdateId = async () => {
+    if (!foundCustomerWithDifferentId || !lastScanData) return;
+    try {
+      setSaving(true);
+      const { customer, scannedIdNumber } = foundCustomerWithDifferentId;
+      const resp = await fetch(`${API_BASE_URL}/api/customer/${customer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ idNumber: scannedIdNumber }),
+      });
+      if (!resp.ok) throw new Error('Failed to update ID number');
+      setIdConflictModalOpen(false);
+      setFoundCustomerWithDifferentId(null);
+      loadCustomerFromScan({ ...customer, idNumber: scannedIdNumber }, lastScanData);
+      setStatusMessage('ID number updated.');
+    } catch (err: any) {
+      setError(err.message || 'Unable to update ID number');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle ID conflict resolution - Keep existing ID
+  const handleKeepExistingId = () => {
+    if (!foundCustomerWithDifferentId || !lastScanData) return;
+    const { customer } = foundCustomerWithDifferentId;
+    setIdConflictModalOpen(false);
+    setFoundCustomerWithDifferentId(null);
+    loadCustomerFromScan(customer, lastScanData);
+  };
+
+  // Handle ID conflict resolution - Cancel
+  const handleCancelIdConflict = () => {
+    setIdConflictModalOpen(false);
+    setFoundCustomerWithDifferentId(null);
+    clearAll();
+  };
+
+  // Handle review modal - Proceed
+  const handleProceedToPawn = () => {
+    if (!pendingCustomer) return;
+    onSelected?.(pendingCustomer.id!);
+    onChange?.(recordToDto(pendingCustomer, pendingCustomer.id!));
+    setEditingNew(false);
+    setReviewModalOpen(false);
+    setStatusMessage('Customer ready for pawn.');
+  };
+
+  // Handle review modal - Edit
+  const handleEditBeforePawn = () => {
+    setReviewModalOpen(false);
+    setEditingNew(true);
+    setStatusMessage('Edit customer information before continuing.');
+  };
 
   function clearAll() {
     setForm({ firstName: '', lastName: '', dateOfBirth: undefined, sex: '' } as any);
@@ -414,6 +524,40 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const containerClass = 'customer-lookup' + (editingNew ? ' is-editing-new' : '');
   const canAddFromScan = !!lastScanData && modalEmpty;
 
+  async function search(e: React.FormEvent) {
+    e.preventDefault();
+    if (disableSearch || loading) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      if (form.firstName) params.append('firstName', form.firstName);
+      if (form.lastName) params.append('lastName', form.lastName);
+      if (form.dateOfBirth) params.append('dateOfBirth', form.dateOfBirth);
+      if (form.idNumber) params.append('idNumber', form.idNumber);
+      params.append('limit', CUSTOMER_SEARCH_LIMIT.toString());
+
+      const resp = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
+      if (!resp.ok) throw new Error('Customer search failed');
+
+      const payload = await resp.json();
+      const searchResults = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);
+
+      setResults(searchResults);
+      setModalEmpty(searchResults.length === 0);
+      setSearchFromScan(false);
+      setSearchModalOpen(true);
+    } catch (err: any) {
+      setError(err.message || 'Search failed');
+      setModalEmpty(true);
+      setSearchFromScan(false);
+      setSearchModalOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className={containerClass}>
       <form onSubmit={(e) => search(e)} aria-label="Customer search / create">
@@ -472,6 +616,27 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         open={scanModalOpen}
         onClose={() => setScanModalOpen(false)}
         onScanned={(data: AamvaData) => applyAamva(data)}
+      />
+
+      <IdConflictModal
+        open={idConflictModalOpen}
+        existingIdNumber={foundCustomerWithDifferentId?.customer.idNumber || ''}
+        scannedIdNumber={foundCustomerWithDifferentId?.scannedIdNumber || ''}
+        customerName={
+          foundCustomerWithDifferentId
+            ? `${foundCustomerWithDifferentId.customer.firstName} ${foundCustomerWithDifferentId.customer.lastName}`
+            : ''
+        }
+        onUpdateId={handleUpdateId}
+        onKeepExisting={handleKeepExistingId}
+        onCancel={handleCancelIdConflict}
+      />
+
+      <ReviewCustomerModal
+        open={reviewModalOpen}
+        customerName={pendingCustomer ? `${pendingCustomer.firstName} ${pendingCustomer.lastName}` : ''}
+        onProceed={handleProceedToPawn}
+        onEdit={handleEditBeforePawn}
       />
     </div>
   );
