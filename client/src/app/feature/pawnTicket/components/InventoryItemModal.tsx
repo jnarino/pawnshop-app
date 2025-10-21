@@ -29,13 +29,13 @@ interface Props {
 
 const DEFAULT_ITEM: InventoryItemDraft = { type: '', quantity: '1', weightUnit: 'Grams' };
 const weightUnits = ['Grams', 'Ounces'];
-const genderOptions = ['', 'Male', 'Female', 'Unisex'];
+const genderOptions = ['', 'MAN\'S', 'WOMAN\'S', 'N/A'];
 
 export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
-  
+
   // Filter state for autocomplete
   const [typeFilter, setTypeFilter] = useState('');
   const [subcat1Filter, setSubcat1Filter] = useState('');
@@ -47,17 +47,17 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const brandOptions = useMemo(() => brandOptionsFor(draft.sub1), [draft.sub1, brandOptionsFor]);
 
   // Filtered options for autocomplete
-  const filteredTypeOptions = useMemo(() => 
+  const filteredTypeOptions = useMemo(() =>
     typeOptions.filter(t => t.name.toUpperCase().includes(typeFilter.toUpperCase())),
     [typeOptions, typeFilter]
   );
-  
-  const filteredSubcat1Options = useMemo(() => 
+
+  const filteredSubcat1Options = useMemo(() =>
     subcat1Options.filter(s => s.name.toUpperCase().includes(subcat1Filter.toUpperCase())),
     [subcat1Options, subcat1Filter]
   );
-  
-  const filteredBrandOptions = useMemo(() => 
+
+  const filteredBrandOptions = useMemo(() =>
     brandOptions.filter(b => b.name.toUpperCase().includes(brandFilter.toUpperCase())),
     [brandOptions, brandFilter]
   );
@@ -163,7 +163,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     // Set the filter to uppercase for consistent display
     const uppercaseValue = value.toUpperCase();
     setTypeFilter(uppercaseValue);
-    
+
     const matchedType = typeOptions.find(t => t.name.toUpperCase() === uppercaseValue);
     if (matchedType) {
       onTypeChange(matchedType.code);
@@ -177,7 +177,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     // Set the filter to uppercase for consistent display
     const uppercaseValue = value.toUpperCase();
     setSubcat1Filter(uppercaseValue);
-    
+
     const matchedSubcat = subcat1Options.find(s => s.name.toUpperCase() === uppercaseValue);
     if (matchedSubcat) {
       onSub1Change(matchedSubcat.code);
@@ -190,7 +190,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     // Set the filter to uppercase for consistent display
     const uppercaseValue = value.toUpperCase();
     setBrandFilter(uppercaseValue);
-    
+
     const matchedBrand = brandOptions.find(b => b.name.toUpperCase() === uppercaseValue);
     if (matchedBrand) {
       onBrandChange(matchedBrand.code);
@@ -210,7 +210,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
           <div className="pawn-item-grid">
             {/* Type (top-level category) - with autocomplete */}
             <label>Type
-              <input 
+              <input
                 list="typeOptions"
                 value={typeFilter || draft.type || ''}
                 onChange={e => handleTypeInput(e.target.value)}
@@ -224,7 +224,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
             {/* Subcategory 1 - with autocomplete */}
             <label>Subcategory 1
-              <input 
+              <input
                 list="subcat1Options"
                 value={subcat1Filter || (draft.sub1 ? subcat1Options.find(s => s.code === draft.sub1)?.name : '') || ''}
                 onChange={e => handleSubcat1Input(e.target.value)}
@@ -238,7 +238,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
             {/* Brand - with autocomplete */}
             <label>Brand
-              <input 
+              <input
                 list="brandOptions"
                 value={brandFilter || draft.brand || ''}
                 onChange={e => handleBrandInput(e.target.value)}
@@ -259,7 +259,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <label>Color
               <input list="jewelryColors" value={draft.color || ''} onChange={e => update('color', e.target.value)} />
             </label>
-            <label>Owner
+            <label>Owner Marks
               <input value={draft.ownerNumber || ''} onChange={e => update('ownerNumber', e.target.value)} />
             </label>
             <label>Value
