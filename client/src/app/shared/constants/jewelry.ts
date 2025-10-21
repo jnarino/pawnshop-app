@@ -50,3 +50,33 @@ export const KARAT_OPTIONS_BY_METAL: Record<string, string[]> = {
   'Nickel Silver':  ['NS65', 'NS70', 'German Silver'],
   'Copper':         ['Pure', 'Alloy']
 };
+
+// Ring sizes (US standard)
+export const RING_SIZES = [
+  '1', '1 1/4', '1 1/2', '1 3/4',
+  '2', '2 1/4', '2 1/2', '2 3/4',
+  '3', '3 1/4', '3 1/2', '3 3/4',
+  '4', '4 1/4', '4 1/2', '4 3/4',
+  '5', '5 1/4', '5 1/2', '5 3/4',
+  '6', '6 1/4', '6 1/2', '6 3/4',
+  '7', '7 1/4', '7 1/2', '7 3/4',
+  '8', '8 1/4', '8 1/2', '8 3/4',
+  '9', '9 1/4', '9 1/2', '9 3/4',
+  '10', '10 1/4', '10 1/2', '10 3/4',
+  '11', '11 1/4', '11 1/2', '11 3/4',
+  '12', '12 1/4', '12 1/2', '12 3/4',
+  '13', '13 1/4', '13 1/2', '13 3/4',
+  '14', '14 1/4', '14 1/2', '14 3/4',
+  '15'
+] as const;
+
+// Weight units for jewelry
+export const WEIGHT_UNITS = ['Grams', 'Ounces'] as const;
+
+// Gender options for jewelry
+export const GENDER_OPTIONS = ['', 'MAN\'S', 'WOMAN\'S', 'N/A'] as const;
+
+// Type exports for better TypeScript support
+export type RingSize = typeof RING_SIZES[number];
+export type WeightUnit = typeof WEIGHT_UNITS[number];
+export type GenderOption = typeof GENDER_OPTIONS[number];
