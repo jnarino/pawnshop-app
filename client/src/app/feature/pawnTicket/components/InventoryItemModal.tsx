@@ -65,11 +65,21 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   useEffect(() => {
     if (open) {
       setDraft(initial ? { ...initial } : { ...DEFAULT_ITEM });
-      setTypeFilter('');
-      setSubcat1Filter('');
-      setBrandFilter('');
+      // Initialize filters with uppercase values if editing an item
+      if (initial) {
+        // Find display names for codes and set filters
+        const typeName = typeOptions.find(t => t.code === initial.type)?.name || initial.type || '';
+        const subcat1Name = subcat1OptionsFor(initial.type).find(s => s.code === initial.sub1)?.name || '';
+        setTypeFilter(typeName.toUpperCase());
+        setSubcat1Filter(subcat1Name.toUpperCase());
+        setBrandFilter((initial.brand || '').toUpperCase());
+      } else {
+        setTypeFilter('');
+        setSubcat1Filter('');
+        setBrandFilter('');
+      }
     }
-  }, [open, initial]);
+  }, [open, initial, typeOptions, subcat1OptionsFor]);
 
   function update<K extends keyof InventoryItemDraft>(k: K, v: InventoryItemDraft[K]) {
     // For string values, convert to uppercase except for ownerNumber and description
@@ -150,33 +160,42 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
   // Handlers for autocomplete fields
   const handleTypeInput = (value: string) => {
-    setTypeFilter(value);
-    const matchedType = typeOptions.find(t => t.name.toUpperCase() === value.toUpperCase());
+    // Set the filter to uppercase for consistent display
+    const uppercaseValue = value.toUpperCase();
+    setTypeFilter(uppercaseValue);
+    
+    const matchedType = typeOptions.find(t => t.name.toUpperCase() === uppercaseValue);
     if (matchedType) {
       onTypeChange(matchedType.code);
     } else {
       // Just update the filter, not the actual type until a match is selected
-      setDraft(prev => ({ ...prev, type: value.toUpperCase() }));
+      setDraft(prev => ({ ...prev, type: uppercaseValue }));
     }
   };
 
   const handleSubcat1Input = (value: string) => {
-    setSubcat1Filter(value);
-    const matchedSubcat = subcat1Options.find(s => s.name.toUpperCase() === value.toUpperCase());
+    // Set the filter to uppercase for consistent display
+    const uppercaseValue = value.toUpperCase();
+    setSubcat1Filter(uppercaseValue);
+    
+    const matchedSubcat = subcat1Options.find(s => s.name.toUpperCase() === uppercaseValue);
     if (matchedSubcat) {
       onSub1Change(matchedSubcat.code);
     } else {
-      setDraft(prev => ({ ...prev, sub1: value.toUpperCase() }));
+      setDraft(prev => ({ ...prev, sub1: uppercaseValue }));
     }
   };
 
   const handleBrandInput = (value: string) => {
-    setBrandFilter(value);
-    const matchedBrand = brandOptions.find(b => b.name.toUpperCase() === value.toUpperCase());
+    // Set the filter to uppercase for consistent display
+    const uppercaseValue = value.toUpperCase();
+    setBrandFilter(uppercaseValue);
+    
+    const matchedBrand = brandOptions.find(b => b.name.toUpperCase() === uppercaseValue);
     if (matchedBrand) {
       onBrandChange(matchedBrand.code);
     } else {
-      setDraft(prev => ({ ...prev, sub3: undefined, brand: value.toUpperCase() }));
+      setDraft(prev => ({ ...prev, sub3: undefined, brand: uppercaseValue }));
     }
   };
 
