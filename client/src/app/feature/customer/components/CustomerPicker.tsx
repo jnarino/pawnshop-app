@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { AamvaData } from '../../../shared/hooks/useIdScan';
 import './CustomerIdScanModal.css';
@@ -276,6 +276,11 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [pendingCustomer, setPendingCustomer] = useState<CustomerRecord | null>(null);
 
+  const scanSearchInFlight = useRef(false);
+  const manualSearchInFlight = useRef(false);
+  const lastScanQueryKey = useRef<string | null>(null);
+  const lastManualQueryKey = useRef<string | null>(null);
+
   useEffect(() => { setForm(dtoToRecord(value ?? null)); }, [value]);
 
   // ESC closes modals
@@ -314,6 +319,10 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       return;
     }
 
+    const queryKey = `${scannedFirst}|${scannedLast}|${scannedDob}`;
+    if (scanSearchInFlight.current || lastScanQueryKey.current === queryKey) return;
+    scanSearchInFlight.current = true;
+    lastScanQueryKey.current = queryKey;
     try {
       setLoading(true);
       setError(null);
@@ -354,6 +363,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       setError(err.message || 'Scan search failed');
       setSearchModalOpen(true);
     } finally {
+      scanSearchInFlight.current = false;
       setLoading(false);
     }
   }, []);
@@ -471,6 +481,8 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     setUseIdAddr(false);
     setLastScanData(null);
     setModalEmpty(false);
+    lastScanQueryKey.current = null;
+    lastManualQueryKey.current = null;
   }
 
   function handleAddFromScan() {
@@ -526,8 +538,11 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
-    if (disableSearch || loading) return;
-
+    if (disableSearch || loading || manualSearchInFlight.current) return;
+    const manualQueryKey = `${form.firstName || ''}|${form.lastName || ''}|${form.dateOfBirth || ''}|${form.idNumber || ''}`;
+    if (lastManualQueryKey.current === manualQueryKey) return;
+    manualSearchInFlight.current = true;
+    lastManualQueryKey.current = manualQueryKey;
     try {
       setLoading(true);
       setError(null);
@@ -554,13 +569,14 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       setSearchFromScan(false);
       setSearchModalOpen(true);
     } finally {
+      manualSearchInFlight.current = false;
       setLoading(false);
     }
   }
 
   return (
     <div className={containerClass}>
-      <form onSubmit={(e) => search(e)} aria-label="Customer search / create">
+      <form onSubmit={search} aria-label="Customer search / create">
         <IdentityContactSection form={form} update={update} editing={editingNew} />
         <AddressSection form={form} update={update} editing={editingNew} useIdAddr={useIdAddr} setUseIdAddr={setUseIdAddr} />
         <GovernmentIdSection form={form} update={update} editing={editingNew} />
