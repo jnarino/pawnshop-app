@@ -1,13 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryRepository = void 0;
-const db_1 = require("../db");
-const sqlLoader_1 = require("../db/sqlLoader");
 class CategoryRepository {
+    constructor(pool) {
+        this.pool = pool;
+    }
     async listFlat() {
-        const sql = (0, sqlLoader_1.getSQL)('query', 'inventory', 'listcategoriesTree');
-        const { rows } = await db_1.pool.query(sql);
-        return rows;
+        const result = await this.pool.query(`
+            SELECT id, name, code, parent_id, path::text
+            FROM inventory_category
+            ORDER BY path
+        `);
+        return result.rows;
+    }
+    async create(data) {
+        const result = await this.pool.query(`INSERT INTO inventory_category (name, code, parent_id)
+             VALUES ($1, $2, $3)
+             RETURNING id`, [data.name, data.code, data.parent_id]);
+        return { id: result.rows[0].id };
     }
 }
 exports.CategoryRepository = CategoryRepository;

@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ListCategoriesTreeUseCase = void 0;
 class ListCategoriesTreeUseCase {
-    constructor(repo) {
-        this.repo = repo;
+    constructor(cacheService) {
+        this.cacheService = cacheService;
     }
     async execute() {
-        const rows = await this.repo.listFlat();
+        // Use cached data instead of direct repository access
+        const rows = await this.cacheService.getCategories();
         const byId = new Map();
         const roots = [];
         for (const r of rows) {

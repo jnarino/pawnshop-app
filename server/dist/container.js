@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.categoryController = exports.pawnTicketController = exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
+exports.categoryCache = exports.container = exports.categoryController = exports.pawnTicketController = exports.inventoryStatusController = exports.inventoryController = exports.customerController = void 0;
 const CustomerRepository_1 = require("./infrastructure/persistence/CustomerRepository");
 const ListCustomersUseCase_1 = require("./application/useCase/customer/ListCustomersUseCase");
 const GetCustomerUseCase_1 = require("./application/useCase/customer/GetCustomerUseCase");
@@ -28,15 +28,23 @@ const DeletePawnTicketUseCase_1 = require("./application/useCase/pawnTicket/Dele
 const pawnTicketController_1 = require("./controller/pawnTicket/pawnTicketController");
 const SearchPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/SearchPawnTicketsUseCase");
 const CategoryRepository_1 = require("./infrastructure/persistence/CategoryRepository");
+const CategoryCacheService_1 = require("./infrastructure/cache/CategoryCacheService");
 const ListCategoriesTreeUseCase_1 = require("./application/useCase/category/ListCategoriesTreeUseCase");
-const categoryControllerFactory_1 = require("./controller/category/categoryControllerFactory");
+const db_1 = require("./infrastructure/persistence/db");
 const FindAllPawnTicketsUseCase_1 = require("./application/useCase/pawnTicket/FindAllPawnTicketsUseCase");
+const categoryControllerFactory_1 = require("./controller/category/categoryControllerFactory");
 const repo = new CustomerRepository_1.CustomerRepository();
 const inventoryRepo = new InventoryRepository_1.InventoryRepository();
 const statusRepo = new InventoryStatusRepository_1.InventoryStatusRepository();
 const pawnTicketRepo = new PawnTicketRepository_1.PawnTicketRepository();
-// Categories (same pattern as others)
-const categoryRepo = new CategoryRepository_1.CategoryRepository();
+// Initialize category repository and cache
+const categoryRepo = new CategoryRepository_1.CategoryRepository(db_1.pool);
+const categoryCache = new CategoryCacheService_1.CategoryCacheService(categoryRepo);
+exports.categoryCache = categoryCache;
+// Initialize cache on startup
+categoryCache.refreshCache().catch(err => {
+    console.error('[Container] Failed to initialize category cache:', err);
+});
 exports.customerController = (0, customerControllerFactory_1.makeCustomerController)({
     list: new ListCustomersUseCase_1.ListCustomersUseCase(repo),
     get: new GetCustomerUseCase_1.GetCustomerUseCase(repo),
@@ -65,5 +73,37 @@ exports.pawnTicketController = (0, pawnTicketController_1.makePawnTicketControll
     search: new SearchPawnTicketsUseCase_1.SearchPawnTicketsUseCase(pawnTicketRepo),
 });
 exports.categoryController = (0, categoryControllerFactory_1.makeCategoryController)({
-    tree: new ListCategoriesTreeUseCase_1.ListCategoriesTreeUseCase(categoryRepo),
+    tree: new ListCategoriesTreeUseCase_1.ListCategoriesTreeUseCase(categoryCache),
 });
+exports.container = {
+    customer: {
+        list: new ListCustomersUseCase_1.ListCustomersUseCase(repo),
+        get: new GetCustomerUseCase_1.GetCustomerUseCase(repo),
+        create: new CreateCustomerUseCase_1.CreateCustomerUseCase(repo),
+        update: new UpdateCustomerUseCase_1.UpdateCustomerUseCase(repo),
+        delete: new DeleteCustomerUseCase_1.DeleteCustomerUseCase(repo),
+    },
+    inventory: {
+        list: new ListInventoryItemsUseCase_1.ListInventoryItemsUseCase(inventoryRepo),
+        get: new GetInventoryItemUseCase_1.GetInventoryItemUseCase(inventoryRepo),
+        create: new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(inventoryRepo),
+        update: new UpdateInventoryItemUseCase_1.UpdateInventoryItemUseCase(inventoryRepo),
+        delete: new DeleteInventoryItemUseCase_1.DeleteInventoryItemUseCase(inventoryRepo),
+    },
+    inventoryStatus: {
+        list: new ListInventoryStatusesUseCase_1.ListInventoryStatusesUseCase(statusRepo),
+        create: new CreateInventoryStatusUseCase_1.CreateInventoryStatusUseCase(statusRepo),
+        deactivate: new DeactivateInventoryStatusUseCase_1.DeactivateInventoryStatusUseCase(statusRepo),
+    },
+    pawnTicket: {
+        findAll: new FindAllPawnTicketsUseCase_1.FindAllPawnTicketsUseCase(pawnTicketRepo),
+        create: new CreatePawnTicketUseCase_1.CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase_1.CreateInventoryItemUseCase(inventoryRepo)),
+        get: new GetPawnTicketUseCase_1.GetPawnTicketUseCase(pawnTicketRepo),
+        updateDates: new UpdatePawnTicketDatesUseCase_1.UpdatePawnTicketDatesUseCase(pawnTicketRepo),
+        delete: new DeletePawnTicketUseCase_1.DeletePawnTicketUseCase(pawnTicketRepo),
+        search: new SearchPawnTicketsUseCase_1.SearchPawnTicketsUseCase(pawnTicketRepo),
+    },
+    category: {
+        tree: new ListCategoriesTreeUseCase_1.ListCategoriesTreeUseCase(categoryCache),
+    },
+};

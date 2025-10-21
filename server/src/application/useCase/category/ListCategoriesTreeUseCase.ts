@@ -1,4 +1,4 @@
-import { CategoryRepository } from '../../../infrastructure/persistence/CategoryRepository';
+import { CategoryCacheService } from '../../../infrastructure/cache/CategoryCacheService';
 
 export interface CategoryNode {
     id: string;
@@ -9,10 +9,11 @@ export interface CategoryNode {
 }
 
 export class ListCategoriesTreeUseCase {
-    constructor(private repo: CategoryRepository) { }
+    constructor(private cacheService: CategoryCacheService) { }
 
     async execute(): Promise<CategoryNode[]> {
-        const rows = await this.repo.listFlat();
+        // Use cached data instead of direct repository access
+        const rows = await this.cacheService.getCategories();
         const byId = new Map<string, CategoryNode>();
         const roots: CategoryNode[] = [];
 

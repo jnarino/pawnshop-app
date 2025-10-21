@@ -25,16 +25,26 @@ import { DeletePawnTicketUseCase } from './application/useCase/pawnTicket/Delete
 import { makePawnTicketController } from './controller/pawnTicket/pawnTicketController';
 import { SearchPawnTicketsUseCase } from './application/useCase/pawnTicket/SearchPawnTicketsUseCase';
 import { CategoryRepository } from './infrastructure/persistence/CategoryRepository';
+import { CategoryCacheService } from './infrastructure/cache/CategoryCacheService';
 import { ListCategoriesTreeUseCase } from './application/useCase/category/ListCategoriesTreeUseCase';
-import { makeCategoryController } from './controller/category/categoryControllerFactory';
+import { pool } from './infrastructure/persistence/db';
 import { FindAllPawnTicketsUseCase } from './application/useCase/pawnTicket/FindAllPawnTicketsUseCase';
+import { makeCategoryController } from './controller/category/categoryControllerFactory';
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
 const statusRepo = new InventoryStatusRepository();
 const pawnTicketRepo = new PawnTicketRepository();
-// Categories (same pattern as others)
-const categoryRepo = new CategoryRepository();
+
+// Initialize category repository and cache
+const categoryRepo = new CategoryRepository(pool);
+const categoryCache = new CategoryCacheService(categoryRepo);
+
+// Initialize cache on startup
+categoryCache.refreshCache().catch(err => {
+    console.error('[Container] Failed to initialize category cache:', err);
+});
+
 export const customerController = makeCustomerController({
     list: new ListCustomersUseCase(repo),
     get: new GetCustomerUseCase(repo),
@@ -67,5 +77,41 @@ export const pawnTicketController = makePawnTicketController({
 });
 
 export const categoryController = makeCategoryController({
-    tree: new ListCategoriesTreeUseCase(categoryRepo) as any,
+    tree: new ListCategoriesTreeUseCase(categoryCache),
 });
+
+export const container = {
+    customer: {
+        list: new ListCustomersUseCase(repo),
+        get: new GetCustomerUseCase(repo),
+        create: new CreateCustomerUseCase(repo),
+        update: new UpdateCustomerUseCase(repo),
+        delete: new DeleteCustomerUseCase(repo),
+    },
+    inventory: {
+        list: new ListInventoryItemsUseCase(inventoryRepo),
+        get: new GetInventoryItemUseCase(inventoryRepo),
+        create: new CreateInventoryItemUseCase(inventoryRepo),
+        update: new UpdateInventoryItemUseCase(inventoryRepo),
+        delete: new DeleteInventoryItemUseCase(inventoryRepo),
+    },
+    inventoryStatus: {
+        list: new ListInventoryStatusesUseCase(statusRepo),
+        create: new CreateInventoryStatusUseCase(statusRepo),
+        deactivate: new DeactivateInventoryStatusUseCase(statusRepo),
+    },
+    pawnTicket: {
+        findAll: new FindAllPawnTicketsUseCase(pawnTicketRepo),
+        create: new CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase(inventoryRepo)),
+        get: new GetPawnTicketUseCase(pawnTicketRepo),
+        updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
+        delete: new DeletePawnTicketUseCase(pawnTicketRepo),
+        search: new SearchPawnTicketsUseCase(pawnTicketRepo),
+    },
+    category: {
+        tree: new ListCategoriesTreeUseCase(categoryCache),
+    },
+};
+
+// Export categoryCache for graceful shutdown
+export { categoryCache };

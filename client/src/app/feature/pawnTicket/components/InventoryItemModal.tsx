@@ -6,6 +6,8 @@ import {
   JEWELRY_METALS,
   KARAT_OPTIONS_BY_METAL,
   RING_SIZES,
+  WEIGHT_UNITS,
+  GENDER_OPTIONS
 } from '@/app/shared/constants/jewelry';
 
 // Extended interface to include firearm-specific fields
@@ -56,8 +58,6 @@ interface Props {
 
 // Constants
 const DEFAULT_ITEM: InventoryItemDraft = { type: '', quantity: '1', weightUnit: 'Grams' };
-const WEIGHT_UNITS = ['Grams', 'Ounces'] as const;
-const GENDER_OPTIONS = ['', 'MAN\'S', 'WOMAN\'S', 'N/A'] as const;
 
 export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
   // State
@@ -72,15 +72,15 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   // Load categories from DB
   const { loading: catLoading, error: catError, typeOptions, subcat1OptionsFor, brandOptionsFor } = useInventoryCategories();
 
-  // Derived options
+  // Derived options - removed brandOptionsFor from dependencies
   const subcat1Options = useMemo(() => subcat1OptionsFor(draft.type), [draft.type, subcat1OptionsFor]);
-  const brandOptions = useMemo(() => brandOptionsFor(draft.sub1), [draft.sub1, brandOptionsFor]);
+  const brandOptions = useMemo(() => brandOptionsFor(draft.sub1 || ''), [draft.sub1, brandOptionsFor]);
 
   // Category detection
   const isJewelry = useMemo(() => (draft.type || '').toLowerCase() === 'jewelry', [draft.type]);
   const isFirearm = useMemo(() => (draft.type || '').toLowerCase() === 'firearms', [draft.type]);
 
-  // Style options based on jewelry subcategory
+  // Style options based on jewelry subcategory - fixed dependency
   const styleOptions = useMemo(() => {
     if (!isJewelry || !draft.sub1) return [];
     const selectedSubcat = subcat1Options.find(s => s.code === draft.sub1);
