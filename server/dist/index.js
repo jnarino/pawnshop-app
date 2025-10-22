@@ -39,52 +39,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const db_1 = require("./infrastructure/persistence/db");
+// Import category routes FIRST before using
 const categoryRoutes_1 = __importStar(require("./infrastructure/http/routes/categoryRoutes"));
 const app = (0, express_1.default)();
 // Middleware
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true
+}));
 app.use(express_1.default.json());
-// Routes
-app.use('/api/categories', categoryRoutes_1.default);
-// Start server
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-    console.log(`[Server] Running on port ${PORT}`);
+// Health check (this works, so we know Express is running)
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true });
 });
-// Graceful shutdown handlers
-const gracefulShutdown = async (signal) => {
-    console.log(`${signal} signal received: shutting down gracefully`);
+// Register category routes - THIS IS THE CRITICAL LINE
+console.log('[Server] About to register category routes...');
+app.use('/api/categories', categoryRoutes_1.default);
+console.log('[Server] Category routes registered');
+// List all registered routes for debugging
+app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+        console.log('[Server] Route:', middleware.route.path);
+    }
+    else if (middleware.name === 'router') {
+        console.log('[Server] Router middleware at:', middleware.regexp);
+    }
+});
+// Start server
+async function startServer() {
     try {
-        // Close Redis connection
-        await categoryRoutes_1.categoryCache.disconnect();
-        console.log('Redis connection closed');
-    }
-    catch (err) {
-        console.error('Error closing Redis connection:', err);
-    }
-    try {
-        // Close database pool
-        await (0, db_1.closePool)();
-        console.log('Database pool closed');
-    }
-    catch (err) {
-        console.error('Error closing database pool:', err);
-    }
-    if (server) {
-        server.close(() => {
-            console.log('HTTP server closed');
-            process.exit(0);
+        console.log('[Server] Warming up category cache...');
+        await categoryRoutes_1.categoryCache.refreshCache();
+        console.log('[Server] Category cache ready');
+        const PORT = process.env.PORT || 3000;
+        const server = app.listen(PORT, () => {
+            console.log(`[Server] ✓ Running on http://localhost:${PORT}`);
         });
-        // Force close after 10 seconds
-        setTimeout(() => {
-            console.error('Could not close connections in time, forcefully shutting down');
-            process.exit(1);
-        }, 10000);
+        // Graceful shutdown
+        const handleShutdown = async (signal) => {
+            console.log(`\n[Server] ${signal} received`);
+            try {
+                await categoryRoutes_1.categoryCache.disconnect();
+                await (0, db_1.closePool)();
+            }
+            catch (err) {
+                console.error('[Server] Shutdown error:', err);
+            }
+            server.close(() => process.exit(0));
+        };
+        process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+        process.on('SIGINT', () => handleShutdown('SIGINT'));
     }
-    else {
-        process.exit(0);
+    catch (error) {
+        console.error('[Server] Failed to start:', error);
+        process.exit(1);
     }
-};
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-console.log('[Server] Category cache will be initialized on server startup');
+}
+startServer();

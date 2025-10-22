@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface CategoryNode {
   id: string;
@@ -14,46 +14,53 @@ interface CategoryOption {
 }
 
 // Client-side cache at module level
+const DEFAULT_API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : '';
+const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || DEFAULT_API_BASE).replace(/\/$/, '');
+const CATEGORIES_URL = API_BASE_URL ? `${API_BASE_URL}/api/categories/tree` : '/api/categories/tree';
+
 let cachedTree: CategoryNode[] | null = null;
-let cachePromise: Promise<CategoryNode[]> | null = null;
+let pendingFetch: Promise<CategoryNode[]> | null = null;
 
 async function fetchCategoriesTree(): Promise<CategoryNode[]> {
-  // If we already have cached data, return it immediately
   if (cachedTree) {
-    console.log('[CategoryCache] Using client-side cache');
+    console.log('[CategoryCache] Using client-side cache with', cachedTree.length, 'root categories');
     return cachedTree;
   }
 
-  // If a fetch is already in progress, wait for it
-  if (cachePromise) {
-    return cachePromise;
+  if (pendingFetch) {
+    console.log('[CategoryCache] Waiting for pending fetch...');
+    return pendingFetch;
   }
 
-  // Start a new fetch (Redis will handle server-side caching)
-  cachePromise = fetch('/api/categories/tree')
-    .then(r => {
-      if (!r.ok) throw new Error('Failed to load categories');
-      return r.json();
+  console.log('[CategoryCache] Fetching from:', CATEGORIES_URL);
+
+  pendingFetch = fetch(CATEGORIES_URL, { credentials: 'include' })
+    .then(res => {
+      console.log('[CategoryCache] Response status:', res.status);
+      if (!res.ok) {
+        throw new Error(`Failed to load categories (${res.status})`);
+      }
+      return res.json();
     })
     .then((data: CategoryNode[]) => {
+      console.log('[CategoryCache] Received', data.length, 'root categories');
       cachedTree = data;
-      cachePromise = null;
-      console.log('[CategoryCache] Client cache populated with', data.length, 'root categories');
       return data;
     })
     .catch(err => {
-      cachePromise = null;
+      console.error('[CategoryCache] Fetch error:', err);
       throw err;
+    })
+    .finally(() => {
+      pendingFetch = null;
     });
 
-  return cachePromise;
+  return pendingFetch;
 }
 
-// Function to invalidate client cache (call after creating new categories)
 export function invalidateCategoryCache() {
-  console.log('[CategoryCache] Client cache invalidated');
   cachedTree = null;
-  cachePromise = null;
+  pendingFetch = null;
 }
 
 export function useInventoryCategories() {
@@ -62,12 +69,15 @@ export function useInventoryCategories() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    console.log('[useInventoryCategories] Hook initialized, fetching categories...');
     fetchCategoriesTree()
       .then(data => {
+        console.log('[useInventoryCategories] Categories loaded successfully:', data.length, 'root nodes');
         setTree(data);
         setLoading(false);
       })
       .catch(err => {
+        console.error('[useInventoryCategories] Failed to load categories:', err);
         setError(err);
         setLoading(false);
       });
@@ -77,14 +87,14 @@ export function useInventoryCategories() {
   const typeOptions: CategoryOption[] = tree.map(n => ({ code: n.code, name: n.name }));
 
   // Given a type code, return its children as options
-  const subcat1OptionsFor = (typeCode: string): CategoryOption[] => {
+  const subcat1OptionsFor = useCallback((typeCode: string): CategoryOption[] => {
     const node = tree.find(n => n.code === typeCode);
     if (!node) return [];
     return node.children.map(c => ({ code: c.code, name: c.name }));
-  };
+  }, [tree]);
 
   // Given a sub1 code, return its children (e.g., brands or styles)
-  const brandOptionsFor = (sub1Code: string): CategoryOption[] => {
+  const brandOptionsFor = useCallback((sub1Code: string): CategoryOption[] => {
     for (const typeNode of tree) {
       const sub1Node = typeNode.children.find(c => c.code === sub1Code);
       if (sub1Node) {
@@ -92,7 +102,7 @@ export function useInventoryCategories() {
       }
     }
     return [];
-  };
+  }, [tree]);
 
   return {
     loading,

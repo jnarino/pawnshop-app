@@ -24,6 +24,7 @@ const accessLog_1 = require("./infrastructure/http/accessLog");
 const securityHeaders_1 = require("./infrastructure/http/securityHeaders");
 const container_1 = require("./container");
 const categoryRoute_1 = require("./route/categoryRoute");
+const categoryRoutes_1 = __importDefault(require("./infrastructure/http/routes/categoryRoutes"));
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
 let activeRequests = 0;
 function createApp() {
@@ -41,6 +42,7 @@ function createApp() {
     app.use('/api/inventory', inventoryRoute_1.default);
     app.use('/api/inventory-status', inventoryStatusRoute_1.default);
     app.use('/inventory/categories', (0, categoryRoute_1.buildCategoryRoute)(container_1.categoryController));
+    app.use('/api/categories', categoryRoutes_1.default);
     app.get('/api/health', (_req, res) => res.json({ ok: true }));
     app.get('/api/ready', async (_req, res) => { try {
         await db_1.pool.query('SELECT 1');

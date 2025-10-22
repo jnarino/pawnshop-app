@@ -69,45 +69,46 @@ export class CategoryCacheService {
   async getCategories(): Promise<CachedCategory[]> {
     try {
       const client = await this.ensureRedisConnection();
-      
-      // Try to get from cache
       const cached = await client.get(this.CACHE_KEY);
       
       if (cached) {
         console.log('[CategoryCache] Retrieved from Redis cache');
-        return JSON.parse(cached);
+        const data = JSON.parse(cached) as CachedCategory[];
+        console.log(`[CategoryCache] Returning ${data.length} categories from cache`);
+        return data;
       }
-
-      // Cache miss - load from database
+      
       console.log('[CategoryCache] Cache miss - loading from database');
-      return await this.refreshCache();
     } catch (error) {
-      console.error('[CategoryCache] Redis error, falling back to database:', error);
-      // Fallback to database on Redis error
-      return await this.repo.listFlat();
+      console.error('[CategoryCache] Redis read failed, loading from database:', error);
     }
+    
+    return this.refreshCache();
   }
 
   async refreshCache(): Promise<CachedCategory[]> {
+    console.log('[CategoryCache] Loading categories from database...');
+    
     try {
-      console.log('[CategoryCache] Loading categories from database...');
       const categories = await this.repo.listFlat();
+      console.log(`[CategoryCache] Loaded ${categories.length} categories from database`);
       
-      const client = await this.ensureRedisConnection();
+      try {
+        const client = await this.ensureRedisConnection();
+        await client.setEx(
+          this.CACHE_KEY,
+          this.CACHE_TTL,
+          JSON.stringify(categories)
+        );
+        console.log(`[CategoryCache] Cached ${categories.length} categories in Redis with TTL ${this.CACHE_TTL}s`);
+      } catch (redisError) {
+        console.error('[CategoryCache] Failed to store in Redis, continuing with DB data:', redisError);
+      }
       
-      // Store in Redis with TTL
-      await client.setEx(
-        this.CACHE_KEY,
-        this.CACHE_TTL,
-        JSON.stringify(categories)
-      );
-      
-      console.log(`[CategoryCache] Cached ${categories.length} categories in Redis`);
       return categories;
     } catch (error) {
-      console.error('[CategoryCache] Failed to refresh cache:', error);
-      // Return database data even if caching fails
-      return await this.repo.listFlat();
+      console.error('[CategoryCache] Failed to load categories from database:', error);
+      throw error;
     }
   }
 

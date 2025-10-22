@@ -1,60 +1,69 @@
 import express from 'express';
 import cors from 'cors';
 import { closePool } from './infrastructure/persistence/db';
+
+// Import category routes FIRST before using
 import categoryRoutes, { categoryCache } from './infrastructure/http/routes/categoryRoutes';
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 
-// Routes
-app.use('/api/categories', categoryRoutes);
-
-// Start server
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`[Server] Running on port ${PORT}`);
+// Health check (this works, so we know Express is running)
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
 });
 
-// Graceful shutdown handlers
-const gracefulShutdown = async (signal: string) => {
-  console.log(`${signal} signal received: shutting down gracefully`);
+// Register category routes - THIS IS THE CRITICAL LINE
+console.log('[Server] About to register category routes...');
+app.use('/api/categories', categoryRoutes);
+console.log('[Server] Category routes registered');
 
-  try {
-    // Close Redis connection
-    await categoryCache.disconnect();
-    console.log('Redis connection closed');
-  } catch (err) {
-    console.error('Error closing Redis connection:', err);
+// List all registered routes for debugging
+app._router.stack.forEach((middleware: any) => {
+  if (middleware.route) {
+    console.log('[Server] Route:', middleware.route.path);
+  } else if (middleware.name === 'router') {
+    console.log('[Server] Router middleware at:', middleware.regexp);
   }
+});
 
+// Start server
+async function startServer() {
   try {
-    // Close database pool
-    await closePool();
-    console.log('Database pool closed');
-  } catch (err) {
-    console.error('Error closing database pool:', err);
-  }
-
-  if (server) {
-    server.close(() => {
-      console.log('HTTP server closed');
-      process.exit(0);
+    console.log('[Server] Warming up category cache...');
+    await categoryCache.refreshCache();
+    console.log('[Server] Category cache ready');
+    
+    const PORT = process.env.PORT || 3000;
+    const server = app.listen(PORT, () => {
+      console.log(`[Server] ✓ Running on http://localhost:${PORT}`);
     });
 
-    // Force close after 10 seconds
-    setTimeout(() => {
-      console.error('Could not close connections in time, forcefully shutting down');
-      process.exit(1);
-    }, 10000);
-  } else {
-    process.exit(0);
+    // Graceful shutdown
+    const handleShutdown = async (signal: string) => {
+      console.log(`\n[Server] ${signal} received`);
+      try {
+        await categoryCache.disconnect();
+        await closePool();
+      } catch (err) {
+        console.error('[Server] Shutdown error:', err);
+      }
+      server.close(() => process.exit(0));
+    };
+
+    process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+    process.on('SIGINT', () => handleShutdown('SIGINT'));
+
+  } catch (error) {
+    console.error('[Server] Failed to start:', error);
+    process.exit(1);
   }
-};
+}
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-console.log('[Server] Category cache will be initialized on server startup');
+startServer();

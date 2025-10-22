@@ -130,23 +130,35 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
   // Initialize form when modal opens
   useEffect(() => {
-    if (open) {
-      setDraft(initial ? { ...initial } : { ...DEFAULT_ITEM });
+    if (!open) return;
+    setDraft(initial ? { ...DEFAULT_ITEM, ...initial } : { ...DEFAULT_ITEM });
+  }, [open, initial]);
 
-      if (initial) {
-        const typeName = typeOptions.find(t => t.code === initial.type)?.name || initial.type || '';
-        const subcat1Name = subcat1OptionsFor(initial.type).find(s => s.code === initial.sub1)?.name || '';
-        setTypeFilter(typeName.toUpperCase());
-        setSubcat1Filter(subcat1Name.toUpperCase());
-        setBrandFilter((initial.brand || '').toUpperCase());
-        setStyleFilter((initial.style || '').toUpperCase());
-      } else {
+  useEffect(() => {
+    if (!open) return;
+
+    if (!initial) {
+      if (typeFilter || subcat1Filter || brandFilter || styleFilter) {
         setTypeFilter('');
         setSubcat1Filter('');
         setBrandFilter('');
         setStyleFilter('');
       }
+      return;
     }
+
+    const typeName = typeOptions.find(t => t.code === initial.type)?.name || initial.type || '';
+    const subcatOptions = subcat1OptionsFor(initial.type);
+    const subcat1Name = subcatOptions.find(s => s.code === initial.sub1)?.name || '';
+    const nextTypeFilter = typeName.toUpperCase();
+    const nextSubcatFilter = subcat1Name.toUpperCase();
+    const nextBrandFilter = (initial.brand || '').toUpperCase();
+    const nextStyleFilter = (initial.style || '').toUpperCase();
+
+    if (typeFilter !== nextTypeFilter) setTypeFilter(nextTypeFilter);
+    if (subcat1Filter !== nextSubcatFilter) setSubcat1Filter(nextSubcatFilter);
+    if (brandFilter !== nextBrandFilter) setBrandFilter(nextBrandFilter);
+    if (styleFilter !== nextStyleFilter) setStyleFilter(nextStyleFilter);
   }, [open, initial, typeOptions, subcat1OptionsFor]);
 
   // Generic update function for draft fields
