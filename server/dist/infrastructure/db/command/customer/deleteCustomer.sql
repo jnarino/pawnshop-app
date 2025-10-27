@@ -1,3 +1,0 @@
-DELETE FROM customer
-WHERE id = $1
-RETURNING id;
