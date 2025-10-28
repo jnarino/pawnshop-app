@@ -38,15 +38,15 @@ export function createApp() {
   app.use(accessLog);
   app.use(securityHeaders);
 
-  // Public endpoints
+  // Public endpoints (no JWT required)
   app.use('/api/health', healthRouter);
   app.use('/api/ready', readyRouter);
+  app.use('/api/auth', authRouter); // Move auth BEFORE validateJwt
 
-  // Protect all other /api routes
+  // Protect all other /api routes with JWT
   app.use('/api', validateJwt);
 
   // Protected routes
-  app.use('/api/auth', authRouter);
   app.use('/api/customer', customerRouter);
   app.use('/api/inventory', inventoryRouter);
   app.use('/api/inventory-status', inventoryStatusRouter);
