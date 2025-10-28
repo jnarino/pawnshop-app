@@ -2,7 +2,7 @@ import assert from 'assert';
 import http from 'node:http';
 import express from 'express';
 import { test } from '../testHarness';
-import { buildInventoryRoute } from '../../route/inventoryRoute';
+import { buildInventoryRoute } from '../../infrastructure/http/routes/inventoryRoute';
 import { NotFoundError, ValidationError } from '../../application/errors';
 
 function httpRequest(port: number, method: string, path: string, body?: any): Promise<{ status:number; json:any; }>{

@@ -5,7 +5,7 @@ import argon2 from 'argon2';
  * Argon2id hashing options tuned for backend authentication.
  * Adjust timeCost / memoryCost for your server hardware.
  */
-const options: argon2.Options & { type: number } = {
+const options = {
     type: argon2.argon2id,
     timeCost: 3,           // iterations
     memoryCost: 64 * 1024, // 64 MiB

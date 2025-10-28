@@ -3,11 +3,12 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import authRoute from './route/authRoute';
-import customerRoute from './route/customerRoute';
-import pawnTicketRoute from './route/pawnTicketRoute';
-import inventoryRoute from './route/inventoryRoute';
-import inventoryStatusRoute from './route/inventoryStatusRoute';
+
+import pawnTicketRoute from './infrastructure/http/routes/pawnTicketRoute';
+import inventoryRoute from './infrastructure/http/routes/inventoryRoute';
+import inventoryStatusRoute from './infrastructure/http/routes/inventoryStatusRoute';
+import healthRouter from './infrastructure/http/routes/healthRoutes';
+import readyRouter from './infrastructure/http/routes/readyRoutes';
 import { runMigrations } from './infrastructure/db/migrations/runMigrations';
 import { pool } from './infrastructure/db';
 import { notFound, errorHandler } from './infrastructure/http/errorHandler';
@@ -16,9 +17,13 @@ import { logger } from './infrastructure/log/logger';
 import { requestIdMiddleware } from './infrastructure/http/requestId';
 import { accessLog } from './infrastructure/http/accessLog';
 import { securityHeaders } from './infrastructure/http/securityHeaders';
-import { categoryController } from './container';
-import { buildCategoryRoute } from './route/categoryRoute';
-import categoryRoutes, { categoryCache } from './infrastructure/http/routes/categoryRoutes';
+import authRouter from './infrastructure/http/routes/authRoutes';
+import customerRouter from './infrastructure/http/routes/customerRoutes';
+import inventoryRouter from './infrastructure/http/routes/inventoryRoute';
+import inventoryStatusRouter from './infrastructure/http/routes/inventoryStatusRoute';
+import pawnTicketRouter from './infrastructure/http/routes/pawnTicketRoute';
+import categoryRouter from './infrastructure/http/routes/categoryRoutes';
+import { validateJwt } from './infrastructure/http/middleware/auth';
 
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
 let activeRequests = 0;
@@ -33,13 +38,24 @@ export function createApp() {
   app.use(accessLog);
   app.use(securityHeaders);
 
-  app.use('/api/auth', authRoute);
-  app.use('/api/customer', customerRoute);
-  app.use('/api/pawnTicket', pawnTicketRoute);
-  app.use('/api/inventory', inventoryRoute);
-  app.use('/api/inventory-status', inventoryStatusRoute);
-  app.use('/inventory/categories', buildCategoryRoute(categoryController));
-  app.use('/api/categories', categoryRoutes);
+  // Public endpoints
+  app.use('/api/health', healthRouter);
+  app.use('/api/ready', readyRouter);
+
+  // Protect all other /api routes
+  app.use('/api', validateJwt);
+
+  // Protected routes
+  app.use('/api/auth', authRouter);
+  app.use('/api/customer', customerRouter);
+  app.use('/api/inventory', inventoryRouter);
+  app.use('/api/inventory-status', inventoryStatusRouter);
+  app.use('/api/pawnTicket', pawnTicketRouter);
+  app.use('/api/categories', categoryRouter);
+
+  // Remove duplicate inline handlers:
+  // app.get('/api/health', ...);
+  // app.get('/api/ready', ...);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/ready', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ready: true }); } catch { res.status(503).json({ ready: false }); } });

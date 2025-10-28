@@ -25,6 +25,13 @@ export interface AppConfig {
   dbConnect: { retries: number; backoffMs: number; };
 }
 
+export const jwt = {
+  accessSecret: process.env.JWT_ACCESS_SECRET || 'change-me-access-secret-offline',
+  refreshSecret: process.env.JWT_REFRESH_SECRET || 'change-me-refresh-secret-offline',
+  accessExpiresIn: '15m',
+  refreshExpiresIn: '30d', // refresh token lifespan
+};
+
 function requireEnv(name: keyof RawEnv, env: RawEnv, allowDefault?: string, relaxed?: boolean): string {
   const raw = env[name];
   if (raw !== undefined && raw !== '') return raw; // always prefer explicit value
