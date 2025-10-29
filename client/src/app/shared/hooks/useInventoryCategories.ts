@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { http } from '@/app/core/api/http';
 
 interface CategoryNode {
   id: string;
@@ -14,10 +15,6 @@ interface CategoryOption {
 }
 
 // Client-side cache at module level
-const DEFAULT_API_BASE = import.meta.env.DEV ? 'http://localhost:3000' : '';
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || DEFAULT_API_BASE).replace(/\/$/, '');
-const CATEGORIES_URL = API_BASE_URL ? `${API_BASE_URL}/api/categories/tree` : '/api/categories/tree';
-
 let cachedTree: CategoryNode[] | null = null;
 let pendingFetch: Promise<CategoryNode[]> | null = null;
 
@@ -32,17 +29,10 @@ async function fetchCategoriesTree(): Promise<CategoryNode[]> {
     return pendingFetch;
   }
 
-  console.log('[CategoryCache] Fetching from:', CATEGORIES_URL);
+  console.log('[CategoryCache] Fetching categories with JWT...');
 
-  pendingFetch = fetch(CATEGORIES_URL, { credentials: 'include' })
-    .then(res => {
-      console.log('[CategoryCache] Response status:', res.status);
-      if (!res.ok) {
-        throw new Error(`Failed to load categories (${res.status})`);
-      }
-      return res.json();
-    })
-    .then((data: CategoryNode[]) => {
+  pendingFetch = http<CategoryNode[]>('/api/categories/tree')
+    .then((data) => {
       console.log('[CategoryCache] Received', data.length, 'root categories');
       cachedTree = data;
       return data;
@@ -66,7 +56,7 @@ export function invalidateCategoryCache() {
 export function useInventoryCategories() {
   const [tree, setTree] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('[useInventoryCategories] Hook initialized, fetching categories...');
@@ -74,11 +64,12 @@ export function useInventoryCategories() {
       .then(data => {
         console.log('[useInventoryCategories] Categories loaded successfully:', data.length, 'root nodes');
         setTree(data);
+        setError(null);
         setLoading(false);
       })
       .catch(err => {
         console.error('[useInventoryCategories] Failed to load categories:', err);
-        setError(err);
+        setError(err instanceof Error ? err.message : 'Failed to load categories');
         setLoading(false);
       });
   }, []);
@@ -104,24 +95,27 @@ export function useInventoryCategories() {
     return [];
   }, [tree]);
 
+  const refreshCache = useCallback(() => {
+    invalidateCategoryCache();
+    setLoading(true);
+    setError(null);
+    fetchCategoriesTree()
+      .then(data => {
+        setTree(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to refresh categories');
+        setLoading(false);
+      });
+  }, []);
+
   return {
     loading,
     error,
     typeOptions,
     subcat1OptionsFor,
     brandOptionsFor,
-    refreshCache: () => {
-      invalidateCategoryCache();
-      setLoading(true);
-      fetchCategoriesTree()
-        .then(data => {
-          setTree(data);
-          setLoading(false);
-        })
-        .catch(err => {
-          setError(err);
-          setLoading(false);
-        });
-    }
+    refreshCache
   };
 }

@@ -39,7 +39,6 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/ready', readyRouter);
   app.use('/api/auth', authRouter);
-  app.use('/api/categories', categoryRouter); // Move BEFORE validateJwt
 
   // Protect all other /api routes with JWT
   app.use('/api', validateJwt);
@@ -49,6 +48,7 @@ export function createApp() {
   app.use('/api/inventory', inventoryRouter);
   app.use('/api/inventory-status', inventoryStatusRouter);
   app.use('/api/pawnTicket', pawnTicketRouter);
+  app.use('/api/categories', categoryRouter);
 
   app.use(notFound);
   app.use(errorHandler);
