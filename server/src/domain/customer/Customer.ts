@@ -10,6 +10,7 @@ export interface Customer {
   middleName?: string | null;
   lastName: string;
   streetAddress?: string | null;
+  suiteNumber?: string | null;
   city?: string | null;
   stateUs?: string | null;
   zipCode?: string | null;
@@ -33,6 +34,7 @@ export interface Customer {
   idIssueDate?: string | null;    // ISO (DATE)
   ssNumber?: string | null;
   idAddress?: string | null;
+  idSuiteNumber?: string | null;
   idCity?: string | null;
   idState?: string | null;
   idZip?: string | null;
@@ -40,6 +42,7 @@ export interface Customer {
   // Employer
   employerName?: string | null;
   employerAddress?: string | null;
+  employerSuiteNumber?: string | null;
   employerCity?: string | null;
   employerState?: string | null;
   employerZip?: string | null;

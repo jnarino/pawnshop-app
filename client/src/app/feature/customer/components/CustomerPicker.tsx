@@ -7,6 +7,7 @@ import { IdConflictModal } from './IdConflictModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
 import './customerPicker.css'; // ← ensure the case matches the actual filename
+import { http } from '@/app/core/api/http'; // Make sure it uses this
 
 // Centralized config (env override with safe defaults)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -533,10 +534,8 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       if (form.idNumber) params.append('idNumber', form.idNumber);
       params.append('limit', CUSTOMER_SEARCH_LIMIT.toString());
 
-      const resp = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
-      if (!resp.ok) throw new Error('Customer search failed');
-
-      const payload = await resp.json();
+      // Use http function with JWT auth
+      const payload = await http(`/api/customer?${params.toString()}`);
       const searchResults = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);
 
       setResults(searchResults);

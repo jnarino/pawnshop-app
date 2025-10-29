@@ -1,31 +1,52 @@
 // src/app/feature/customer/hooks/useCustomerLookup.ts
 import { useState } from 'react';
-import { http } from '@/app/core/api/http';
+import { http } from '@/app/core/api'; // Import from index
+
+export interface Customer {
+    id: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    dateOfBirth?: string;
+    phoneNumber?: string;
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+}
+
+export interface CustomerSearchParams {
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+}
 
 export function useCustomerLookup() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const lookupCustomer = async (params: CustomerSearchParams) => {
-    setLoading(true);
-    setError(null);
+    const lookupCustomer = async (params: CustomerSearchParams): Promise<Customer[]> => {
+        setLoading(true);
+        setError(null);
 
-    try {
-      const query = new URLSearchParams();
-      if (params.firstName) query.set('firstName', params.firstName);
-      if (params.lastName) query.set('lastName', params.lastName);
-      if (params.dateOfBirth) query.set('dateOfBirth', params.dateOfBirth);
-      query.set('limit', '100');
-      
-      const customers = await http<Customer[]>(`/api/customer?${query.toString()}`);
-      return customers;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to lookup customer');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+            const query = new URLSearchParams();
+            if (params.firstName) query.set('firstName', params.firstName);
+            if (params.lastName) query.set('lastName', params.lastName);
+            if (params.dateOfBirth) query.set('dateOfBirth', params.dateOfBirth);
+            query.set('limit', '100');
 
-  return { lookupCustomer, loading, error };
+            const customers = await http<Customer[]>(`/api/customer?${query.toString()}`);
+            return customers;
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to lookup customer';
+            setError(errorMessage);
+            console.error('[useCustomerLookup] Error:', err);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { lookupCustomer, loading, error };
 }

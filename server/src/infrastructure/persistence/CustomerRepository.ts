@@ -83,14 +83,14 @@ function mapRow(r: any): Customer {
     race: r.race ?? null,
     sex: r.sex ?? null,
     marks: r.marks ?? null,
-    dateOfBirth: r.date_of_birth ? r.date_of_birth.toISOString?.().substring(0,10) : null,
+    dateOfBirth: r.date_of_birth ? r.date_of_birth.toISOString?.().substring(0, 10) : null,
     birthCity: r.birth_city ?? null,
     birthState: r.birth_state ?? null,
     birthCountry: r.birth_country ?? null,
     idType: r.id_type ?? null,
     idNumber: r.id_number ?? null,
-    idExpiration: r.id_expiration ? r.id_expiration.toISOString?.().substring(0,10) : null,
-    idIssueDate: r.id_issue_date ? r.id_issue_date.toISOString?.().substring(0,10) : null,
+    idExpiration: r.id_expiration ? r.id_expiration.toISOString?.().substring(0, 10) : null,
+    idIssueDate: r.id_issue_date ? r.id_issue_date.toISOString?.().substring(0, 10) : null,
     ssNumber: r.ss_number ?? null,
     idAddress: r.id_address ?? null,
     idCity: r.id_city ?? null,
@@ -110,7 +110,7 @@ function mapRow(r: any): Customer {
     email: r.email ?? null,
     enteredAt: r.entered_at ? r.entered_at.toISOString?.() : null,
     military: r.military ?? null,
-    fflExpireDate: r.ffl_expire_date ? r.ffl_expire_date.toISOString?.().substring(0,10) : null,
+    fflExpireDate: r.ffl_expire_date ? r.ffl_expire_date.toISOString?.().substring(0, 10) : null,
     taxExempt: r.tax_exempt ?? null,
     createdAt: r.created_at ? r.created_at.toISOString?.() : undefined,
     updatedAt: r.updated_at ? r.updated_at.toISOString?.() : undefined,
@@ -120,7 +120,7 @@ function mapRow(r: any): Customer {
 // Test helper (back-compat with earlier tests importing mapRowToCustomer)
 export function mapRowToCustomer(r: any): Customer { return mapRow(r); }
 
-function buildInsert(dto: Omit<Customer,'id'>) {
+function buildInsert(dto: Omit<Customer, 'id'>) {
   const columns: string[] = [];
   const placeholders: string[] = [];
   const values: any[] = [];
@@ -182,7 +182,7 @@ export class CustomerRepository implements ICustomerRepository {
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
-  async create(dto: Omit<Customer,'id'>): Promise<string> {
+  async create(dto: Omit<Customer, 'id'>): Promise<string> {
     const { sql, values } = buildInsert(dto);
     const { rows } = await pool.query(sql, values);
     return rows[0].id;
@@ -198,5 +198,109 @@ export class CustomerRepository implements ICustomerRepository {
   async delete(id: string): Promise<boolean> {
     const res = await pool.query('DELETE FROM customer WHERE id = $1', [id]);
     return res.rowCount === 1;
+  }
+
+  async list(opts?: { firstName?: string; lastName?: string; dateOfBirth?: string; limit?: number; offset?: number; }): Promise<Customer[]> {
+    const params: any[] = [];
+    const where: string[] = [];
+    let sql = `
+      SELECT 
+        id, first_name, middle_name, last_name, street_address, suite_number,
+        city, state_us, zip_code, phone_number, height, weight, hair_color,
+        eye_color, race, sex, marks, date_of_birth, birth_city, birth_state,
+        birth_country, id_type, id_number, id_expiration, id_issue_date,
+        ss_number, id_address, id_suite_number, id_city, id_state, id_zip,
+        employer_name, employer_address, employer_suite_number, employer_city,
+        employer_state, employer_zip, employer_phone_number, description,
+        ffl_number, locked, tax_id, cell_phone, email, entered_at, military,
+        ffl_expire_date, tax_exempt, created_at, updated_at
+      FROM customer
+    `;
+
+    if (opts?.firstName) {
+      params.push(`%${opts.firstName}%`);
+      where.push(`first_name ILIKE $${params.length}`);
+    }
+    if (opts?.lastName) {
+      params.push(`%${opts.lastName}%`);
+      where.push(`last_name ILIKE $${params.length}`);
+    }
+    if (opts?.dateOfBirth) {
+      params.push(opts.dateOfBirth);
+      where.push(`date_of_birth = $${params.length}`);
+    }
+
+    if (where.length > 0) {
+      sql += ` WHERE ${where.join(' AND ')}`;
+    }
+
+    sql += ` ORDER BY last_name, first_name`;
+
+    if (opts?.limit) {
+      params.push(opts.limit);
+      sql += ` LIMIT $${params.length}`;
+    }
+    if (opts?.offset) {
+      params.push(opts.offset);
+      sql += ` OFFSET $${params.length}`;
+    }
+
+    const { rows } = await pool.query(sql, params);
+    return rows.map(this.mapRowToCustomer);
+  }
+
+  private mapRowToCustomer(row: any): Customer {
+    return {
+      id: row.id,
+      firstName: row.first_name,
+      middleName: row.middle_name,
+      lastName: row.last_name,
+      streetAddress: row.street_address,
+      suiteNumber: row.id_suite_number,
+      city: row.city,
+      stateUs: row.state_us,
+      zipCode: row.zip_code,
+      phoneNumber: row.phone_number,
+      height: row.height,
+      weight: row.weight,
+      hairColor: row.hair_color,
+      eyeColor: row.eye_color,
+      race: row.race,
+      sex: row.sex,
+      marks: row.marks,
+      dateOfBirth: row.date_of_birth,
+      birthCity: row.birth_city,
+      birthState: row.birth_state,
+      birthCountry: row.birth_country,
+      idType: row.id_type,
+      idNumber: row.id_number,
+      idExpiration: row.id_expiration,
+      idIssueDate: row.id_issue_date,
+      ssNumber: row.ss_number,
+      idAddress: row.id_address,
+      idSuiteNumber: row.id_suite_number,
+      idCity: row.id_city,
+      idState: row.id_state,
+      idZip: row.id_zip,
+      employerName: row.employer_name,
+      employerAddress: row.employer_address,
+      employerSuiteNumber: row.employer_suite_number,
+      employerCity: row.employer_city,
+      employerState: row.employer_state,
+      employerZip: row.employer_zip,
+      employerPhoneNumber: row.employer_phone_number,
+      description: row.description,
+      fflNumber: row.ffl_number,
+      locked: row.locked,
+      taxId: row.tax_id,
+      cellPhone: row.cell_phone,
+      email: row.email,
+      enteredAt: row.entered_at,
+      military: row.military,
+      fflExpireDate: row.ffl_expire_date,
+      taxExempt: row.tax_exempt,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
   }
 }

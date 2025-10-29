@@ -3,6 +3,7 @@ import AuthMenuSync from './shared/components/AuthMenuSync';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { isAuthenticated, initializeAuth } from './core/auth/authService';
+import { getAccessToken } from './core/auth/authService';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -33,6 +34,14 @@ function ElectronNavHandler() {
 		}
 	}, [navigate]);
 	return null;
+}
+
+// Add this temporarily for debugging
+if (typeof window !== 'undefined') {
+  (window as any).debugAuth = () => {
+    console.log('[DEBUG] Access token:', getAccessToken());
+    console.log('[DEBUG] Refresh token:', localStorage.getItem('refresh_token'));
+  };
 }
 
 export default function App() { return <><AuthMenuSync /><ElectronNavHandler /><AppRouter /></>; }
