@@ -3,6 +3,8 @@ import type { CreatePawnTicketInput } from '../../../domain/pawnTicket/PawnTicke
 import { ValidationError } from '../../errors';
 import { CreateInventoryItemUseCase } from '../inventory/CreateInventoryItemUseCase';
 import { PawnTicketRepository } from '../../../infrastructure/persistence/PawnTicketRepository';
+import { pool } from '../../../infrastructure/db';
+import { logger } from '../../../infrastructure/log/logger';
 
 export class CreatePawnTicketUseCase {
   constructor(
@@ -25,19 +27,36 @@ export class CreatePawnTicketUseCase {
 
     // If creating new inventory items
     if (hasNew && input.newInventoryItems) {
-      if (!input.controlNumber) {
-        throw new ValidationError('controlNumber required when creating new inventory items');
+      // ✅ Auto-generate control number from database sequence
+      let controlNumber = input.controlNumber;
+
+      if (!controlNumber) {
+        const result = await pool.query(`SELECT get_next_control_number() AS control_number`);
+        controlNumber = result.rows[0].control_number;
+        input.controlNumber = controlNumber;
+        logger.info('control_number_generated', { controlNumber });
       }
 
-      // Create each inventory item with generated inventory_number
+      // ✅ Validate category UUIDs
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
       for (let i = 0; i < input.newInventoryItems.length; i++) {
         const itemInput = input.newInventoryItems[i];
-        const inventoryNumber = `${input.controlNumber}-${i + 1}`;
+
+        if (!uuidRegex.test(itemInput.categoryId)) {
+          throw new ValidationError(
+            `Invalid categoryId at index ${i}: "${itemInput.categoryId}" is not a valid UUID. ` +
+            `Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. ` +
+            `Did you mean to send a category UUID instead of category code "${itemInput.categoryId}"?`
+          );
+        }
+
+        const inventoryNumber = `${controlNumber}-${i + 1}`;
 
         const itemId = await this.createInventoryItemUseCase.execute({
           ...itemInput,
           inventoryNumber,
-          status: 'I', // Default status for new items
+          status: 'I',
         });
 
         inventoryItemIds.push(itemId);
@@ -46,12 +65,14 @@ export class CreatePawnTicketUseCase {
       inventoryItemIds = input.inventoryItemIds;
     }
 
-    // Create pawn ticket with the inventory item IDs
-    // The repository will handle building the domain object and persisting
-    const ticketId = await this.repo.create({
+    // ✅ Pass modified input with inventoryItemIds instead of newInventoryItems
+    const ticketInput: CreatePawnTicketInput = {
       ...input,
-      inventoryItemIds, // Use the created/provided inventory item IDs
-    });
+      inventoryItemIds,
+      newInventoryItems: undefined,
+    };
+
+    const ticketId = await this.repo.create(ticketInput);
 
     return ticketId;
   }

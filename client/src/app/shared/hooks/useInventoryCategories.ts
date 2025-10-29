@@ -113,6 +113,7 @@ export function useInventoryCategories() {
   return {
     loading,
     error,
+    tree,                    // ✅ Add tree to return value
     typeOptions,
     subcat1OptionsFor,
     brandOptionsFor,

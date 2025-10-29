@@ -2,6 +2,7 @@ import { getSQL } from '../db/sqlLoader';
 import { pool } from '../db';
 import { PawnTicket, CreatePawnTicketInput, buildPawnTicket } from '../../domain/pawnTicket/PawnTicket';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../log/logger';
 
 export class PawnTicketRepository {
   async create(input: CreatePawnTicketInput): Promise<string> {
@@ -9,15 +10,13 @@ export class PawnTicketRepository {
     try {
       await client.query('BEGIN');
 
-      // Build domain object to compute derived fields
       const ticketId = uuidv4();
       const ticket = buildPawnTicket(ticketId, input, new Date());
 
-      // Insert pawn ticket
       const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
       await client.query(createSQL, [
         ticket.id,
-        ticket.controlNumber,
+        ticket.controlNumber, // ✅ Now contains auto-generated number
         ticket.type,
         ticket.customerId,
         ticket.amountFinanced,
@@ -32,7 +31,6 @@ export class PawnTicketRepository {
         ticket.pawnStatus,
       ]);
 
-      // Link inventory items
       if (ticket.inventoryItemIds.length > 0) {
         const linkSQL = getSQL('command', 'pawnTicket', 'linkPawnTicketItem');
         for (const itemId of ticket.inventoryItemIds) {
@@ -41,6 +39,13 @@ export class PawnTicketRepository {
       }
 
       await client.query('COMMIT');
+
+      logger.info('pawn_ticket_created', {
+        ticketId,
+        controlNumber: ticket.controlNumber,
+        customerId: ticket.customerId
+      });
+
       return ticketId;
     } catch (error) {
       await client.query('ROLLBACK');

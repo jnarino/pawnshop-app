@@ -20,6 +20,7 @@ import inventoryRouter from './infrastructure/http/routes/inventoryRoute';
 import inventoryStatusRouter from './infrastructure/http/routes/inventoryStatusRoute';
 import pawnTicketRouter from './infrastructure/http/routes/pawnTicketRoute';
 import categoryRouter from './infrastructure/http/routes/categoryRoutes';
+import debugRouter from './infrastructure/http/routes/debugRoutes';
 import { validateJwt } from './infrastructure/http/middleware/auth';
 
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
@@ -39,6 +40,7 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/ready', readyRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/debug', debugRouter); // Temporary debug endpoint
 
   // Protect all other /api routes with JWT
   app.use('/api', validateJwt);
