@@ -4,9 +4,6 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
-import pawnTicketRoute from './infrastructure/http/routes/pawnTicketRoute';
-import inventoryRoute from './infrastructure/http/routes/inventoryRoute';
-import inventoryStatusRoute from './infrastructure/http/routes/inventoryStatusRoute';
 import healthRouter from './infrastructure/http/routes/healthRoutes';
 import readyRouter from './infrastructure/http/routes/readyRoutes';
 import { runMigrations } from './infrastructure/db/migrations/runMigrations';

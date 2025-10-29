@@ -1,11 +1,56 @@
-import { pool } from '../db';
 import { getSQL } from '../db/sqlLoader';
-import { PawnTicket, buildPawnTicket, CreatePawnTicketInput } from '../../domain/pawnTicket/PawnTicket';
+import { pool } from '../db';
+import { PawnTicket, CreatePawnTicketInput, buildPawnTicket } from '../../domain/pawnTicket/PawnTicket';
+import { v4 as uuidv4 } from 'uuid';
 
 export class PawnTicketRepository {
+  async create(input: CreatePawnTicketInput): Promise<string> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Build domain object to compute derived fields
+      const ticketId = uuidv4();
+      const ticket = buildPawnTicket(ticketId, input, new Date());
+
+      // Insert pawn ticket
+      const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
+      await client.query(createSQL, [
+        ticket.id,
+        ticket.controlNumber,
+        ticket.type,
+        ticket.customerId,
+        ticket.amountFinanced,
+        ticket.financeCharge,
+        ticket.periodicRate,
+        ticket.totalOfPayments,
+        ticket.annualPercentageRate,
+        ticket.purchaseTradeValue,
+        ticket.transactionDate,
+        ticket.maturityDate,
+        ticket.defaultDate,
+        ticket.pawnStatus,
+      ]);
+
+      // Link inventory items
+      if (ticket.inventoryItemIds.length > 0) {
+        const linkSQL = getSQL('command', 'pawnTicket', 'linkPawnTicketItem');
+        for (const itemId of ticket.inventoryItemIds) {
+          await client.query(linkSQL, [ticket.id, itemId]);
+        }
+      }
+
+      await client.query('COMMIT');
+      return ticketId;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 
   async update(id: string, dto: Partial<PawnTicket>): Promise<boolean> {
-    // Only allow updating specific fields here
     const sets: string[] = [];
     const params: any[] = [];
     let i = 1;
@@ -25,11 +70,9 @@ export class PawnTicketRepository {
 
     if (sets.length === 0) return false;
 
-    // optional updated_at touch
     sets.push(`updated_at = NOW()`);
-
     params.push(id);
-    const sql = `UPDATE pawn_tickets SET ${sets.join(', ')} WHERE id = $${i}`;
+    const sql = `UPDATE pawn_ticket SET ${sets.join(', ')} WHERE id = $${i}`;
     const res = await pool.query(sql, params);
     return res.rowCount === 1;
   }
@@ -43,8 +86,16 @@ export class PawnTicketRepository {
     const base = baseRaw.replace(/;\s*$/, '');
     const where: string[] = [];
     const params: any[] = [];
-    if (filters?.customerId) { params.push(filters.customerId); where.push(`customer_id = $${params.length}`); }
-    if (filters?.pawnStatus) { params.push(filters.pawnStatus); where.push(`pawn_status = $${params.length}`); }
+
+    if (filters?.customerId) {
+      params.push(filters.customerId);
+      where.push(`customer_id = $${params.length}`);
+    }
+    if (filters?.pawnStatus) {
+      params.push(filters.pawnStatus);
+      where.push(`pawn_status = $${params.length}`);
+    }
+
     let sql = base;
     if (where.length) {
       // Insert WHERE before ORDER BY (base query ends with ORDER BY transaction_date DESC)
@@ -57,60 +108,19 @@ export class PawnTicketRepository {
         sql = `${sql} WHERE ${where.join(' AND ')}`;
       }
     }
-    // Pagination
-    if (typeof limit === 'number') { params.push(limit); sql += `\nLIMIT $${params.length}`; }
-    if (typeof offset === 'number') { params.push(offset); sql += `\nOFFSET $${params.length}`; }
-    const { rows } = await pool.query(sql, params);
-    return rows.map(r => ({
-      id: r.id,
-      controlNumber: r.controlNumber ?? undefined,
-      type: r.type,
-      customerId: r.customerId,
-      pawnStatus: r.pawnStatus,
-      inventoryItemIds: r.inventoryItemIds || [],
-      amountFinanced: r.amountFinanced !== null ? Number(r.amountFinanced) : null,
-      financeCharge: r.financeCharge !== null ? Number(r.financeCharge) : null,
-      periodicRate: r.periodicRate !== null ? Number(r.periodicRate) : null,
-      totalOfPayments: r.totalOfPayments !== null ? Number(r.totalOfPayments) : null,
-      annualPercentageRate: r.annualPercentageRate !== null ? Number(r.annualPercentageRate) : null,
-      purchaseTradeValue: r.purchaseTradeValue !== null ? Number(r.purchaseTradeValue) : null,
-      transactionDate: r.transactionDate,
-      maturityDate: r.maturityDate,
-      defaultDate: r.defaultDate,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt
-    }));
-  }
 
-  async create(input: CreatePawnTicketInput): Promise<string> {
-    // Build domain first to compute derived fields
-    const tempId = '00000000-0000-0000-0000-000000000000'; // placeholder; DB will generate real id
-    const now = new Date();
-    const domain = buildPawnTicket(tempId, input, now);
-    const sql = getSQL('command', 'pawnTicket', 'createPawnTicket');
-    const params = [
-      domain.controlNumber ?? null,
-      domain.type,
-      domain.customerId,
-      domain.pawnStatus,
-      domain.amountFinanced,
-      domain.financeCharge,
-      domain.periodicRate,
-      domain.totalOfPayments,
-      domain.annualPercentageRate,
-      domain.purchaseTradeValue,
-      domain.transactionDate,
-      domain.maturityDate,
-      domain.defaultDate,
-    ];
-    const { rows } = await pool.query(sql, params);
-    const id = rows[0].id;
-    if (domain.inventoryItemIds.length) {
-      const addItems = getSQL('command', 'pawnTicket', 'addPawnTicketItems');
-      await pool.query(addItems, [id, domain.inventoryItemIds]);
-      // inventory numbers should be supplied at inventory item creation time now
+    // Pagination
+    if (typeof limit === 'number') {
+      params.push(limit);
+      sql += `\nLIMIT $${params.length}`;
     }
-    return id;
+    if (typeof offset === 'number') {
+      params.push(offset);
+      sql += `\nOFFSET $${params.length}`;
+    }
+
+    const { rows } = await pool.query(sql, params);
+    return rows.map(r => this.mapRowToPawnTicket(r));
   }
 
   async findById(id: string): Promise<PawnTicket | null> {
@@ -118,28 +128,17 @@ export class PawnTicketRepository {
     const { rows } = await pool.query(sql, [id]);
     const r = rows[0];
     if (!r) return null;
-    return {
-      id: r.id,
-      controlNumber: r.controlNumber ?? undefined,
-      type: r.type,
-      customerId: r.customerId,
-      pawnStatus: r.pawnStatus,
-      inventoryItemIds: r.inventoryItemIds || [],
-      amountFinanced: r.amountFinanced !== null ? Number(r.amountFinanced) : null,
-      financeCharge: r.financeCharge !== null ? Number(r.financeCharge) : null,
-      periodicRate: r.periodicRate !== null ? Number(r.periodicRate) : null,
-      totalOfPayments: r.totalOfPayments !== null ? Number(r.totalOfPayments) : null,
-      annualPercentageRate: r.annualPercentageRate !== null ? Number(r.annualPercentageRate) : null,
-      purchaseTradeValue: r.purchaseTradeValue !== null ? Number(r.purchaseTradeValue) : null,
-      transactionDate: r.transactionDate,
-      maturityDate: r.maturityDate,
-      defaultDate: r.defaultDate,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    };
+    return this.mapRowToPawnTicket(r);
   }
 
-  async search(opts: { customerId?: string; type?: string; startDate?: string; endDate?: string; limit?: number; offset?: number; }): Promise<PawnTicket[]> {
+  async search(opts: {
+    customerId?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PawnTicket[]> {
     const sql = getSQL('query', 'pawnTicket', 'searchPawnTickets');
     const params = [
       opts.customerId ?? null,
@@ -150,25 +149,7 @@ export class PawnTicketRepository {
       opts.offset ?? 0,
     ];
     const { rows } = await pool.query(sql, params);
-    return rows.map(r => ({
-      id: r.id,
-      controlNumber: r.controlNumber ?? undefined,
-      type: r.type,
-      customerId: r.customerId,
-      pawnStatus: r.pawnStatus,
-      inventoryItemIds: [], // not loaded in search list for performance
-      amountFinanced: r.amountFinanced !== null ? Number(r.amountFinanced) : null,
-      financeCharge: r.financeCharge !== null ? Number(r.financeCharge) : null,
-      periodicRate: r.periodicRate !== null ? Number(r.periodicRate) : null,
-      totalOfPayments: r.totalOfPayments !== null ? Number(r.totalOfPayments) : null,
-      annualPercentageRate: r.annualPercentageRate !== null ? Number(r.annualPercentageRate) : null,
-      purchaseTradeValue: r.purchaseTradeValue !== null ? Number(r.purchaseTradeValue) : null,
-      transactionDate: r.transactionDate,
-      maturityDate: r.maturityDate,
-      defaultDate: r.defaultDate,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    }));
+    return rows.map(r => this.mapRowToPawnTicket(r, false)); // false = don't load items for performance
   }
 
   async updateDates(id: string, maturityDate?: string, defaultDate?: string): Promise<boolean> {
@@ -182,5 +163,27 @@ export class PawnTicketRepository {
     const sql = getSQL('command', 'pawnTicket', 'deletePawnTicket');
     const res = await pool.query(sql, [id]);
     return res.rowCount === 1;
+  }
+
+  private mapRowToPawnTicket(r: any, includeItems = true): PawnTicket {
+    return {
+      id: r.id,
+      controlNumber: r.control_number ?? undefined,
+      type: r.transaction_type,
+      customerId: r.customer_id,
+      pawnStatus: r.pawn_status,
+      inventoryItemIds: includeItems ? (r.inventory_item_ids || []) : [],
+      amountFinanced: r.amount_financed !== null ? Number(r.amount_financed) : null,
+      financeCharge: r.finance_charge !== null ? Number(r.finance_charge) : null,
+      periodicRate: r.periodic_rate !== null ? Number(r.periodic_rate) : null,
+      totalOfPayments: r.total_of_payments !== null ? Number(r.total_of_payments) : null,
+      annualPercentageRate: r.apr !== null ? Number(r.apr) : null,
+      purchaseTradeValue: r.purchase_trade_value !== null ? Number(r.purchase_trade_value) : null,
+      transactionDate: r.transaction_date,
+      maturityDate: r.maturity_date,
+      defaultDate: r.default_date,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    };
   }
 }

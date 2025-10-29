@@ -40,20 +40,42 @@ export interface PawnTicket {
   updatedAt: string;
 }
 
+export interface NewInventoryItemInput {
+  categoryId: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  color?: string;
+  itemCondition?: string;
+  quantity?: number;
+  priceAmount?: number;
+  resale?: number;
+  itemReplace?: number;
+  ownerMark?: string;
+  itemDescription?: string;
+  attributes?: Record<string, any>;
+}
+
 export interface CreatePawnTicketInput {
   controlNumber?: string;
   type: PawnTicketType;
   customerId: string;
-  inventoryItemIds: string[];
+
+  // Either provide existing inventory items OR new ones
+  inventoryItemIds?: string[];
+  newInventoryItems?: NewInventoryItemInput[];
+
   // Pawn-specific inputs
-  amountFinanced?: number;          // required if type === 'PAWN'
-  periodicRate?: number;            // optional (defaults 0.25 if pawn)
+  amountFinanced?: number;
+  periodicRate?: number;
+
   // Purchase-specific input
-  purchaseTradeValue?: number;      // required if type === 'PURCHASE'
+  purchaseTradeValue?: number;
+
   // Optional overrides
-  transactionDate?: string;         // default now
-  maturityDate?: string;            // default +30 days
-  defaultDate?: string;             // default +60 days
+  transactionDate?: string;
+  maturityDate?: string;
+  defaultDate?: string;
 }
 
 export const PAWN_MIN_RATE = 0.10;
@@ -84,7 +106,24 @@ export function normalizePawnFinancials(amountFinanced: number, periodicRate: nu
 
 export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = new Date()): PawnTicket {
   if (!input.customerId) throw new Error('customerId required');
-  if (!Array.isArray(input.inventoryItemIds) || input.inventoryItemIds.length === 0) throw new Error('inventoryItemIds required');
+
+  // Validate that we have either existing or new items
+  const hasExisting = Array.isArray(input.inventoryItemIds) && input.inventoryItemIds.length > 0;
+  const hasNew = Array.isArray(input.newInventoryItems) && input.newInventoryItems.length > 0;
+
+  if (!hasExisting && !hasNew) {
+    throw new Error('Either inventoryItemIds or newInventoryItems required');
+  }
+
+  if (hasExisting && hasNew) {
+    throw new Error('Cannot provide both inventoryItemIds and newInventoryItems');
+  }
+
+  // For new items, validate control number is provided (needed for inventory_number generation)
+  if (hasNew && !input.controlNumber) {
+    throw new Error('controlNumber required when creating new inventory items');
+  }
+
   const transactionDate = input.transactionDate ? new Date(input.transactionDate) : now;
   if (isNaN(transactionDate.getTime())) throw new Error('invalid transactionDate');
 
@@ -122,7 +161,7 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     type: input.type,
     customerId: input.customerId,
     pawnStatus: 'active',
-    inventoryItemIds: input.inventoryItemIds,
+    inventoryItemIds: input.inventoryItemIds || [], // Will be populated after creating new items
     amountFinanced,
     financeCharge,
     periodicRate,
