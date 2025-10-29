@@ -16,10 +16,10 @@ export interface InventoryItem {
   color?: string;
   itemCondition?: string;
   quantity: number;              // >0
-  amount?: number;
-  resale?: number;
-  itemReplace?: number;
-  binNumber?: string;            // physical storage location (bin_number)
+  priceAmount?: number;        // Amount loaned/paid
+  resale?: number;             // Expected resale price
+  minResale?: number;          // Minimum acceptable price (floor)
+  itemReplace?: number;        // Replacement cost (insurance)
   ownerTag?: string;
   itemDescription?: string;
   attributes: Record<string, any>; // Arbitrary structured attributes (firearm/jewelry/etc.)

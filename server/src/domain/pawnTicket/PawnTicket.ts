@@ -50,6 +50,7 @@ export interface NewInventoryItemInput {
   quantity?: number;
   priceAmount?: number;
   resale?: number;
+  minResale?: number;
   itemReplace?: number;
   ownerMark?: string;
   itemDescription?: string;

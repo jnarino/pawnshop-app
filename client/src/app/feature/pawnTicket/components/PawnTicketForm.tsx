@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import InventoryItemModal, { InventoryItemDraft } from './InventoryItemModal';
 import type { PawnDraft } from '../types';
+import { http } from '@/app/core/api/http';
+import type { CreatePawnTicketDto } from '@/app/shared/types/pawnTicket';
 
 interface Props {
   customerId: string;
@@ -96,10 +98,10 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         body.periodicRate = (parseFloat(draft.ratePercent) || 0) / 100; // percent -> decimal
       }
 
-      const res = await fetch('http://localhost:3000/api/pawnTicket', {
+      // Use http() instead of fetch()
+      const res = await http('/api/pawnTicket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(body)
       });
       if (!res.ok) {

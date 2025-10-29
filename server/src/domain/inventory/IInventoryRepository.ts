@@ -5,12 +5,27 @@ export interface CreateInventoryItemDTO {
     status?: InventoryItem['status'];
     categoryId: string; // required now (leaf category)
     brand?: string; model?: string; serialNumber?: string; color?: string; itemCondition?: string;
-    quantity?: number; amount?: number; resale?: number; itemReplace?: number; binNumber?: string; ownerTag?: string; itemDescription?: string;
+    quantity?: number; priceAmount?: number; resale?: number; itemReplace?: number; binNumber?: string; ownerTag?: string; itemDescription?: string;
     attributes?: Record<string, any>; // merged flexible attributes
 }
 
 export interface UpdateInventoryItemDTO extends Partial<CreateInventoryItemDTO> {
-    status?: InventoryItem['status'];
+    status?: string;
+    categoryId?: string;
+    brand?: string;
+    model?: string;
+    serialNumber?: string;
+    color?: string;
+    itemCondition?: string;
+    quantity?: number;
+    priceAmount?: number;      // ✅ Changed from amount
+    resale?: number;
+    minResale?: number;        // ✅ Added minResale
+    itemReplace?: number;
+    binNumber?: string;
+    ownerTag?: string;
+    itemDescription?: string;
+    attributes?: Record<string, any>;
 }
 
 export interface IInventoryRepository {

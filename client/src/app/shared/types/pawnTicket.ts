@@ -9,9 +9,10 @@ export interface NewInventoryItemDto {
     color?: string;
     itemCondition?: string;
     quantity?: number;
-    priceAmount?: number;
-    resale?: number;
-    itemReplace?: number;
+    priceAmount?: number;        // Amount loaned/paid
+    resale?: number;             // Expected resale
+    minResale?: number;          // Minimum resale (floor)
+    itemReplace?: number;        // Replacement cost
     ownerMark?: string;
     itemDescription?: string;
     attributes?: Record<string, any>;

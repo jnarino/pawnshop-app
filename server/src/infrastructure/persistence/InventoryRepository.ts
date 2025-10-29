@@ -8,48 +8,49 @@ import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } 
 export function mapRowToInventoryItem(r: any): InventoryItem {
   return {
     id: typeof r.id === 'number' ? String(r.id) : r.id,
-    inventoryNumber: r.inventoryNumber,
+    inventoryNumber: r.inventory_number,
     status: r.status,
-    categoryId: r.categoryId,
+    categoryId: r.category_id,
     brand: r.brand ?? undefined,
     model: r.model ?? undefined,
-    serialNumber: r.serialNumber ?? undefined,
+    serialNumber: r.serial_number ?? undefined,
     color: r.color ?? undefined,
-    itemCondition: r.itemCondition ?? undefined,
+    itemCondition: r.item_condition ?? undefined,
     quantity: r.quantity,
-    amount: r.amount !== null ? Number(r.amount) : undefined,
+    priceAmount: r.price_amount !== null ? Number(r.price_amount) : undefined,
     resale: r.resale !== null ? Number(r.resale) : undefined,
-    itemReplace: r.itemReplace !== null ? Number(r.itemReplace) : undefined,
-    binNumber: r.binNumber ?? undefined,
-    ownerTag: r.ownerTag ?? undefined,
-    itemDescription: r.itemDescription ?? undefined,
+    minResale: r.min_resale !== null ? Number(r.min_resale) : undefined,
+    itemReplace: r.item_replace !== null ? Number(r.item_replace) : undefined,
+    ownerTag: r.owner_mark ?? undefined,
+    itemDescription: r.item_description ?? undefined,
     attributes: r.attributes ?? {},
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
   };
 }
 
 export class InventoryRepository implements IInventoryRepository {
-  async create(dto: CreateInventoryItemDTO): Promise<string> {
-    const sql = getSQL('command','inventory','createInventoryItem');
+  async create(item: Partial<InventoryItem>): Promise<string> {
+    const sql = getSQL('command', 'inventory', 'createInventoryItem');
     const params = [
-      dto.status ?? 'in_inventory',
-      dto.categoryId,
-      dto.brand,
-      dto.model,
-      dto.serialNumber,
-      dto.color,
-      dto.itemCondition,
-      dto.quantity ?? 1,
-      dto.amount,
-      dto.resale,
-      dto.itemReplace,
-      dto.binNumber,
-      dto.ownerTag,
-      dto.itemDescription,
-      dto.attributes ? JSON.stringify(dto.attributes) : JSON.stringify({}),
-      dto.inventoryNumber ?? null,
+      item.inventoryNumber,
+      item.status || 'I',
+      item.categoryId,
+      item.brand || null,
+      item.model || null,
+      item.serialNumber || null,
+      item.color || null,
+      item.itemCondition || null,
+      item.quantity || 1,
+      item.priceAmount || null,
+      item.resale || null,
+      item.minResale || null,
+      item.itemReplace || null,
+      item.ownerTag || null,
+      item.itemDescription || null,
+      JSON.stringify(item.attributes || {}),
     ];
+    
     const { rows } = await pool.query(sql, params);
     return rows[0].id;
   }
@@ -83,10 +84,10 @@ export class InventoryRepository implements IInventoryRepository {
       dto.color,
       dto.itemCondition,
       dto.quantity,
-      dto.amount,
+      dto.priceAmount,
       dto.resale,
+      dto.minResale,
       dto.itemReplace,
-      dto.binNumber,
       dto.ownerTag,
       dto.itemDescription,
       dto.attributes ? JSON.stringify(dto.attributes) : undefined,
