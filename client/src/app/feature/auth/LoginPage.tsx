@@ -1,39 +1,42 @@
 // src/app/feature/auth/LoginPage.tsx
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '../../core/redux/store';
-import { login, me, resetError } from '../../core/redux/authSlice';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { login } from '@/app/core/auth/authService';
 import './LoginPage.css';
 
 export default function LoginPage() {
-  const dispatch = useDispatch<AppDispatch>();
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const location = useLocation();
-
-  const { status, error } = useSelector((s: RootState) => s.auth);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-
-  // Try to restore session (cookie-based)
-  useEffect(() => {
-    dispatch(me());
-  }, [dispatch]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const onSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (status === 'loading') return;
+    if (loading) return;
+
+    setError('');
+    setLoading(true);
+
     try {
-  await dispatch(login({ username, password })).unwrap(); // waits for 200 + JSON
-  // Explicitly notify Electron main (in addition to AuthMenuSync fallback)
-  // @ts-ignore
-  if (window.electronAPI?.authChanged) window.electronAPI.authChanged(true);
-      const from = (location.state as any)?.from?.pathname ?? '/';
-      nav(from, { replace: true }); // <-- immediate redirect on success
-    } catch {
-      // error already in Redux; UI shows it
+      const success = await login(username, password);
+      if (success) {
+        // Notify Electron
+        if (window.electronAPI?.authChanged) {
+          window.electronAPI.authChanged(true);
+        }
+        const from = (location.state as any)?.from?.pathname ?? '/';
+        navigate(from, { replace: true });
+      } else {
+        setError('Invalid username or password');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,7 +54,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="underline"
-                onClick={() => dispatch(resetError())}
+                onClick={() => setError('')}
               >
                 dismiss
               </button>
@@ -93,12 +96,15 @@ export default function LoginPage() {
           <button
             type="submit"
             className="login-button"
-            disabled={status === 'loading' || !username || !password}
+            disabled={loading || !username || !password}
           >
-            {status === 'loading' ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
 
-          <div className="login-foot">© {new Date().getFullYear()} PawnExpress</div>
+          <div className="login-foot">
+            <p className="text-sm text-gray-600">Default: admin / admin</p>
+            <p>© {new Date().getFullYear()} PawnExpress</p>
+          </div>
         </form>
       </dialog>
     </div>

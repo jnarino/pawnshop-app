@@ -1,30 +1,22 @@
-import { JSX, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '@/app/core/redux/store';
-import { me } from '@/app/core/redux/authSlice';
-import { Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { isAuthenticated, initializeAuth } from '@/app/core/auth/authService';
 
-export default function Protected({ children }: { children: JSX.Element }) {
-    const dispatch = useDispatch<AppDispatch>();
-    const user = useSelector((s: RootState) => s.auth.user);
-    const [checked, setChecked] = useState(false);
+export default function Protected({ children }: { children: React.ReactNode }) {
+    const navigate = useNavigate();
 
     useEffect(() => {
-        let mounted = true;
-        (async () => {
-            if (!user) {
-                try { await dispatch(me()).unwrap(); } catch { }
+        initializeAuth().then(() => {
+            if (!isAuthenticated()) {
+                navigate('/login');
             }
-            if (mounted) setChecked(true);
-        })();
-        return () => { mounted = false; };
-    }, [user, dispatch]);
+        });
+    }, [navigate]);
 
-    if (!checked) return null;       // could render a spinner
-    // Notify Electron once auth known
-    // @ts-ignore
     if (typeof window !== 'undefined' && window.electronAPI?.authChanged) {
-        window.electronAPI.authChanged(!!user);
+        window.electronAPI.authChanged(isAuthenticated());
     }
-    return user ? children : <Navigate to="/login" replace />;
+
+    if (!isAuthenticated()) return null;
+    return <>{children}</>;
 }
