@@ -38,7 +38,8 @@ export function createApp() {
   // Public endpoints (no JWT required)
   app.use('/api/health', healthRouter);
   app.use('/api/ready', readyRouter);
-  app.use('/api/auth', authRouter); // Move auth BEFORE validateJwt
+  app.use('/api/auth', authRouter);
+  app.use('/api/categories', categoryRouter); // Move BEFORE validateJwt
 
   // Protect all other /api routes with JWT
   app.use('/api', validateJwt);
@@ -48,14 +49,6 @@ export function createApp() {
   app.use('/api/inventory', inventoryRouter);
   app.use('/api/inventory-status', inventoryStatusRouter);
   app.use('/api/pawnTicket', pawnTicketRouter);
-  app.use('/api/categories', categoryRouter);
-
-  // Remove duplicate inline handlers:
-  // app.get('/api/health', ...);
-  // app.get('/api/ready', ...);
-
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
-  app.get('/api/ready', async (_req, res) => { try { await pool.query('SELECT 1'); res.json({ ready: true }); } catch { res.status(503).json({ ready: false }); } });
 
   app.use(notFound);
   app.use(errorHandler);
