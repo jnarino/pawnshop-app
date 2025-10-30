@@ -4,15 +4,37 @@ import { DeleteInventoryItemUseCase } from '../../../../application/useCase/inve
 import { CreateInventoryItemUseCase } from '../../../../application/useCase/inventory/CreateInventoryItemUseCase';
 import { IInventoryRepository, CreateInventoryItemDTO, UpdateInventoryItemDTO } from '../../../../domain/inventory/IInventoryRepository';
 import { test } from '../../../testHarness';
+import type { PoolClient } from 'pg';
 
 class InMemRepo implements IInventoryRepository {
   data: any[] = [];
   seq = 1;
-  async create(dto: CreateInventoryItemDTO) { const id = String(this.seq++); this.data.push({ id, status: dto.status ?? 'in_inventory', ...dto }); return id; }
+
+  // ✅ Renamed from create
+  async createSingleItem(dto: CreateInventoryItemDTO) {
+    const id = String(this.seq++);
+    this.data.push({ id, status: dto.status ?? 'in_inventory', ...dto });
+    return id;
+  }
+
+  // ✅ Added for transaction support
+  async createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO) {
+    return this.createSingleItem(dto);
+  }
+
   async findById(id: string) { return this.data.find(d => d.id === id) || null; }
   async findAll() { return this.data; }
-  async update(id: string, dto: UpdateInventoryItemDTO) { const idx = this.data.findIndex(d=>d.id===id); if (idx===-1) return false; this.data[idx] = { ...this.data[idx], ...dto }; return true; }
-  async delete(id: string) { const before = this.data.length; this.data = this.data.filter(d=>d.id!==id); return this.data.length !== before; }
+  async update(id: string, dto: UpdateInventoryItemDTO) {
+    const idx = this.data.findIndex(d => d.id === id);
+    if (idx === -1) return false;
+    this.data[idx] = { ...this.data[idx], ...dto };
+    return true;
+  }
+  async delete(id: string) {
+    const before = this.data.length;
+    this.data = this.data.filter(d => d.id !== id);
+    return this.data.length !== before;
+  }
 }
 
 function makeRepoWithItem() {
@@ -23,7 +45,7 @@ function makeRepoWithItem() {
 
 test('application/useCase/inventory: UpdateInventoryItemUseCase updates fields', async () => {
   const { repo, create } = makeRepoWithItem();
-  const id = await create.execute({ categoryId: 'c1', attributes: { caliberGauge: '9MM' }, quantity:1 } as any);
+  const id = await create.execute({ categoryId: 'c1', attributes: { caliberGauge: '9MM' }, quantity: 1 } as any);
   const updateUC = new UpdateInventoryItemUseCase(repo);
   const ok = await updateUC.execute(id, { itemCondition: 'Excellent', quantity: 2 });
   assert.strictEqual(ok, true);
@@ -41,7 +63,7 @@ test('application/useCase/inventory: UpdateInventoryItemUseCase returns false on
 
 test('application/useCase/inventory: DeleteInventoryItemUseCase deletes item', async () => {
   const { repo, create } = makeRepoWithItem();
-  const id = await create.execute({ categoryId: 'c2', attributes: { metal: 'Gold' }, quantity:1 } as any);
+  const id = await create.execute({ categoryId: 'c2', attributes: { metal: 'Gold' }, quantity: 1 } as any);
   const delUC = new DeleteInventoryItemUseCase(repo);
   const ok = await delUC.execute(id);
   assert.strictEqual(ok, true);

@@ -2,6 +2,7 @@ import { pool } from '../db';
 import { getSQL } from '../db/sqlLoader';
 import { InventoryItem } from '../../domain/inventory/InventoryItem';
 import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } from '../../domain/inventory/IInventoryRepository';
+import type { PoolClient } from 'pg';
 
 // Mapping is handled mostly by SQL aliases. Just ensure numeric/JSON fields are normalized.
 // Exported for testing (mapping tests)
@@ -30,7 +31,8 @@ export function mapRowToInventoryItem(r: any): InventoryItem {
 }
 
 export class InventoryRepository implements IInventoryRepository {
-  async create(item: Partial<InventoryItem>): Promise<string> {
+  // ✅ Standalone: Creates single item, auto-commits
+  async createSingleItem(item: Partial<InventoryItem>): Promise<string> {
     const sql = getSQL('command', 'inventory', 'createInventoryItem');
     const params = [
       item.inventoryNumber,
@@ -52,6 +54,32 @@ export class InventoryRepository implements IInventoryRepository {
     ];
     
     const { rows } = await pool.query(sql, params);
+    return rows[0].id;
+  }
+
+  // ✅ Transactional: Part of larger transaction (e.g., with pawn ticket)
+  async createInTransaction(client: PoolClient, item: Partial<InventoryItem>): Promise<string> {
+    const sql = getSQL('command', 'inventory', 'createInventoryItem');
+    const params = [
+      item.inventoryNumber,
+      item.status || 'I',
+      item.categoryId,
+      item.brand || null,
+      item.model || null,
+      item.serialNumber || null,
+      item.color || null,
+      item.itemCondition || null,
+      item.quantity || 1,
+      item.priceAmount || null,
+      item.resale || null,
+      item.minResale || null,
+      item.itemReplace || null,
+      item.ownerTag || null,
+      item.itemDescription || null,
+      JSON.stringify(item.attributes || {}),
+    ];
+    
+    const { rows } = await client.query(sql, params);
     return rows[0].id;
   }
 

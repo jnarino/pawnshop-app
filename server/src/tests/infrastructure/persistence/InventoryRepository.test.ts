@@ -1,5 +1,6 @@
-import { InventoryItem } from './InventoryItem';
+
 import type { PoolClient } from 'pg';
+import { InventoryItem } from '../../../domain/inventory/InventoryItem';
 
 export interface CreateInventoryItemDTO {
     inventoryNumber?: string; // externally assigned (e.g., controlNumber-seq)

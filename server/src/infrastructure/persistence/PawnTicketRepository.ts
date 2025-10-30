@@ -1,51 +1,18 @@
 import { getSQL } from '../db/sqlLoader';
 import { pool } from '../db';
 import { PawnTicket, CreatePawnTicketInput, buildPawnTicket } from '../../domain/pawnTicket/PawnTicket';
+import type { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../log/logger';
+import type { IPawnTicketRepository } from '../../domain/pawnTicket/IPawnTicketRepository';
 
-export class PawnTicketRepository {
-  async create(input: CreatePawnTicketInput): Promise<string> {
+export class PawnTicketRepository implements IPawnTicketRepository {
+  // ✅ Standalone: Creates ticket with own transaction
+  async createSingleTicket(input: CreatePawnTicketInput): Promise<string> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-
-      const ticketId = uuidv4();
-      const ticket = buildPawnTicket(ticketId, input, new Date());
-
-      const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
-      await client.query(createSQL, [
-        ticket.id,
-        ticket.controlNumber, // ✅ Now contains auto-generated number
-        ticket.type,
-        ticket.customerId,
-        ticket.amountFinanced,
-        ticket.financeCharge,
-        ticket.periodicRate,
-        ticket.totalOfPayments,
-        ticket.annualPercentageRate,
-        ticket.purchaseTradeValue,
-        ticket.transactionDate,
-        ticket.maturityDate,
-        ticket.defaultDate,
-        ticket.pawnStatus,
-      ]);
-
-      if (ticket.inventoryItemIds.length > 0) {
-        const linkSQL = getSQL('command', 'pawnTicket', 'linkPawnTicketItem');
-        for (const itemId of ticket.inventoryItemIds) {
-          await client.query(linkSQL, [ticket.id, itemId]);
-        }
-      }
-
+      const ticketId = await this.createInTransaction(client, input);
       await client.query('COMMIT');
-
-      logger.info('pawn_ticket_created', {
-        ticketId,
-        controlNumber: ticket.controlNumber,
-        customerId: ticket.customerId
-      });
-
       return ticketId;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -53,6 +20,39 @@ export class PawnTicketRepository {
     } finally {
       client.release();
     }
+  }
+
+  // ✅ Transactional: Part of larger transaction
+  async createInTransaction(client: PoolClient, input: CreatePawnTicketInput): Promise<string> {
+    const ticketId = uuidv4();
+    const ticket = buildPawnTicket(ticketId, input, new Date());
+
+    const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
+    await client.query(createSQL, [
+      ticket.id,
+      ticket.controlNumber,
+      ticket.type,
+      ticket.customerId,
+      ticket.amountFinanced,
+      ticket.financeCharge,
+      ticket.periodicRate,
+      ticket.totalOfPayments,
+      ticket.annualPercentageRate,
+      ticket.purchaseTradeValue,
+      ticket.transactionDate,
+      ticket.maturityDate,
+      ticket.defaultDate,
+      ticket.pawnStatus,
+    ]);
+
+    if (ticket.inventoryItemIds.length > 0) {
+      const linkSQL = getSQL('command', 'pawnTicket', 'linkPawnTicketItem');
+      for (const itemId of ticket.inventoryItemIds) {
+        await client.query(linkSQL, [ticket.id, itemId]);
+      }
+    }
+
+    return ticketId;
   }
 
   async update(id: string, dto: Partial<PawnTicket>): Promise<boolean> {
@@ -154,7 +154,7 @@ export class PawnTicketRepository {
       opts.offset ?? 0,
     ];
     const { rows } = await pool.query(sql, params);
-    return rows.map(r => this.mapRowToPawnTicket(r, false)); // false = don't load items for performance
+    return rows.map(r => this.mapRowToPawnTicket(r, false));
   }
 
   async updateDates(id: string, maturityDate?: string, defaultDate?: string): Promise<boolean> {
