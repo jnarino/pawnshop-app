@@ -1,146 +1,90 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-interface TokenResponse {
-  access_token: string;
-  refresh_token?: string;
-  token_type: string;
-  expires_in: number;
+export function getAccessToken(): string | null {
+  return localStorage.getItem('access_token');
 }
 
-let accessToken: string | null = null;
-let tokenExpiresAt: number = 0;
-let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+export function getRefreshToken(): string | null {
+  return localStorage.getItem('refresh_token');
+}
+
+export function isAuthenticated(): boolean {
+  return !!getAccessToken();
+}
 
 export async function login(username: string, password: string): Promise<boolean> {
   try {
-    console.log('[authService] Login attempt for:', username);
-    const resp = await fetch(`${API_BASE}/api/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
+      credentials: 'include'
     });
 
-    if (!resp.ok) {
-      console.error('[authService] Login failed:', resp.status);
-      return false;
-    }
+    if (!response.ok) return false;
 
-    const tokens: TokenResponse = await resp.json();
-    accessToken = tokens.access_token;
-    tokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-
-    console.log('[authService] ✅ Login successful');
-    console.log('[authService] Access token:', accessToken?.substring(0, 20) + '...');
-    console.log('[authService] Expires at:', new Date(tokenExpiresAt).toISOString());
-
-    if (tokens.refresh_token) {
-      localStorage.setItem('refresh_token', tokens.refresh_token);
-      console.log('[authService] Refresh token stored in localStorage');
-    }
-
-    scheduleTokenRefresh();
+    const data = await response.json();
+    
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('refresh_token', data.refresh_token);
+    
+    console.log('[Auth] ✅ Login successful');
+    
     return true;
-  } catch (err) {
-    console.error('[authService] Login error:', err);
+  } catch (error) {
+    console.error('[Auth] ❌ Login failed:', error);
     return false;
   }
 }
 
-export function getAccessToken(): string | null {
-  const isValid = accessToken && Date.now() < tokenExpiresAt;
-  console.log('[authService] getAccessToken called:', {
-    hasToken: !!accessToken,
-    isValid,
-    expiresIn: tokenExpiresAt ? Math.floor((tokenExpiresAt - Date.now()) / 1000) + 's' : 'N/A'
-  });
-
-  if (isValid) {
-    return accessToken;
+export async function logout(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  
+  if (refreshToken) {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: 'include'
+      });
+    } catch (e) {
+      // Ignore logout errors
+    }
   }
-
-  console.warn('[authService] ⚠️ No valid access token available');
-  return null;
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = localStorage.getItem('refresh_token');
-  if (!refreshToken) {
-    console.warn('[authService] No refresh token available');
-    return false;
-  }
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
 
   try {
-    console.log('[authService] Refreshing access token...');
-    const resp = await fetch(`${API_BASE}/api/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: 'include'
     });
 
-    if (!resp.ok) {
-      console.error('[authService] Refresh failed:', resp.status);
+    if (!response.ok) {
       logout();
       return false;
     }
 
-    const tokens: TokenResponse = await resp.json();
-    accessToken = tokens.access_token;
-    tokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-
-    console.log('[authService] ✅ Token refreshed successfully');
-    scheduleTokenRefresh();
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access_token);
+    
     return true;
-  } catch (err) {
-    console.error('[authService] Refresh error:', err);
+  } catch (error) {
     logout();
     return false;
   }
 }
 
-function scheduleTokenRefresh() {
-  if (refreshTimer) clearTimeout(refreshTimer);
-
-  const refreshIn = Math.max(0, tokenExpiresAt - Date.now() - 60000);
-  console.log('[authService] Next refresh scheduled in:', Math.floor(refreshIn / 1000) + 's');
-
-  refreshTimer = setTimeout(() => {
-    console.log('[authService] Auto-refresh triggered');
-    refreshAccessToken();
-  }, refreshIn);
-}
-
-export async function logout() {
-  const refreshToken = localStorage.getItem('refresh_token');
-
-  console.log('[authService] Logging out...');
-  if (refreshTimer) clearTimeout(refreshTimer);
-  accessToken = null;
-  tokenExpiresAt = 0;
-  localStorage.removeItem('refresh_token');
-
-  try {
-    await fetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-  } catch { }
-
-  window.location.href = '/login';
-}
-
-export function isAuthenticated(): boolean {
-  const result = !!getAccessToken() || !!localStorage.getItem('refresh_token');
-  console.log('[authService] isAuthenticated:', result);
-  return result;
-}
-
-export async function initializeAuth() {
-  console.log('[authService] Initializing auth...');
-  if (localStorage.getItem('refresh_token') && !accessToken) {
-    await refreshAccessToken();
-  }
+// No-op for backward compatibility
+export function initializeAuth(): void {
+  // Do nothing - localStorage is always available
 }

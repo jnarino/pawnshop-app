@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { AamvaData } from '../../../shared/hooks/useIdScan';
 import './CustomerIdScanModal.css';
 import { CustomerIdScanModal } from './CustomerIdScanModal';
@@ -7,7 +7,7 @@ import { IdConflictModal } from './IdConflictModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
 import './customerPicker.css'; // ← ensure the case matches the actual filename
-import { http } from '@/app/core/api/http'; // Make sure it uses this
+import { http } from '@/app/core/api/http'; // ✅ Add this import
 
 // Centralized config (env override with safe defaults)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -303,66 +303,68 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
   // After scanning: update minimal fields to query reliably, then search
   const applyAamva = React.useCallback(async (d: AamvaData) => {
-    console.log('[IDScan] parsed', d);
-    setLastScanData(d);
-    const scannedFirst = d.firstName?.trim() || '';
-    const scannedLast = d.lastName?.trim() || '';
-    const scannedDob = d.dateOfBirth || '';
-    const scannedIdNumber = d.idNumber || '';
-
-    if (!scannedFirst || !scannedLast || !scannedDob) {
-      setError('Scan missing required name or date of birth information.');
+    if (!d) {
+      console.warn('[IDScan] ⚠️ Failed to parse ID data');
       return;
     }
 
-    const queryKey = `${scannedFirst}|${scannedLast}|${scannedDob}`;
-    if (scanSearchInFlight.current || lastScanQueryKey.current === queryKey) return;
-    scanSearchInFlight.current = true;
-    lastScanQueryKey.current = queryKey;
+    console.log('[IDScan] 🔍 Searching for customer:', {
+      name: `${d.firstName} ${d.lastName}`,
+      dob: d.dateOfBirth,
+      idNumber: d.idNumber
+    });
+
     try {
-      setLoading(true);
-      setError(null);
+      // ✅ Use http() instead of fetch() to include JWT token
       const params = new URLSearchParams();
-      params.append('firstName', scannedFirst);
-      params.append('lastName', scannedLast);
-      params.append('dateOfBirth', scannedDob);
-      params.append('limit', '10');
-      const resp = await fetch(`${API_BASE_URL}/api/customer?${params.toString()}`, { credentials: 'include' });
-      if (!resp.ok) throw new Error('Customer lookup failed');
-      const payload = await resp.json();
-      const matches = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);
+      if (d.dateOfBirth) params.set('dateOfBirth', d.dateOfBirth);
+      if (d.firstName) params.set('firstName', d.firstName);
+      if (d.lastName) params.set('lastName', d.lastName);
+      params.set('limit', '10');
 
-      if (!matches.length) {
-        populateFormFromScan(d);
-        setEditingNew(true);
-        setStatusMessage('Scanned data loaded for new customer.');
+      const customers = await http(`/api/customer?${params.toString()}`);
+
+      console.log('[IDScan] Search results:', { count: customers?.length || 0 });
+
+      if (!customers || !Array.isArray(customers) || customers.length === 0) {
+        console.log('[IDScan] ❌ No customer found');
+        // Show "not found" modal
+        setModalEmpty(true);
+        setSearchFromScan(true);
+        setLastScanData(d);
+        setSearchModalOpen(true);
         return;
       }
 
-      if (matches.length === 1) {
-        const match = matches[0];
-        const dbId = match.idNumber?.trim() || '';
-        if (dbId && scannedIdNumber && dbId.toUpperCase() !== scannedIdNumber.toUpperCase()) {
-          setFoundCustomerWithDifferentId({ customer: match, scannedIdNumber });
-          setIdConflictModalOpen(true);
-          return;
-        }
-        loadCustomerFromScan(match, d);
-        return;
-      }
+      // Find exact match by ID number
+      const match = customers.find((c: any) =>
+        c.idNumber?.toUpperCase() === d.idNumber?.toUpperCase()
+      );
 
-      setResults(matches);
-      setModalEmpty(false);
+      if (match) {
+        console.log('[IDScan] ✅ Customer found:', match.id);
+        // Update form with customer data
+        const rec = apiToRecordLoose(match);
+        setForm(rec);
+        onChange?.(recordToDto(rec, match.id));
+        onSelected?.(match.id);
+      } else {
+        console.log('[IDScan] ⚠️ Customers found but no ID match');
+        // Show "not found" modal
+        setModalEmpty(true);
+        setSearchFromScan(true);
+        setLastScanData(d);
+        setSearchModalOpen(true);
+      }
+    } catch (err) {
+      console.error('[IDScan] ❌ Search failed:', err);
+      setError(err instanceof Error ? err.message : 'Search failed');
+      setModalEmpty(true);
       setSearchFromScan(true);
+      setLastScanData(d);
       setSearchModalOpen(true);
-    } catch (err: any) {
-      setError(err.message || 'Scan search failed');
-      setSearchModalOpen(true);
-    } finally {
-      scanSearchInFlight.current = false;
-      setLoading(false);
     }
-  }, []);
+  }, [onChange, onSelected]);
 
   // Populate form with all scanned data for new customer
   const populateFormFromScan = (d: AamvaData) => {

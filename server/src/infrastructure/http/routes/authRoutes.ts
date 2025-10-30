@@ -3,150 +3,185 @@ import argon2 from 'argon2';
 import jsonwebtoken from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../../db';
-import { getSQL } from '../../db/sqlLoader';
 import { jwt as jwtConfig } from '../../../config';
 import { validateJwt, type AuthPayload } from '../middleware/auth';
 import { logger } from '../../log/logger';
+import { authCache } from '../../cache/AuthCacheService';
 
 const router = express.Router();
 
-// Login: validate credentials, return access + refresh tokens
+// Initialize Redis connection
+authCache.connect().catch(err => {
+  logger.error('[AuthRoutes] Failed to connect to Redis', { error: err instanceof Error ? err.message : String(err) });
+});
+
+// Login: create permanent session in Redis
 router.post('/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        if (!username || !password) {
-            return res.status(400).json({ error: 'bad_request', message: 'username and password required' });
-        }
-
-        // Temporary hardcoded SQL for debugging
-        const sql = `
-          SELECT 
-            u.id, 
-            u.username, 
-            u.password_hash, 
-            u.is_active,
-            COALESCE(array_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
-          FROM app_user u
-          LEFT JOIN app_user_role ur ON ur.user_id = u.id
-          LEFT JOIN role r ON r.id = ur.role_id
-          WHERE u.username = $1
-          GROUP BY u.id, u.username, u.password_hash, u.is_active
-        `;
-        
-        const result = await pool.query(sql, [username]);
-
-        const user = result.rows[0];
-        if (!user || !user.is_active) {
-            return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
-        }
-
-        const validPassword = await argon2.verify(user.password_hash, password);
-        if (!validPassword) {
-            return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
-        }
-
-        // Create session in DB
-        const sessionId = uuidv4();
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-        const createSessionSQL = getSQL('command', 'auth', 'createSession');
-        await pool.query(createSessionSQL, [sessionId, user.id, expiresAt]);
-
-        const payload: AuthPayload = {
-            sub: user.id,
-            username: user.username,
-            roles: user.roles || []
-        };
-
-        const accessToken = jsonwebtoken.sign(
-            payload,
-            jwtConfig.accessSecret,
-            { expiresIn: jwtConfig.accessExpiresIn } as jsonwebtoken.SignOptions
-        );
-        
-        const refreshToken = jsonwebtoken.sign(
-            { sub: user.id, sessionId },
-            jwtConfig.refreshSecret,
-            { expiresIn: jwtConfig.refreshExpiresIn } as jsonwebtoken.SignOptions
-        );
-
-        logger.info('auth_login_success', { userId: user.id, username: user.username });
-        return res.json({ 
-            access_token: accessToken, 
-            refresh_token: refreshToken, 
-            token_type: 'Bearer',
-            expires_in: 900 // 15 minutes in seconds
-        });
-    } catch (error) {
-        logger.error('auth_login_error', { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : '' });
-        return res.status(500).json({ error: 'internal_error', message: 'Login failed' });
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'bad_request', message: 'username and password required' });
     }
+
+    // Get user with roles
+    const sql = `
+      SELECT 
+        u.id, 
+        u.username, 
+        u.password_hash, 
+        u.is_active,
+        COALESCE(array_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
+      FROM app_user u
+      LEFT JOIN app_user_role ur ON ur.user_id = u.id
+      LEFT JOIN role r ON r.id = ur.role_id
+      WHERE u.username = $1
+      GROUP BY u.id, u.username, u.password_hash, u.is_active
+    `;
+    
+    const result = await pool.query(sql, [username]);
+    const user = result.rows[0];
+
+    if (!user || !user.is_active) {
+      return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
+    }
+
+    const validPassword = await argon2.verify(user.password_hash, password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
+    }
+
+    // ✅ Create PERMANENT session in Redis (no expiration)
+    const sessionId = uuidv4();
+    await authCache.createSession(sessionId, user.id, user.username, user.roles || []);
+
+    const payload: AuthPayload = {
+      sub: user.id,
+      username: user.username,
+      roles: user.roles || []
+    };
+
+    // ✅ Access token: 15 minutes (will be refreshed automatically)
+    const accessToken = jsonwebtoken.sign(
+      payload,
+      jwtConfig.accessSecret,
+      { expiresIn: '15m' } as jsonwebtoken.SignOptions
+    );
+    
+    // ✅ Refresh token: No expiration in JWT (session in Redis controls it)
+    const refreshToken = jsonwebtoken.sign(
+      { sub: user.id, sessionId },
+      jwtConfig.refreshSecret,
+      { expiresIn: '100y' } as jsonwebtoken.SignOptions // Effectively no expiration
+    );
+
+    logger.info('auth_login_success', { userId: user.id, username: user.username, sessionId });
+    
+    return res.json({ 
+      access_token: accessToken, 
+      refresh_token: refreshToken, 
+      token_type: 'Bearer',
+      expires_in: 900 // Access token expires in 15 minutes
+    });
+  } catch (error) {
+    logger.error('auth_login_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ error: 'internal_error', message: 'Login failed' });
+  }
 });
 
-// Refresh: exchange refresh token for new access token
+// Refresh: get new access token (session never expires unless manually deleted)
 router.post('/refresh', async (req, res) => {
-    try {
-        const { refresh_token } = req.body;
-        if (!refresh_token) return res.status(400).json({ error: 'bad_request', message: 'refresh_token required' });
-
-        const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sub: string; sessionId: string };
-        
-        // Verify session exists and is not expired
-        const getSessionSQL = getSQL('query', 'auth', 'getSessionById');
-        const sessionResult = await pool.query(getSessionSQL, [decoded.sessionId]);
-        if (sessionResult.rows.length === 0) {
-            return res.status(401).json({ error: 'unauthorized', message: 'Invalid session' });
-        }
-
-        // Get user with roles
-        const sql = getSQL('query', 'auth', 'getUserById');
-        const result = await pool.query(sql, [decoded.sub]);
-
-        const user = result.rows[0];
-        if (!user || !user.is_active) {
-            return res.status(401).json({ error: 'unauthorized', message: 'User not found or inactive' });
-        }
-
-        // Update session activity and extend expiration (rolling window)
-        const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        const updateSessionSQL = getSQL('command', 'auth', 'updateSessionActivity');
-        await pool.query(updateSessionSQL, [decoded.sessionId, newExpiresAt]);
-
-        const payload: AuthPayload = { sub: user.id, username: user.username, roles: user.roles || [] };
-        const accessToken = jsonwebtoken.sign(
-            payload,
-            jwtConfig.accessSecret,
-            { expiresIn: jwtConfig.accessExpiresIn } as jsonwebtoken.SignOptions
-        );
-
-        return res.json({ 
-            access_token: accessToken, 
-            token_type: 'Bearer',
-            expires_in: 900
-        });
-    } catch (error) {
-        logger.error('auth_refresh_error', { error: error instanceof Error ? error.message : String(error) });
-        return res.status(401).json({ error: 'unauthorized', message: 'Invalid refresh token' });
+  try {
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      return res.status(400).json({ error: 'bad_request', message: 'refresh_token required' });
     }
+
+    const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sub: string; sessionId: string };
+    
+    // ✅ Verify session exists in Redis (no expiration check - sessions last forever)
+    const sessionData = await authCache.getSession(decoded.sessionId);
+    if (!sessionData) {
+      return res.status(401).json({ error: 'unauthorized', message: 'Session not found - please login again' });
+    }
+
+    // ✅ Update last activity (no expiration)
+    await authCache.updateSessionActivity(decoded.sessionId);
+
+    const payload: AuthPayload = {
+      sub: sessionData.userId,
+      username: sessionData.username,
+      roles: sessionData.roles
+    };
+
+    const accessToken = jsonwebtoken.sign(
+      payload,
+      jwtConfig.accessSecret,
+      { expiresIn: '15m' } as jsonwebtoken.SignOptions
+    );
+
+    logger.info('auth_refresh_success', { userId: sessionData.userId, sessionId: decoded.sessionId });
+
+    return res.json({ 
+      access_token: accessToken, 
+      token_type: 'Bearer',
+      expires_in: 900
+    });
+  } catch (error) {
+    logger.error('auth_refresh_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(401).json({ error: 'unauthorized', message: 'Invalid refresh token' });
+  }
 });
 
-// Me: return current user from JWT
+// Me: return current user
 router.get('/me', validateJwt, (req, res) => {
-    const payload = (req as any).auth.payload as AuthPayload;
-    return res.json({ sub: payload.sub, username: payload.username, roles: payload.roles });
+  const payload = (req as any).auth.payload as AuthPayload;
+  return res.json({ sub: payload.sub, username: payload.username, roles: payload.roles });
 });
 
-// Logout: invalidate session
-router.post('/logout', validateJwt, async (req, res) => {
-    try {
-        const { refresh_token } = req.body;
-        if (refresh_token) {
-            const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sessionId: string };
-            await pool.query('DELETE FROM session WHERE id = $1', [decoded.sessionId]);
-        }
-        return res.json({ message: 'Logged out successfully' });
-    } catch (error) {
-        return res.json({ message: 'Logged out' });
+// Logout: delete session from Redis
+router.post('/logout', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+    if (refresh_token) {
+      const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sessionId: string };
+      await authCache.deleteSession(decoded.sessionId);
+      logger.info('auth_logout_success', { sessionId: decoded.sessionId });
     }
+    return res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    logger.error('auth_logout_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.json({ message: 'Logged out' });
+  }
+});
+
+// Admin: Get all active sessions
+router.get('/sessions', validateJwt, async (req, res) => {
+  try {
+    const payload = (req as any).auth.payload as AuthPayload;
+    const sessions = await authCache.getUserActiveSessions(payload.sub);
+    return res.json({ sessions });
+  } catch (error) {
+    logger.error('auth_sessions_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+// Admin: Logout all sessions
+router.post('/logout-all', validateJwt, async (req, res) => {
+  try {
+    const payload = (req as any).auth.payload as AuthPayload;
+    await authCache.deleteAllUserSessions(payload.sub);
+    logger.info('auth_logout_all_success', { userId: payload.sub });
+    return res.json({ message: 'All sessions terminated' });
+  } catch (error) {
+    logger.error('auth_logout_all_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ error: 'internal_error' });
+  }
 });
 
 export default router;
+
+// Export for graceful shutdown
+export async function shutdownAuthCache() {
+  await authCache.disconnect();
+}

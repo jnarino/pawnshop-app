@@ -22,7 +22,7 @@ export const CustomerIdScanModal: React.FC<Props> = ({
     const [message, setMessage] = useState('Ready – scan the ID now...');
     const [rawPreview, setRawPreview] = useState('');
     const bufferRef = useRef('');
-    const timerRef = useRef<number | null>(null);
+    const timerRef = useRef<number | null>(null); // ✅ Use number for browser setTimeout
     const areaRef = useRef<HTMLTextAreaElement | null>(null);
 
     const reset = useCallback(() => {
@@ -77,23 +77,32 @@ export const CustomerIdScanModal: React.FC<Props> = ({
     // Inactivity timeout management
     const scheduleInactivity = useCallback(() => {
         if (timerRef.current) window.clearTimeout(timerRef.current);
-        timerRef.current = window.setTimeout(() => {
+        timerRef.current = window.setTimeout(() => { // ✅ window.setTimeout returns number
             if (status === 'waiting') finalize('timeout');
-        }, inactivityMs);
+        }, inactivityMs) as unknown as number;
     }, [finalize, inactivityMs, status]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        let val = e.target.value;
-        // If scanner sends newline at end -> finalize
-        if (val.includes('\n')) {
-            bufferRef.current = val;
-            setRawPreview(val);
-            finalize('enter');
-            return;
-        }
-        bufferRef.current = val;
-        setRawPreview(val);
-        scheduleInactivity();
+        const newRaw = e.target.value;
+        setRawPreview(newRaw);
+        bufferRef.current = newRaw;
+
+        if (timerRef.current) clearTimeout(timerRef.current);
+
+        timerRef.current = window.setTimeout(() => { // ✅ Explicitly use window.setTimeout
+            const result = parseAamva(newRaw);
+
+            if (result) {
+                console.log('[IDScan] ✅ Successfully parsed ID:', {
+                    name: `${result.firstName} ${result.lastName}`,
+                    dob: result.dateOfBirth,
+                    idNumber: result.idNumber
+                });
+
+                onScanned(result, newRaw);
+                onClose();
+            }
+        }, inactivityMs) as unknown as number;
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

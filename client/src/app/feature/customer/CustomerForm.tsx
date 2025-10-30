@@ -127,8 +127,13 @@ export function CustomerForm() {
 
       <CustomerNotFoundModal
         open={!!notFound}
+        customerInfo={notFound?.aamva ? {
+          firstName: notFound.aamva.firstName,
+          lastName: notFound.aamva.lastName,
+          dateOfBirth: notFound.aamva.dateOfBirth
+        } : undefined}
         onClose={() => setNotFound(null)}
-        onAddCustomer={applyFromAamva}
+        onAddAsNew={applyFromAamva}
       />
     </div>
   );

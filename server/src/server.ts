@@ -22,6 +22,8 @@ import pawnTicketRouter from './infrastructure/http/routes/pawnTicketRoute';
 import categoryRouter from './infrastructure/http/routes/categoryRoutes';
 import debugRouter from './infrastructure/http/routes/debugRoutes';
 import { validateJwt } from './infrastructure/http/middleware/auth';
+import { shutdownAuthCache } from './infrastructure/http/routes/authRoutes';
+import { categoryCache } from './container';
 
 const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
 let activeRequests = 0;
@@ -79,25 +81,32 @@ async function ensureDbReady() {
 }
 
 async function start() {
-  logger.info('startup_begin', { env: config.nodeEnv, port: config.port, build: config.buildId, dbRetries: config.dbConnect.retries });
+  logger.info('startup_begin', { env: config.nodeEnv, port: config.port, build: config.buildId });
   await ensureDbReady();
   const app = createApp();
   const server = app.listen(config.port, () => logger.info('startup_listening', { url: `http://localhost:${config.port}` }));
-  const shutdown = (signal: string) => {
+
+  const shutdown = async (signal: string) => {
     logger.warn('shutdown_initiated', { signal });
-    const timer = setTimeout(() => { logger.error('shutdown_force_exit', { activeRequests }); process.exit(1); }, config.shutdownTimeoutMs);
-    server.close(() => {
-      const check = () => {
-        if (activeRequests > 0) { logger.warn('shutdown_waiting', { activeRequests }); setTimeout(check, 250); return; }
-        pool.end().finally(() => { clearTimeout(timer); logger.info('shutdown_complete'); process.exit(0); });
-      };
-      check();
+    const timer = setTimeout(() => { logger.error('shutdown_force_exit'); process.exit(1); }, config.shutdownTimeoutMs);
+
+    server.close(async () => {
+      try {
+        await categoryCache.disconnect();
+        await shutdownAuthCache();
+        await pool.end();
+        clearTimeout(timer);
+        logger.info('shutdown_complete');
+        process.exit(0);
+      } catch (error) {
+        logger.error('shutdown_error', { error });
+        process.exit(1);
+      }
     });
   };
+
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('unhandledRejection', (r) => logger.error('unhandled_rejection', { reason: String(r) }));
-  process.on('uncaughtException', (e) => { logger.error('uncaught_exception', { message: e.message, stack: e.stack }); shutdown('uncaughtException'); });
 }
 
 if (require.main === module) start();

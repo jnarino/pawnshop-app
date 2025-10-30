@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIdScan, AamvaData } from './useIdScan';
+import { http } from '@/app/core/api/http'; // ✅ Add this import
 
 export type NotFoundInfo = { idNumber?: string; dobISO?: string; aamva?: AamvaData };
 
@@ -54,21 +55,44 @@ export function useCustomerIdSearch(
     }
 
     try {
-      const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const url = new URL(`${base}/api/customer/search/by-dob-id`);
-      url.searchParams.set('dob', dobISO);
-      url.searchParams.set('idNumber', idNumber);
-      const res = await fetch(url.toString(), { credentials: 'include' });
+      // ✅ Use http() with correct endpoint and JWT auth
+      const params = new URLSearchParams();
+      params.set('dateOfBirth', dobISO!);
+      if (data.firstName) params.set('firstName', data.firstName);
+      if (data.lastName) params.set('lastName', data.lastName);
+      params.set('limit', '10');
 
-      if (res.status === 404) {
+      console.log('[IDScan] 🔍 Searching for customer:', {
+        dob: dobISO,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        idNumber: idNumber
+      });
+
+      const customers = await http(`/api/customer?${params.toString()}`);
+      
+      console.log('[IDScan] Search results:', { count: customers?.length || 0 });
+
+      if (!customers || !Array.isArray(customers) || customers.length === 0) {
+        console.log('[IDScan] ❌ No customer found');
         onNotFoundRef.current({ idNumber, dobISO, aamva: data });
-      } else if (!res.ok) {
-        onNotFoundRef.current({ idNumber, dobISO, aamva: data });
-      } else {
-        const json = await res.json();
-        onFoundRef.current(json);
+        return;
       }
-    } catch {
+
+      // ✅ Find exact match by ID number
+      const match = customers.find((c: any) => 
+        c.idNumber?.toUpperCase() === idNumber?.toUpperCase()
+      );
+
+      if (match) {
+        console.log('[IDScan] ✅ Customer found:', match.id);
+        onFoundRef.current(match);
+      } else {
+        console.log('[IDScan] ⚠️ Customers found but no ID match');
+        onNotFoundRef.current({ idNumber, dobISO, aamva: data });
+      }
+    } catch (error) {
+      console.error('[IDScan] ❌ Search error:', error);
       onNotFoundRef.current({ idNumber, dobISO, aamva: data });
     } finally {
       busyRef.current = false;
