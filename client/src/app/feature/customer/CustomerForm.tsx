@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useCustomerIdSearch, NotFoundInfo } from '../../shared/hooks/useCustomerIdSearch';
-import CustomerNotFoundModal from './components/CustomerNotFoundModal';
 import { CustomerRecord } from './mappers';
 import { mergeAamva, formatPhone } from '../../shared/utils/customerMerge';
+
 
 // Use CustomerRecord shape minus read-only fields for local editing
 type FormShape = Omit<CustomerRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
@@ -65,8 +65,8 @@ export function CustomerForm() {
           <label>Last Name<input {...bind('lastName')} /></label>
           <label>DOB<input type="date" {...bind('dateOfBirth')} /></label>
 
-          <label>Phone (primary)<input {...bind('phoneNumber')} onChange={e => setForm(f=>({...f, phoneNumber: formatPhone(e.target.value)}))} placeholder="(555) 123-4567" /></label>
-          <label>Cell Phone<input {...bind('cellPhone')} onChange={e => setForm(f=>({...f, cellPhone: formatPhone(e.target.value)}))} placeholder="(555) 123-4567" /></label>
+          <label>Phone (primary)<input {...bind('phoneNumber')} onChange={e => setForm(f => ({ ...f, phoneNumber: formatPhone(e.target.value) }))} placeholder="(555) 123-4567" /></label>
+          <label>Cell Phone<input {...bind('cellPhone')} onChange={e => setForm(f => ({ ...f, cellPhone: formatPhone(e.target.value) }))} placeholder="(555) 123-4567" /></label>
           <label>Email<input type="email" {...bind('email')} /></label>
           <label>SS Number<input {...bind('ssNumber')} placeholder="###-##-####" /></label>
 
@@ -125,16 +125,7 @@ export function CustomerForm() {
         <label className="block"><textarea {...bind('description')} rows={3} placeholder="Notes / description" /></label>
       </section>
 
-      <CustomerNotFoundModal
-        open={!!notFound}
-        customerInfo={notFound?.aamva ? {
-          firstName: notFound.aamva.firstName,
-          lastName: notFound.aamva.lastName,
-          dateOfBirth: notFound.aamva.dateOfBirth
-        } : undefined}
-        onClose={() => setNotFound(null)}
-        onAddAsNew={applyFromAamva}
-      />
+
     </div>
   );
 }
