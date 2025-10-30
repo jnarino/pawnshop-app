@@ -422,13 +422,14 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     try {
       setSaving(true);
       const { customer, scannedIdNumber } = foundCustomerWithDifferentId;
-      const resp = await fetch(`${API_BASE_URL}/api/customer/${customer.id}`, {
+
+      // ✅ Use http() instead of fetch()
+      await http(`/api/customer/${customer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ idNumber: scannedIdNumber }),
       });
-      if (!resp.ok) throw new Error('Failed to update ID number');
+
       setIdConflictModalOpen(false);
       setFoundCustomerWithDifferentId(null);
       loadCustomerFromScan({ ...customer, idNumber: scannedIdNumber }, lastScanData);
@@ -471,39 +472,85 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   function handleAddFromScan() {
     if (lastScanData) {
       const d = lastScanData;
-      setForm(prev => ({
-        ...prev,
-        idIssueDate: d.issueDate ?? prev.idIssueDate,
-        idExpiration: d.expirationDate ?? prev.idExpiration,
-        streetAddress: d.streetAddress ?? prev.streetAddress,
-        city: d.city ?? prev.city,
-        stateUs: d.stateUs ?? prev.stateUs,
-        zipCode: d.zipcode ?? prev.zipCode,
-        sex: d.sex ?? prev.sex,
-        height: d.height ?? prev.height,
-        weight: d.weight ?? prev.weight,
-        eyeColor: prev.eyeColor || d.eyeColor,
-        hairColor: prev.hairColor || d.hairColor,
-      }));
+
+      // ✅ FULLY RESET FORM - Start fresh with only scanned data
+      setForm({
+        // Required fields
+        firstName: d.firstName || '',
+        middleName: d.middleName || '',
+        lastName: d.lastName || '',
+        dateOfBirth: d.dateOfBirth,
+        sex: d.sex || '',
+
+        // ID Information
+        idNumber: d.idNumber || '',
+        idType: 'Driver License', // ✅ Default based on scan
+        idState: d.stateUs,
+        idIssueDate: d.issueDate,
+        idExpiration: d.expirationDate,
+        idAddress: d.streetAddress,
+        idCity: d.city,
+        idZip: d.zipcode,
+
+        // Primary Address (from ID)
+        streetAddress: d.streetAddress,
+        city: d.city,
+        stateUs: d.stateUs,
+        zipCode: d.zipcode,
+
+        // Physical Traits
+        height: d.height,
+        weight: d.weight,
+        eyeColor: d.eyeColor,
+        hairColor: d.hairColor,
+
+        // ✅ Clear all other fields (no leftover data from previous customer)
+        phoneNumber: undefined,
+        cellPhone: undefined,
+        email: undefined,
+        ssNumber: undefined,
+        race: undefined,
+        birthCity: undefined,
+        birthState: undefined,
+        birthCountry: undefined,
+        marks: undefined,
+        description: undefined,
+
+        // System fields
+        id: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      } as CustomerRecord);
     }
+
     setEditingNew(true);
     setSearchModalOpen(false);
+    setLastScanData(null); // ✅ Clear scan data after using it
+    setModalEmpty(false);
   }
 
   async function saveNew() {
-    if (saving) return; setSaveError(null);
-    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.dateOfBirth) { setSaveError('First, Last, and Date of Birth are required'); return; }
+    if (saving) return;
+    setSaveError(null);
+
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.dateOfBirth) {
+      setSaveError('First, Last, and Date of Birth are required');
+      return;
+    }
+
     try {
       setSaving(true);
-      const payload = { ...form } as any; delete payload.id;
-      const res = await fetch(`${API_BASE_URL}/api/customer`, {
+      const payload = { ...form };
+      delete (payload as any).id; // Remove id if present
+
+      // ✅ Use http() instead of fetch() to include JWT token
+      const data = await http('/api/customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error((await res.text()) || 'Save failed');
-      const data = await res.json(); const newId = data?.id ?? form.id;
+
+      const newId = data?.id ?? form.id;
       setEditingNew(false);
       onSelected?.(newId);
       onChange?.(recordToDto(form, newId));
