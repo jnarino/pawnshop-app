@@ -268,9 +268,13 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   const [searchFromScan, setSearchFromScan] = useState(false);
   const [lastScanData, setLastScanData] = useState<AamvaData | null>(null);
 
-  // Add new state for ID conflict handling
+  // ✅ NEW: State for ID conflict modal
   const [idConflictModalOpen, setIdConflictModalOpen] = useState(false);
-  const [foundCustomerWithDifferentId, setFoundCustomerWithDifferentId] = useState<{ customer: CustomerRecord; scannedIdNumber: string } | null>(null);
+  const [idConflictData, setIdConflictData] = useState<{
+    customer: CustomerRecord;
+    scannedIdNumber: string;
+    scanData: AamvaData;
+  } | null>(null);
 
   const scanSearchInFlight = useRef(false);
   const manualSearchInFlight = useRef(false);
@@ -315,7 +319,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     });
 
     try {
-      // ✅ Use http() instead of fetch() to include JWT token
+      // ✅ Search by name + DOB only (ignore ID number initially)
       const params = new URLSearchParams();
       if (d.dateOfBirth) params.set('dateOfBirth', d.dateOfBirth);
       if (d.firstName) params.set('firstName', d.firstName);
@@ -327,8 +331,7 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       console.log('[IDScan] Search results:', { count: customers?.length || 0 });
 
       if (!customers || !Array.isArray(customers) || customers.length === 0) {
-        console.log('[IDScan] ❌ No customer found');
-        // Show "not found" modal
+        console.log('[IDScan] ❌ No customer found by name+DOB');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
@@ -336,26 +339,60 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
         return;
       }
 
-      // Find exact match by ID number
-      const match = customers.find((c: any) =>
-        c.idNumber?.toUpperCase() === d.idNumber?.toUpperCase()
-      );
+      // ✅ Find customer by matching name + DOB (case-insensitive)
+      const nameAndDobMatch = customers.find((c: any) => {
+        const firstMatch = c.firstName?.toUpperCase().trim() === d.firstName?.toUpperCase().trim();
+        const lastMatch = c.lastName?.toUpperCase().trim() === d.lastName?.toUpperCase().trim();
+        const dobMatch = c.dateOfBirth === d.dateOfBirth;
+        return firstMatch && lastMatch && dobMatch;
+      });
 
-      if (match) {
-        console.log('[IDScan] ✅ Customer found:', match.id);
-        // Update form with customer data
-        const rec = apiToRecordLoose(match);
-        setForm(rec);
-        onChange?.(recordToDto(rec, match.id));
-        onSelected?.(match.id);
-      } else {
-        console.log('[IDScan] ⚠️ Customers found but no ID match');
-        // Show "not found" modal
+      if (!nameAndDobMatch) {
+        console.log('[IDScan] ⚠️ No exact name+DOB match found');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
         setSearchModalOpen(true);
+        return;
       }
+
+      const customerRecord = apiToRecordLoose(nameAndDobMatch);
+
+      console.log('[IDScan] ✅ Customer found:', {
+        id: nameAndDobMatch.id,
+        dbIdNumber: nameAndDobMatch.idNumber,
+        scannedIdNumber: d.idNumber
+      });
+
+      // ✅ ALWAYS load customer data into form first
+      setForm(customerRecord);
+      onChange?.(recordToDto(customerRecord, nameAndDobMatch.id));
+      onSelected?.(nameAndDobMatch.id);
+
+      // ✅ NOW check if ID numbers match
+      const dbId = nameAndDobMatch.idNumber?.toUpperCase().trim();
+      const scannedId = d.idNumber?.toUpperCase().trim();
+      const idNumbersMatch = dbId === scannedId;
+
+      console.log('[IDScan] ID comparison:', {
+        dbId,
+        scannedId,
+        match: idNumbersMatch
+      });
+
+      if (!idNumbersMatch && d.idNumber) {
+        // ✅ ID numbers don't match - show update modal
+        console.log('[IDScan] ⚠️ ID MISMATCH DETECTED');
+        setIdConflictData({
+          customer: customerRecord,
+          scannedIdNumber: d.idNumber,
+          scanData: d
+        });
+        setIdConflictModalOpen(true);
+      } else {
+        console.log('[IDScan] ✅ ID numbers match - customer loaded');
+      }
+
     } catch (err) {
       console.error('[IDScan] ❌ Search failed:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -416,24 +453,29 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     }
   };
 
-  // Handle ID conflict resolution - Update ID
+  // ✅ NEW: Handle ID update
   const handleUpdateId = async () => {
-    if (!foundCustomerWithDifferentId || !lastScanData) return;
+    if (!idConflictData) return;
     try {
       setSaving(true);
-      const { customer, scannedIdNumber } = foundCustomerWithDifferentId;
 
-      // ✅ Use http() instead of fetch()
-      await http(`/api/customer/${customer.id}`, {
+      await http(`/api/customer/${idConflictData.customer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idNumber: scannedIdNumber }),
+        body: JSON.stringify({ idNumber: idConflictData.scannedIdNumber }),
       });
 
+      // Update form with new ID
+      setForm(prev => ({
+        ...prev,
+        idNumber: idConflictData.scannedIdNumber
+      }));
+
       setIdConflictModalOpen(false);
-      setFoundCustomerWithDifferentId(null);
-      loadCustomerFromScan({ ...customer, idNumber: scannedIdNumber }, lastScanData);
-      setStatusMessage('ID number updated.');
+      setIdConflictData(null);
+      setStatusMessage('ID number updated successfully.');
+      
+      console.log('[IDScan] ✅ ID number updated');
     } catch (err: any) {
       setError(err.message || 'Unable to update ID number');
     } finally {
@@ -441,19 +483,18 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     }
   };
 
-  // Handle ID conflict resolution - Keep existing ID
+  // ✅ NEW: Keep existing ID
   const handleKeepExistingId = () => {
-    if (!foundCustomerWithDifferentId || !lastScanData) return;
-    const { customer } = foundCustomerWithDifferentId;
+    console.log('[IDScan] User chose to keep existing ID number');
     setIdConflictModalOpen(false);
-    setFoundCustomerWithDifferentId(null);
-    loadCustomerFromScan(customer, lastScanData);
+    setIdConflictData(null);
+    // Form already has customer data loaded
   };
 
-  // Handle ID conflict resolution - Cancel
+  // ✅ NEW: Cancel ID conflict
   const handleCancelIdConflict = () => {
     setIdConflictModalOpen(false);
-    setFoundCustomerWithDifferentId(null);
+    setIdConflictData(null);
     clearAll();
   };
 
@@ -664,11 +705,11 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
 
       <IdConflictModal
         open={idConflictModalOpen}
-        existingIdNumber={foundCustomerWithDifferentId?.customer.idNumber || ''}
-        scannedIdNumber={foundCustomerWithDifferentId?.scannedIdNumber || ''}
+        existingIdNumber={idConflictData?.customer.idNumber || ''}
+        scannedIdNumber={idConflictData?.scannedIdNumber || ''}
         customerName={
-          foundCustomerWithDifferentId
-            ? `${foundCustomerWithDifferentId.customer.firstName} ${foundCustomerWithDifferentId.customer.lastName}`
+          idConflictData
+            ? `${idConflictData.customer.firstName} ${idConflictData.customer.lastName}`
             : ''
         }
         onUpdateId={handleUpdateId}
