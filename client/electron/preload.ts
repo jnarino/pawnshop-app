@@ -1,23 +1,22 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    onNavigate: (callback: (route: string) => void) => {
-        const handler = (_event: Electron.IpcRendererEvent, route: string) => {
-            if (typeof route === 'string') callback(route);
-        };
+    onNavigate: (cb: (route: string) => void) => {
+        const handler = (_: any, route: string) => cb(route);
         ipcRenderer.on('navigate', handler);
         return () => ipcRenderer.removeListener('navigate', handler);
     },
-    authChanged: (authed: boolean) => ipcRenderer.send('auth-changed', !!authed),
-    refreshMenu: () => ipcRenderer.send('refresh-menu'),
+    authChanged: (authed: boolean) => {
+        ipcRenderer.send('auth-changed', authed);
+    },
+    refreshMenu: () => {
+        ipcRenderer.send('refresh-menu');
+    },
+    printLabels: (items: Array<{ 
+        inventoryNumber: string; 
+        description: string; 
+        amount: string 
+    }>) => ipcRenderer.invoke('print-labels', items),
+    
+    printDocument: (html: string) => ipcRenderer.invoke('print-document', html),
 });
-
-declare global {
-    interface Window {
-        electronAPI?: {
-            onNavigate?: (cb: (route: string) => void) => () => void;
-            authChanged?: (authed: boolean) => void;
-            refreshMenu?: () => void;
-        };
-    }
-}

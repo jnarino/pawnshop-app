@@ -4,6 +4,11 @@ import type { PawnDraft } from '../types';
 import { http } from '@/app/core/api/http';
 import type { CreatePawnTicketDto } from '@/app/shared/types/pawnTicket';
 import { useCategoryLookup } from '../hooks/useCategoryLookup';
+import { PrintLabelsModal } from './PrintLabelsModal';
+import { useNavigate } from 'react-router-dom';
+import { logout } from '@/app/core/auth/authService';
+import { TransactionFormPrinter } from '@/app/core/printing/TransactionFormPrinter';
+import { LabelPrinter } from '@/app/core/printing/LabelPrinter';
 
 interface Props {
   customerId: string;
@@ -12,12 +17,40 @@ interface Props {
   onBack(): void;
 }
 
+// ✅ Define the type at the top of the file, after imports
+// ✅ Enhanced PrintData interface
+interface PrintData {
+  controlNumber: string;
+  customerName: string;
+  customerLastName: string;    // ✅ Added
+  customerFirstInitial: string; // ✅ Added
+  ticketType: 'PAWN' | 'PURCHASE'; // ✅ Added
+  transactionDate: string;      // ✅ Added
+  items: Array<{
+    id: string;
+    inventoryNumber: string;
+    description: string;
+    amount: string;
+    brand?: string;            // ✅ Added
+    category?: string;         // ✅ Added
+    metal?: string;            // ✅ Added (e.g., "14KT", "18KT")
+    karat?: string;            // ✅ Added
+    weight?: string;           // ✅ Added (e.g., "7.3")
+    weightUnit?: string;       // ✅ Added (e.g., "G", "DWT")
+    length?: string;           // ✅ Added
+  }>;
+}
+
 export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: Props) {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printData, setPrintData] = useState<PrintData | null>(null); // ✅ Use the type
+
+  const navigate = useNavigate();
 
   const updateDraft = (patch: Partial<PawnDraft>) =>
     setDraft(prev => ({ ...prev, ...patch }));
@@ -67,12 +100,13 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setSaving(true); setCreatedId(null);
+
     try {
       // ✅ CONVERT CATEGORY CODES TO UUIDs
       const newInventoryItems = draft.items.map(it => {
         // it.type is "JEWELRY" (code) - need to convert to UUID
         const categoryId = getCategoryIdByPath(it.type);
-        
+
         if (!categoryId) {
           throw new Error(`Invalid category: ${it.type}`);
         }
@@ -117,20 +151,122 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      
+
       setCreatedId(data.id);
-      
-      // ✅ Show the generated control number
-      if (data.controlNumber) {
-        setError(null);
-        alert(`Pawn ticket created successfully!\nControl Number: ${data.controlNumber}`);
+
+      // ✅ Fetch customer name
+      const customer = await http(`/api/customer/${customerId}`);
+
+      // ✅ FIXED: Check if inventoryItems exists, fallback to draft items
+      const inventoryItems = data.inventoryItems || [];
+
+      if (inventoryItems.length === 0) {
+        console.warn('[PawnTicket] No inventory items in response, using draft items');
       }
-    } catch (e: any) { 
-      setError(e.message || 'Save failed'); 
-    } finally { 
-      setSaving(false); 
+
+      // ✅ Prepare print data with enhanced info
+      const printDataPrepared: PrintData = {
+        controlNumber: data.controlNumber,
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        customerLastName: customer.lastName,
+        customerFirstInitial: customer.firstName?.charAt(0) || '',
+        ticketType: draft.type,
+        transactionDate: new Date().toISOString(),
+        items: inventoryItems.length > 0
+          ? inventoryItems.map((item: any, idx: number) => {
+            const draftItem = draft.items[idx];
+            return {
+              id: item.id,
+              inventoryNumber: item.inventoryNumber || `${data.controlNumber}-${idx + 1}`,
+              description: item.itemDescription || buildDescription(draftItem),
+              amount: item.priceAmount?.toString() || draftItem?.amount || '0.00',
+              brand: item.attributes?.brand || draftItem?.brand,
+              category: draftItem?.type,
+              metal: item.attributes?.metal,
+              karat: item.attributes?.karat,
+              weight: item.attributes?.weight,
+              weightUnit: item.attributes?.weightUnit,
+              length: item.attributes?.sizeLength,
+            };
+          })
+          : draft.items.map((item, idx) => ({
+            id: `draft-${idx}`,
+            inventoryNumber: `${data.controlNumber}-${idx + 1}`,
+            description: buildDescription(item),
+            amount: item.amount || '0.00',
+            brand: item.brand,
+            category: item.type,
+            metal: (item as any).metal,
+            karat: (item as any).karat,
+            weight: (item as any).weight,
+            weightUnit: (item as any).weightUnit,
+            length: (item as any).sizeLength,
+          }))
+      };
+
+      // ✅ IMMEDIATELY print transaction form (don't wait for user)
+      console.log('[Print] 📄 Auto-printing transaction form...');
+      transactionPrinter.print(printDataPrepared).catch(err => {
+        console.error('[Print] Transaction form print failed:', err);
+        // Don't block the flow - form print is non-critical
+      });
+
+      // ✅ Store print data for modal
+      setPrintData(printDataPrepared);
+
+      // ✅ Open print modal (for labels only)
+      setPrintModalOpen(true);
+
+    } catch (e: any) {
+      setError(e.message || 'Save failed');
+    } finally {
+      setSaving(false);
     }
   }
+
+  // ✅ Initialize printers
+  const transactionPrinter = new TransactionFormPrinter();
+  const labelPrinter = new LabelPrinter();
+
+  // ✅ Handle ONLY label printing (form already printed)
+  const handlePrint = async () => {
+    if (!printData) return;
+
+    try {
+      // Print item labels (GoDEX thermal printer)
+      console.log('[Print] 🏷️ Printing labels...');
+      const labelResult = await labelPrinter.print(printData);
+      if (!labelResult.success) {
+        throw new Error(labelResult.error || 'Failed to print labels');
+      }
+
+      // Close modal
+      setPrintModalOpen(false);
+      
+      // ✅ Clear all state before logout
+      setPrintData(null);
+      setCreatedId(null);
+      setError(null);
+
+      // Show success message
+      alert('✅ Transaction completed!\n\n🏷️ Labels printed\n\nLogging out...');
+
+      // ✅ Wait a moment for alert to be dismissed
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Logout and redirect
+      await logout();
+      
+      // ✅ Force navigate with state reset
+      navigate('/login', { replace: true, state: null });
+      
+      // ✅ Force page reload to fully reset React state
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('[Print] Error:', err);
+      alert(`Failed to print labels: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
 
   return (
     <div className="pawn-ticket-form">
@@ -233,6 +369,18 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         onCancel={() => setItemModalOpen(false)}
         onSave={(item) => { upsertItem(item); setItemModalOpen(false); }}
       />
+
+      {/* ✅ Print Labels Modal */}
+      {printData && (
+        <PrintLabelsModal
+          open={printModalOpen}
+          controlNumber={printData.controlNumber}
+          customerName={printData.customerName}
+          items={printData.items}
+          onPrint={handlePrint}
+          onCancel={() => setPrintModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

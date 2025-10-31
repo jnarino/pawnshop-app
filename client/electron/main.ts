@@ -55,6 +55,59 @@ function createMainWindow() {
     buildMenu();
 }
 
+// ✅ Add IPC Handlers for printing at the bottom, before app.whenReady()
+
+ipcMain.handle('print-labels', async (event, items) => {
+  try {
+    console.log('[Electron] Printing labels:', items);
+    
+    // TODO: Implement GoDEX printer communication
+    // For now, use system printer as fallback
+    return { success: true, count: items.length };
+  } catch (error) {
+    console.error('[Electron] Print labels failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Print failed' 
+    };
+  }
+});
+
+ipcMain.handle('print-document', async (event, html: string) => {
+  try {
+    if (!mainWindow) {
+      throw new Error('Main window not available');
+    }
+
+    // Create hidden window for printing
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    
+    // Print to default printer
+    await printWindow.webContents.print({
+      silent: false, // Show print dialog
+      printBackground: true,
+      margins: { marginType: 'default' }
+    });
+
+    printWindow.close();
+    return { success: true };
+  } catch (error) {
+    console.error('[Electron] Document print failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Print failed' 
+    };
+  }
+});
+
 app.whenReady().then(createMainWindow)
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow() })

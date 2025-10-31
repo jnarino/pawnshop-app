@@ -38,22 +38,30 @@ export async function login(username: string, password: string): Promise<boolean
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken();
+  const refreshToken = localStorage.getItem('refresh_token');
   
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  
-  if (refreshToken) {
-    try {
+  try {
+    // ✅ Call server logout endpoint
+    if (refreshToken) {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),
-        credentials: 'include'
       });
-    } catch (e) {
-      // Ignore logout errors
     }
+  } catch (error) {
+    console.error('[Auth] Logout API error (continuing anyway):', error);
+  } finally {
+    // ✅ ALWAYS clear local storage (even if API fails)
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    
+    // ✅ Notify Electron
+    if (window.electronAPI?.authChanged) {
+      window.electronAPI.authChanged(false);
+    }
+    
+    console.log('[Auth] ✅ Logged out - all tokens cleared');
   }
 }
 

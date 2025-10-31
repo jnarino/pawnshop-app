@@ -23,7 +23,6 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'bad_request', message: 'username and password required' });
     }
 
-    // Get user with roles
     const sql = `
       SELECT 
         u.id, 
@@ -42,15 +41,20 @@ router.post('/login', async (req, res) => {
     const user = result.rows[0];
 
     if (!user || !user.is_active) {
+      logger.warn('auth_login_failed_invalid_credentials', { username });
       return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
     }
 
     const validPassword = await argon2.verify(user.password_hash, password);
     if (!validPassword) {
+      logger.warn('auth_login_failed_wrong_password', { username });
       return res.status(401).json({ error: 'unauthorized', message: 'Invalid credentials' });
     }
 
-    // ✅ Create PERMANENT session in Redis (no expiration)
+    // ✅ Delete any existing sessions for this user (force single session)
+    await authCache.deleteAllUserSessions(user.id);
+
+    // ✅ Create NEW PERMANENT session in Redis
     const sessionId = uuidv4();
     await authCache.createSession(sessionId, user.id, user.username, user.roles || []);
 
@@ -60,18 +64,16 @@ router.post('/login', async (req, res) => {
       roles: user.roles || []
     };
 
-    // ✅ Access token: 15 minutes (will be refreshed automatically)
     const accessToken = jsonwebtoken.sign(
       payload,
       jwtConfig.accessSecret,
       { expiresIn: '15m' } as jsonwebtoken.SignOptions
     );
     
-    // ✅ Refresh token: No expiration in JWT (session in Redis controls it)
     const refreshToken = jsonwebtoken.sign(
       { sub: user.id, sessionId },
       jwtConfig.refreshSecret,
-      { expiresIn: '100y' } as jsonwebtoken.SignOptions // Effectively no expiration
+      { expiresIn: '100y' } as jsonwebtoken.SignOptions
     );
 
     logger.info('auth_login_success', { userId: user.id, username: user.username, sessionId });
@@ -143,13 +145,19 @@ router.post('/logout', async (req, res) => {
   try {
     const { refresh_token } = req.body;
     if (refresh_token) {
-      const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sessionId: string };
-      await authCache.deleteSession(decoded.sessionId);
-      logger.info('auth_logout_success', { sessionId: decoded.sessionId });
+      try {
+        const decoded = jsonwebtoken.verify(refresh_token, jwtConfig.refreshSecret) as { sessionId: string; sub: string };
+        await authCache.deleteSession(decoded.sessionId);
+        logger.info('auth_logout_success', { sessionId: decoded.sessionId, userId: decoded.sub });
+      } catch (jwtError) {
+        logger.warn('auth_logout_invalid_token', { error: jwtError instanceof Error ? jwtError.message : String(jwtError) });
+        // ✅ Still return success - token was invalid anyway
+      }
     }
     return res.json({ message: 'Logged out successfully' });
   } catch (error) {
     logger.error('auth_logout_error', { error: error instanceof Error ? error.message : String(error) });
+    // ✅ Still return success - client should clear tokens anyway
     return res.json({ message: 'Logged out' });
   }
 });

@@ -1,5 +1,5 @@
 // src/app/feature/auth/LoginPage.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/app/core/auth/authService';
 import './LoginPage.css';
@@ -13,6 +13,15 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // ✅ Reset form when component mounts
+  useEffect(() => {
+    setUsername('');
+    setPassword('');
+    setShowPw(false);
+    setLoading(false);
+    setError('');
+  }, []);
 
   const onSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -69,6 +78,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
               autoComplete="username"
+              disabled={loading} // ✅ Add disabled state
             />
           </label>
 
@@ -81,12 +91,14 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                disabled={loading} // ✅ Add disabled state
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
                 className="login-pw-toggle"
                 aria-label={showPw ? 'Hide password' : 'Show password'}
+                disabled={loading} // ✅ Add disabled state
               >
                 {showPw ? '🙈' : '👁️'}
               </button>
