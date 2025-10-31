@@ -1,9 +1,10 @@
 import { getSQL } from '../db/sqlLoader';
-import { pool } from '../db';
+
 import { PawnTicket, CreatePawnTicketInput, buildPawnTicket } from '../../domain/pawnTicket/PawnTicket';
 import type { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import type { IPawnTicketRepository } from '../../domain/pawnTicket/IPawnTicketRepository';
+import { pool } from '../db';
 
 export class PawnTicketRepository implements IPawnTicketRepository {
   // ✅ Standalone: Creates ticket with own transaction
@@ -168,6 +169,13 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     const sql = getSQL('command', 'pawnTicket', 'deletePawnTicket');
     const res = await pool.query(sql, [id]);
     return res.rowCount === 1;
+  }
+
+  async getNextControlNumber(): Promise<string> {
+    const { rows } = await pool.query<{ control_number: string }>(
+      `SELECT LPAD(nextval('pawn_ticket_control_seq')::text, 6, '0') AS control_number;`
+    );
+    return rows[0].control_number;
   }
 
   private mapRowToPawnTicket(r: any, includeItems = true): PawnTicket {

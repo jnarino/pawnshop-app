@@ -39,6 +39,32 @@ interface PrintData {
     weightUnit?: string;       // ✅ Added (e.g., "G", "DWT")
     length?: string;           // ✅ Added
   }>;
+
+  customerFirst?: string;
+  customerMiddle?: string;
+  customerMiddleInitial?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZip?: string;
+  customerPhone?: string;
+  customerEmployer?: string;
+  customerIdNumber?: string;
+  customerIdType?: string;
+  customerIdState?: string;
+  customerBirthdate?: string;
+  customerSex?: string;
+  customerHeight?: string;
+  customerWeight?: string;
+  customerEyes?: string;
+  customerHair?: string;
+  customerRace?: string;
+  maturityDate?: string;
+  amountFinanced?: string;
+  financeCharge?: string;
+  totalOfPayments?: string;
+  annualRate?: string;
+  employeeInitials?: string;
 }
 
 export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: Props) {
@@ -157,6 +183,9 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       // ✅ Fetch customer name
       const customer = await http(`/api/customer/${customerId}`);
 
+      const formatMoney = (val?: number | null) =>
+        val == null ? '' : `$${Number(val).toFixed(2)}`;
+
       // ✅ FIXED: Check if inventoryItems exists, fallback to draft items
       const inventoryItems = data.inventoryItems || [];
 
@@ -168,40 +197,52 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       const printDataPrepared: PrintData = {
         controlNumber: data.controlNumber,
         customerName: `${customer.firstName} ${customer.lastName}`,
+        customerFirst: customer.firstName,
+        customerMiddle: customer.middleName,
+        customerMiddleInitial: customer.middleName ? customer.middleName[0] : undefined,
         customerLastName: customer.lastName,
-        customerFirstInitial: customer.firstName?.charAt(0) || '',
+        customerFirstInitial: customer.firstName?.charAt(0) ?? '',
         ticketType: draft.type,
-        transactionDate: new Date().toISOString(),
-        items: inventoryItems.length > 0
-          ? inventoryItems.map((item: any, idx: number) => {
-            const draftItem = draft.items[idx];
-            return {
-              id: item.id,
-              inventoryNumber: item.inventoryNumber || `${data.controlNumber}-${idx + 1}`,
-              description: item.itemDescription || buildDescription(draftItem),
-              amount: item.priceAmount?.toString() || draftItem?.amount || '0.00',
-              brand: item.attributes?.brand || draftItem?.brand,
-              category: draftItem?.type,
-              metal: item.attributes?.metal,
-              karat: item.attributes?.karat,
-              weight: item.attributes?.weight,
-              weightUnit: item.attributes?.weightUnit,
-              length: item.attributes?.sizeLength,
-            };
-          })
-          : draft.items.map((item, idx) => ({
-            id: `draft-${idx}`,
-            inventoryNumber: `${data.controlNumber}-${idx + 1}`,
-            description: buildDescription(item),
-            amount: item.amount || '0.00',
-            brand: item.brand,
-            category: item.type,
-            metal: (item as any).metal,
-            karat: (item as any).karat,
-            weight: (item as any).weight,
-            weightUnit: (item as any).weightUnit,
-            length: (item as any).sizeLength,
-          }))
+        transactionDate: data.transactionDate ?? new Date().toISOString(),
+        maturityDate: data.maturityDate ?? null,
+        customerAddress: customer.streetAddress,
+        customerCity: customer.city,
+        customerState: customer.stateUs,
+        customerZip: customer.zipCode,
+        customerPhone: customer.phoneNumber ?? customer.cellPhone,
+        customerEmployer: customer.employerName ?? '',
+        customerIdNumber: customer.idNumber,
+        customerIdType: customer.idType,
+        customerIdState: customer.idState,
+        customerBirthdate: customer.dateOfBirth,
+        customerSex: customer.sex,
+        customerHeight: customer.height,
+        customerWeight: customer.weight,
+        customerEyes: customer.eyeColor,
+        customerHair: customer.hairColor,
+        customerRace: customer.race,
+        amountFinanced: formatMoney(data.amountFinanced ?? draft.type === 'PAWN' ? itemsTotal : undefined),
+        financeCharge: formatMoney(data.financeCharge ?? undefined),
+        totalOfPayments: formatMoney(data.totalOfPayments ?? undefined),
+        annualRate: data.annualPercentageRate ? `${Number(data.annualPercentageRate).toFixed(2)}%` : '',
+        employeeInitials: customer.processedBy ?? '',
+        items: (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => {
+          const src = inventoryItems.length > 0 ? item : draft.items[idx];
+          const attrs = src.attributes ?? {};
+          return {
+            id: item.id ?? `draft-${idx}`,
+            inventoryNumber: item.inventoryNumber || `${data.controlNumber}-${idx + 1}`,
+            description: (item.itemDescription || buildDescription(src)).toUpperCase(),
+            amount: (item.priceAmount ?? src.amount ?? '0').toString(),
+            brand: item.brand ?? src.brand,
+            category: src.type ?? '',
+            karat: attrs.karat ?? attrs.Karat ?? '',
+            weight: attrs.weight ?? attrs.Weight ?? '',
+            weightUnit: attrs.weightUnit ?? attrs.WeightUnit ?? '',
+            quantity: attrs.quantity ?? attrs.Quantity ?? src.quantity ?? 1,
+            typeCode: attrs.metal ?? '',
+          };
+        })
       };
 
       // ✅ IMMEDIATELY print transaction form (don't wait for user)

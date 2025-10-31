@@ -9,8 +9,31 @@ export interface TransactionPrintData {
   customerName: string;
   customerLastName: string;
   customerFirstInitial: string;
+  customerFirst?: string;
+  customerMiddle?: string;
+  customerMiddleInitial?: string;
   customerAddress?: string;
-  customerId?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZip?: string;
+  customerPhone?: string;
+  customerEmployer?: string;
+  customerIdNumber?: string;
+  customerIdType?: string;
+  customerIdState?: string;
+  customerBirthdate?: string;
+  customerSex?: string;
+  customerHeight?: string;
+  customerWeight?: string;
+  customerEyes?: string;
+  customerHair?: string;
+  customerRace?: string;
+  maturityDate?: string;
+  amountFinanced?: string;
+  financeCharge?: string;
+  totalOfPayments?: string;
+  annualRate?: string;
+  employeeInitials?: string;
   ticketType: 'PAWN' | 'PURCHASE';
   transactionDate: string;
   items: ItemPrintData[];
@@ -30,12 +53,15 @@ export interface ItemPrintData {
   amount: string;
   brand?: string;
   category?: string;
+  categoryLabel?: string;
+  typeCode?: string;
   metal?: string;
   karat?: string;
   weight?: string;
   weightUnit?: string;
   length?: string;
   serialNumber?: string;
+  quantity?: number;
 }
 
 export interface ReceiptPrintData {

@@ -17,4 +17,5 @@ export interface IPawnTicketRepository {
         limit?: number;
         offset?: number;
     }): Promise<PawnTicket[]>;
+    getNextControlNumber(): Promise<string>;
 }

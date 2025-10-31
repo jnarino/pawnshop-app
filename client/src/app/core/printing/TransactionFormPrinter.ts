@@ -1,5 +1,12 @@
 import type { TransactionPrintData, PrintResult } from './types';
 
+const STORE = {
+  name: import.meta.env.VITE_STORE_NAME ?? 'LARRY\'S ESTATE JEWELRY & PAWN',
+  address1: import.meta.env.VITE_STORE_ADDRESS1 ?? '3316 CLEVELAND AVE.',
+  address2: import.meta.env.VITE_STORE_ADDRESS2 ?? 'FORT MYERS, FL 33901',
+  phone: import.meta.env.VITE_STORE_PHONE ?? '(239) 399-3633'
+};
+
 export class TransactionFormPrinter {
   /**
    * Print data to fill in pre-printed Florida Pawnbroker Transaction Form
@@ -46,7 +53,12 @@ export class TransactionFormPrinter {
     const itemsTotal = data.items.reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
     const financeCharge = data.financials?.financeCharge || 0;
     const totalRedemption = data.financials?.totalOfPayments || itemsTotal + financeCharge;
-
+    const txnDate = new Date(data.transactionDate);
+    const maturityDate = data.maturityDate ? new Date(data.maturityDate) : undefined;
+    const timeStr = txnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formatPhone = (value?: string) => value ? value.replace(/[^0-9]/g, '').replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : '';
+    const customerName = `${data.customerLastName?.toUpperCase() ?? ''}, ${data.customerFirst?.toUpperCase() ?? ''} ${data.customerMiddle?.toUpperCase() ?? ''}`.trim();
+    const primaryItem = data.items[0];
     return `
 <!DOCTYPE html>
 <html>
@@ -91,69 +103,55 @@ export class TransactionFormPrinter {
   </style>
 </head>
 <body>
-  <!-- Transaction Date (top right, adjust coordinates to match your form) -->
-  <div class="field" style="top: 1.2in; left: 6.5in;">
-    ${new Date(data.transactionDate).toLocaleDateString('en-US')}
-  </div>
-  
-  <!-- Control Number (adjust position to match form) -->
-  <div class="field bold" style="top: 1.5in; left: 2in;">
-    ${data.controlNumber}
-  </div>
-  
-  <!-- Customer Name -->
-  <div class="field" style="top: 2in; left: 1.5in;">
-    ${data.customerName}
-  </div>
-  
-  <!-- Customer Address (if available) -->
-  ${data.customerAddress ? `
-  <div class="field" style="top: 2.3in; left: 1.5in;">
-    ${data.customerAddress}
-  </div>
-  ` : ''}
-  
-  <!-- Customer ID -->
-  ${data.customerId ? `
-  <div class="field" style="top: 2.6in; left: 5.5in;">
-    ${data.customerId}
-  </div>
-  ` : ''}
-  
-  <!-- Items Table (adjust top position to match form's item section) -->
+  <div class="field" style="top:0.45in;left:0.55in;font-weight:bold;font-size:12pt;">${STORE.name}</div>
+  <div class="field" style="top:0.65in;left:0.55in;">${STORE.address1}</div>
+  <div class="field" style="top:0.82in;left:0.55in;">${STORE.address2}</div>
+  <div class="field" style="top:0.99in;left:0.55in;">${STORE.phone}</div>
+
+  <div class="field bold" style="top:0.45in;left:5.65in;">${txnDate.toLocaleDateString()}</div>
+  <div class="field bold" style="top:0.70in;left:5.65in;">${data.controlNumber}</div>
+  <div class="field bold" style="top:0.95in;left:5.65in;">${timeStr}</div>
+  <div class="field bold" style="top:1.20in;left:5.65in;">${maturityDate ? maturityDate.toLocaleDateString() : ''}</div>
+  <div class="field bold" style="top:1.45in;left:5.65in;">${data.ticketType === 'PAWN' ? 'PAWN' : 'PURCHASE'}</div>
+
+  <div class="field" style="top:1.40in;left:0.55in;">${customerName}</div>
+  <div class="field" style="top:1.65in;left:0.55in;">${data.customerAddress?.toUpperCase() ?? ''}</div>
+  <div class="field" style="top:1.90in;left:0.55in;">${`${data.customerCity ?? ''}, ${data.customerState ?? ''} ${data.customerZip ?? ''}`.toUpperCase()}</div>
+  <div class="field" style="top:2.15in;left:0.55in;">${formatPhone(data.customerPhone)}</div>
+  <div class="field" style="top:2.40in;left:0.55in;">${data.customerEmployer ?? ''}</div>
+
+  <div class="field" style="top:1.40in;left:3.45in;">${data.customerIdNumber ?? ''}</div>
+  <div class="field" style="top:1.65in;left:3.45in;">${data.customerIdType ?? ''}</div>
+  <div class="field" style="top:1.90in;left:3.45in;">${data.customerIdState ?? ''}</div>
+  <div class="field" style="top:2.15in;left:3.45in;">${data.customerBirthdate ?? ''}</div>
+  <div class="field" style="top:2.40in;left:3.45in;">${data.customerSex ?? ''}</div>
+  <div class="field" style="top:2.65in;left:3.45in;">${data.customerHeight ?? ''}</div>
+  <div class="field" style="top:2.90in;left:3.45in;">${data.customerWeight ?? ''}</div>
+  <div class="field" style="top:3.15in;left:3.45in;">${data.customerEyes ?? ''}</div>
+  <div class="field" style="top:3.40in;left:3.45in;">${data.customerHair ?? ''}</div>
+  <div class="field" style="top:3.65in;left:3.45in;">${data.customerRace ?? ''}</div>
+
   ${data.items.map((item, idx) => {
-    const rowTop = 4.0 + (idx * 0.3); // 0.3in spacing between rows
+    const top = 4.10 + idx * 0.35;
+    const amount = item.amount ? `$${parseFloat(item.amount).toFixed(2)}` : '';
     return `
-    <div class="item-row" style="top: ${rowTop}in;">
+    <div class="item-row" style="top:${top}in;">
       <span class="item-no">${idx + 1}</span>
       <span class="item-inv">${item.inventoryNumber}</span>
-      <span class="item-desc">${item.description.substring(0, 50)}</span>
-      <span class="item-amt">$${item.amount}</span>
-    </div>
-    `;
+      <span class="item-desc">${item.description.toUpperCase()}</span>
+      <span class="item-amt">${amount}</span>
+    </div>`;
   }).join('')}
-  
-  <!-- Financial Summary (adjust positions to match form fields) -->
-  <div class="field bold" style="top: 8in; left: 6in;">
-    $${itemsTotal.toFixed(2)}
-  </div>
-  
-  ${data.ticketType === 'PAWN' ? `
-  <div class="field bold" style="top: 8.3in; left: 6in;">
-    $${financeCharge.toFixed(2)}
-  </div>
-  
-  <div class="field bold" style="top: 8.6in; left: 6in;">
-    $${totalRedemption.toFixed(2)}
-  </div>
-  ` : ''}
-  
-  <script>
-    // Auto-print when loaded
-    window.onload = () => {
-      window.print();
-    };
-  </script>
+
+  <div class="field bold" style="top:8.40in;left:5.90in;">${data.amountFinanced ?? ''}</div>
+  <div class="field bold" style="top:8.65in;left:5.90in;">${data.financeCharge ?? ''}</div>
+  <div class="field bold" style="top:8.90in;left:5.90in;">${data.totalOfPayments ?? ''}</div>
+  <div class="field bold" style="top:9.15in;left:5.90in;">${data.annualRate ?? ''}</div>
+  <div class="field bold" style="top:9.40in;left:5.90in;">${maturityDate ? maturityDate.toLocaleDateString() : ''}</div>
+
+  <div class="field" style="top:10.15in;left:1.90in;">${data.employeeInitials ?? ''}</div>
+
+  <script>window.print();</script>
 </body>
 </html>
     `;

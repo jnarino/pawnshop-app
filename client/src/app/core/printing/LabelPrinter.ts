@@ -37,13 +37,8 @@ export class LabelPrinter {
 
   private generateHTML(data: TransactionPrintData): string {
     const typeCode = data.ticketType === 'PAWN' ? 'P' : 'B';
-    const dateStr = new Date(data.transactionDate).toLocaleDateString('en-US', { 
-      month: '2-digit', 
-      day: '2-digit', 
-      year: '2-digit' 
-    });
-    const customerNameShort = `${data.customerLastName}, ${data.customerFirstInitial}`.toUpperCase();
-
+    const txnDate = new Date(data.transactionDate).toLocaleDateString();
+    const customerLine = `${data.customerLastName?.toUpperCase() ?? ''}, ${data.customerFirst?.toUpperCase() ?? ''}${data.customerMiddleInitial ? ' ' + data.customerMiddleInitial.toUpperCase() + '.' : ''}`;
     return `
 <!DOCTYPE html>
 <html>
@@ -71,26 +66,28 @@ export class LabelPrinter {
 </head>
 <body>
   ${data.items.map((item, idx) => {
-    const brand = item.brand || '';
-    const category = item.category || '';
-    const karatInfo = item.karat || item.metal || '';
-    const weightInfo = item.weight && item.weightUnit ? `${item.weight}${item.weightUnit}` : '';
-    const lengthInfo = item.length ? `${item.length}"` : '';
-    const specs = [karatInfo, lengthInfo].filter(Boolean).join(' ');
-    
+    const specsLeft = `${(item.categoryLabel ?? '').toUpperCase()}`.trim();
+    const specsRight = [
+      item.quantity && item.quantity > 0 ? item.quantity.toString() : '',
+      item.karat ? `${item.karat}` : '',
+    ].filter(Boolean).join(' ');
+    const detailRight = [
+      item.weight ? `${item.weight}${item.weightUnit ?? ''}` : '',
+      item.typeCode ?? ''
+    ].filter(Boolean).join(' ');
     return `
     <div class="label">
       <div class="row1">
-        <div>${customerNameShort}</div>
-        <div>${typeCode} ${dateStr}</div>
+        <span>${customerLine}</span>
+        <span>${typeCode} ${txnDate}</span>
       </div>
       <div class="row2">
-        <div>${brand} ${category}</div>
-        <div>${specs}</div>
+        <span>${specsLeft}</span>
+        <span>${specsRight}</span>
       </div>
       <div class="row3">
-        <div>${item.description}</div>
-        <div>${weightInfo}</div>
+        <span>${item.description.toUpperCase()}</span>
+        <span>${detailRight}</span>
       </div>
       <div class="row4">CODE: ___</div>
       <div class="row5">
@@ -98,8 +95,7 @@ export class LabelPrinter {
         <div class="barcode">*${item.inventoryNumber}*</div>
       </div>
       <div class="row6">${idx + 1} of ${data.items.length}</div>
-    </div>
-    `;
+    </div>`;
   }).join('')}
   <script>window.print();</script>
 </body>
