@@ -28,6 +28,7 @@ export interface TransactionPrintData {
   customerEyes?: string;
   customerHair?: string;
   customerRace?: string;
+  defaultDate?: string;
   maturityDate?: string;
   amountFinanced?: string;
   financeCharge?: string;
@@ -60,6 +61,7 @@ export interface ItemPrintData {
   weight?: string;
   weightUnit?: string;
   length?: string;
+  modelNumber?: string;
   serialNumber?: string;
   quantity?: number;
 }

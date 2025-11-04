@@ -1,0 +1,59 @@
+{
+  "name": "Florida Pawn Ticket v1",
+  "units": "mm",
+  "page": {
+    "preset": "LETTER"
+  },
+  "fields": [
+    { "id": "businessName", "x": 12.2, "y": 28.5, "w": 60, "size": 9, "uppercase": true },
+    { "id": "businessAddress", "x": 12.2, "y": 32, "w": 45, "size": 8, "uppercase": true },
+    { "id": "businessCity", "x": 12.2, "y": 35, "w": 30, "size": 8, "uppercase": true },
+    { "id": "businessState", "x": 44, "y": 35, "w": 8, "size": 8, "uppercase": true },
+    { "id": "businessZip", "x": 54, "y": 35, "w": 15, "size": 8 },
+    { "id": "businessPhone", "x": 12.2, "y": 38, "w": 25, "size": 8 },
+    { "id": "transactionDate", "x": 108.3, "y": 21.7, "w": 30, "size": 9 },
+    { "id": "transactionTime", "x": 116.7, "y": 35.5, "w": 35, "size": 8 },
+    { "id": "controlNumber", "x": 151.7, "y": 21.7, "w": 25, "size": 9 },
+    { "id": "buyCheckbox", "x": 139.2, "y": 41.2, "w": 3, "size": 12 },
+    { "id": "pawnCheckbox", "x": 199.8, "y": 41.2, "w": 3, "size": 12 },
+    { "id": "lastName", "x": 18.9, "y": 48, "w": 32, "size": 8, "uppercase": true },
+    { "id": "firstName", "x": 54.1, "y": 48, "w": 35, "size": 8, "uppercase": true },
+    { "id": "middleName", "x": 92, "y": 48, "w": 15, "size": 8, "uppercase": true },
+    { "id": "dob", "x": 132.7, "y": 48, "w": 25, "size": 8 },
+    { "id": "sex", "x": 165.2, "y": 48, "w": 8, "size": 8 },
+    { "id": "raceCode", "x": 178.7, "y": 48, "w": 8, "size": 8 },
+    { "id": "addressLine", "x": 18.9, "y": 54.4, "w": 120, "size": 8, "uppercase": true },
+    { "id": "phone", "x": 152.2, "y": 54.4, "w": 25, "size": 8 },
+    { "id": "employer", "x": 18.9, "y": 61, "w": 50, "size": 8, "uppercase": true },
+    { "id": "licenseNumber", "x": 18.9, "y": 67.7, "w": 40, "size": 8 },
+    { "id": "licenseType", "x": 61.5, "y": 67.7, "w": 28, "size": 8 },
+    { "id": "licenseState", "x": 92, "y": 67.7, "w": 10, "size": 8 },
+    { "id": "height", "x": 119.2, "y": 67.7, "w": 15, "size": 8 },
+    { "id": "weight", "x": 138.2, "y": 67.7, "w": 8, "size": 8 },
+    { "id": "eyeColor", "x": 149, "y": 67.7, "w": 10, "size": 8 },
+    { "id": "hairColor", "x": 161.6, "y": 67.7, "w": 10, "size": 8 },
+    { "id": "amountFinanced", "x": 24.4, "y": 224.9, "w": 25, "size": 8 },
+    { "id": "financeCharge", "x": 63.7, "y": 224.9, "w": 25, "size": 8 },
+    { "id": "redeemPrice", "x": 101.6, "y": 224.9, "w": 25, "size": 8 },
+    { "id": "annualPercentageRate", "x": 145.7, "y": 224.9, "w": 20, "size": 8 },
+    { "id": "maturityDate", "x": 176, "y": 224.9, "w": 25, "size": 8 },
+    { "id": "pawnDefaultDate", "x": 21.7, "y": 244.1, "w": 25, "size": 8 },
+    { "id": "amountWith2MonthsInterest", "x": 36.3, "y": 252, "w": 30, "size": 8 }
+  ],
+  "repeaters": [
+    {
+      "id": "items",
+      "at": { "x": 18.9, "y": 100.2 },
+      "row": { "dy": 18 },
+      "limit": 6,
+      "fields": [
+        { "id": "serial", "x": 0, "y": 0, "w": 25, "size": 8, "uppercase": true },
+        { "id": "type", "x": 99.4, "y": 0, "w": 25, "size": 8, "uppercase": true },
+        { "id": "brand", "x": 128.7, "y": 0, "w": 30, "size": 8, "uppercase": true },
+        { "id": "modelNumber", "x": 165.3, "y": 0, "w": 25, "size": 8, "uppercase": true },
+        { "id": "description", "x": 0, "y": 6.8, "w": 150, "size": 8, "uppercase": true },
+        { "id": "amount", "x": 172.1, "y": 6.8, "w": 20, "size": 8 }
+      ]
+    }
+  ]
+}

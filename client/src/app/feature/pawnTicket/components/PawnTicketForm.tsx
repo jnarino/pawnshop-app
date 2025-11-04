@@ -33,6 +33,11 @@ interface PrintData {
     amount: string;
     brand?: string;            // ✅ Added
     category?: string;         // ✅ Added
+    categoryLabel?: string;
+    typeCode?: string;
+    modelNumber?: string;
+    serialNumber?: string;
+    quantity?: number;
     metal?: string;            // ✅ Added (e.g., "14KT", "18KT")
     karat?: string;            // ✅ Added
     weight?: string;           // ✅ Added (e.g., "7.3")
@@ -59,6 +64,7 @@ interface PrintData {
   customerEyes?: string;
   customerHair?: string;
   customerRace?: string;
+  defaultDate?: string;
   maturityDate?: string;
   amountFinanced?: string;
   financeCharge?: string;
@@ -221,11 +227,7 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         customerEyes: customer.eyeColor,
         customerHair: customer.hairColor,
         customerRace: customer.race,
-        amountFinanced: formatMoney(data.amountFinanced ?? draft.type === 'PAWN' ? itemsTotal : undefined),
-        financeCharge: formatMoney(data.financeCharge ?? undefined),
-        totalOfPayments: formatMoney(data.totalOfPayments ?? undefined),
-        annualRate: data.annualPercentageRate ? `${Number(data.annualPercentageRate).toFixed(2)}%` : '',
-        employeeInitials: customer.processedBy ?? '',
+        defaultDate: data.defaultDate ?? null,
         items: (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => {
           const src = inventoryItems.length > 0 ? item : draft.items[idx];
           const attrs = src.attributes ?? {};
@@ -236,11 +238,14 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
             amount: (item.priceAmount ?? src.amount ?? '0').toString(),
             brand: item.brand ?? src.brand,
             category: src.type ?? '',
+            categoryLabel: src.type ?? '',
             karat: attrs.karat ?? attrs.Karat ?? '',
             weight: attrs.weight ?? attrs.Weight ?? '',
             weightUnit: attrs.weightUnit ?? attrs.WeightUnit ?? '',
             quantity: attrs.quantity ?? attrs.Quantity ?? src.quantity ?? 1,
-            typeCode: attrs.metal ?? '',
+            typeCode: attrs.typeCode ?? attrs.metal ?? '',
+            modelNumber: src.model ?? attrs.model ?? '',
+            serialNumber: attrs.serial ?? attrs.serialNumber ?? src.serial ?? ''
           };
         })
       };
@@ -298,11 +303,8 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       // Logout and redirect
       await logout();
       
-      // ✅ Force navigate with state reset
+      // Route back to login without forcing a full reload so the form stays interactive
       navigate('/login', { replace: true, state: null });
-      
-      // ✅ Force page reload to fully reset React state
-      window.location.href = '/login';
     } catch (err) {
       console.error('[Print] Error:', err);
       alert(`Failed to print labels: ${err instanceof Error ? err.message : 'Unknown error'}`);
