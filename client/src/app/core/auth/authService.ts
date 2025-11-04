@@ -1,20 +1,41 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-export function getAccessToken(): string | null {
-  return localStorage.getItem('access_token');
+const ACCESS_TOKEN_KEY = 'pawnshopApp.auth.accessToken';
+const REFRESH_TOKEN_KEY = 'pawnshopApp.auth.refreshToken';
+const ACCESS_EXPIRES_AT_KEY = 'pawnshopApp.auth.accessExpiresAt';
+
+const REFRESH_ENDPOINT = '/api/auth/refresh';
+const LOGIN_ENDPOINT = '/api/auth/login';
+const LOGOUT_ENDPOINT = '/api/auth/logout';
+
+const REFRESH_LEEWAY_MS = 60_000;
+
+function setAccessExpiry(expiresInSeconds?: number) {
+  if (!expiresInSeconds) {
+    localStorage.removeItem(ACCESS_EXPIRES_AT_KEY);
+    return;
+  }
+  const expiresAt = Date.now() + expiresInSeconds * 1000 - REFRESH_LEEWAY_MS;
+  localStorage.setItem(ACCESS_EXPIRES_AT_KEY, String(expiresAt));
 }
 
-export function getRefreshToken(): string | null {
-  return localStorage.getItem('refresh_token');
+function storeTokens(response: { access_token: string; refresh_token?: string; expires_in?: number }) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
+  if (response.refresh_token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+  }
+  setAccessExpiry(response.expires_in);
 }
 
-export function isAuthenticated(): boolean {
-  return !!getAccessToken();
+function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(ACCESS_EXPIRES_AT_KEY);
 }
 
 export async function login(username: string, password: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}${LOGIN_ENDPOINT}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -23,13 +44,12 @@ export async function login(username: string, password: string): Promise<boolean
 
     if (!response.ok) return false;
 
-    const data = await response.json();
-    
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    
+    const result = await response.json();
+
+    storeTokens(result);
+
     console.log('[Auth] ✅ Login successful');
-    
+
     return true;
   } catch (error) {
     console.error('[Auth] ❌ Login failed:', error);
@@ -38,31 +58,39 @@ export async function login(username: string, password: string): Promise<boolean
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = localStorage.getItem('refresh_token');
-  
   try {
-    // ✅ Call server logout endpoint
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (refreshToken) {
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      await fetch(LOGOUT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        body: JSON.stringify({ refresh_token: refreshToken })
       });
     }
   } catch (error) {
-    console.error('[Auth] Logout API error (continuing anyway):', error);
+    console.warn('[Auth] logout failed', error);
   } finally {
-    // ✅ ALWAYS clear local storage (even if API fails)
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    
-    // ✅ Notify Electron
-    if (window.electronAPI?.authChanged) {
-      window.electronAPI.authChanged(false);
-    }
-    
-    console.log('[Auth] ✅ Logged out - all tokens cleared');
+    clearTokens();
+    window.electronAPI?.authChanged?.(false);
   }
+}
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function getAccessExpiresAt(): number {
+  const raw = localStorage.getItem(ACCESS_EXPIRES_AT_KEY);
+  return raw ? Number(raw) : 0;
+}
+
+export function isAccessTokenExpired(): boolean {
+  const expiresAt = getAccessExpiresAt();
+  return !expiresAt || Date.now() >= expiresAt;
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
@@ -70,26 +98,43 @@ export async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const response = await fetch(REFRESH_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      credentials: 'include'
+      body: JSON.stringify({ refresh_token: refreshToken })
     });
 
     if (!response.ok) {
-      logout();
+      clearTokens();
       return false;
     }
 
-    const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
-    
+    const result = await response.json();
+    storeTokens(result);
+    window.electronAPI?.authChanged?.(true);
     return true;
   } catch (error) {
-    logout();
+    console.error('[Auth] refresh failed', error);
+    clearTokens();
     return false;
   }
+}
+
+export async function ensureFreshAccessToken(): Promise<boolean> {
+  const access = getAccessToken();
+  if (!access) {
+    return getRefreshToken() ? refreshAccessToken() : false;
+  }
+  if (isAccessTokenExpired()) {
+    return refreshAccessToken();
+  }
+  return true;
+}
+
+export function isAuthenticated(): boolean {
+  const access = getAccessToken();
+  if (access && !isAccessTokenExpired()) return true;
+  return !!getRefreshToken();
 }
 
 // No-op for backward compatibility

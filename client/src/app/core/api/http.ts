@@ -1,71 +1,49 @@
-import { getAccessToken, refreshAccessToken, logout } from '../auth/authService';
+import { ensureFreshAccessToken, getAccessToken, refreshAccessToken, logout } from '@/app/core/auth/authService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-export async function http<T = any>(url: string, init: RequestInit = {}): Promise<T> {
+export async function http<T = any>(url: string, init: RequestInit = {}, retry = true): Promise<T> {
+    await ensureFreshAccessToken();
+
     const finalUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
     const headers = new Headers(init.headers || {});
 
+    headers.set('Accept', 'application/json');
+
+    const token = getAccessToken();
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    if (init.body && !(init.body instanceof FormData)) {
+        headers.set('Content-Type', headers.get('Content-Type') ?? 'application/json');
+    }
+
     console.log('[http] Making request to:', finalUrl);
 
-    // Get or refresh access token
-    let token = getAccessToken();
-    if (!token) {
-        console.warn('[http] No token found, attempting refresh...');
-        const refreshed = await refreshAccessToken();
-        if (refreshed) token = getAccessToken();
-    }
-
-    // If still no token after refresh attempt, redirect to login
-    if (!token) {
-        console.error('[http] ❌ No token available after refresh');
-        logout();
-        throw new Error('Authentication required');
-    }
-
-    // Attach JWT token
-    console.log('[http] ✅ Attaching token:', token.substring(0, 20) + '...');
-    headers.set('Authorization', `Bearer ${token}`);
-
-    // Set default Content-Type if not provided and there's a body
-    if (!headers.has('Content-Type') && init.body) {
-        headers.set('Content-Type', 'application/json');
-    }
-
     const resp = await fetch(finalUrl, { ...init, headers });
-    console.log('[http] Response status:', resp.status);
 
-    if (resp.status === 401) {
-        console.warn('[http] Got 401, attempting token refresh...');
-        // Token expired or invalid, try to refresh
+    if (resp.status === 401 && retry) {
         const refreshed = await refreshAccessToken();
         if (refreshed) {
             // Retry request with new token
-            const newToken = getAccessToken();
-            if (newToken) {
-                headers.set('Authorization', `Bearer ${newToken}`);
-                console.log('[http] Retrying with new token');
-                const retryResp = await fetch(finalUrl, { ...init, headers });
-                if (!retryResp.ok) {
-                    throw new Error(`HTTP ${retryResp.status}: ${retryResp.statusText}`);
-                }
-                return retryResp.json();
-            }
+            return http<T>(finalUrl, { ...init, headers }, false);
         }
-        // Refresh failed, logout
-        logout();
-        throw new Error('Session expired');
+        await logout();
+        throw new Error('Unauthorized');
     }
 
     if (!resp.ok) {
-        const error = await resp.json().catch(() => ({
-            error: resp.statusText,
-            message: `HTTP ${resp.status}`
-        }));
-        throw new Error(error.message || error.error || 'Request failed');
+        const text = await resp.text();
+        throw new Error(text || resp.statusText);
     }
 
-    return resp.json();
+    if (resp.status === 204) {
+        return undefined as T;
+    }
+
+    const data = await resp.json();
+    return data as T;
 }
 
 // Legacy alias for backward compatibility
