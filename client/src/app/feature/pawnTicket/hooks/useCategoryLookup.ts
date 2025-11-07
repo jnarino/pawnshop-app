@@ -24,7 +24,40 @@ export function useCategoryLookup() {
       try {
         setLoading(true);
         const data = await http<Category[]>('/api/categories/tree');
-        setCategories(data || []);
+        
+        console.log('[CategoryLookup] Raw API response:', data);
+        
+        // ✅ Handle both flat array and nested structure
+        let flatCategories: Category[] = [];
+        
+        if (Array.isArray(data)) {
+          // If it's already a flat array, use it
+          flatCategories = data;
+        } else if (data && typeof data === 'object') {
+          // If it's nested, flatten it
+          flatCategories = flattenCategories([data]);
+        }
+        
+        // ✅ Only get ROOT categories (no parentId)
+        const rootCategories = flatCategories.filter(cat => !cat.parentId);
+        
+        // ✅ Remove duplicates by name (case-insensitive)
+        const uniqueCategories = rootCategories.reduce((acc: Category[], cat) => {
+          const existing = acc.find(existing => 
+            existing.name.toUpperCase() === cat.name.toUpperCase()
+          );
+          if (!existing) {
+            acc.push(cat);
+          }
+          return acc;
+        }, []);
+        
+        // ✅ Sort alphabetically
+        uniqueCategories.sort((a, b) => a.name.localeCompare(b.name));
+        
+        console.log('[CategoryLookup] Final categories:', uniqueCategories.map(c => ({ id: c.id, name: c.name, code: c.code })));
+        
+        setCategories(uniqueCategories);
         loadedRef.current = true; // ✅ Mark as loaded
       } catch (error) {
         console.error('[CategoryLookup] Failed to load categories:', error);
@@ -54,4 +87,21 @@ export function useCategoryLookup() {
     loading,
     getCategoryIdByPath
   };
+}
+
+// ✅ Helper to flatten nested categories
+function flattenCategories(categories: Category[]): Category[] {
+  const result: Category[] = [];
+  
+  function flatten(cats: Category[]) {
+    for (const cat of cats) {
+      result.push(cat);
+      if (cat.children && cat.children.length > 0) {
+        flatten(cat.children);
+      }
+    }
+  }
+  
+  flatten(categories);
+  return result;
 }
