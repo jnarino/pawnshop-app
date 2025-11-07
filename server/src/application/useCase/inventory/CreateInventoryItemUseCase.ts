@@ -8,7 +8,11 @@ export class CreateInventoryItemUseCase {
     return this.repo.createSingleItem(dto);
   }
 
-  async executeInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string> {
+  async createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string> {
     return this.repo.createInTransaction(client, dto);
+  }
+
+  async findById(id: string): Promise<any> {
+    return this.repo.findById(id);
   }
 }

@@ -38,7 +38,14 @@ export class LabelPrinter {
   private generateHTML(data: TransactionPrintData): string {
     const typeCode = data.ticketType === 'PAWN' ? 'P' : 'B';
     const txnDate = new Date(data.transactionDate).toLocaleDateString();
-    const customerLine = `${data.customerLastName?.toUpperCase() ?? ''}, ${data.customerFirst?.toUpperCase() ?? ''}${data.customerMiddleInitial ? ' ' + data.customerMiddleInitial.toUpperCase() + '.' : ''}`;
+    const customerLine = `${(data.customerLastName ?? '').toUpperCase()}, ${(data.customerFirst ?? '').toUpperCase()}${data.customerMiddleInitial ? ' ' + data.customerMiddleInitial.toUpperCase() + '.' : ''}`.trim();
+
+    const upper = (value: string | undefined, max = 40) =>
+      (value ?? '').toUpperCase().substring(0, max);
+
+    const sanitizeNumber = (value?: string | number): string =>
+      value == null || value === '' ? '' : String(value);
+
     return `
 <!DOCTYPE html>
 <html>
@@ -47,59 +54,81 @@ export class LabelPrinter {
   <style>
     @page { size: 1.51in 1.30in; margin: 0; }
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    
-    .label { 
-      width: 1.51in; height: 1.30in; padding: 0.05in;
-      page-break-after: always; display: flex; flex-direction: column;
-      box-sizing: border-box; font-size: 7pt; line-height: 1.1;
+    .label {
+      width: 1.51in;
+      height: 1.30in;
+      padding: 0.05in;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      page-break-after: always;
+      font-size: 7pt;
+      line-height: 1.1;
     }
-    
-    .row1 { display: flex; justify-content: space-between; font-weight: bold; font-size: 8pt; margin-bottom: 1px; }
-    .row2, .row3 { display: flex; justify-content: space-between; font-size: 7pt; margin-bottom: 1px; }
-    .row3 { font-size: 6pt; }
-    .row4 { font-size: 6pt; margin-bottom: 2px; color: #666; }
-    .row5 { margin-top: auto; text-align: center; }
-    .control-number { font-family: monospace; font-size: 11pt; font-weight: bold; letter-spacing: 1px; }
-    .barcode { font-family: monospace; font-size: 16pt; }
-    .row6 { text-align: center; font-size: 6pt; font-weight: bold; margin-top: 1px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1px;
+    }
+    .row.top { font-weight: bold; font-size: 8pt; }
+    .row.mid { font-size: 7pt; }
+    .row.desc { font-size: 6.5pt; }
+    .row.code { font-size: 6pt; color: #555; margin-bottom: 2px; }
+    .row.footer { margin-top: auto; flex-direction: column; align-items: center; }
+    .control-number { font-family: 'Courier New', monospace; font-size: 11pt; letter-spacing: 1px; font-weight: bold; }
+    .barcode { font-family: 'Libre Barcode 39', 'Courier New', monospace; font-size: 18pt; line-height: 1; }
+    .sequence { font-size: 6pt; font-weight: bold; margin-top: 1px; }
   </style>
 </head>
 <body>
   ${data.items.map((item, idx) => {
-    const specsLeft = `${(item.categoryLabel ?? '').toUpperCase()}`.trim();
-    const specsRight = [
-      item.quantity && item.quantity > 0 ? item.quantity.toString() : '',
-      item.karat ? `${item.karat}` : '',
-    ].filter(Boolean).join(' ');
-    const detailRight = [
-      item.weight ? `${item.weight}${item.weightUnit ?? ''}` : '',
-      item.typeCode ?? ''
-    ].filter(Boolean).join(' ');
+    const specsLeft = upper(item.categoryLabel ?? item.category ?? item.brand ?? '', 26);
+    const specsRightParts = [
+      sanitizeNumber(item.quantity) && Number(item.quantity) > 1 ? `${item.quantity}` : '',
+      upper(item.karat, 6),
+      upper(item.length ? `${item.length}"` : '', 6)
+    ].filter(Boolean);
+
+    const detailRightParts = [
+      item.weight ? `${item.weight}${item.weightUnit ?? ''}`.toUpperCase() : '',
+      upper(item.typeCode, 8)
+    ].filter(Boolean);
+
+    const description = upper(item.description, 70);
+    const descriptionLeft = description.substring(0, 32);
+    const descriptionRight = description.length > 32 ? description.substring(32, 60) : '';
+
     return `
     <div class="label">
-      <div class="row1">
-        <span>${customerLine}</span>
+      <div class="row top">
+        <span>${upper(customerLine, 26)}</span>
         <span>${typeCode} ${txnDate}</span>
       </div>
-      <div class="row2">
+      <div class="row mid">
         <span>${specsLeft}</span>
-        <span>${specsRight}</span>
+        <span>${specsRightParts.join(' ')}</span>
       </div>
-      <div class="row3">
-        <span>${item.description.toUpperCase()}</span>
-        <span>${detailRight}</span>
+      <div class="row desc">
+        <span>${descriptionLeft}</span>
+        <span>${detailRightParts.join(' ')}</span>
       </div>
-      <div class="row4">CODE: ___</div>
-      <div class="row5">
+      <div class="row desc">
+        <span>${descriptionRight}</span>
+        <span></span>
+      </div>
+      <div class="row code">
+        <span>CODE: ___</span>
+        <span>${item.amount ? `$${parseFloat(item.amount).toFixed(2)}` : ''}</span>
+      </div>
+      <div class="row footer">
         <div class="control-number">${item.inventoryNumber}</div>
         <div class="barcode">*${item.inventoryNumber}*</div>
+        <div class="sequence">${idx + 1} of ${data.items.length}</div>
       </div>
-      <div class="row6">${idx + 1} of ${data.items.length}</div>
     </div>`;
   }).join('')}
   <script>window.print();</script>
 </body>
-</html>
-    `;
+</html>`;
   }
 }

@@ -3,120 +3,93 @@ import { getSQL } from '../db/sqlLoader';
 import { InventoryItem } from '../../domain/inventory/InventoryItem';
 import { CreateInventoryItemDTO, IInventoryRepository, UpdateInventoryItemDTO } from '../../domain/inventory/IInventoryRepository';
 import type { PoolClient } from 'pg';
-
-// Mapping is handled mostly by SQL aliases. Just ensure numeric/JSON fields are normalized.
-// Exported for testing (mapping tests)
-export function mapRowToInventoryItem(r: any): InventoryItem {
-  return {
-    id: typeof r.id === 'number' ? String(r.id) : r.id,
-    inventoryNumber: r.inventory_number,
-    status: r.status,
-    categoryId: r.category_id,
-    brand: r.brand ?? undefined,
-    model: r.model ?? undefined,
-    serialNumber: r.serial_number ?? undefined,
-    color: r.color ?? undefined,
-    itemCondition: r.item_condition ?? undefined,
-    quantity: r.quantity,
-    priceAmount: r.price_amount !== null ? Number(r.price_amount) : undefined,
-    resale: r.resale !== null ? Number(r.resale) : undefined,
-    minResale: r.min_resale !== null ? Number(r.min_resale) : undefined,
-    itemReplace: r.item_replace !== null ? Number(r.item_replace) : undefined,
-    ownerTag: r.owner_mark ?? undefined,
-    itemDescription: r.item_description ?? undefined,
-    attributes: r.attributes ?? {},
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  };
-}
+import { v4 as uuidv4 } from 'uuid';
 
 export class InventoryRepository implements IInventoryRepository {
-  // ✅ Standalone: Creates single item, auto-commits
-  async createSingleItem(item: Partial<InventoryItem>): Promise<string> {
-    const sql = getSQL('command', 'inventory', 'createInventoryItem');
-    const params = [
-      item.inventoryNumber,
-      item.status || 'I',
-      item.categoryId,
-      item.brand || null,
-      item.model || null,
-      item.serialNumber || null,
-      item.color || null,
-      item.itemCondition || null,
-      item.quantity || 1,
-      item.priceAmount || null,
-      item.resale || null,
-      item.minResale || null,
-      item.itemReplace || null,
-      item.ownerTag || null,
-      item.itemDescription || null,
-      JSON.stringify(item.attributes || {}),
-    ];
-    
-    const { rows } = await pool.query(sql, params);
+  async createSingleItem(dto: CreateInventoryItemDTO): Promise<string> {
+    const createSQL = getSQL('command', 'inventory', 'createInventoryItem');
+    const { rows } = await pool.query(createSQL, [
+      uuidv4(),
+      dto.inventoryNumber || null,
+      dto.status || 'I',
+      dto.categoryId,
+      dto.brand || null,
+      dto.model || null,
+      dto.serialNumber || null,
+      dto.colorId || null,              // ✅ Changed from color to colorId
+      dto.itemCondition || null,
+      dto.quantity || 1,
+      dto.priceAmount || null,
+      dto.resale || null,
+      dto.minResale || null,            // ✅ Added minResale
+      dto.itemReplace || null,
+      dto.ownerMark || null,            // ✅ Changed from ownerTag to ownerMark
+      dto.itemDescription || null,
+      JSON.stringify(dto.attributes || {}),
+      JSON.stringify({}), // extra field
+    ]);
     return rows[0].id;
   }
 
-  // ✅ Transactional: Part of larger transaction (e.g., with pawn ticket)
-  async createInTransaction(client: PoolClient, item: Partial<InventoryItem>): Promise<string> {
-    const sql = getSQL('command', 'inventory', 'createInventoryItem');
-    const params = [
-      item.inventoryNumber,
-      item.status || 'I',
-      item.categoryId,
-      item.brand || null,
-      item.model || null,
-      item.serialNumber || null,
-      item.color || null,
-      item.itemCondition || null,
-      item.quantity || 1,
-      item.priceAmount || null,
-      item.resale || null,
-      item.minResale || null,
-      item.itemReplace || null,
-      item.ownerTag || null,
-      item.itemDescription || null,
-      JSON.stringify(item.attributes || {}),
-    ];
-    
-    const { rows } = await client.query(sql, params);
+  async createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string> {
+    const createSQL = getSQL('command', 'inventory', 'createInventoryItem');
+    const { rows } = await client.query(createSQL, [
+      uuidv4(),
+      dto.inventoryNumber || null,
+      dto.status || 'I',
+      dto.categoryId,
+      dto.brand || null,
+      dto.model || null,
+      dto.serialNumber || null,
+      dto.colorId || null,              // ✅ Changed from color to colorId
+      dto.itemCondition || null,
+      dto.quantity || 1,
+      dto.priceAmount || null,
+      dto.resale || null,
+      dto.minResale || null,            // ✅ Added minResale
+      dto.itemReplace || null,
+      dto.ownerMark || null,            // ✅ Changed from ownerTag to ownerMark
+      dto.itemDescription || null,
+      JSON.stringify(dto.attributes || {}),
+      JSON.stringify({}), // extra field
+    ]);
     return rows[0].id;
   }
 
   async findById(id: string): Promise<InventoryItem | null> {
-    const sql = getSQL('query','inventory','findInventoryItemById');
-    const { rows } = await pool.query(sql,[id]);
+    const sql = getSQL('query', 'inventory', 'findInventoryItemById');
+    const { rows } = await pool.query(sql, [id]);
     if (!rows[0]) return null;
-    return mapRowToInventoryItem(rows[0]);
+    return this.mapRowToInventoryItem(rows[0]);
   }
 
   async findAll(limit?: number, offset?: number): Promise<InventoryItem[]> {
-  const base = getSQL('query','inventory','findAllInventoryItems');
+    const base = getSQL('query', 'inventory', 'findAllInventoryItems');
     const clauses: string[] = [];
     const params: any[] = [];
     if (typeof limit === 'number') { params.push(limit); clauses.push(`LIMIT $${params.length}`); }
     if (typeof offset === 'number') { params.push(offset); clauses.push(`OFFSET $${params.length}`); }
     const sql = `${base} ${clauses.join(' ')}`.trim();
     const { rows } = await pool.query(sql, params);
-    return rows.map(mapRowToInventoryItem);
+    return rows.map(this.mapRowToInventoryItem);
   }
 
   async update(id: string, dto: UpdateInventoryItemDTO): Promise<boolean> {
-    const sql = getSQL('command','inventory','updateInventoryItem');
+    const sql = getSQL('command', 'inventory', 'updateInventoryItem');
     const params = [
       dto.status,
       dto.categoryId,
       dto.brand,
       dto.model,
       dto.serialNumber,
-      dto.color,
+      dto.colorId,                    // ✅ Changed from color to colorId
       dto.itemCondition,
       dto.quantity,
       dto.priceAmount,
       dto.resale,
       dto.minResale,
       dto.itemReplace,
-      dto.ownerTag,
+      dto.ownerMark,                  // ✅ Renamed from ownerTag
       dto.itemDescription,
       dto.attributes ? JSON.stringify(dto.attributes) : undefined,
       id,
@@ -126,8 +99,32 @@ export class InventoryRepository implements IInventoryRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const sql = getSQL('command','inventory','deleteInventoryItem');
-    const res = await pool.query(sql,[id]);
+    const sql = getSQL('command', 'inventory', 'deleteInventoryItem');
+    const res = await pool.query(sql, [id]);
     return res.rowCount === 1;
+  }
+
+  private mapRowToInventoryItem(row: any): InventoryItem {
+    return {
+      id: row.id,
+      inventoryNumber: row.inventory_number,
+      status: row.status,
+      categoryId: row.category_id,
+      brand: row.brand,
+      model: row.model,
+      serialNumber: row.serial_number,
+      colorId: row.color_id,            // ✅ Changed from color to colorId
+      itemCondition: row.item_condition,
+      quantity: row.quantity,
+      priceAmount: row.price_amount,
+      resale: row.resale,
+      minResale: row.min_resale,        // ✅ Added minResale
+      itemReplace: row.item_replace,
+      ownerMark: row.owner_mark,        // ✅ Changed from ownerTag
+      itemDescription: row.item_description,
+      attributes: row.attributes || {},
+      createdAt: row.created_at?.toISOString(),
+      updatedAt: row.updated_at?.toISOString(),
+    };
   }
 }

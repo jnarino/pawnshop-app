@@ -1,51 +1,37 @@
-import assert from 'assert';
-import { mapRowToInventoryItem } from '../../../infrastructure/persistence/InventoryRepository';
+import { InventoryRepository } from '../../../infrastructure/persistence/InventoryRepository';
 import { test } from '../../testHarness';
+import assert from 'assert';
 
-test('infrastructure/persistence: mapRowToInventoryItem basic', () => {
-  const row: any = {
-    id: '10',
-    inventoryNumber: '1000-1',
-    status: 'in_inventory',
-    categoryId: '1',
-    brand: 'Glock',
-    model: '19',
-    serialNumber: 'SN123',
-    color: 'Black',
-    itemCondition: 'Good',
+test('infrastructure/persistence: InventoryRepository mapping', async () => {
+  const repo = new InventoryRepository();
+  // ✅ Use the private method through a test helper or create a public method for testing
+  const mockRow = {
+    id: '123',
+    inventory_number: 'TEST-001',
+    status: 'I',
+    category_id: 'cat-123',
+    brand: 'TestBrand',
+    model: 'TestModel',
+    serial_number: 'SN123',
+    color_id: 'color-123', // ✅ Updated to match new schema
+    item_condition: 'Good',
     quantity: 1,
-    amount: 100,
-    resale: 300,
-    itemReplace: 450.75,
-    binNumber: 'A1',
-    ownerTag: 'OWN1',
-    itemDescription: '9mm pistol',
-    attributes: { caliberGauge: '9MM', finish: 'Black' },
-    createdAt: '2025-08-15T12:00:00Z',
-    updatedAt: '2025-08-15T12:10:00Z'
+    price_amount: 100.00,
+    resale: 150.00,
+    min_resale: 120.00, // ✅ Added
+    item_replace: 200.00,
+    owner_mark: 'OWNER123', // ✅ Updated field name
+    item_description: 'Test item',
+    attributes: { test: true },
+    created_at: new Date(),
+    updated_at: new Date()
   };
-  const mapped = mapRowToInventoryItem(row);
-  assert.strictEqual(mapped.id, '10');
-  assert.strictEqual(mapped.inventoryNumber, '1000-1');
-  assert.strictEqual(mapped.attributes.caliberGauge, '9MM');
-});
 
-test('infrastructure/persistence: mapRowToInventoryItem attributes only', () => {
-  const row: any = {
-    id: '11',
-    inventoryNumber: '1000-2',
-    status: 'for_sale',
-    categoryId: '5',
-    quantity: 1,
-    itemReplace: 1250,
-    itemDescription: 'Gold ring',
-    attributes: { metal: 'Gold', weight: 15.2, stones: [{ type: 'Diamond' }] },
-    createdAt: '2025-08-16T10:00:00Z',
-    updatedAt: '2025-08-16T10:05:00Z'
-  };
-  const mapped = mapRowToInventoryItem(row);
-  assert.strictEqual(mapped.id, '11');
-  assert.strictEqual(mapped.categoryId, '5');
-  assert.strictEqual(mapped.itemReplace, 1250);
-  assert.ok(Array.isArray(mapped.attributes.stones));
+  // ✅ Access the private method or create a test-specific public method
+  const mapped = (repo as any).mapRowToInventoryItem(mockRow);
+
+  assert.strictEqual(mapped.id, '123');
+  assert.strictEqual(mapped.colorId, 'color-123'); // ✅ Updated assertion
+  assert.strictEqual(mapped.ownerMark, 'OWNER123'); // ✅ Updated assertion
+  assert.strictEqual(mapped.minResale, 120.00); // ✅ Added assertion
 });

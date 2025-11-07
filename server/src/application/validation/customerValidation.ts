@@ -1,45 +1,74 @@
 import { Customer } from '../../domain/customer/Customer';
 import { ValidationError } from '../errors';
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD
-const STATE_RE = /^[A-Z]{2}$/;
-const ZIP_RE = /^\d{5}(?:-\d{4})?$/;
-
 export function validateNewCustomer(input: Omit<Customer, 'id'>): Omit<Customer, 'id'> {
-  // Required (business rule: must have DOB even though DB allows null)
-  const required: (keyof Omit<Customer, 'id'>)[] = ['firstName', 'lastName', 'dateOfBirth'];
-  for (const f of required) {
-    if (!input[f]) throw new ValidationError(`${String(f)} is required`);
+  if (!input.firstName?.trim()) {
+    throw new ValidationError('firstName is required');
   }
-
-  // Dates
-  if (input.dateOfBirth && !DATE_RE.test(input.dateOfBirth)) throw new ValidationError('dateOfBirth must be YYYY-MM-DD');
-  if (input.idIssueDate && !DATE_RE.test(input.idIssueDate)) throw new ValidationError('idIssueDate must be YYYY-MM-DD');
-  if (input.idExpiration && !DATE_RE.test(input.idExpiration)) throw new ValidationError('idExpiration must be YYYY-MM-DD');
-  if (input.idIssueDate && input.idExpiration && input.idIssueDate > input.idExpiration) {
-    throw new ValidationError('idIssueDate cannot be after idExpiration');
+  
+  if (!input.lastName?.trim()) {
+    throw new ValidationError('lastName is required');
   }
-
-  // Contact
-  if (input.email && !EMAIL_RE.test(input.email)) throw new ValidationError('email invalid');
-  if (input.stateUs && !STATE_RE.test(input.stateUs)) throw new ValidationError('stateUs invalid');
-  if (input.idState && !STATE_RE.test(input.idState)) throw new ValidationError('idState invalid');
-  if (input.zipCode && !ZIP_RE.test(input.zipCode)) throw new ValidationError('zipCode invalid');
-  if (input.phoneNumber) {
-    const digits = input.phoneNumber.replace(/\D/g, '');
-    if (digits.length !== 10) throw new ValidationError('phoneNumber must have 10 digits');
+  
+  // Validate date format if provided
+  if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) {
+    throw new ValidationError('dateOfBirth must be in YYYY-MM-DD format');
   }
-
-  return sanitizeCustomer(input);
+  
+  // Validate UUIDs if color IDs are provided
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (input.hairColorId && !uuidRegex.test(input.hairColorId)) {
+    throw new ValidationError('hairColorId must be a valid UUID');
+  }
+  
+  if (input.eyeColorId && !uuidRegex.test(input.eyeColorId)) {
+    throw new ValidationError('eyeColorId must be a valid UUID');
+  }
+  
+  return {
+    ...input,
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    middleName: input.middleName?.trim() || null,
+    // Normalize other string fields
+    streetAddress: input.streetAddress?.trim() || null,
+    city: input.city?.trim() || null,
+    stateUs: input.stateUs?.trim() || null,
+    zipCode: input.zipCode?.trim() || null,
+    phoneNumber: input.phoneNumber?.trim() || null,
+    cellPhone: input.cellPhone?.trim() || null,
+    email: input.email?.trim() || null,
+  };
 }
 
-export function sanitizeCustomer<T extends Partial<Customer>>(c: T): T {
-  const trim = (v: any) => typeof v === 'string' ? v.trim() : v;
-  const out: any = { ...c };
-  for (const k of Object.keys(out)) out[k] = trim(out[k]);
-  if (out.email) out.email = out.email.toLowerCase();
-  // Normalize phone formatting to digits only (leave presentation formatting to UI)
-  if (out.phoneNumber) out.phoneNumber = out.phoneNumber.replace(/\D/g, '');
-  return out;
+export function validateCustomerUpdate(input: Partial<Customer>): Partial<Customer> {
+  if (input.firstName !== undefined && !input.firstName?.trim()) {
+    throw new ValidationError('firstName cannot be empty');
+  }
+  
+  if (input.lastName !== undefined && !input.lastName?.trim()) {
+    throw new ValidationError('lastName cannot be empty');
+  }
+  
+  // Validate date format if provided
+  if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) {
+    throw new ValidationError('dateOfBirth must be in YYYY-MM-DD format');
+  }
+  
+  // Validate UUIDs if color IDs are provided
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (input.hairColorId && !uuidRegex.test(input.hairColorId)) {
+    throw new ValidationError('hairColorId must be a valid UUID');
+  }
+  
+  if (input.eyeColorId && !uuidRegex.test(input.eyeColorId)) {
+    throw new ValidationError('eyeColorId must be a valid UUID');
+  }
+  
+  return {
+    ...input,
+    firstName: input.firstName?.trim(),
+    lastName: input.lastName?.trim(),
+    middleName: input.middleName?.trim() || null,
+  };
 }

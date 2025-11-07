@@ -1,16 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isAuthenticated } from '@/app/core/auth/authService';
+import { refreshAccessToken, getRefreshToken, isAuthenticated } from '@/app/core/auth/authService';
 
 export default function Protected({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
+    const [status, setStatus] = useState<'checking' | 'authed' | 'unauth'>('checking');
 
     useEffect(() => {
-        if (!isAuthenticated()) {
+        let cancelled = false;
+        const verify = async () => {
+            const hasRefresh = !!getRefreshToken();
+            if (!isAuthenticated() && !hasRefresh) {
+                if (!cancelled) setStatus('unauth');
+                return;
+            }
+
+            const refreshSuccessful = await refreshAccessToken();
+            if (cancelled) return;
+
+            setStatus(refreshSuccessful ? 'authed' : 'unauth');
+        };
+        verify();
+        return () => { cancelled = true; };
+    }, []);
+
+    useEffect(() => {
+        if (status === 'unauth') {
             navigate('/login', { replace: true });
         }
-    }, [navigate]);
+    }, [status, navigate]);
 
-    if (!isAuthenticated()) return null;
+    if (status !== 'authed') return null;
     return <>{children}</>;
 }

@@ -24,7 +24,7 @@ const base: Omit<Customer, 'id'> = {
   lastName: 'Smith',
   dateOfBirth: '1980-05-05',
   sex: 'F',
-  eyeColor: 'Blue',
+  eyeColorId: 'blue-color-uuid-here', // ✅ Changed from eyeColor to eyeColorId
   height: '5\'6"',
   streetAddress: '1 First St',
   city: 'Metro',
@@ -42,7 +42,8 @@ const base: Omit<Customer, 'id'> = {
 };
 
 test('application/useCase/customer: CreateCustomerUseCase creates customer', async () => {
-  const uc = new CreateCustomerUseCase(new MockRepo());
+  const repo = new MockRepo();
+  const uc = new CreateCustomerUseCase(repo);
   const id = await uc.execute(base);
   assert.strictEqual(id, 'new-id');
 });

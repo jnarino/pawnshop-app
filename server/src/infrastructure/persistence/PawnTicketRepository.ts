@@ -7,12 +7,13 @@ import type { IPawnTicketRepository } from '../../domain/pawnTicket/IPawnTicketR
 import { pool } from '../db';
 
 export class PawnTicketRepository implements IPawnTicketRepository {
-  // ✅ Standalone: Creates ticket with own transaction
-  async createSingleTicket(input: CreatePawnTicketInput): Promise<string> {
+  async create(input: CreatePawnTicketInput): Promise<string> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const ticketId = await this.createInTransaction(client, input);
+      const ticketId = uuidv4();
+      const ticket = buildPawnTicket(ticketId, input, new Date());
+      await this.createInTransaction(client, ticket);
       await client.query('COMMIT');
       return ticketId;
     } catch (error) {
@@ -23,11 +24,8 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     }
   }
 
-  // ✅ Transactional: Part of larger transaction
-  async createInTransaction(client: PoolClient, input: CreatePawnTicketInput): Promise<string> {
-    const ticketId = uuidv4();
-    const ticket = buildPawnTicket(ticketId, input, new Date());
-
+  // ✅ Accept PawnTicket object directly as per interface
+  async createInTransaction(client: PoolClient, ticket: PawnTicket): Promise<string> {
     const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
     await client.query(createSQL, [
       ticket.id,
@@ -53,7 +51,7 @@ export class PawnTicketRepository implements IPawnTicketRepository {
       }
     }
 
-    return ticketId;
+    return ticket.id;
   }
 
   async update(id: string, dto: Partial<PawnTicket>): Promise<boolean> {

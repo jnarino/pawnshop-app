@@ -14,15 +14,15 @@ export interface Customer {
   city?: string | null;
   stateUs?: string | null;
   zipCode?: string | null;
-  phoneNumber?: string | null; // primary phone on record
+  phoneNumber?: string | null;
   height?: string | null;
   weight?: string | null;
-  hairColor?: string | null;
-  eyeColor?: string | null;
+  hairColorId?: string | null; // ✅ Changed from hairColor to FK
+  eyeColorId?: string | null;  // ✅ Changed from eyeColor to FK
   race?: string | null;
   sex?: string | null;
-  marks?: string | null;          // scars / identifying marks
-  dateOfBirth?: string | null;    // ISO (DATE)
+  marks?: string | null;
+  dateOfBirth?: string | null;
   birthCity?: string | null;
   birthState?: string | null;
   birthCountry?: string | null;
@@ -30,8 +30,8 @@ export interface Customer {
   // Identification
   idType?: string | null;
   idNumber?: string | null;
-  idExpiration?: string | null;   // ISO (DATE)
-  idIssueDate?: string | null;    // ISO (DATE)
+  idExpiration?: string | null;
+  idIssueDate?: string | null;
   ssNumber?: string | null;
   idAddress?: string | null;
   idSuiteNumber?: string | null;
@@ -55,12 +55,13 @@ export interface Customer {
   taxId?: string | null;
   cellPhone?: string | null;
   email?: string | null;
-  enteredAt?: string | null;        // original entry timestamp if imported
+  enteredAt?: string | null;
   military?: boolean | null;
-  fflExpireDate?: string | null;    // ISO (DATE)
+  fflExpireDate?: string | null;
   taxExempt?: boolean | null;
+  taxExemptCertificate?: string | null; // ✅ Added
 
-  // Housekeeping (server-managed)
-  createdAt?: string;               // TIMESTAMPTZ
-  updatedAt?: string;               // TIMESTAMPTZ
+  // Housekeeping
+  createdAt?: string;
+  updatedAt?: string;
 }

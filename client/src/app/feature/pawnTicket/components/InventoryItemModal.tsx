@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useBarcodeScan } from '../../../shared/hooks/useBarcodeScan';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { useCategoryLookup } from '../hooks/useCategoryLookup';
 import {
   JEWELRY_COLORS,
   JEWELRY_METALS,
@@ -68,9 +69,12 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const [subcat1Filter, setSubcat1Filter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [styleFilter, setStyleFilter] = useState('');
+  const [typeQuery, setTypeQuery] = useState('');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
   // Load categories from DB
   const { loading: catLoading, error: catError, typeOptions, subcat1OptionsFor, brandOptionsFor } = useInventoryCategories();
+  const { categories, loading: categoriesLoading } = useCategoryLookup();
 
   // Derived options - removed brandOptionsFor from dependencies
   const subcat1Options = useMemo(() => subcat1OptionsFor(draft.type), [draft.type, subcat1OptionsFor]);
@@ -326,6 +330,53 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     onSave({ ...draft, id: draft.id || crypto.randomUUID() });
   }
 
+  // ✅ Add deduplication and prevent infinite suggestions
+  const typeSuggestions = useMemo(() => {
+    if (!typeQuery.trim()) return [];
+
+    const query = typeQuery.toLowerCase();
+    const suggestions = categories
+      .filter(cat => cat.name.toLowerCase().includes(query))
+      .slice(0, 10); // ✅ Limit results to prevent UI overflow
+
+    // ✅ Remove duplicates by name
+    const seen = new Set<string>();
+    return suggestions.filter(cat => {
+      if (seen.has(cat.name)) return false;
+      seen.add(cat.name);
+      return true;
+    });
+  }, [typeQuery, categories]);
+
+  // ✅ Handle type selection and close dropdown
+  const handleTypeSelect = (categoryName: string) => {
+    setDraft(prev => ({ ...prev, type: categoryName }));
+    setTypeQuery(categoryName);
+    setShowTypeDropdown(false); // ✅ Close dropdown after selection
+  };
+
+  // ✅ Handle input change without triggering infinite loops
+  const handleTypeInputChange = (value: string) => {
+    setTypeQuery(value);
+    setDraft(prev => ({ ...prev, type: value }));
+    setShowTypeDropdown(value.length > 0); // ✅ Only show dropdown when typing
+  };
+
+  // ✅ Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.type-autocomplete')) {
+        setShowTypeDropdown(false);
+      }
+    };
+
+    if (showTypeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTypeDropdown]);
+
   if (!open) return null;
 
   return (
@@ -338,19 +389,50 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
         <form onSubmit={handleSubmit} className="pawn-item-form">
           <div className="pawn-item-grid">
             <label>Type
-              <input
-                name="type"
-                list="typeOptions"
-                value={typeFilter || draft.type || ''}
-                onChange={e => handleTypeInput(e.target.value)}
-                onKeyDown={handleTypeKeyDown}
-                disabled={catLoading}
-                placeholder="Select or type"
-                autoComplete="off"
-              />
-              <datalist id="typeOptions">
-                {filteredTypeOptions.map(t => <option key={t.code} value={t.name} />)}
-              </datalist>
+              <div className="type-autocomplete" style={{ position: 'relative' }}>
+                <input
+                  name="type"
+                  type="text"
+                  value={typeQuery}
+                  onChange={(e) => handleTypeInputChange(e.target.value)}
+                  onFocus={() => setShowTypeDropdown(typeQuery.length > 0)}
+                  placeholder="Select or type category"
+                  disabled={categoriesLoading}
+                  autoComplete="off"
+                />
+
+                {showTypeDropdown && typeSuggestions.length > 0 && (
+                  <div className="dropdown" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: '#fff',
+                    border: '1px solid #ccc',
+                    borderTop: 'none',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000
+                  }}>
+                    {typeSuggestions.map((cat, index) => (
+                      <div
+                        key={`${cat.id}-${index}`} // ✅ Use unique key with category ID
+                        className="dropdown-item"
+                        onClick={() => handleTypeSelect(cat.name)}
+                        style={{
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #eee'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                      >
+                        {cat.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </label>
 
             <label>Subcategory 1

@@ -1,25 +1,57 @@
-import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { http } from '@/app/core/api/http';
+
+// ✅ Define Category interface
+interface Category {
+  id: string;
+  name: string;
+  code: string;
+  parentId?: string | null;
+  path?: string;
+  depth?: number;
+  children?: Category[];
+}
 
 export function useCategoryLookup() {
-  const { tree, loading } = useInventoryCategories();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const loadedRef = useRef(false); // ✅ Prevent duplicate loads
 
-  const getCategoryIdByPath = (typeCode: string, subCode?: string, brandCode?: string): string | null => {
-    // Find type (top level) - e.g., "JEWELRY"
-    const typeNode = tree.find(n => n.code === typeCode);
-    if (!typeNode) return null;
+  useEffect(() => {
+    if (loadedRef.current) return; // ✅ Only load once
     
-    if (!subCode) return typeNode.id;
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        const data = await http<Category[]>('/api/categories/tree');
+        setCategories(data || []);
+        loadedRef.current = true; // ✅ Mark as loaded
+      } catch (error) {
+        console.error('[CategoryLookup] Failed to load categories:', error);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []); // ✅ Empty dependency array
+
+  // ✅ Memoize the lookup function to prevent recreation
+  const getCategoryIdByPath = useCallback((path: string): string | null => {
+    if (!path) return null;
     
-    // Find subcategory - e.g., "NECKLACE"
-    const subNode = typeNode.children.find(c => c.code === subCode);
-    if (!subNode) return typeNode.id;
+    const category = categories.find(cat => 
+      cat.name.toUpperCase() === path.toUpperCase() ||
+      cat.code.toUpperCase() === path.toUpperCase()
+    );
     
-    if (!brandCode) return subNode.id;
-    
-    // Find brand/leaf - e.g., "CARTIER"
-    const brandNode = subNode.children.find(c => c.code === brandCode);
-    return brandNode ? brandNode.id : subNode.id;
+    return category?.id || null;
+  }, [categories]);
+
+  return {
+    categories,
+    loading,
+    getCategoryIdByPath
   };
-
-  return { getCategoryIdByPath, loading };
 }

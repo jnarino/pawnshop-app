@@ -13,14 +13,15 @@ const COL_MAP: Record<string, string> = {
   middleName: 'middle_name',
   lastName: 'last_name',
   streetAddress: 'street_address',
+  suiteNumber: 'suite_number',
   city: 'city',
   stateUs: 'state_us',
   zipCode: 'zip_code',
   phoneNumber: 'phone_number',
   height: 'height',
   weight: 'weight',
-  hairColor: 'hair_color',
-  eyeColor: 'eye_color',
+  hairColorId: 'hair_color_id',
+  eyeColorId: 'eye_color_id',
   race: 'race',
   sex: 'sex',
   marks: 'marks',
@@ -34,11 +35,13 @@ const COL_MAP: Record<string, string> = {
   idIssueDate: 'id_issue_date',
   ssNumber: 'ss_number',
   idAddress: 'id_address',
+  idSuiteNumber: 'id_suite_number',
   idCity: 'id_city',
   idState: 'id_state',
   idZip: 'id_zip',
   employerName: 'employer_name',
   employerAddress: 'employer_address',
+  employerSuiteNumber: 'employer_suite_number',
   employerCity: 'employer_city',
   employerState: 'employer_state',
   employerZip: 'employer_zip',
@@ -52,7 +55,8 @@ const COL_MAP: Record<string, string> = {
   enteredAt: 'entered_at',
   military: 'military',
   fflExpireDate: 'ffl_expire_date',
-  taxExempt: 'tax_exempt'
+  taxExempt: 'tax_exempt',
+  taxExemptCertificate: 'tax_exempt_certificate'
 };
 
 const SELECT_COLUMNS = [
@@ -72,14 +76,15 @@ function mapRow(r: any): Customer {
     middleName: r.middle_name ?? null,
     lastName: r.last_name,
     streetAddress: r.street_address ?? null,
+    suiteNumber: r.suite_number ?? null,
     city: r.city ?? null,
     stateUs: r.state_us ?? null,
     zipCode: r.zip_code ?? null,
     phoneNumber: r.phone_number ?? null,
     height: r.height ?? null,
     weight: r.weight ?? null,
-    hairColor: r.hair_color ?? null,
-    eyeColor: r.eye_color ?? null,
+    hairColorId: r.hair_color_id ?? null,
+    eyeColorId: r.eye_color_id ?? null,
     race: r.race ?? null,
     sex: r.sex ?? null,
     marks: r.marks ?? null,
@@ -93,11 +98,13 @@ function mapRow(r: any): Customer {
     idIssueDate: r.id_issue_date ? r.id_issue_date.toISOString?.().substring(0, 10) : null,
     ssNumber: r.ss_number ?? null,
     idAddress: r.id_address ?? null,
+    idSuiteNumber: r.id_suite_number ?? null,
     idCity: r.id_city ?? null,
     idState: r.id_state ?? null,
     idZip: r.id_zip ?? null,
     employerName: r.employer_name ?? null,
     employerAddress: r.employer_address ?? null,
+    employerSuiteNumber: r.employer_suite_number ?? null,
     employerCity: r.employer_city ?? null,
     employerState: r.employer_state ?? null,
     employerZip: r.employer_zip ?? null,
@@ -112,6 +119,7 @@ function mapRow(r: any): Customer {
     military: r.military ?? null,
     fflExpireDate: r.ffl_expire_date ? r.ffl_expire_date.toISOString?.().substring(0, 10) : null,
     taxExempt: r.tax_exempt ?? null,
+    taxExemptCertificate: r.tax_exempt_certificate ?? null,
     createdAt: r.created_at ? r.created_at.toISOString?.() : undefined,
     updatedAt: r.updated_at ? r.updated_at.toISOString?.() : undefined,
   };
@@ -124,6 +132,11 @@ function buildInsert(dto: Omit<Customer, 'id'>) {
   const columns: string[] = [];
   const placeholders: string[] = [];
   const values: any[] = [];
+  
+  // Required fields
+  if (!dto.firstName) throw new Error('firstName required');
+  if (!dto.lastName) throw new Error('lastName required');
+  
   Object.entries(COL_MAP).forEach(([camel, snake]) => {
     const val = (dto as any)[camel];
     if (val !== undefined) {
@@ -132,8 +145,7 @@ function buildInsert(dto: Omit<Customer, 'id'>) {
       placeholders.push(`$${values.length}`);
     }
   });
-  if (!columns.includes('first_name')) throw new Error('firstName required');
-  if (!columns.includes('last_name')) throw new Error('lastName required');
+  
   const sql = `INSERT INTO customer (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`;
   return { sql, values };
 }
@@ -256,15 +268,15 @@ export class CustomerRepository implements ICustomerRepository {
       middleName: row.middle_name,
       lastName: row.last_name,
       streetAddress: row.street_address,
-      suiteNumber: row.id_suite_number,
+      suiteNumber: row.suite_number,
       city: row.city,
       stateUs: row.state_us,
       zipCode: row.zip_code,
       phoneNumber: row.phone_number,
       height: row.height,
       weight: row.weight,
-      hairColor: row.hair_color,
-      eyeColor: row.eye_color,
+      hairColorId: row.hair_color_id,
+      eyeColorId: row.eye_color_id,
       race: row.race,
       sex: row.sex,
       marks: row.marks,
@@ -299,6 +311,7 @@ export class CustomerRepository implements ICustomerRepository {
       military: row.military,
       fflExpireDate: row.ffl_expire_date,
       taxExempt: row.tax_exempt,
+      taxExemptCertificate: row.tax_exempt_certificate,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
