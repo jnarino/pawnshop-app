@@ -18,11 +18,8 @@ export class CategoryRepository {
         parent_id: string | null;
         path: string;
     }>> {
-        const result = await this.pool.query(`
-            SELECT id, name, code, parent_id, path::text
-            FROM inventory_category
-            ORDER BY path
-        `);
+        const sql = getSQL('query', 'category', 'findAllCategories');
+        const result = await this.pool.query(sql);
         return result.rows;
     }
 
@@ -31,12 +28,8 @@ export class CategoryRepository {
         code: string;
         parent_id: string | null;
     }): Promise<{ id: string }> {
-        const result = await this.pool.query(
-            `INSERT INTO inventory_category (name, code, parent_id)
-             VALUES ($1, $2, $3)
-             RETURNING id`,
-            [data.name, data.code, data.parent_id]
-        );
+        const sql = getSQL('command', 'category', 'createCategory');
+        const result = await this.pool.query(sql, [data.name, data.code, data.parent_id]);
         return { id: result.rows[0].id };
     }
 }

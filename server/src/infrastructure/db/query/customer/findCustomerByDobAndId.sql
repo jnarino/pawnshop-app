@@ -52,5 +52,6 @@ SELECT
   tax_exempt_certificate,
   created_at,
   updated_at
-FROM customer
-ORDER BY last_name, first_name
+FROM customer 
+WHERE date_of_birth = $1 AND id_number = $2 
+LIMIT 1;

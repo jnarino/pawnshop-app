@@ -9,24 +9,25 @@ export class InventoryRepository implements IInventoryRepository {
   async createSingleItem(dto: CreateInventoryItemDTO): Promise<string> {
     const createSQL = getSQL('command', 'inventory', 'createInventoryItem');
     const { rows } = await pool.query(createSQL, [
-      uuidv4(),
-      dto.inventoryNumber || null,
-      dto.status || 'I',
-      dto.categoryId,
-      dto.brand || null,
-      dto.model || null,
-      dto.serialNumber || null,
-      dto.colorId || null,              // ✅ Changed from color to colorId
-      dto.itemCondition || null,
-      dto.quantity || 1,
-      dto.priceAmount || null,
-      dto.resale || null,
-      dto.minResale || null,            // ✅ Added minResale
-      dto.itemReplace || null,
-      dto.ownerMark || null,            // ✅ Changed from ownerTag to ownerMark
-      dto.itemDescription || null,
-      JSON.stringify(dto.attributes || {}),
-      JSON.stringify({}), // extra field
+      uuidv4(),                           // $1 - id
+      dto.inventoryNumber || null,        // $2 - inventory_number
+      dto.status || 'I',                  // $3 - status
+      dto.categoryId,                     // $4 - category_id
+      dto.brand || null,                  // $5 - brand
+      dto.model || null,                  // $6 - model
+      dto.serialNumber || null,           // $7 - serial_number
+      dto.colorId || null,                // $8 - color_id
+      dto.itemCondition || null,          // $9 - item_condition
+      dto.quantity || 1,                  // $10 - quantity
+      dto.priceAmount || null,            // $11 - price_amount
+      dto.resale || null,                 // $12 - resale
+      dto.minResale || null,              // $13 - min_resale
+      dto.itemReplace || null,            // $14 - item_replace
+      dto.ownerMark || null,              // $15 - owner_mark
+      dto.itemDescription || null,        // $16 - item_description
+      JSON.stringify(dto.attributes || {}), // $17 - attributes
+      JSON.stringify({}),                 // $18 - extra
+      null                                // $19 - last_updated_user_id
     ]);
     return rows[0].id;
   }
@@ -34,24 +35,25 @@ export class InventoryRepository implements IInventoryRepository {
   async createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string> {
     const createSQL = getSQL('command', 'inventory', 'createInventoryItem');
     const { rows } = await client.query(createSQL, [
-      uuidv4(),
-      dto.inventoryNumber || null,
-      dto.status || 'I',
-      dto.categoryId,
-      dto.brand || null,
-      dto.model || null,
-      dto.serialNumber || null,
-      dto.colorId || null,              // ✅ Changed from color to colorId
-      dto.itemCondition || null,
-      dto.quantity || 1,
-      dto.priceAmount || null,
-      dto.resale || null,
-      dto.minResale || null,            // ✅ Added minResale
-      dto.itemReplace || null,
-      dto.ownerMark || null,            // ✅ Changed from ownerTag to ownerMark
-      dto.itemDescription || null,
-      JSON.stringify(dto.attributes || {}),
-      JSON.stringify({}), // extra field
+      uuidv4(),                           // $1 - id
+      dto.inventoryNumber || null,        // $2 - inventory_number
+      dto.status || 'I',                  // $3 - status
+      dto.categoryId,                     // $4 - category_id
+      dto.brand || null,                  // $5 - brand
+      dto.model || null,                  // $6 - model
+      dto.serialNumber || null,           // $7 - serial_number
+      dto.colorId || null,                // $8 - color_id
+      dto.itemCondition || null,          // $9 - item_condition
+      dto.quantity || 1,                  // $10 - quantity
+      dto.priceAmount || null,            // $11 - price_amount
+      dto.resale || null,                 // $12 - resale
+      dto.minResale || null,              // $13 - min_resale
+      dto.itemReplace || null,            // $14 - item_replace
+      dto.ownerMark || null,              // $15 - owner_mark
+      dto.itemDescription || null,        // $16 - item_description
+      JSON.stringify(dto.attributes || {}), // $17 - attributes
+      JSON.stringify({}),                 // $18 - extra
+      null                                // $19 - last_updated_user_id
     ]);
     return rows[0].id;
   }
@@ -59,8 +61,13 @@ export class InventoryRepository implements IInventoryRepository {
   async findById(id: string): Promise<InventoryItem | null> {
     const sql = getSQL('query', 'inventory', 'findInventoryItemById');
     const { rows } = await pool.query(sql, [id]);
-    if (!rows[0]) return null;
-    return this.mapRowToInventoryItem(rows[0]);
+    return rows[0] ? this.mapRowToInventoryItem(rows[0]) : null;
+  }
+
+  async findByIdInTransaction(client: PoolClient, id: string): Promise<InventoryItem | null> {
+    const sql = getSQL('query', 'inventory', 'findInventoryItemById');
+    const { rows } = await client.query(sql, [id]);
+    return rows[0] ? this.mapRowToInventoryItem(rows[0]) : null;
   }
 
   async findAll(limit?: number, offset?: number): Promise<InventoryItem[]> {
@@ -113,14 +120,14 @@ export class InventoryRepository implements IInventoryRepository {
       brand: row.brand,
       model: row.model,
       serialNumber: row.serial_number,
-      colorId: row.color_id,            // ✅ Changed from color to colorId
+      colorId: row.color_id,            // ✅ Map color_id to colorId
       itemCondition: row.item_condition,
       quantity: row.quantity,
       priceAmount: row.price_amount,
       resale: row.resale,
-      minResale: row.min_resale,        // ✅ Added minResale
+      minResale: row.min_resale,        // ✅ Map min_resale
       itemReplace: row.item_replace,
-      ownerMark: row.owner_mark,        // ✅ Changed from ownerTag
+      ownerMark: row.owner_mark,        // ✅ Map owner_mark to ownerMark
       itemDescription: row.item_description,
       attributes: row.attributes || {},
       createdAt: row.created_at?.toISOString(),

@@ -32,6 +32,7 @@ export interface IInventoryRepository {
     createSingleItem(dto: CreateInventoryItemDTO): Promise<string>; // ✅ Renamed from create
     createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string>; // ✅ Renamed from createWithClient
     findById(id: string): Promise<InventoryItem | null>;
+    findByIdInTransaction?(client: PoolClient, id: string): Promise<InventoryItem | null>; // ✅ Optional method
     findAll(limit?: number, offset?: number): Promise<InventoryItem[]>;
     update(id: string, dto: UpdateInventoryItemDTO): Promise<boolean>;
     delete(id: string): Promise<boolean>;

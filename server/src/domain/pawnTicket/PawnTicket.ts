@@ -36,6 +36,16 @@ export interface PawnTicket {
   maturityDate: string;              // ISO date/time (end of 30-day period unless overridden)
   defaultDate: string;               // ISO date/time (e.g., 60 days from transaction)
 
+  ratePlanId: string | null;
+  paidThroughDate: string | null;  // DATE field
+  nextChargeDate: string | null;   // DATE field
+  interestCredit: number;          // NOT NULL DEFAULT 0
+  lastPaymentAt?: string | null;
+  lastActivityAt?: string | null;
+  defaultMarkedAt?: string | null;
+  defaultMarkedBy?: string | null;
+  defaultReason?: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -172,5 +182,14 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     defaultDate: iso(defaultDt),
     createdAt: iso(now),
     updatedAt: iso(now),
+    ratePlanId: null,
+    paidThroughDate: null,
+    nextChargeDate: null,
+    interestCredit: 0,
+    lastPaymentAt: null,
+    lastActivityAt: null,
+    defaultMarkedAt: null,
+    defaultMarkedBy: null,
+    defaultReason: null,
   };
 }

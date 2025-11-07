@@ -136,7 +136,6 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
     try {
       // ✅ CONVERT CATEGORY CODES TO UUIDs
       const newInventoryItems = draft.items.map(it => {
-        // it.type is "JEWELRY" (code) - need to convert to UUID
         const categoryId = getCategoryIdByPath(it.type);
 
         if (!categoryId) {
@@ -144,9 +143,19 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         }
 
         return {
-          categoryId: categoryId, // ✅ Now sends UUID instead of "JEWELRY"
+          categoryId: categoryId,
+          brand: it.brand || undefined,
+          model: it.model || undefined,
+          serialNumber: it.serial || undefined,
+          colorId: null, // Will be set when color lookup is implemented
+          itemCondition: 'Good', // Default condition
+          quantity: parseInt(it.quantity || '1') || 1,
+          priceAmount: it.amount ? Number(toMoney(it.amount)) : undefined,
+          resale: undefined, // Add when UI supports it
+          minResale: undefined, // Add when UI supports it
+          itemReplace: undefined, // Add when UI supports it
+          ownerMark: (it as any).ownerNumber || undefined,
           itemDescription: buildDescription(it),
-          priceAmount: it.amount ? Number(toMoney(it.amount)) : undefined, // ✅ Fixed: was 'amount'
           attributes: {
             brand: it.brand,
             model: it.model,
@@ -160,8 +169,8 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
             gender: (it as any).gender,
             style: (it as any).style,
             sizeLength: (it as any).sizeLength,
-            description: it.description,
           },
+          extra: {}, // Empty extra object as expected by SQL
         };
       });
 

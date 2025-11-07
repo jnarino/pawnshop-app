@@ -30,11 +30,19 @@ import { ListCategoriesTreeUseCase } from './application/useCase/category/ListCa
 import { pool } from './infrastructure/persistence/db';
 import { FindAllPawnTicketsUseCase } from './application/useCase/pawnTicket/FindAllPawnTicketsUseCase';
 import { makeCategoryController } from './controller/category/categoryControllerFactory';
+import { RatePlanRepository } from './infrastructure/persistence/RatePlanRepository';
+import { StoreTransactionRepository } from './infrastructure/persistence/StoreTransactionRepository';
+import { GunlogRepository } from './infrastructure/persistence/GunlogRepository';
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
 const statusRepo = new InventoryStatusRepository();
 const pawnTicketRepo = new PawnTicketRepository();
+
+// ✅ Add missing repository instances
+const ratePlanRepo = new RatePlanRepository();
+const storeTransactionRepo = new StoreTransactionRepository();
+const gunlogRepo = new GunlogRepository();
 
 // Initialize category repository and cache
 const categoryRepo = new CategoryRepository(pool);
@@ -69,7 +77,14 @@ export const inventoryStatusController = makeInventoryStatusController({
 
 export const pawnTicketController = makePawnTicketController({
     findAll: new FindAllPawnTicketsUseCase(pawnTicketRepo),
-    create: new CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase(inventoryRepo)),
+    create: new CreatePawnTicketUseCase(
+        pawnTicketRepo, 
+        repo, // CustomerRepository
+        ratePlanRepo,
+        storeTransactionRepo,
+        gunlogRepo,
+        new CreateInventoryItemUseCase(inventoryRepo)
+    ),
     get: new GetPawnTicketUseCase(pawnTicketRepo),
     updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
     delete: new DeletePawnTicketUseCase(pawnTicketRepo),
@@ -102,7 +117,14 @@ export const container = {
     },
     pawnTicket: {
         findAll: new FindAllPawnTicketsUseCase(pawnTicketRepo),
-        create: new CreatePawnTicketUseCase(pawnTicketRepo, new CreateInventoryItemUseCase(inventoryRepo)),
+        create: new CreatePawnTicketUseCase(
+            pawnTicketRepo,
+            repo, // CustomerRepository
+            ratePlanRepo,
+            storeTransactionRepo,
+            gunlogRepo,
+            new CreateInventoryItemUseCase(inventoryRepo)
+        ),
         get: new GetPawnTicketUseCase(pawnTicketRepo),
         updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
         delete: new DeletePawnTicketUseCase(pawnTicketRepo),
