@@ -36,23 +36,35 @@ export interface PawnTicket {
   maturityDate: string;              // ISO date/time (end of 30-day period unless overridden)
   defaultDate: string;               // ISO date/time (e.g., 60 days from transaction)
 
+  ratePlanId: string | null;
+  paidThroughDate: string | null;  // DATE field
+  nextChargeDate: string | null;   // DATE field
+  interestCredit: number;          // NOT NULL DEFAULT 0
+  lastPaymentAt?: string | null;
+  lastActivityAt?: string | null;
+  defaultMarkedAt?: string | null;
+  defaultMarkedBy?: string | null;
+  defaultReason?: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
 
 export interface NewInventoryItemInput {
   categoryId: string;
+  inventoryNumber?: string;
+  status?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
-  color?: string;
+  colorId?: string;                    // ✅ Changed from color to colorId (FK)
   itemCondition?: string;
   quantity?: number;
-  priceAmount?: number;
+  priceAmount?: number;                // ✅ Renamed from amount
   resale?: number;
-  minResale?: number;
+  minResale?: number;                  // ✅ Added minResale
   itemReplace?: number;
-  ownerMark?: string;
+  ownerMark?: string;                  // ✅ Renamed from ownerTag
   itemDescription?: string;
   attributes?: Record<string, any>;
 }
@@ -116,13 +128,9 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     throw new Error('Either inventoryItemIds or newInventoryItems required');
   }
 
+  // ✅ Allow either existing OR new items, but not both
   if (hasExisting && hasNew) {
     throw new Error('Cannot provide both inventoryItemIds and newInventoryItems');
-  }
-
-  // For new items, validate control number is provided (needed for inventory_number generation)
-  if (hasNew && !input.controlNumber) {
-    throw new Error('controlNumber required when creating new inventory items');
   }
 
   const transactionDate = input.transactionDate ? new Date(input.transactionDate) : now;
@@ -162,7 +170,7 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     type: input.type,
     customerId: input.customerId,
     pawnStatus: 'active',
-    inventoryItemIds: input.inventoryItemIds || [], // Will be populated after creating new items
+    inventoryItemIds: input.inventoryItemIds || [], // ✅ Will be updated with new item IDs later
     amountFinanced,
     financeCharge,
     periodicRate,
@@ -174,5 +182,14 @@ export function buildPawnTicket(id: string, input: CreatePawnTicketInput, now = 
     defaultDate: iso(defaultDt),
     createdAt: iso(now),
     updatedAt: iso(now),
+    ratePlanId: null,
+    paidThroughDate: null,
+    nextChargeDate: null,
+    interestCredit: 0,
+    lastPaymentAt: null,
+    lastActivityAt: null,
+    defaultMarkedAt: null,
+    defaultMarkedBy: null,
+    defaultReason: null,
   };
 }

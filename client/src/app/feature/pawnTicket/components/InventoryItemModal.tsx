@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useBarcodeScan } from '../../../shared/hooks/useBarcodeScan';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { useCategoryLookup } from '../hooks/useCategoryLookup';
 import {
   JEWELRY_COLORS,
   JEWELRY_METALS,
@@ -68,9 +69,14 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const [subcat1Filter, setSubcat1Filter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [styleFilter, setStyleFilter] = useState('');
+  const [typeQuery, setTypeQuery] = useState('');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0); // ✅ Add cycling index
 
   // Load categories from DB
   const { loading: catLoading, error: catError, typeOptions, subcat1OptionsFor, brandOptionsFor } = useInventoryCategories();
+  const { categories, loading: categoriesLoading } = useCategoryLookup();
 
   // Derived options - removed brandOptionsFor from dependencies
   const subcat1Options = useMemo(() => subcat1OptionsFor(draft.type), [draft.type, subcat1OptionsFor]);
@@ -249,17 +255,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   };
 
   // Keyboard handlers for autocomplete
-  const handleTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === 'Tab') && filteredTypeOptions.length > 0) {
-      e.preventDefault();
-      handleTypeInput(filteredTypeOptions[0].name);
-
-      if (e.key === 'Tab') {
-        setTimeout(() => document.querySelector<HTMLInputElement>('[name="subcat1"]')?.focus(), 0);
-      }
-    }
-  };
-
   const handleSubcat1KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if ((e.key === 'Enter' || e.key === 'Tab') && filteredSubcat1Options.length > 0) {
       e.preventDefault();
@@ -326,6 +321,154 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     onSave({ ...draft, id: draft.id || crypto.randomUUID() });
   }
 
+  // ✅ Fixed autocomplete suggestions - no more duplicates
+  const typeSuggestions = useMemo(() => {
+    console.log('[TypeSuggestions] Query:', typeQuery, 'All categories:', categories.map(c => c.name));
+    
+    if (!typeQuery.trim()) {
+      return categories.slice(0, 10);
+    }
+
+    const query = typeQuery.toLowerCase();
+    
+    // ✅ Filter categories that match the query
+    const matches = categories.filter(cat => 
+      cat.name.toLowerCase().includes(query)
+    );
+    
+    // ✅ Sort: exact matches first, then starts-with, then contains
+    matches.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      
+      // Exact match
+      if (aName === query && bName !== query) return -1;
+      if (bName === query && aName !== query) return 1;
+      
+      // Starts with
+      const aStarts = aName.startsWith(query);
+      const bStarts = bName.startsWith(query);
+      if (aStarts && !bStarts) return -1;
+      if (bStarts && !aStarts) return 1;
+      
+      // Alphabetical
+      return aName.localeCompare(bName);
+    });
+    
+    console.log('[TypeSuggestions] Filtered matches:', matches.map(m => m.name));
+    
+    return matches.slice(0, 10);
+  }, [typeQuery, categories]);
+
+  // ✅ Handle type selection and close dropdown
+  const handleTypeSelect = (categoryName: string) => {
+    setDraft(prev => ({ ...prev, type: categoryName }));
+    setTypeQuery(categoryName);
+    setShowTypeDropdown(false);
+    setSelectedTypeIndex(-1);
+    setCurrentMatchIndex(0);
+  };
+
+  // ✅ Enhanced input change with smart auto-completion
+  const handleTypeInputChange = (value: string) => {
+    setTypeQuery(value);
+    setDraft(prev => ({ ...prev, type: value }));
+    setShowTypeDropdown(value.length > 0);
+    setSelectedTypeIndex(-1);
+    setCurrentMatchIndex(0);
+    
+    // ✅ Smart auto-completion: if there's an exact start match, suggest it
+    if (value.length >= 1) {
+      const matches = categories.filter(cat => 
+        cat.name.toLowerCase().startsWith(value.toLowerCase())
+      );
+      
+      if (matches.length > 0) {
+        const bestMatch = matches[0];
+        // Don't auto-complete if user is typing in the middle of a word
+        if (bestMatch.name.toLowerCase() !== value.toLowerCase()) {
+          console.log('[TypeInput] Auto-suggesting:', bestMatch.name);
+          // Update the cycling index to match the suggestion
+          const suggestionIndex = typeSuggestions.findIndex(s => s.id === bestMatch.id);
+          if (suggestionIndex >= 0) {
+            setCurrentMatchIndex(suggestionIndex);
+            setSelectedTypeIndex(suggestionIndex);
+          }
+        }
+      }
+    }
+  };
+
+  // ✅ Enhanced keyboard handler - TAB moves to next field after selection
+  const handleTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && typeSuggestions.length > 0) {
+      e.preventDefault();
+      
+      // ✅ Select first match and move to next field
+      const selectedCategory = typeSuggestions[0];
+      handleTypeSelect(selectedCategory.name);
+      
+      // ✅ Move focus to next field (subcategory)
+      setTimeout(() => {
+        const nextField = document.querySelector<HTMLInputElement>('[name="subcat1"]');
+        if (nextField) {
+          nextField.focus();
+        }
+      }, 0);
+      
+      return;
+    }
+
+    if (!showTypeDropdown || typeSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedTypeIndex(prev => 
+          prev < typeSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedTypeIndex(prev => 
+          prev > 0 ? prev - 1 : typeSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedTypeIndex >= 0 && selectedTypeIndex < typeSuggestions.length) {
+          handleTypeSelect(typeSuggestions[selectedTypeIndex].name);
+        } else if (typeSuggestions.length > 0) {
+          handleTypeSelect(typeSuggestions[0].name);
+        }
+        // ✅ Move to next field after Enter selection
+        setTimeout(() => {
+          const nextField = document.querySelector<HTMLInputElement>('[name="subcat1"]');
+          if (nextField) {
+            nextField.focus();
+          }
+        }, 0);
+        break;
+      case 'Escape':
+        setShowTypeDropdown(false);
+        setSelectedTypeIndex(-1);
+        setCurrentMatchIndex(0);
+        break;
+    }
+  };
+
+  // ✅ Initialize typeQuery when modal opens
+  useEffect(() => {
+    if (!open) return;
+    if (initial?.type) {
+      setTypeQuery(initial.type);
+      setCurrentMatchIndex(0);
+    } else {
+      setTypeQuery('');
+      setCurrentMatchIndex(0);
+    }
+  }, [open, initial?.type]);
+
   if (!open) return null;
 
   return (
@@ -336,21 +479,109 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
         </header>
 
         <form onSubmit={handleSubmit} className="pawn-item-form">
+          {/* ✅ Add consistent styling for all input boxes */}
+          <style>{`
+            .pawn-item-grid input,
+            .pawn-item-grid select {
+              width: 100% !important;
+              padding: 8px 12px !important;
+              border: 1px solid #ccc !important;
+              border-radius: 4px !important;
+              font-size: 14px !important;
+              box-sizing: border-box !important;
+            }
+            
+            .pawn-item-grid input:focus,
+            .pawn-item-grid select:focus {
+              outline: none !important;
+              border-color: #2196f3 !important;
+              box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+            }
+            
+            .pawn-item-grid label {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              font-weight: 500;
+            }
+          `}</style>
+          
           <div className="pawn-item-grid">
-            <label>Type
-              <input
-                name="type"
-                list="typeOptions"
-                value={typeFilter || draft.type || ''}
-                onChange={e => handleTypeInput(e.target.value)}
-                onKeyDown={handleTypeKeyDown}
-                disabled={catLoading}
-                placeholder="Select or type"
-                autoComplete="off"
-              />
-              <datalist id="typeOptions">
-                {filteredTypeOptions.map(t => <option key={t.code} value={t.name} />)}
-              </datalist>
+            <label>Type *
+              <div className="type-autocomplete" style={{ position: 'relative' }}>
+                <input
+                  name="type"
+                  type="text"
+                  value={typeQuery}
+                  onChange={(e) => handleTypeInputChange(e.target.value)}
+                  onKeyDown={handleTypeKeyDown}
+                  onFocus={() => setShowTypeDropdown(true)}
+                  placeholder="Type 'J' for JEWELRY, TAB to cycle..."
+                  disabled={categoriesLoading}
+                  autoComplete="off"
+                />
+
+                {/* ✅ Enhanced dropdown */}
+                {showTypeDropdown && (
+                  <div 
+                    className="dropdown" 
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: '#fff',
+                      border: '1px solid #ccc',
+                      borderTop: 'none',
+                      borderRadius: '0 0 4px 4px',
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    {typeSuggestions.length > 0 ? (
+                      typeSuggestions.map((cat, index) => (
+                        <div
+                          key={cat.id}
+                          className="dropdown-item"
+                          onClick={() => handleTypeSelect(cat.name)}
+                          style={{
+                            padding: '10px 12px',
+                            cursor: 'pointer',
+                            borderBottom: index < typeSuggestions.length - 1 ? '1px solid #eee' : 'none',
+                            backgroundColor: selectedTypeIndex === index ? '#e3f2fd' : '#fff',
+                            fontSize: '14px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                          onMouseEnter={() => setSelectedTypeIndex(index)}
+                          onMouseLeave={() => setSelectedTypeIndex(-1)}
+                        >
+                          <span style={{ fontWeight: 500 }}>{cat.name}</span>
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#666',
+                            fontFamily: 'monospace'
+                          }}>
+                            {cat.code}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{
+                        padding: '10px 12px',
+                        color: '#666',
+                        fontStyle: 'italic',
+                        fontSize: '14px'
+                      }}>
+                        {categoriesLoading ? 'Loading...' : typeQuery.trim() ? 'No matching categories' : 'Start typing to search...'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </label>
 
             <label>Subcategory 1

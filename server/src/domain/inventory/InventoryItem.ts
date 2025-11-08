@@ -13,14 +13,14 @@ export interface InventoryItem {
   brand?: string;
   model?: string;
   serialNumber?: string;
-  color?: string;
+  colorId?: string;                    // ✅ Changed from color to colorId (FK)
   itemCondition?: string;
   quantity: number;              // >0
   priceAmount?: number;        // Amount loaned/paid
   resale?: number;             // Expected resale price
   minResale?: number;          // Minimum acceptable price (floor)
   itemReplace?: number;        // Replacement cost (insurance)
-  ownerTag?: string;
+  ownerMark?: string;                  // ✅ Renamed from ownerTag
   itemDescription?: string;
   attributes: Record<string, any>; // Arbitrary structured attributes (firearm/jewelry/etc.)
   createdAt: string;

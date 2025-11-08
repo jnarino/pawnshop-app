@@ -6,7 +6,7 @@ SELECT
   brand,
   model,
   serial_number   AS "serial_number",
-  color,
+  color_id        AS "color_id",
   item_condition  AS "item_condition",
   quantity,
   price_amount    AS "price_amount",
