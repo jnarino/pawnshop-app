@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { ensureFreshAccessToken, getRefreshToken, isAuthenticated } from '@/app/core/auth/authService';
-=======
 import { refreshAccessToken, getRefreshToken, isAuthenticated } from '@/app/core/auth/authService';
->>>>>>> feature/make_payment
 
 export default function Protected({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
@@ -18,17 +14,11 @@ export default function Protected({ children }: { children: React.ReactNode }) {
                 if (!cancelled) setStatus('unauth');
                 return;
             }
-<<<<<<< HEAD
-            await ensureFreshAccessToken();
-            if (cancelled) return;
-            setStatus(isAuthenticated() ? 'authed' : (!!getRefreshToken() ? 'authed' : 'unauth'));
-=======
 
             const refreshSuccessful = await refreshAccessToken();
             if (cancelled) return;
 
             setStatus(refreshSuccessful ? 'authed' : 'unauth');
->>>>>>> feature/make_payment
         };
         verify();
         return () => { cancelled = true; };
