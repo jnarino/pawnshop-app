@@ -1,9 +1,8 @@
 import { getSQL } from '../db/sqlLoader';
-
 import { PawnTicket, CreatePawnTicketInput, buildPawnTicket } from '../../domain/pawnTicket/PawnTicket';
 import type { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import type { IPawnTicketRepository } from '../../domain/pawnTicket/IPawnTicketRepository';
+import type { IPawnTicketRepository, CreatePawnTicketPaymentInput } from '../../domain/pawnTicket/IPawnTicketRepository';
 import { pool } from '../db';
 
 export class PawnTicketRepository implements IPawnTicketRepository {
@@ -24,7 +23,6 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     }
   }
 
-  // ✅ Accept PawnTicket object directly as per interface
   async createInTransaction(client: PoolClient, ticket: PawnTicket): Promise<string> {
     const createSQL = getSQL('command', 'pawnTicket', 'createPawnTicket');
     await client.query(createSQL, [
@@ -62,8 +60,26 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     return ticket.id;
   }
 
+  async createPawnTicketPayment(client: PoolClient, input: CreatePawnTicketPaymentInput): Promise<string> {
+    const sql = getSQL('command', 'pawnTicket', 'createPawnTicketPayment');
+    const paymentId = uuidv4();
+
+    await client.query(sql, [
+      paymentId,                    // $1 - id
+      input.pawnTicketId,          // $2 - pawn_ticket_id
+      input.storeTransactionId,    // $3 - store_transaction_id
+      input.paymentDate,           // $4 - payment_date
+      input.interestPaid,          // $5 - interest_paid
+      input.principalPaid,         // $6 - principal_paid (can be negative)
+      input.feesPaid,              // $7 - fees_paid
+      input.clerkUserId,           // $8 - clerk_user_id
+      input.note                   // $9 - note
+    ]);
+
+    return paymentId;
+  }
+
   async update(id: string, dto: Partial<PawnTicket>): Promise<boolean> {
-    const sql = getSQL('command', 'pawnTicket', 'updatePawnTicketFields');
     const sets: string[] = [];
     const params: any[] = [];
     let i = 1;
@@ -144,6 +160,18 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     return this.mapRowToPawnTicket(r);
   }
 
+  async findByControlNumberWithPayments(controlNumber: string): Promise<any | null> {
+    const sql = getSQL('query', 'pawnTicket', 'findPawnTicketWithPayments');
+    const { rows } = await pool.query(sql, [controlNumber]);
+    const r = rows[0];
+    if (!r) return null;
+
+    return {
+      ...this.mapRowToPawnTicket(r),
+      payments: r.payments || []
+    };
+  }
+
   async search(opts: {
     customerId?: string;
     type?: string;
@@ -201,7 +229,6 @@ export class PawnTicketRepository implements IPawnTicketRepository {
       transactionDate: r.transaction_date,
       maturityDate: r.maturity_date,
       defaultDate: r.default_date,
-      // ✅ Add missing required properties
       ratePlanId: r.rate_plan_id ?? null,
       paidThroughDate: r.paid_through_date ?? null,
       nextChargeDate: r.next_charge_date ?? null,

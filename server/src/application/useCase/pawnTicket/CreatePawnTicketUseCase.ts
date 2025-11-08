@@ -19,7 +19,7 @@ export class CreatePawnTicketUseCase {
     private readonly storeTransactionRepo: StoreTransactionRepository,
     private readonly gunlogRepo: GunlogRepository,
     private readonly createInventoryItemUseCase: CreateInventoryItemUseCase
-  ) {}
+  ) { }
 
   async execute(input: CreatePawnTicketInput & {
     clerkUserId?: string;
@@ -68,7 +68,7 @@ export class CreatePawnTicketUseCase {
           });
 
           itemIds.push(itemId);
-          
+
           // ✅ Use transaction-aware findById to ensure we can see the newly created item
           const item = await this.createInventoryItemUseCase.findByIdInTransaction(client, itemId);
           if (!item) {
@@ -85,10 +85,10 @@ export class CreatePawnTicketUseCase {
           if (!item) {
             throw new ValidationError(`Inventory item ${existingItemId} not found`);
           }
-          
+
           // Update status to pledged
           await this.createInventoryItemUseCase.update(existingItemId, { status: 'P' });
-          
+
           itemIds.push(existingItemId);
           createdItems.push(item);
         }
@@ -103,7 +103,7 @@ export class CreatePawnTicketUseCase {
       // Calculate dates
       const maturityDate = new Date(txnDate);
       maturityDate.setDate(maturityDate.getDate() + ratePlan.period_days);
-      
+
       const defaultDate = new Date(maturityDate);
       defaultDate.setDate(defaultDate.getDate() + ratePlan.grace_days);
 
@@ -146,6 +146,18 @@ export class CreatePawnTicketUseCase {
         controlNumber,
         tenders: input.disbursementTenders || [{ tenderTypeId: 1, amount: principal }],
         occurredAt: txnDate
+      });
+
+      // ✅ NEW: Record the initial disbursement as a pawn ticket payment (negative amount)
+      await this.pawnTicketRepo.createPawnTicketPayment(client, {
+        pawnTicketId,
+        storeTransactionId: disbursement.id,
+        paymentDate: txnDate,
+        interestPaid: 0,
+        principalPaid: -principal, // ✅ Negative to represent disbursement
+        feesPaid: 0,
+        clerkUserId: input.clerkUserId,
+        note: `Initial pawn disbursement - Control #${controlNumber}`
       });
 
       // 8. Create gunlog entries for firearms
