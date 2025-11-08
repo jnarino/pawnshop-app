@@ -68,6 +68,18 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
         </div>
 
         <div className="modal-content">
+          <div style={{ 
+            padding: '12px', 
+            backgroundColor: '#d4edda', 
+            border: '1px solid #c3e6cb', 
+            borderRadius: '4px', 
+            marginBottom: '16px',
+            fontSize: '14px'
+          }}>
+            📄 <strong>Pawn ticket form is printing...</strong><br />
+            Select label quantities below and click "Print Labels" to complete the transaction.
+          </div>
+
           <div className="labels-table-container">
             <table className="labels-table">
               <thead>
@@ -107,7 +119,7 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
               className="btn-primary"
               disabled={getTotalLabels() === 0}
             >
-              Print Labels
+              Print Labels & Complete
             </button>
             
             <button 
@@ -123,7 +135,7 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
               onClick={onCancel}
               className="btn-secondary"
             >
-              Cancel
+              Skip Labels
             </button>
           </div>
 

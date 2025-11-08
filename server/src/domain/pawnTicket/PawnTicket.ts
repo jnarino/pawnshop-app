@@ -57,14 +57,14 @@ export interface NewInventoryItemInput {
   brand?: string;
   model?: string;
   serialNumber?: string;
-  colorId?: string;                    // ✅ Changed from color to colorId (FK)
+  colorId?: string | null; // ✅ Allow null
   itemCondition?: string;
   quantity?: number;
-  priceAmount?: number;                // ✅ Renamed from amount
+  priceAmount?: number;
   resale?: number;
-  minResale?: number;                  // ✅ Added minResale
+  minResale?: number;
   itemReplace?: number;
-  ownerMark?: string;                  // ✅ Renamed from ownerTag
+  ownerMark?: string;
   itemDescription?: string;
   attributes?: Record<string, any>;
 }

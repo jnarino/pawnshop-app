@@ -19,19 +19,33 @@ export interface NewInventoryItemDto {
 }
 
 export interface CreatePawnTicketDto {
-    controlNumber?: string;
-    type: PawnTicketType;
+    type: 'PAWN' | 'PURCHASE';
     customerId: string;
+    controlNumber?: string;
 
-    // Either provide existing inventory items OR new ones
+    // For new inventory items
+    newInventoryItems?: Array<{
+        categoryId: string;
+        brand?: string;
+        model?: string;
+        serialNumber?: string;
+        colorId?: string | null; // ✅ Allow null
+        itemCondition?: string;
+        quantity?: number;
+        priceAmount?: number;
+        ownerMark?: string;
+        itemDescription?: string;
+        attributes?: Record<string, any>;
+    }>;
+
+    // For existing inventory items
     inventoryItemIds?: string[];
-    newInventoryItems?: NewInventoryItemDto[];
 
-    // Pawn-specific inputs
+    // ✅ PAWN-specific fields
     amountFinanced?: number;
     periodicRate?: number;
 
-    // Purchase-specific input
+    // ✅ PURCHASE-specific fields  
     purchaseTradeValue?: number;
 
     // Optional overrides

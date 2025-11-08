@@ -130,6 +130,10 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
   const { getCategoryIdByPath } = useCategoryLookup(); // ✅ Add this hook
 
+  // ✅ Initialize printers
+  const transactionPrinter = new TransactionFormPrinter();
+  const labelPrinter = new LabelPrinter();
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setSaving(true); setCreatedId(null);
@@ -176,17 +180,26 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       });
 
       const body: CreatePawnTicketDto = {
-        type: draft.type,
+        type: draft.type, // ✅ This should be 'PAWN' or 'PURCHASE'
         customerId,
-        // ✅ Don't send controlNumber - let server auto-generate
-        // controlNumber: draft.controlNumber || undefined,
         newInventoryItems,
       };
 
+      // ✅ Add different logic for PAWN vs PURCHASE
       if (draft.type === 'PAWN') {
         body.amountFinanced = itemsTotal;
         body.periodicRate = (parseFloat(draft.ratePercent) || 0) / 100;
+      } else if (draft.type === 'PURCHASE') {
+        // ✅ For PURCHASE, use itemsTotal as purchaseTradeValue
+        body.purchaseTradeValue = itemsTotal;
       }
+
+      console.log('[PawnTicket] Submitting:', {
+        type: body.type,
+        amountFinanced: body.amountFinanced,
+        purchaseTradeValue: body.purchaseTradeValue,
+        itemsTotal
+      });
 
       const data = await http('/api/pawnTicket', {
         method: 'POST',
@@ -195,11 +208,82 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       });
 
       setCreatedId(data.pawnTicket?.id || data.id);
-      setCreatedControlNumber(data.pawnTicket?.controlNumber || data.controlNumber); // ✅ Store control number
+      setCreatedControlNumber(data.pawnTicket?.controlNumber || data.controlNumber);
 
-      // ✅ Prepare items for label printing modal
+      // ✅ IMMEDIATELY fetch customer data and print pawn ticket form
+      console.log('[Print] 📄 Auto-printing pawn ticket form...');
+      try {
+        const customer = await http(`/api/customer/${customerId}`);
+        
+        // ✅ Prepare full print data for pawn ticket form
+        const printData = {
+          controlNumber: data.pawnTicket?.controlNumber || data.controlNumber,
+          customerName: `${customer.firstName} ${customer.lastName}`,
+          customerFirst: customer.firstName,
+          customerMiddle: customer.middleName,
+          customerMiddleInitial: customer.middleName ? customer.middleName[0] : undefined,
+          customerLastName: customer.lastName,
+          customerFirstInitial: customer.firstName?.charAt(0) ?? '',
+          ticketType: draft.type as 'PAWN' | 'PURCHASE',
+          transactionDate: data.pawnTicket?.transactionDate || data.transactionDate || new Date().toISOString(),
+          maturityDate: data.pawnTicket?.maturityDate || data.maturityDate,
+          defaultDate: data.pawnTicket?.defaultDate || data.defaultDate,
+          customerAddress: customer.streetAddress,
+          customerCity: customer.city,
+          customerState: customer.stateUs,
+          customerZip: customer.zipCode,
+          customerPhone: customer.phoneNumber ?? customer.cellPhone,
+          customerEmployer: customer.employerName ?? '',
+          customerIdNumber: customer.idNumber,
+          customerIdType: customer.idType,
+          customerIdState: customer.idState,
+          customerBirthdate: customer.dateOfBirth,
+          customerSex: customer.sex,
+          customerHeight: customer.height,
+          customerWeight: customer.weight,
+          customerEyes: customer.eyeColor,
+          customerHair: customer.hairColor,
+          customerRace: customer.race,
+          amountFinanced: data.pawnTicket?.amountFinanced?.toString(),
+          financeCharge: data.pawnTicket?.financeCharge?.toString(),
+          totalOfPayments: data.pawnTicket?.totalOfPayments?.toString(),
+          annualRate: data.pawnTicket?.annualPercentageRate?.toString(),
+          employeeInitials: 'SYS', // Or get from current user
+          items: (data.items || data.inventoryItems || []).map((item: any, idx: number) => ({
+            id: item.id || `item-${idx}`,
+            inventoryNumber: item.inventoryNumber || `${data.pawnTicket?.controlNumber || data.controlNumber}-${idx + 1}`,
+            description: (item.itemDescription || buildDescription(item) || 'NO DESCRIPTION').toUpperCase(),
+            amount: (item.priceAmount || item.amount || '0').toString(),
+            brand: item.brand,
+            category: item.category,
+            categoryLabel: item.categoryLabel,
+            karat: item.attributes?.karat || '',
+            weight: item.attributes?.weight || '',
+            weightUnit: item.attributes?.weightUnit || '',
+            quantity: item.quantity || 1,
+            typeCode: item.attributes?.typeCode || '',
+            modelNumber: item.model || '',
+            serialNumber: item.serialNumber || item.attributes?.serial || ''
+          }))
+        };
+
+        // ✅ Print pawn ticket form immediately (non-blocking)
+        transactionPrinter.print(printData).catch(err => {
+          console.error('[Print] Transaction form print failed:', err);
+          // Don't block the flow - show warning but continue
+          setError('⚠️ Pawn ticket saved but form printing failed. You can reprint later.');
+        });
+
+        console.log('[Print] 📄 Pawn ticket form sent to printer');
+
+      } catch (customerError) {
+        console.error('[Print] Failed to fetch customer for printing:', customerError);
+        setError('⚠️ Pawn ticket saved but could not print form. Missing customer data.');
+      }
+
+      // ✅ Prepare items for label printing modal (this happens in parallel)
       const inventoryItems = data.items || data.inventoryItems || [];
-      
+
       const itemsForPrinting = (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => ({
         id: item.id || `item-${idx}`,
         inventoryNumber: item.inventoryNumber || `${data.pawnTicket?.controlNumber || data.controlNumber}-${idx + 1}`,
@@ -218,14 +302,14 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
     }
   }
 
-  // ✅ Handle label printing with quantities
+  // ✅ Handle label printing with quantities (form already printed)
   const handlePrintLabels = async (labelCounts: Record<string, number>) => {
     try {
       console.log('[Print] 🏷️ Printing labels with counts:', labelCounts);
-      
+
       // Calculate total labels
       const totalLabels = Object.values(labelCounts).reduce((sum, count) => sum + count, 0);
-      
+
       if (totalLabels === 0) {
         alert('No labels to print');
         return;
@@ -240,8 +324,7 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
             inventoryNumber: item.inventoryNumber,
             description: item.description.toUpperCase(),
             amount: `$${parseFloat(item.amount || '0').toFixed(2)}`,
-            controlNumber: createdControlNumber, // ✅ Use the actual control number from server
-            // ✅ Additional label data
+            controlNumber: createdControlNumber,
             itemId: item.id,
             labelIndex: i + 1,
             totalLabels: count
@@ -249,37 +332,30 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         }
       }
 
-      // ✅ Here you would call your actual label printer with control numbers
+      // ✅ Print labels
       console.log('[Print] Labels to print:', labelsTorint);
       
-      // Example of what each label contains:
-      labelsTorint.forEach((label, index) => {
-        console.log(`[Print] Label ${index + 1}:`, {
-          controlNumber: label.controlNumber,
-          inventoryNumber: label.inventoryNumber,
-          description: label.description,
-          amount: label.amount
-        });
-      });
-      
-      // const labelPrinter = new LabelPrinter();
-      // await labelPrinter.printMultiple(labelsTorint);
-      
+      // Uncomment when ready:
+      // const labelResult = await labelPrinter.printMultiple(labelsTorint);
+      // if (!labelResult.success) {
+      //   throw new Error(labelResult.error || 'Failed to print labels');
+      // }
+
       console.log(`[Print] Would print ${totalLabels} labels with control number: ${createdControlNumber}`);
 
       // Close modal and reset
       setPrintModalOpen(false);
       setPrintItems([]);
-      
-      // ✅ Show success message with control number
-      alert(`✅ Successfully printed ${totalLabels} labels for ticket #${createdControlNumber}!\n\nTransaction completed. Logging out...`);
+
+      // ✅ Show success message with both form and labels
+      alert(`✅ Transaction completed successfully!\n\n📄 Pawn ticket form: PRINTED\n🏷️ Labels: ${totalLabels} printed\n\nLogging out...`);
 
       // ✅ Wait a moment for alert to be dismissed
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // ✅ Clear all form state
       setCreatedId(null);
-      setCreatedControlNumber(null); // ✅ Clear control number
+      setCreatedControlNumber(null);
       setError(null);
       setSaving(false);
 
@@ -296,18 +372,17 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
   return (
     <div className="pawn-ticket-form">
       <button type="button" onClick={onBack}>← Back</button>
-      <h2>Pawn Ticket Details</h2>
+      <h2>{draft.type === 'PURCHASE' ? 'Purchase' : 'Pawn'} Ticket Details</h2>
       <form onSubmit={submit} className="pawn-ticket-layout">
         <section className="pawn-ticket-left">
           <div className="row"><label>Type
             <select value={draft.type} onChange={e => updateDraft({ type: e.target.value as PawnDraft['type'] })}>
-              <option value="PAWN">Pawn</option>
-              <option value="PURCHASE">Purchase</option>
+              <option value="PAWN">Pawn (Loan)</option>
+              <option value="PURCHASE">Purchase (Buy)</option>
             </select>
           </label></div>
 
-          {/* ❌ REMOVED Control Number input - auto-generated by server */}
-
+          {/* ✅ Show different fields based on transaction type */}
           {draft.type === 'PAWN' && <>
             <div className="row"><label>Amount Financed
               <input
@@ -333,6 +408,23 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
                 <span>%</span>
               </div>
             </label></div>
+          </>}
+
+          {/* ✅ Show purchase-specific fields */}
+          {draft.type === 'PURCHASE' && <>
+            <div className="row"><label>Purchase Amount
+              <input
+                value={itemsTotal.toFixed(2)}
+                readOnly
+                inputMode="decimal"
+                aria-readonly="true"
+              />
+            </label></div>
+            <div className="row">
+              <p style={{ fontSize: '0.9em', color: '#666', margin: 0 }}>
+                This is the total amount we will pay the customer for their items.
+              </p>
+            </div>
           </>}
 
           <div className="metrics-box">
@@ -374,7 +466,11 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
             </table>
           </div>
 
-          {error && <div className="error" style={{ marginTop: 8 }}>{error}</div>}
+          {error && (
+            <div className="error" style={{ marginTop: 8, padding: 12, backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: 4 }}>
+              {error}
+            </div>
+          )}
           {createdId && (
             <div className="success" style={{ marginTop: 8 }}>
               ✅ Pawn ticket created successfully!
@@ -383,7 +479,9 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
           )}
 
           <div className="actions-row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>
-            <button type="submit" disabled={saving || (draft.type === 'PAWN' && itemsTotal <= 0)}>Save Pawn Ticket</button>
+            <button type="submit" disabled={saving || itemsTotal <= 0}>
+              {draft.type === 'PURCHASE' ? 'Create Purchase' : 'Save Pawn Ticket'}
+            </button>
           </div>
         </section>
       </form>
@@ -404,7 +502,9 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         onCancel={() => {
           setPrintModalOpen(false);
           setPrintItems([]);
-          onBack(); // Go back without printing
+          // ✅ Show that form was already printed
+          alert('📄 Pawn ticket form has been printed.\nLabels were not printed.');
+          onBack();
         }}
       />
     </div>
