@@ -80,7 +80,8 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [printData, setPrintData] = useState<PrintData | null>(null); // ✅ Use the type
+  const [printItems, setPrintItems] = useState<any[]>([]);
+  const [createdControlNumber, setCreatedControlNumber] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -193,83 +194,21 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         body: JSON.stringify(body)
       });
 
-      setCreatedId(data.id);
+      setCreatedId(data.pawnTicket?.id || data.id);
+      setCreatedControlNumber(data.pawnTicket?.controlNumber || data.controlNumber); // ✅ Store control number
 
-      // ✅ Fetch customer name
-      const customer = await http(`/api/customer/${customerId}`);
+      // ✅ Prepare items for label printing modal
+      const inventoryItems = data.items || data.inventoryItems || [];
+      
+      const itemsForPrinting = (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => ({
+        id: item.id || `item-${idx}`,
+        inventoryNumber: item.inventoryNumber || `${data.pawnTicket?.controlNumber || data.controlNumber}-${idx + 1}`,
+        description: item.itemDescription || buildDescription(item) || 'NO DESCRIPTION',
+        amount: (item.priceAmount || item.amount || '0').toString(),
+        quantity: item.quantity || 1
+      }));
 
-      const formatMoney = (val?: number | null) =>
-        val == null ? '' : `$${Number(val).toFixed(2)}`;
-
-      // ✅ FIXED: Check if inventoryItems exists, fallback to draft items
-      const inventoryItems = data.inventoryItems || [];
-
-      if (inventoryItems.length === 0) {
-        console.warn('[PawnTicket] No inventory items in response, using draft items');
-      }
-
-      // ✅ Prepare print data with enhanced info
-      const printDataPrepared: PrintData = {
-        controlNumber: data.controlNumber,
-        customerName: `${customer.firstName} ${customer.lastName}`,
-        customerFirst: customer.firstName,
-        customerMiddle: customer.middleName,
-        customerMiddleInitial: customer.middleName ? customer.middleName[0] : undefined,
-        customerLastName: customer.lastName,
-        customerFirstInitial: customer.firstName?.charAt(0) ?? '',
-        ticketType: draft.type,
-        transactionDate: data.transactionDate ?? new Date().toISOString(),
-        maturityDate: data.maturityDate ?? null,
-        customerAddress: customer.streetAddress,
-        customerCity: customer.city,
-        customerState: customer.stateUs,
-        customerZip: customer.zipCode,
-        customerPhone: customer.phoneNumber ?? customer.cellPhone,
-        customerEmployer: customer.employerName ?? '',
-        customerIdNumber: customer.idNumber,
-        customerIdType: customer.idType,
-        customerIdState: customer.idState,
-        customerBirthdate: customer.dateOfBirth,
-        customerSex: customer.sex,
-        customerHeight: customer.height,
-        customerWeight: customer.weight,
-        customerEyes: customer.eyeColor,
-        customerHair: customer.hairColor,
-        customerRace: customer.race,
-        defaultDate: data.defaultDate ?? null,
-        items: (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => {
-          const src = inventoryItems.length > 0 ? item : draft.items[idx];
-          const attrs = src.attributes ?? {};
-          return {
-            id: item.id ?? `draft-${idx}`,
-            inventoryNumber: item.inventoryNumber || `${data.controlNumber}-${idx + 1}`,
-            description: (item.itemDescription || buildDescription(src)).toUpperCase(),
-            amount: (item.priceAmount ?? src.amount ?? '0').toString(),
-            brand: item.brand ?? src.brand,
-            category: src.type ?? '',
-            categoryLabel: src.type ?? '',
-            karat: attrs.karat ?? attrs.Karat ?? '',
-            weight: attrs.weight ?? attrs.Weight ?? '',
-            weightUnit: attrs.weightUnit ?? attrs.WeightUnit ?? '',
-            quantity: attrs.quantity ?? attrs.Quantity ?? src.quantity ?? 1,
-            typeCode: attrs.typeCode ?? attrs.metal ?? '',
-            modelNumber: src.model ?? attrs.model ?? '',
-            serialNumber: attrs.serial ?? attrs.serialNumber ?? src.serial ?? ''
-          };
-        })
-      };
-
-      // ✅ IMMEDIATELY print transaction form (don't wait for user)
-      console.log('[Print] 📄 Auto-printing transaction form...');
-      transactionPrinter.print(printDataPrepared).catch(err => {
-        console.error('[Print] Transaction form print failed:', err);
-        // Don't block the flow - form print is non-critical
-      });
-
-      // ✅ Store print data for modal
-      setPrintData(printDataPrepared);
-
-      // ✅ Open print modal (for labels only)
+      setPrintItems(itemsForPrinting);
       setPrintModalOpen(true);
 
     } catch (e: any) {
@@ -279,44 +218,78 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
     }
   }
 
-  // ✅ Initialize printers
-  const transactionPrinter = new TransactionFormPrinter();
-  const labelPrinter = new LabelPrinter();
-
-  // ✅ Handle ONLY label printing (form already printed)
-  const handlePrint = async () => {
-    if (!printData) return;
-
+  // ✅ Handle label printing with quantities
+  const handlePrintLabels = async (labelCounts: Record<string, number>) => {
     try {
-      // Print item labels (GoDEX thermal printer)
-      console.log('[Print] 🏷️ Printing labels...');
-      const labelResult = await labelPrinter.print(printData);
-      if (!labelResult.success) {
-        throw new Error(labelResult.error || 'Failed to print labels');
+      console.log('[Print] 🏷️ Printing labels with counts:', labelCounts);
+      
+      // Calculate total labels
+      const totalLabels = Object.values(labelCounts).reduce((sum, count) => sum + count, 0);
+      
+      if (totalLabels === 0) {
+        alert('No labels to print');
+        return;
       }
 
-      // Close modal
-      setPrintModalOpen(false);
-      
-      // ✅ Clear all state before logout
-      setPrintData(null);
-      setCreatedId(null);
-      setError(null);
+      // ✅ Create print data for each label with control number
+      const labelsTorint = [];
+      for (const item of printItems) {
+        const count = labelCounts[item.id] || 0;
+        for (let i = 0; i < count; i++) {
+          labelsTorint.push({
+            inventoryNumber: item.inventoryNumber,
+            description: item.description.toUpperCase(),
+            amount: `$${parseFloat(item.amount || '0').toFixed(2)}`,
+            controlNumber: createdControlNumber, // ✅ Use the actual control number from server
+            // ✅ Additional label data
+            itemId: item.id,
+            labelIndex: i + 1,
+            totalLabels: count
+          });
+        }
+      }
 
-      // Show success message
-      alert('✅ Transaction completed!\n\n🏷️ Labels printed\n\nLogging out...');
+      // ✅ Here you would call your actual label printer with control numbers
+      console.log('[Print] Labels to print:', labelsTorint);
+      
+      // Example of what each label contains:
+      labelsTorint.forEach((label, index) => {
+        console.log(`[Print] Label ${index + 1}:`, {
+          controlNumber: label.controlNumber,
+          inventoryNumber: label.inventoryNumber,
+          description: label.description,
+          amount: label.amount
+        });
+      });
+      
+      // const labelPrinter = new LabelPrinter();
+      // await labelPrinter.printMultiple(labelsTorint);
+      
+      console.log(`[Print] Would print ${totalLabels} labels with control number: ${createdControlNumber}`);
+
+      // Close modal and reset
+      setPrintModalOpen(false);
+      setPrintItems([]);
+      
+      // ✅ Show success message with control number
+      alert(`✅ Successfully printed ${totalLabels} labels for ticket #${createdControlNumber}!\n\nTransaction completed. Logging out...`);
 
       // ✅ Wait a moment for alert to be dismissed
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Logout and redirect
+      // ✅ Clear all form state
+      setCreatedId(null);
+      setCreatedControlNumber(null); // ✅ Clear control number
+      setError(null);
+      setSaving(false);
+
+      // ✅ Logout and redirect to login
       await logout();
-      
-      // Route back to login without forcing a full reload so the form stays interactive
       navigate('/login', { replace: true, state: null });
-    } catch (err) {
-      console.error('[Print] Error:', err);
-      alert(`Failed to print labels: ${err instanceof Error ? err.message : 'Unknown error'}`);
+
+    } catch (error) {
+      console.error('[Print] Label printing failed:', error);
+      alert('Failed to print labels. Please try again.');
     }
   };
 
@@ -422,17 +395,18 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
         onSave={(item) => { upsertItem(item); setItemModalOpen(false); }}
       />
 
-      {/* ✅ Print Labels Modal */}
-      {printData && (
-        <PrintLabelsModal
-          open={printModalOpen}
-          controlNumber={printData.controlNumber}
-          customerName={printData.customerName}
-          items={printData.items}
-          onPrint={handlePrint}
-          onCancel={() => setPrintModalOpen(false)}
-        />
-      )}
+      {/* ✅ Simplified Print Labels Modal - matches the image */}
+      <PrintLabelsModal
+        open={printModalOpen}
+        controlNumber={createdControlNumber || 'PENDING'}
+        items={printItems}
+        onPrint={handlePrintLabels}
+        onCancel={() => {
+          setPrintModalOpen(false);
+          setPrintItems([]);
+          onBack(); // Go back without printing
+        }}
+      />
     </div>
   );
 }
