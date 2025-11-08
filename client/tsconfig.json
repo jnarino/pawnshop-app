@@ -12,14 +12,20 @@
     "noEmit": true,
     "strict": true,
     "baseUrl": "./src",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@/*": ["*"],
+      "app/*": ["app/*"],
+      "core/*": ["app/core/*"],
+      "feature/*": ["app/feature/*"],
+      "shared/*": ["app/shared/*"]
+    }
   },
   "include": ["./src","./electron"],
   "exclude": ["dist", "node_modules"],
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs",
-      "baseUrl": "./src",
-    }
+      }
   }
 }

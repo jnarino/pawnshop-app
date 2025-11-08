@@ -1,0 +1,135 @@
+name: CI (dev)
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+concurrency:
+  group: ci-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server • typecheck • migrate • (test) • sonar
+    runs-on: ubuntu-latest
+    environment: development
+    services:
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: pawnexpress_ci
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck / build
+        run: npm run build
+
+      - name: Prepare DB env
+        run: echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/pawnexpress_ci" >> $GITHUB_ENV
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          node -e "console.log('Compiling migrations runner…')"
+          npm run build
+          node dist/infrastructure/db/migrations/runMigrations.js
+
+      # Uncomment when you add tests & coverage
+      # - name: Test
+      #   run: npm test -- --coverage
+
+      - name: SonarCloud Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_SERVER }}
+            -Dsonar.projectName=pawnexpress-server
+            -Dsonar.sources=server/src
+            -Dsonar.exclusions=server/dist/**,server/node_modules/**
+            -Dsonar.typescript.tsconfigPath=server/tsconfig.json
+            # -Dsonar.javascript.lcov.reportPaths=server/coverage/lcov.info
+
+  client:
+    name: Client • typecheck • build • sonar
+    runs-on: ubuntu-latest
+    environment: development
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (main + renderer)
+        run: |
+          npm run build:main
+          npm run build:renderer
+
+      - name: Upload renderer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-dist
+          path: client/dist/**
+
+      - name: Upload electron main bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-main-dist
+          path: client/dist-electron/**
+
+      - name: SonarCloud Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_CLIENT }}
+            -Dsonar.projectName=pawnexpress-client
+            -Dsonar.sources=client/src,electron
+            -Dsonar.exclusions=client/dist/**,client/dist-electron/**,client/node_modules/**
+            -Dsonar.typescript.tsconfigPath=client/tsconfig.json
+            # -Dsonar.javascript.lcov.reportPaths=client/coverage/lcov.info

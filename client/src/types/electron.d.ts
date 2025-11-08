@@ -1,0 +1,21 @@
+export {};
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      // Navigation
+      onNavigate?: (cb: (route: string) => void) => () => void;
+      authChanged?: (authed: boolean) => void;
+      refreshMenu?: () => void;
+      
+      // ✅ Printing
+      printLabels?: (items: Array<{ 
+        inventoryNumber: string; 
+        description: string; 
+        amount: string 
+      }>) => Promise<{ success: boolean; count?: number; error?: string }>;
+      
+      printDocument?: (html: string) => Promise<{ success: boolean; error?: string }>;
+    };
+  }
+}

@@ -1,2 +1,1 @@
-DELETE FROM customers
-WHERE id = $1;
+DELETE FROM customer WHERE id = $1;

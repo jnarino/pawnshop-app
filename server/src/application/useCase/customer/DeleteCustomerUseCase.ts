@@ -2,7 +2,5 @@ import { ICustomerRepository } from '../../../domain/customer/ICustomerRepositor
 
 export class DeleteCustomerUseCase {
     constructor(private repo: ICustomerRepository) { }
-    async execute(id: string): Promise<void> {
-        return this.repo.delete(id);
-    }
+    async execute(id: string): Promise<boolean> { return this.repo.delete(id); }
 }

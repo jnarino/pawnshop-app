@@ -1,56 +1,114 @@
 import { Request, Response, NextFunction } from 'express';
+import { CreatePawnTicketUseCase } from '../../application/useCase/pawnTicket/CreatePawnTicketUseCase';
+import { GetPawnTicketUseCase } from '../../application/useCase/pawnTicket/GetPawnTicketUseCase';
+import { UpdatePawnTicketDatesUseCase } from '../../application/useCase/pawnTicket/UpdatePawnTicketDatesUseCase';
+import { DeletePawnTicketUseCase } from '../../application/useCase/pawnTicket/DeletePawnTicketUseCase';
+import { SearchPawnTicketsUseCase } from '../../application/useCase/pawnTicket/SearchPawnTicketsUseCase';
+import { FindAllPawnTicketsUseCase } from '../../application/useCase/pawnTicket/FindAllPawnTicketsUseCase';
+import { NotFoundError } from '../../application/errors';
+import { validateJwt } from '../../infrastructure/http/middleware/auth';
+import router from '../../infrastructure/http/routes/categoryRoutes';
+import { logger } from '../../infrastructure/log/logger';
+import { PawnTicketRepository } from '../../infrastructure/persistence/PawnTicketRepository';
 
-// GET /api/pawnTicket/
-export async function getAllPawnTickets(req: Request, res: Response, next: NextFunction) {
-    try {
-        // const tickets = await pawnService.listPawnTickets();
-        //  res.json(tickets);
-    } catch (err) {
-        next(err);
-    }
+export interface PawnTicketControllerDeps {
+    findAll: FindAllPawnTicketsUseCase;
+    create: CreatePawnTicketUseCase;
+    get: GetPawnTicketUseCase;
+    updateDates: UpdatePawnTicketDatesUseCase;
+    delete: DeletePawnTicketUseCase;
+    search: SearchPawnTicketsUseCase;
 }
 
-// GET /api/pawnTicket/:id
-export async function getPawnTicketById(req: Request, res: Response, next: NextFunction) {
-    try {
-        const id = req.params.id;
-        //  const ticket = await pawnService.getPawnTicketById(id);
-        //  res.json(ticket);
-    } catch (err) {
-        next(err);
-    }
+export function makePawnTicketController(deps: PawnTicketControllerDeps) {
+    return {
+        findAll: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const { limit, offset, customerId, pawnStatus } = req.query as any;
+                const data = await deps.findAll.execute(
+                    limit ? Number(limit) : undefined,
+                    offset ? Number(offset) : undefined,
+                    { customerId, pawnStatus }
+                );
+                res.json(data);
+            } catch (e) { next(e); }
+        },
+
+        create: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const result = await deps.create.execute(req.body);
+                res.status(201).json(result);
+            } catch (e) { next(e); }
+        },
+
+        search: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const results = await deps.search.execute({
+                    customerId: req.query.customerId as string | undefined,
+                    type: req.query.type as any,
+                    startDate: req.query.startDate as string | undefined,
+                    endDate: req.query.endDate as string | undefined,
+                    limit: req.query.limit ? Number(req.query.limit) : undefined,
+                    offset: req.query.offset ? Number(req.query.offset) : undefined,
+                });
+                res.json(results);
+            } catch (e) { next(e); }
+        },
+
+        get: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const ticket = await deps.get.execute(req.params.id);
+                if (!ticket) throw new NotFoundError('Pawn ticket not found');
+                res.json(ticket);
+            } catch (e) { next(e); }
+        },
+
+        updateDates: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const ok = await deps.updateDates.execute(req.params.id, req.body.maturityDate, req.body.defaultDate);
+                if (!ok) throw new NotFoundError('Pawn ticket not found');
+                res.sendStatus(204);
+            } catch (e) { next(e); }
+        },
+
+        delete: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const ok = await deps.delete.execute(req.params.id);
+                if (!ok) throw new NotFoundError('Pawn ticket not found');
+                res.sendStatus(204);
+            } catch (e) { next(e); }
+        },
+
+        // ✅ Add remove as an alias for delete (for route compatibility)
+        remove: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const ok = await deps.delete.execute(req.params.id);
+                if (!ok) throw new NotFoundError('Pawn ticket not found');
+                res.sendStatus(204);
+            } catch (e) { next(e); }
+        },
+    };
 }
 
-// POST /api/pawnTicket/
-export async function createPawnTicket(req: Request, res: Response, next: NextFunction) {
-    try {
-        const dto = req.body;
-        // const newId = await pawnCommands.createPawnTicket(dto);
-        //  res.status(201).json({ id: newId });
-    } catch (err) {
-        next(err);
-    }
-}
+export type PawnTicketController = ReturnType<typeof makePawnTicketController>;
 
-// PUT /api/pawnTicket/:id
-export async function updatePawnTicket(req: Request, res: Response, next: NextFunction) {
+// GET /api/pawnTicket/:controlNumber/payments - Get pawn ticket with payment history
+router.get('/:controlNumber/payments', validateJwt, async (req, res) => {
     try {
-        const id = req.params.id;
-        const updates = req.body;
-        //  await pawnCommands.updatePawnTicket(id, updates);
-        res.sendStatus(204);
-    } catch (err) {
-        next(err);
-    }
-}
+        const { controlNumber } = req.params;
+        const pawnTicketRepo = new PawnTicketRepository();
+        const ticket = await pawnTicketRepo.findByControlNumberWithPayments(controlNumber);
 
-// DELETE /api/pawnTicket/:id
-export async function deletePawnTicket(req: Request, res: Response, next: NextFunction) {
-    try {
-        const id = req.params.id;
-        //  await pawnCommands.deletePawnTicket(id);
-        res.sendStatus(204);
-    } catch (err) {
-        next(err);
+        if (!ticket) {
+            return res.status(404).json({ error: 'not_found', message: 'Pawn ticket not found' });
+        }
+
+        res.json(ticket);
+    } catch (error) {
+        logger.error('pawn_ticket_get_payments_error', {
+            controlNumber: req.params.controlNumber,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        res.status(500).json({ error: 'internal_error', message: 'Failed to get pawn ticket payments' });
     }
-}
+});

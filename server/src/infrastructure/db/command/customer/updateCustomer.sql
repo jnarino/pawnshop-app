@@ -1,4 +1,5 @@
-UPDATE customers
+-- Aligned with migration table 'customer' and column names
+UPDATE customer
 SET
   first_name      = $1,
   middle_name     = $2,
@@ -10,12 +11,19 @@ SET
   height          = $8,
   street_address  = $9,
   city            = $10,
-  us_state        = $11,
-  zipcode         = $12,
+  state_us        = $11,
+  zip_code        = $12,
   id_number       = $13,
-  issue_date      = $14,
-  expiration_date = $15,
-  issuing_state   = $16,
-  phone           = $17,
-  email           = $18
-WHERE id = $19;
+  ss_number       = $14,
+  id_expiration   = $15,
+  id_issue_date   = $16,
+  issuing_state   = $17,
+  phone_number    = $18,
+  email           = $19,
+  hair_color      = $20,
+  weight          = $21,
+  race            = $22,
+  country         = $23,
+  updated_at      = now()
+WHERE id = $24
+RETURNING id;
