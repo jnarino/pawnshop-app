@@ -45,5 +45,5 @@ SELECT
 FROM pawn_ticket pt
 LEFT JOIN pawn_ticket_payment ptp ON ptp.pawn_ticket_id = pt.id
 LEFT JOIN pawn_ticket_item pti ON pti.pawn_ticket_id = pt.id
-WHERE pt.control_number = $1 OR pt.id = $1
+WHERE pt.control_number = $1
 GROUP BY pt.id;

@@ -80,122 +80,67 @@ export class PawnTicketRepository implements IPawnTicketRepository {
   }
 
   async update(id: string, dto: Partial<PawnTicket>): Promise<boolean> {
-    const sets: string[] = [];
-    const params: any[] = [];
-    let i = 1;
-
-    if (typeof dto.pawnStatus !== 'undefined') {
-      sets.push(`pawn_status = $${i++}`);
-      params.push(dto.pawnStatus);
-    }
-    if (typeof dto.maturityDate !== 'undefined') {
-      sets.push(`maturity_date = $${i++}`);
-      params.push(dto.maturityDate);
-    }
-    if (typeof dto.defaultDate !== 'undefined') {
-      sets.push(`default_date = $${i++}`);
-      params.push(dto.defaultDate);
-    }
-
-    if (sets.length === 0) return false;
-
-    sets.push(`updated_at = NOW()`);
-    params.push(id);
-    const finalSql = `UPDATE pawn_ticket SET ${sets.join(', ')} WHERE id = $${i}`;
-    const res = await pool.query(finalSql, params);
+    const sql = getSQL('command', 'pawnTicket', 'updatePawnTicket');
+    const params = [id, dto.pawnStatus, dto.maturityDate, dto.defaultDate];
+    const res = await pool.query(sql, params);
     return res.rowCount === 1;
   }
 
-  async findAll(
-    limit?: number,
-    offset?: number,
-    filters?: { customerId?: string; pawnStatus?: PawnTicket['pawnStatus'] }
-  ): Promise<PawnTicket[]> {
-    const baseRaw = getSQL('query', 'pawnTicket', 'findAllPawnTickets'); // may end with semicolon
-    const base = baseRaw.replace(/;\s*$/, '');
-    const where: string[] = [];
-    const params: any[] = [];
+  async findAll(limit = 50, offset = 0, filters?: {
+    customerId?: string;
+    pawnStatus?: string;
+  }): Promise<any[]> {
+    const sql = getSQL('query', 'pawnTicket', 'findAllPawnTickets');
+    const params = [
+      filters?.customerId ?? null,
+      filters?.pawnStatus ?? null,
+      limit,
+      offset
+    ];
 
-    if (filters?.customerId) {
-      params.push(filters.customerId);
-      where.push(`customer_id = $${params.length}`);
-    }
-    if (filters?.pawnStatus) {
-      params.push(filters.pawnStatus);
-      where.push(`pawn_status = $${params.length}`);
-    }
-
-    let sql = base;
-    if (where.length) {
-      // Insert WHERE before ORDER BY (base query ends with ORDER BY transaction_date DESC)
-      const idx = sql.toUpperCase().lastIndexOf('ORDER BY');
-      if (idx !== -1) {
-        const before = sql.substring(0, idx).trimEnd();
-        const order = sql.substring(idx);
-        sql = `${before} WHERE ${where.join(' AND ')}\n${order}`;
-      } else {
-        sql = `${sql} WHERE ${where.join(' AND ')}`;
-      }
-    }
-
-    // Pagination
-    if (typeof limit === 'number') {
-      params.push(limit);
-      sql += `\nLIMIT $${params.length}`;
-    }
-    if (typeof offset === 'number') {
-      params.push(offset);
-      sql += `\nOFFSET $${params.length}`;
-    }
-
-    const { rows } = await pool.query(sql, params);
-    return rows.map(r => this.mapRowToPawnTicket(r));
+    const result = await pool.query(sql, params);
+    return result.rows;
   }
 
-  async findById(id: string): Promise<PawnTicket | null> {
-    const sql = getSQL('query', 'pawnTicket', 'findPawnTicketWithItems');
-    const { rows } = await pool.query(sql, [id]);
-    const r = rows[0];
-    if (!r) return null;
-    return this.mapRowToPawnTicket(r);
+  async findById(id: string): Promise<any | null> {
+    const sql = getSQL('query', 'pawnTicket', 'findPawnTicketById');
+    const result = await pool.query(sql, [id]);
+    return result.rows[0] || null;
   }
 
   async findByControlNumberWithPayments(controlNumber: string): Promise<any | null> {
     const sql = getSQL('query', 'pawnTicket', 'findPawnTicketWithPayments');
-    const { rows } = await pool.query(sql, [controlNumber]);
-    const r = rows[0];
-    if (!r) return null;
-
-    return {
-      ...this.mapRowToPawnTicket(r),
-      payments: r.payments || []
-    };
+    const result = await pool.query(sql, [controlNumber]);
+    return result.rows[0] || null;
   }
 
-  async search(opts: {
+  async search(filters: {
+    controlNumber?: string;
     customerId?: string;
+    status?: string;
     type?: string;
-    startDate?: string;
-    endDate?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<PawnTicket[]> {
+    dateFrom?: string;
+    dateTo?: string;
+  }, limit = 50, offset = 0): Promise<any[]> {
     const sql = getSQL('query', 'pawnTicket', 'searchPawnTickets');
     const params = [
-      opts.customerId ?? null,
-      opts.type ?? null,
-      opts.startDate ?? null,
-      opts.endDate ?? null,
-      opts.limit ?? 50,
-      opts.offset ?? 0,
+      filters.controlNumber ?? null,
+      filters.customerId ?? null,
+      filters.status ?? null,
+      filters.type ?? null,
+      filters.dateFrom ?? null,
+      filters.dateTo ?? null,
+      limit,
+      offset
     ];
-    const { rows } = await pool.query(sql, params);
-    return rows.map(r => this.mapRowToPawnTicket(r, false));
+
+    const result = await pool.query(sql, params);
+    return result.rows;
   }
 
   async updateDates(id: string, maturityDate?: string, defaultDate?: string): Promise<boolean> {
-    const sql = getSQL('command', 'pawnTicket', 'updatePawnTicket');
-    const params = [id, null, maturityDate, defaultDate];
+    const sql = getSQL('command', 'pawnTicket', 'updatePawnTicketDates');
+    const params = [id, maturityDate ?? null, defaultDate ?? null];
     const res = await pool.query(sql, params);
     return res.rowCount === 1;
   }
@@ -210,36 +155,5 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     const sql = getSQL('query', 'pawnTicket', 'getNextControlNumber');
     const { rows } = await pool.query<{ control_number: string }>(sql);
     return rows[0].control_number;
-  }
-
-  private mapRowToPawnTicket(r: any, includeItems = true): PawnTicket {
-    return {
-      id: r.id,
-      controlNumber: r.control_number ?? undefined,
-      type: r.transaction_type,
-      customerId: r.customer_id,
-      pawnStatus: r.pawn_status,
-      inventoryItemIds: includeItems ? (r.inventory_item_ids || []) : [],
-      amountFinanced: r.amount_financed !== null ? Number(r.amount_financed) : null,
-      financeCharge: r.finance_charge !== null ? Number(r.finance_charge) : null,
-      periodicRate: r.periodic_rate !== null ? Number(r.periodic_rate) : null,
-      totalOfPayments: r.total_of_payments !== null ? Number(r.total_of_payments) : null,
-      annualPercentageRate: r.apr !== null ? Number(r.apr) : null,
-      purchaseTradeValue: r.purchase_trade_value !== null ? Number(r.purchase_trade_value) : null,
-      transactionDate: r.transaction_date,
-      maturityDate: r.maturity_date,
-      defaultDate: r.default_date,
-      ratePlanId: r.rate_plan_id ?? null,
-      paidThroughDate: r.paid_through_date ?? null,
-      nextChargeDate: r.next_charge_date ?? null,
-      interestCredit: r.interest_credit ? Number(r.interest_credit) : 0,
-      lastPaymentAt: r.last_payment_at ?? null,
-      lastActivityAt: r.last_activity_at ?? null,
-      defaultMarkedAt: r.default_marked_at ?? null,
-      defaultMarkedBy: r.default_marked_by ?? null,
-      defaultReason: r.default_reason ?? null,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    };
   }
 }

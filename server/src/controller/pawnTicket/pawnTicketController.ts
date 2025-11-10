@@ -87,6 +87,29 @@ export function makePawnTicketController(deps: PawnTicketControllerDeps) {
                 res.sendStatus(204);
             } catch (e) { next(e); }
         },
+
+        // ✅ Add method to get pawn ticket with payments
+        findByControlNumberWithPayments: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const { controlNumber } = req.params;
+                
+                // Use the repository method we just added
+                const pawnTicketRepo = new (require('../../infrastructure/persistence/PawnTicketRepository').PawnTicketRepository)();
+                const ticket = await pawnTicketRepo.findByControlNumberWithPayments(controlNumber);
+                
+                if (!ticket) {
+                    return res.status(404).json({ error: 'not_found', message: 'Pawn ticket not found' });
+                }
+                
+                res.json(ticket);
+            } catch (e) { 
+                logger.error('pawn_ticket_get_payments_error', {
+                    controlNumber: req.params.controlNumber,
+                    error: e instanceof Error ? e.message : String(e),
+                });
+                next(e); 
+            }
+        }
     };
 }
 

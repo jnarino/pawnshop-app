@@ -1,0 +1,125 @@
+.payment-flow-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.payment-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.payment-tabs {
+  display: flex;
+  background: #f5f5f5;
+  border-radius: 4px;
+  padding: 4px;
+  gap: 4px;
+  align-items: center;
+}
+
+.payment-tab {
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.payment-tab:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.payment-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payment-tab.is-active {
+  background: #2196f3;
+  color: white;
+}
+
+.payment-cancel-btn {
+  background: #c62828;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.payment-cancel-btn:hover {
+  background: #b71c1c;
+}
+
+.payment-panel {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  min-height: 600px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #eee;
+}
+
+.panel-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.pawns-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pawns-table th,
+.pawns-table td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+.pawns-table th {
+  background: #e0e0e0;
+  font-weight: bold;
+}
+
+.pawns-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.pawns-table tr:hover {
+  background: #f0f8ff;
+}
+
+.hint {
+  font-style: italic;
+  color: #666;
+  margin-top: 16px;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #666;
+}
+
+.placeholder h2 {
+  margin-bottom: 8px;
+}
