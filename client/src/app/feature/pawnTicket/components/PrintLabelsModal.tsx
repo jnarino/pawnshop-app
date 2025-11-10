@@ -1,110 +1,147 @@
 import React, { useState } from 'react';
 import './PrintLabelsModal.css';
 
-interface InventoryItem {
+interface PrintItem {
   id: string;
   inventoryNumber: string;
   description: string;
   amount: string;
+  quantity?: number;
 }
 
 interface Props {
   open: boolean;
   controlNumber: string;
-  customerName: string;
-  items: InventoryItem[];
-  onPrint: () => Promise<void>;
+  items: PrintItem[];
+  onPrint: (labelCounts: Record<string, number>) => void;
   onCancel: () => void;
 }
 
-export function PrintLabelsModal({ open, controlNumber, customerName, items, onPrint, onCancel }: Props) {
-  const [printing, setPrinting] = useState(false);
+export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel }: Props) {
+  // Initialize label counts - default 1 label per item
+  const [labelCounts, setLabelCounts] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    items.forEach(item => {
+      initial[item.id] = 1;
+    });
+    return initial;
+  });
+
+  const updateLabelCount = (itemId: string, count: number) => {
+    setLabelCounts(prev => ({
+      ...prev,
+      [itemId]: Math.max(0, Math.min(99, count)) // Limit between 0-99
+    }));
+  };
+
+  const getTotalLabels = () => {
+    return Object.values(labelCounts).reduce((sum, count) => sum + count, 0);
+  };
+
+  const handlePrint = () => {
+    onPrint(labelCounts);
+  };
+
+  const handleReset = () => {
+    const reset: Record<string, number> = {};
+    items.forEach(item => {
+      reset[item.id] = 1;
+    });
+    setLabelCounts(reset);
+  };
 
   if (!open) return null;
 
-  const handlePrint = async () => {
-    setPrinting(true);
-    try {
-      await onPrint();
-    } finally {
-      setPrinting(false);
-    }
-  };
-
   return (
-    <div className="print-modal-overlay">
-      <div className="print-modal">
-        <div className="print-modal-header">
-          <h3>🏷️ Print Item Labels</h3>
-          <button type="button" className="close-btn" onClick={onCancel} disabled={printing}>×</button>
-        </div>
-
-        <div className="print-modal-body">
-          <div className="print-section">
-            <h4>Transaction Summary</h4>
-            <div className="summary-box">
-              <div className="summary-row">
-                <span>Control Number:</span>
-                <strong>{controlNumber}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Customer:</span>
-                <strong>{customerName}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Items:</span>
-                <strong>{items.length}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="print-section">
-            <h4>Labels to Print</h4>
-            <div className="items-list">
-              {items.map((item, idx) => (
-                <div key={item.id} className="label-preview">
-                  <div className="label-number">#{idx + 1}</div>
-                  <div className="label-content">
-                    <div className="label-barcode">{item.inventoryNumber}</div>
-                    <div className="label-desc">{item.description}</div>
-                    <div className="label-amount">${item.amount}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="print-info">
-            <p>
-              ℹ️ <strong>Transaction form already printed!</strong>
-            </p>
-            <ul>
-              <li>✅ Florida Pawnbroker Transaction Form printed automatically</li>
-              <li>🏷️ {items.length} item label{items.length !== 1 ? 's' : ''} ready for GoDEX printer</li>
-            </ul>
-            <p className="print-note">
-              Click "Print Labels" to send labels to the thermal printer, then complete the transaction.
-            </p>
-          </div>
-        </div>
-
-        <div className="print-modal-footer">
+    <div className="modal-overlay">
+      <div className="print-labels-modal">
+        <div className="modal-header">
+          <h3>Enter # of PAWN Labels</h3>
           <button 
             type="button" 
-            className="btn-primary" 
-            onClick={handlePrint}
-            disabled={printing}
-          >
-            {printing ? 'Printing...' : '🏷️ Print Labels & Complete'}
-          </button>
-          <button 
-            type="button" 
-            className="btn-secondary" 
+            className="modal-close"
             onClick={onCancel}
-            disabled={printing}
+            aria-label="Close"
           >
-            Cancel
+            ✕
           </button>
+        </div>
+
+        <div className="modal-content">
+          <div style={{ 
+            padding: '12px', 
+            backgroundColor: '#d4edda', 
+            border: '1px solid #c3e6cb', 
+            borderRadius: '4px', 
+            marginBottom: '16px',
+            fontSize: '14px'
+          }}>
+            📄 <strong>Pawn ticket form is printing...</strong><br />
+            Select label quantities below and click "Print Labels" to complete the transaction.
+          </div>
+
+          <div className="labels-table-container">
+            <table className="labels-table">
+              <thead>
+                <tr>
+                  <th># Labels</th>
+                  <th>Quantity</th>
+                  <th>Description of Item</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={labelCounts[item.id] || 1}
+                        onChange={(e) => updateLabelCount(item.id, parseInt(e.target.value) || 0)}
+                        className="label-count-input"
+                      />
+                    </td>
+                    <td>{item.quantity || 1}.00</td>
+                    <td className="item-description">
+                      {item.description.toUpperCase()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="modal-actions">
+            <button 
+              type="button" 
+              onClick={handlePrint}
+              className="btn-primary"
+              disabled={getTotalLabels() === 0}
+            >
+              Print Labels & Complete
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={handleReset}
+              className="btn-secondary"
+            >
+              Reset
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={onCancel}
+              className="btn-secondary"
+            >
+              Skip Labels
+            </button>
+          </div>
+
+          <div className="labels-summary">
+            Total Labels: <strong>{getTotalLabels()}</strong>
+          </div>
         </div>
       </div>
     </div>

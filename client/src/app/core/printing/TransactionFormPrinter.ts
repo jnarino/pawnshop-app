@@ -342,7 +342,6 @@ export class TransactionFormPrinter {
   </style>
 </head>
 <body>
-  <img src="${templateBackground}" class="template-bg" alt="Florida Pawn Ticket" />
   <div class="tpl-layer">
     ${fieldHtml}
     ${repeaterHtml}

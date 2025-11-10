@@ -94,16 +94,48 @@ export class CreatePawnTicketUseCase {
         }
       }
 
-      // 5. Compute finance terms
-      const principal = input.amountFinanced || 0;
-      const periodRate = input.periodicRate ?? ratePlan.periodic_rate;
-      const financeCharge = Math.max(principal * periodRate, ratePlan.min_finance_charge);
-      const totalOfPayments = principal + financeCharge;
+      // 5. Compute finance terms - ✅ Ensure all required fields are set
+      let amountFinanced: number | null = null;
+      let financeCharge: number | null = null;
+      let periodicRate: number | null = null;
+      let totalOfPayments: number | null = null;
+      let annualPercentageRate: number | null = null;
+      let purchaseTradeValue: number | null = null;
+
+      if (input.type === 'PAWN') {
+        // ✅ For PAWN: all financial fields must be non-null
+        const principal = input.amountFinanced || 0;
+        if (principal <= 0) {
+          throw new ValidationError('Amount financed must be greater than 0 for pawn transactions');
+        }
+
+        amountFinanced = principal;
+        periodicRate = input.periodicRate ?? ratePlan.periodic_rate;
+        financeCharge = Math.max(principal * periodicRate, ratePlan.min_finance_charge);
+        totalOfPayments = principal + financeCharge;
+        annualPercentageRate = computeApr(periodicRate, ratePlan.period_days);
+        purchaseTradeValue = null; // ✅ Must be null for PAWN
+      } else if (input.type === 'PURCHASE') {
+        // ✅ For PURCHASE: financial fields must be null, purchaseTradeValue must be non-null
+        const tradeValue = input.purchaseTradeValue || 0;
+        if (tradeValue <= 0) {
+          throw new ValidationError('Purchase trade value must be greater than 0 for purchase transactions');
+        }
+
+        amountFinanced = null;
+        financeCharge = null;
+        periodicRate = null;
+        totalOfPayments = null;
+        annualPercentageRate = null;
+        purchaseTradeValue = tradeValue;
+      } else {
+        throw new ValidationError('Invalid transaction type');
+      }
 
       // Calculate dates
       const maturityDate = new Date(txnDate);
       maturityDate.setDate(maturityDate.getDate() + ratePlan.period_days);
-
+      
       const defaultDate = new Date(maturityDate);
       defaultDate.setDate(defaultDate.getDate() + ratePlan.grace_days);
 
@@ -111,21 +143,21 @@ export class CreatePawnTicketUseCase {
       const nextChargeDate = new Date(paidThroughDate);
       nextChargeDate.setDate(nextChargeDate.getDate() + ratePlan.period_days);
 
-      // 6. Create pawn ticket
+      // 6. Create pawn ticket - ✅ Pass properly computed values
       const pawnTicketId = uuidv4();
       await this.pawnTicketRepo.createInTransaction(client, {
         id: pawnTicketId,
         controlNumber,
-        type: input.type || 'PAWN',
+        type: input.type,
         customerId: input.customerId,
         pawnStatus: 'active',
         inventoryItemIds: itemIds,
-        amountFinanced: principal,
-        financeCharge,
-        periodicRate: periodRate,
-        totalOfPayments,
-        annualPercentageRate: computeApr(periodRate, ratePlan.period_days),
-        purchaseTradeValue: input.type === 'PURCHASE' ? (input.purchaseTradeValue ?? null) : null,
+        amountFinanced,        // ✅ Properly set based on transaction type
+        financeCharge,         // ✅ Properly computed or null
+        periodicRate,          // ✅ Properly set or null
+        totalOfPayments,       // ✅ Properly computed or null
+        annualPercentageRate,  // ✅ Properly computed or null
+        purchaseTradeValue,    // ✅ Null for PAWN, set for PURCHASE
         transactionDate: txnDate.toISOString(),
         maturityDate: maturityDate.toISOString(),
         defaultDate: defaultDate.toISOString(),
@@ -137,28 +169,32 @@ export class CreatePawnTicketUseCase {
         updatedAt: txnDate.toISOString()
       });
 
-      // 7. Record store transaction
+      // 7. Record store transaction - ✅ Use correct amount based on transaction type
+      const transactionAmount = input.type === 'PAWN' ? amountFinanced! : purchaseTradeValue!;
+      
       const disbursement = await this.storeTransactionRepo.createDisbursement(client, {
         customerId: input.customerId,
         clerkUserId: input.clerkUserId,
-        amount: principal,
-        note: `Pawn ticket #${controlNumber}`,
+        amount: transactionAmount,
+        note: `${input.type === 'PAWN' ? 'Pawn' : 'Purchase'} ticket #${controlNumber}`,
         controlNumber,
-        tenders: input.disbursementTenders || [{ tenderTypeId: 1, amount: principal }],
+        tenders: input.disbursementTenders || [{ tenderTypeId: 1, amount: transactionAmount }],
         occurredAt: txnDate
       });
 
-      // ✅ NEW: Record the initial disbursement as a pawn ticket payment (negative amount)
-      await this.pawnTicketRepo.createPawnTicketPayment(client, {
-        pawnTicketId,
-        storeTransactionId: disbursement.id,
-        paymentDate: txnDate,
-        interestPaid: 0,
-        principalPaid: -principal, // ✅ Negative to represent disbursement
-        feesPaid: 0,
-        clerkUserId: input.clerkUserId,
-        note: `Initial pawn disbursement - Control #${controlNumber}`
-      });
+      // ✅ NEW: Record the initial disbursement as a pawn ticket payment (negative amount) - only for PAWN
+      if (input.type === 'PAWN') {
+        await this.pawnTicketRepo.createPawnTicketPayment(client, {
+          pawnTicketId,
+          storeTransactionId: disbursement.id,
+          paymentDate: txnDate,
+          interestPaid: 0,
+          principalPaid: -amountFinanced!, // ✅ Negative to represent disbursement
+          feesPaid: 0,
+          clerkUserId: input.clerkUserId,
+          note: `Initial pawn disbursement - Control #${controlNumber}`
+        });
+      }
 
       // 8. Create gunlog entries for firearms
       const gunlogNumbers: number[] = [];
@@ -185,7 +221,15 @@ export class CreatePawnTicketUseCase {
         pawnTicket: {
           id: pawnTicketId,
           controlNumber,
-          // ...other fields...
+          type: input.type,
+          amountFinanced,
+          financeCharge,
+          totalOfPayments,
+          annualPercentageRate,
+          purchaseTradeValue,
+          transactionDate: txnDate.toISOString(),
+          maturityDate: maturityDate.toISOString(),
+          defaultDate: defaultDate.toISOString()
         },
         customer,
         items: createdItems,
