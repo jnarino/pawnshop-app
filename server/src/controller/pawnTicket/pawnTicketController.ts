@@ -11,16 +11,16 @@ import router from '../../infrastructure/http/routes/categoryRoutes';
 import { logger } from '../../infrastructure/log/logger';
 import { PawnTicketRepository } from '../../infrastructure/persistence/PawnTicketRepository';
 
-export interface PawnTicketControllerDeps {
-    findAll: FindAllPawnTicketsUseCase;
-    create: CreatePawnTicketUseCase;
-    get: GetPawnTicketUseCase;
-    updateDates: UpdatePawnTicketDatesUseCase;
-    delete: DeletePawnTicketUseCase;
-    search: SearchPawnTicketsUseCase;
+interface Dependencies {
+  findAll: FindAllPawnTicketsUseCase;
+  create: CreatePawnTicketUseCase;
+  get: GetPawnTicketUseCase;
+  updateDates: UpdatePawnTicketDatesUseCase;
+  delete: DeletePawnTicketUseCase;
+  search: SearchPawnTicketsUseCase;
 }
 
-export function makePawnTicketController(deps: PawnTicketControllerDeps) {
+export function makePawnTicketController(deps: Dependencies) {
     return {
         findAll: async (req: Request, res: Response, next: NextFunction) => {
             try {
@@ -88,28 +88,36 @@ export function makePawnTicketController(deps: PawnTicketControllerDeps) {
             } catch (e) { next(e); }
         },
 
-        // ✅ Add method to get pawn ticket with payments
-        findByControlNumberWithPayments: async (req: Request, res: Response, next: NextFunction) => {
+        // ✅ Keep only the query method for payment history
+        findByControlNumberWithPayments: async (req: Request, res: Response) => {
             try {
                 const { controlNumber } = req.params;
                 
-                // Use the repository method we just added
-                const pawnTicketRepo = new (require('../../infrastructure/persistence/PawnTicketRepository').PawnTicketRepository)();
-                const ticket = await pawnTicketRepo.findByControlNumberWithPayments(controlNumber);
-                
-                if (!ticket) {
-                    return res.status(404).json({ error: 'not_found', message: 'Pawn ticket not found' });
+                if (!controlNumber) {
+                    return res.status(400).json({
+                        error: 'validation_error',
+                        message: 'Control number is required'
+                    });
                 }
+
+                const result = await deps.get.findByControlNumberWithPayments(controlNumber);
                 
-                res.json(ticket);
-            } catch (e) { 
-                logger.error('pawn_ticket_get_payments_error', {
-                    controlNumber: req.params.controlNumber,
-                    error: e instanceof Error ? e.message : String(e),
+                if (!result) {
+                    return res.status(404).json({
+                        error: 'not_found',
+                        message: 'Pawn ticket not found'
+                    });
+                }
+
+                res.json(result);
+            } catch (error) {
+                console.error('[PawnTicketController] Find with payments failed:', error);
+                res.status(500).json({
+                    error: 'internal_error',
+                    message: error instanceof Error ? error.message : 'Failed to fetch pawn ticket'
                 });
-                next(e); 
             }
-        }
+        },
     };
 }
 

@@ -3,6 +3,7 @@ SELECT
   pt.control_number,
   pt.transaction_type,
   pt.customer_id,
+  pt.pawn_status,
   pt.amount_financed,
   pt.finance_charge,
   pt.periodic_rate,
@@ -12,15 +13,11 @@ SELECT
   pt.transaction_date,
   pt.maturity_date,
   pt.default_date,
-  pt.rate_plan_id,
-  pt.paid_through_date,
-  pt.next_charge_date,
-  pt.interest_credit,
-  pt.pawn_status,
   pt.created_at,
   pt.updated_at,
-  
-  -- Payment history as JSON array
+  c.first_name,
+  c.last_name,
+  -- ✅ Get payment history
   COALESCE(
     json_agg(
       json_build_object(
@@ -31,19 +28,12 @@ SELECT
         'fees_paid', ptp.fees_paid,
         'note', ptp.note,
         'store_transaction_id', ptp.store_transaction_id
-      ) ORDER BY ptp.payment_date ASC
+      ) ORDER BY ptp.payment_date DESC
     ) FILTER (WHERE ptp.id IS NOT NULL),
     '[]'::json
-  ) as payments,
-  
-  -- Inventory items
-  COALESCE(
-    array_agg(pti.inventory_item_id) FILTER (WHERE pti.inventory_item_id IS NOT NULL),
-    '{}'::uuid[]
-  ) as inventory_item_ids
-
+  ) as payments
 FROM pawn_ticket pt
+LEFT JOIN customer c ON c.id = pt.customer_id
 LEFT JOIN pawn_ticket_payment ptp ON ptp.pawn_ticket_id = pt.id
-LEFT JOIN pawn_ticket_item pti ON pti.pawn_ticket_id = pt.id
 WHERE pt.control_number = $1
-GROUP BY pt.id;
+GROUP BY pt.id, c.first_name, c.last_name;

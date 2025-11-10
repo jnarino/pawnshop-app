@@ -4,6 +4,8 @@ import type { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import type { IPawnTicketRepository, CreatePawnTicketPaymentInput } from '../../domain/pawnTicket/IPawnTicketRepository';
 import { pool } from '../db';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export class PawnTicketRepository implements IPawnTicketRepository {
   async create(input: CreatePawnTicketInput): Promise<string> {
@@ -60,20 +62,32 @@ export class PawnTicketRepository implements IPawnTicketRepository {
     return ticket.id;
   }
 
-  async createPawnTicketPayment(client: PoolClient, input: CreatePawnTicketPaymentInput): Promise<string> {
-    const sql = getSQL('command', 'pawnTicket', 'createPawnTicketPayment');
-    const paymentId = uuidv4();
+  async findByControlNumberWithPayments(controlNumber: string): Promise<any | null> {
+    const sql = readFileSync(
+      join(__dirname, '../db/query/pawnTicket/findPawnTicketWithPayments.sql'),
+      'utf-8'
+    );
+    
+    const result = await pool.query(sql, [controlNumber]);
+    return result.rows[0] || null;
+  }
 
+  async createPawnTicketPayment(client: PoolClient, input: CreatePawnTicketPaymentInput): Promise<string> {
+    const sql = readFileSync(
+      join(__dirname, '../db/query/pawnTicket/createPawnTicketPayment.sql'),
+      'utf-8'
+    );
+
+    const paymentId = uuidv4();
     await client.query(sql, [
-      paymentId,                    // $1 - id
-      input.pawnTicketId,          // $2 - pawn_ticket_id
-      input.storeTransactionId,    // $3 - store_transaction_id
-      input.paymentDate,           // $4 - payment_date
-      input.interestPaid,          // $5 - interest_paid
-      input.principalPaid,         // $6 - principal_paid (can be negative)
-      input.feesPaid,              // $7 - fees_paid
-      input.clerkUserId,           // $8 - clerk_user_id
-      input.note                   // $9 - note
+      paymentId,
+      input.pawnTicketId,
+      input.storeTransactionId,
+      input.interestPaid,
+      input.principalPaid,
+      input.feesPaid,
+      input.clerkUserId,
+      input.note
     ]);
 
     return paymentId;
@@ -105,12 +119,6 @@ export class PawnTicketRepository implements IPawnTicketRepository {
   async findById(id: string): Promise<any | null> {
     const sql = getSQL('query', 'pawnTicket', 'findPawnTicketById');
     const result = await pool.query(sql, [id]);
-    return result.rows[0] || null;
-  }
-
-  async findByControlNumberWithPayments(controlNumber: string): Promise<any | null> {
-    const sql = getSQL('query', 'pawnTicket', 'findPawnTicketWithPayments');
-    const result = await pool.query(sql, [controlNumber]);
     return result.rows[0] || null;
   }
 

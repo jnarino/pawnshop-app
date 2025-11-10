@@ -169,24 +169,71 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
     setPaymentMethodModalOpen(true);
   };
 
+  // ✅ Updated handlePaymentMethodComplete to actually create payment records
   const handlePaymentMethodComplete = async (tenders: any[]) => {
     setPaymentMethodModalOpen(false);
     
     try {
-      console.log('Processing payment with tenders:', tenders);
+      console.log('[Payment] Creating payment transactions...', { tenders, totalPayment });
       
-      // Here you would create the actual payment transactions
-      // For now, just simulate success
+      const selectedTickets = tickets.filter(t => t.selected);
+      const otherPaymentTickets = tickets.filter(t => t.otherPaymentAmount && t.otherPaymentAmount > 0);
       
+      // ✅ Create payment data structure for API
+      const paymentData = {
+        customerId,
+        totalAmount: parseFloat(totalPayment),
+        tenders: tenders.map(tender => ({
+          type: tender.name,
+          amount: parseFloat(tender.amount)
+        })),
+        pawnTicketPayments: [
+          // Selected tickets (full redemption payments)
+          ...selectedTickets.map(ticket => ({
+            pawnTicketId: ticket.id,
+            paymentType: 'redemption',
+            interestPaid: ticket.currentCharges,
+            principalPaid: ticket.pawnAmount,
+            totalAmount: ticket.redemption,
+            note: `Full redemption payment for ticket ${ticket.controlNumber}`
+          })),
+          // Other payment tickets (partial/service charge payments)
+          ...otherPaymentTickets.map(ticket => ({
+            pawnTicketId: ticket.id,
+            paymentType: 'partial',
+            interestPaid: ticket.otherPaymentAmount, // This comes from ServiceChargeModal
+            principalPaid: 0,
+            totalAmount: ticket.otherPaymentAmount,
+            note: `Service charge payment for ticket ${ticket.controlNumber}`
+          }))
+        ]
+      };
+
+      console.log('[Payment] Sending payment data:', paymentData);
+
+      // ✅ Use dedicated payment endpoint
+      const paymentResult = await http('/api/payment/pawn-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData)
+      });
+
+      console.log('[Payment] Payment created successfully:', paymentResult);
+
       const totalAmount = parseFloat(totalPayment);
-      alert(`✅ Payment of $${totalAmount.toFixed(2)} processed successfully!\n\nReceipt printing would happen here.`);
+      const ticketCount = selectedTickets.length + otherPaymentTickets.length;
+      
+      alert(`✅ Payment of $${totalAmount.toFixed(2)} processed successfully!\n\n` +
+            `${ticketCount} ticket(s) updated\n` +
+            `Transaction ID: ${paymentResult.transactionId || 'N/A'}\n\n` +
+            `Receipt would print here.`);
       
       // Reset and complete
       onPaymentComplete();
       
     } catch (error) {
-      console.error('Payment processing failed:', error);
-      alert('Payment processing failed. Please try again.');
+      console.error('[Payment] Payment processing failed:', error);
+      alert(`❌ Payment processing failed: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease try again.`);
     }
   };
 
