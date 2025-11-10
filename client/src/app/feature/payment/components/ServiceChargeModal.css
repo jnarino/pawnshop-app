@@ -1,0 +1,184 @@
+.service-charge-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.service-charge-modal {
+  background-color: #f0f0f0;
+  border: 2px outset #c0c0c0;
+  padding: 8px;
+  font-size: 11px;
+  min-width: 500px;
+  max-width: 600px;
+}
+
+.service-charge-modal-header {
+  background-color: #c0c0c0;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.service-charge-modal-close-btn {
+  padding: 2px 6px;
+  font-size: 10px;
+  border: 1px outset #c0c0c0;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+
+.service-charge-modal-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
+.service-charge-left-panel {
+  border: 2px inset #c0c0c0;
+  padding: 8px;
+  background-color: white;
+}
+
+.service-charge-payment-display {
+  margin-bottom: 8px;
+}
+
+.service-charge-payment-text {
+  color: red;
+  font-weight: bold;
+}
+
+.service-charge-input-grid {
+  display: grid;
+  grid-template-columns: 120px 80px;
+  gap: 4px;
+  align-items: center;
+}
+
+.service-charge-input {
+  padding: 2px 4px;
+  border: 1px inset #c0c0c0;
+  font-size: 11px;
+}
+
+.service-charge-totals {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #ccc;
+  display: grid;
+  grid-template-columns: 120px 80px;
+  gap: 4px;
+}
+
+.service-charge-total-label {
+  font-weight: bold;
+}
+
+.service-charge-total-value {
+  padding: 2px 4px;
+  border: 1px inset #c0c0c0;
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.service-charge-right-panel {
+  border: 2px inset #c0c0c0;
+  padding: 8px;
+  background-color: white;
+}
+
+.service-charge-period-header {
+  background-color: #c0c0c0;
+  padding: 2px 4px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.service-charge-period-table {
+  width: 100%;
+  font-size: 10px;
+  border-collapse: collapse;
+}
+
+.service-charge-period-table th {
+  padding: 2px;
+  border: 1px solid #999;
+  background-color: #e0e0e0;
+}
+
+.service-charge-period-row {
+  cursor: pointer;
+}
+
+.service-charge-period-row.selected {
+  background-color: #0078d4;
+  color: white;
+}
+
+.service-charge-period-row:not(.selected) {
+  background-color: white;
+  color: black;
+}
+
+.service-charge-period-cell {
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+}
+
+.service-charge-period-table .no-data {
+  padding: 8px;
+  text-align: center;
+  font-style: italic;
+}
+
+.service-charge-override-section {
+  margin-top: 8px;
+  font-size: 10px;
+}
+
+.service-charge-override-input {
+  width: 100%;
+  padding: 2px 4px;
+  border: 1px inset #c0c0c0;
+  font-size: 10px;
+}
+
+.service-charge-modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.service-charge-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  border: 2px outset #c0c0c0;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+
+.service-charge-btn.done {
+  background-color: #90EE90;
+  font-weight: bold;
+}
+
+.service-charge-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.service-charge-btn.done:hover {
+  background-color: #7dd87d;
+}

@@ -28,7 +28,25 @@ SELECT
   COALESCE(
     array_agg(ii.id) FILTER (WHERE ii.id IS NOT NULL),
     '{}'::uuid[]
-  ) as inventory_item_ids
+  ) as inventory_item_ids,
+  -- ✅ Add items array with full item details
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', ii.id,
+        'inventory_number', ii.inventory_number,
+        'brand', ii.brand,
+        'model', ii.model,
+        'serial_number', ii.serial_number,
+        'item_description', ii.item_description,
+        'price_amount', ii.price_amount,
+        'quantity', ii.quantity,
+        'status', ii.status,
+        'attributes', ii.attributes
+      ) ORDER BY ii.inventory_number
+    ) FILTER (WHERE ii.id IS NOT NULL),
+    '[]'::json
+  ) as items
 FROM pawn_ticket pt
 LEFT JOIN customer c ON c.id = pt.customer_id
 LEFT JOIN pawn_ticket_item pti ON pti.pawn_ticket_id = pt.id

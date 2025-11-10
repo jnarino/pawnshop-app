@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { http } from '@/app/core/api/http';
+import ServiceChargeModal from './ServiceChargeModal';
+import PaymentMethodModal from './PaymentMethodModal';
 
 interface Props {
   pawnTicket: any;
@@ -8,162 +10,502 @@ interface Props {
   onPaymentComplete: () => void;
 }
 
-export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPaymentComplete }: Props) {
-  const [paymentAmount, setPaymentAmount] = useState('0.00');
-  const [selectedTender, setSelectedTender] = useState('CASH');
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface PawnTicketRow {
+  id: string;
+  controlNumber: string;
+  dateIn: string;
+  dateOut: string;
+  pawnAmount: number;
+  currentCharges: number;
+  redemption: number;
+  otherPayment: boolean;
+  selected: boolean;
+  otherPaymentAmount?: number; // ✅ Add this field to track custom amounts
+}
 
-  const formatMoney = (amount?: number) => {
-    return amount ? `$${amount.toFixed(2)}` : '$0.00';
+export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPaymentComplete }: Props) {
+  const [tickets, setTickets] = useState<PawnTicketRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalPayment, setTotalPayment] = useState('0.00');
+  const [selectedCount, setSelectedCount] = useState(0);
+  const [customer, setCustomer] = useState<any>(null);
+  const [serviceChargeModalOpen, setServiceChargeModalOpen] = useState(false);
+  const [paymentMethodModalOpen, setPaymentMethodModalOpen] = useState(false);
+  const [selectedTicketForPayment, setSelectedTicketForPayment] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadActiveTickets();
+    loadCustomer();
+  }, [customerId]);
+
+  const loadCustomer = async () => {
+    try {
+      const customerData = await http(`/api/customer/${customerId}`);
+      setCustomer(customerData);
+    } catch (error) {
+      console.error('Failed to load customer:', error);
+    }
   };
 
-  const totalPayment = parseFloat(paymentAmount || '0');
-  const change = Math.max(0, totalPayment - (pawnTicket.totalOfPayments || 0));
+  const loadActiveTickets = async () => {
+    try {
+      setLoading(true);
+      
+      // Load all active pawn tickets for this customer
+      const response = await http(`/api/pawnTicket?customerId=${customerId}&pawnStatus=active&limit=100`);
+      
+      const ticketRows: PawnTicketRow[] = (response || []).map((ticket: any) => {
+        const dateIn = new Date(ticket.transactionDate || ticket.transaction_date);
+        const dateOut = new Date(ticket.maturityDate || ticket.maturity_date);
+        const pawnAmount = parseFloat(ticket.amountFinanced || ticket.amount_financed || '0');
+        const serviceCharge = parseFloat(ticket.financeCharge || ticket.finance_charge || '0');
+        const redemption = parseFloat(ticket.totalOfPayments || ticket.total_of_payments || '0');
+        
+        return {
+          id: ticket.id,
+          controlNumber: ticket.controlNumber || ticket.control_number || 'N/A',
+          dateIn: dateIn.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          dateOut: dateOut.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          pawnAmount,
+          currentCharges: serviceCharge,
+          redemption,
+          otherPayment: false, // Default to false
+          selected: ticket.id === pawnTicket?.id // Pre-select if this matches the current ticket
+        };
+      });
+      
+      setTickets(ticketRows);
+      updateTotals(ticketRows);
+      
+    } catch (error) {
+      console.error('Failed to load active tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handlePayment = async () => {
-    if (totalPayment <= 0) {
-      setError('Payment amount must be greater than 0');
+  // ✅ Update the updateTotals function to include other payment amounts
+  const updateTotals = (ticketList: PawnTicketRow[]) => {
+    const selectedTicketsTotal = ticketList
+      .filter(t => t.selected)
+      .reduce((sum, t) => sum + t.redemption, 0);
+    
+    const otherPaymentsTotal = ticketList
+      .reduce((sum, t) => sum + (t.otherPaymentAmount || 0), 0);
+    
+    const total = selectedTicketsTotal + otherPaymentsTotal;
+    
+    setTotalPayment(total.toFixed(2));
+    setSelectedCount(ticketList.filter(t => t.selected || (t.otherPaymentAmount && t.otherPaymentAmount > 0)).length);
+  };
+
+  const toggleTicketSelection = (ticketId: string) => {
+    const updatedTickets = tickets.map(ticket => 
+      ticket.id === ticketId 
+        ? { ...ticket, selected: !ticket.selected }
+        : ticket
+    );
+    setTickets(updatedTickets);
+    updateTotals(updatedTickets);
+  };
+
+  const selectAll = () => {
+    const updatedTickets = tickets.map(ticket => ({ ...ticket, selected: true }));
+    setTickets(updatedTickets);
+    updateTotals(updatedTickets);
+  };
+
+  const redeemAll = () => {
+    // Same as select all for now
+    selectAll();
+  };
+
+  const clearAll = () => {
+    const updatedTickets = tickets.map(ticket => ({ ...ticket, selected: false }));
+    setTickets(updatedTickets);
+    updateTotals(updatedTickets);
+  };
+
+  const handleOtherPaymentClick = (ticketId: string) => {
+    setSelectedTicketForPayment(ticketId);
+    setServiceChargeModalOpen(true);
+  };
+
+  // ✅ Update handleServiceChargeComplete to properly update the ticket
+  const handleServiceChargeComplete = (amount: number) => {
+    setServiceChargeModalOpen(false);
+    
+    if (selectedTicketForPayment) {
+      const updatedTickets = tickets.map(ticket => 
+        ticket.id === selectedTicketForPayment 
+          ? { ...ticket, otherPaymentAmount: amount, otherPayment: amount > 0 }
+          : ticket
+      );
+      setTickets(updatedTickets);
+      updateTotals(updatedTickets);
+    }
+    
+    setSelectedTicketForPayment(null);
+  };
+
+  // ✅ Update handleSave to check for any payments (selected OR other payments)
+  const handleSave = async () => {
+    const selectedTickets = tickets.filter(t => t.selected);
+    const otherPaymentTickets = tickets.filter(t => t.otherPaymentAmount && t.otherPaymentAmount > 0);
+    
+    if (selectedTickets.length === 0 && otherPaymentTickets.length === 0) {
+      alert('Please select at least one ticket or enter payment amounts.');
       return;
     }
 
+    // ✅ Use the already calculated totalPayment
+    const totalAmount = parseFloat(totalPayment);
+    
+    if (totalAmount <= 0) {
+      alert('Total payment amount must be greater than $0.00');
+      return;
+    }
+
+    setPaymentMethodModalOpen(true);
+  };
+
+  const handlePaymentMethodComplete = async (tenders: any[]) => {
+    setPaymentMethodModalOpen(false);
+    
     try {
-      setProcessing(true);
-      setError(null);
-
-      // Simple placeholder - would integrate with actual payment API
-      alert(`Payment of ${formatMoney(totalPayment)} processed successfully!`);
+      console.log('Processing payment with tenders:', tenders);
+      
+      // Here you would create the actual payment transactions
+      // For now, just simulate success
+      
+      const totalAmount = parseFloat(totalPayment);
+      alert(`✅ Payment of $${totalAmount.toFixed(2)} processed successfully!\n\nReceipt printing would happen here.`);
+      
+      // Reset and complete
       onPaymentComplete();
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
-    } finally {
-      setProcessing(false);
+      
+    } catch (error) {
+      console.error('Payment processing failed:', error);
+      alert('Payment processing failed. Please try again.');
     }
   };
 
+  if (loading) {
+    return (
+      <div className="payment-panel">
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p>Loading active tickets...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="payment-panel">
-      <div className="panel-header">
-        <h2>Make Payment - Ticket #{pawnTicket.controlNumber}</h2>
-        <button type="button" onClick={onBack}>← Back</button>
+    <div className="payment-panel" style={{ padding: '8px', fontSize: '11px', backgroundColor: '#f0f0f0' }}>
+      {/* Header Section - matching the image */}
+      <div style={{
+        backgroundColor: '#c0c0c0',
+        border: '2px outset #c0c0c0',
+        padding: '4px 8px',
+        marginBottom: '8px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <span>Customer #{customerId?.slice(-5) || '24852'} - {customer?.firstName?.toUpperCase()} {customer?.lastName?.toUpperCase()}</span>
+        <button 
+          onClick={onBack}
+          style={{
+            padding: '2px 8px',
+            fontSize: '10px',
+            border: '1px outset #c0c0c0',
+            backgroundColor: '#f0f0f0'
+          }}
+        >
+          Exit
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
-        {/* Left Panel - Payment Form */}
-        <div className="payment-form" style={{ border: '1px solid #ccc', padding: '16px' }}>
-          <h3>💰 Payment Information</h3>
-          
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
-              Payment Amount:
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
-              style={{ width: '100%', padding: '8px', fontSize: '16px' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Tender Type:
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-              {['CASH', 'CREDIT CARD', 'DEBIT', 'CHECK'].map(tender => (
-                <label key={tender} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <input
-                    type="radio"
-                    name="tender"
-                    value={tender}
-                    checked={selectedTender === tender}
-                    onChange={(e) => setSelectedTender(e.target.value)}
-                  />
-                  {tender}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Payment Summary */}
-          <div style={{ background: '#f5f5f5', padding: '12px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span>Total Payment:</span>
-              <span style={{ fontWeight: 'bold' }}>{formatMoney(totalPayment)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span>Amount Due:</span>
-              <span>{formatMoney(pawnTicket.totalOfPayments)}</span>
-            </div>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              borderTop: '1px solid #ddd', 
-              paddingTop: '4px',
-              fontWeight: 'bold',
-              color: change > 0 ? '#4caf50' : '#333'
-            }}>
-              <span>Change:</span>
-              <span>{formatMoney(change)}</span>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ color: '#f44336', marginBottom: '16px', padding: '8px', background: '#ffebee' }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handlePayment}
-            disabled={processing || totalPayment <= 0}
-            style={{ 
-              width: '100%', 
-              padding: '12px', 
-              background: '#4caf50', 
+      {/* Payment Controls Section */}
+      <div style={{
+        border: '2px inset #c0c0c0',
+        backgroundColor: 'white',
+        padding: '8px',
+        marginBottom: '8px'
+      }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ fontWeight: 'bold' }}>Edit Pawn Note</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            <span style={{ fontWeight: 'bold' }}>Total Payment:</span>
+            <div style={{
+              background: '#ff6666',
               color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              cursor: processing ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {processing ? 'Processing...' : 'Process Payment'}
-          </button>
-        </div>
-
-        {/* Right Panel - Ticket Details */}
-        <div className="ticket-details">
-          <h3>Ticket Summary</h3>
-          <div style={{ border: '1px solid #ccc', padding: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', fontSize: '14px' }}>
-              <strong>Ticket #:</strong>
-              <span>{pawnTicket.controlNumber}</span>
-              
-              <strong>Type:</strong>
-              <span>{pawnTicket.type}</span>
-              
-              <strong>Principal:</strong>
-              <span>{formatMoney(pawnTicket.amountFinanced)}</span>
-              
-              <strong>Service Charge:</strong>
-              <span>{formatMoney(pawnTicket.financeCharge)}</span>
-              
-              <strong>Total Due:</strong>
-              <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
-                {formatMoney(pawnTicket.totalOfPayments)}
-              </span>
-              
-              <strong>Maturity Date:</strong>
-              <span>{new Date(pawnTicket.maturityDate).toLocaleDateString()}</span>
+              padding: '2px 8px',
+              fontWeight: 'bold',
+              minWidth: '60px',
+              textAlign: 'center'
+            }}>
+              {totalPayment}
             </div>
           </div>
         </div>
+
+        {/* Selector Controls */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontWeight: 'bold' }}>Selector:</span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              onClick={selectAll}
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                border: '1px outset #c0c0c0',
+                backgroundColor: '#f0f0f0'
+              }}
+            >
+              Pay All
+            </button>
+            <button
+              onClick={redeemAll}
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                border: '1px outset #c0c0c0',
+                backgroundColor: '#f0f0f0'
+              }}
+            >
+              Redeem All
+            </button>
+            <button
+              onClick={clearAll}
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                border: '1px outset #c0c0c0',
+                backgroundColor: '#f0f0f0'
+              }}
+            >
+              Clear all
+            </button>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleSave}
+              disabled={parseFloat(totalPayment) <= 0}
+              style={{
+                padding: '4px 12px',
+                fontSize: '10px',
+                border: '1px outset #c0c0c0',
+                backgroundColor: parseFloat(totalPayment) > 0 ? '#90EE90' : '#f0f0f0',
+                fontWeight: 'bold',
+                opacity: parseFloat(totalPayment) > 0 ? 1 : 0.5
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Tickets Table */}
+      <div style={{
+        border: '2px inset #c0c0c0',
+        backgroundColor: 'white',
+        height: '300px',
+        overflow: 'auto'
+      }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#e0e0e0', position: 'sticky', top: 0 }}>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'left' }}>
+                Ticket #
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'left' }}>
+                Date In
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'left' }}>
+                Date Out
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'right' }}>
+                Pawn Amt
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'right' }}>
+                Current Charges
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'right' }}>
+                Redemption
+              </th>
+              <th style={{ padding: '4px', border: '1px solid #c0c0c0', fontWeight: 'bold', textAlign: 'center' }}>
+                Other Payment
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {tickets.map((ticket, idx) => (
+              <tr 
+                key={ticket.id}
+                onClick={() => toggleTicketSelection(ticket.id)}
+                style={{
+                  backgroundColor: ticket.selected ? '#add8e6' : (idx % 2 === 0 ? 'white' : '#f8f8f8'),
+                  cursor: 'pointer'
+                }}
+              >
+                <td style={{ 
+                  padding: '4px', 
+                  border: '1px solid #d0d0d0',
+                  fontWeight: ticket.selected ? 'bold' : 'normal'
+                }}>
+                  {ticket.controlNumber}
+                </td>
+                <td style={{ padding: '4px', border: '1px solid #d0d0d0' }}>
+                  {ticket.dateIn}
+                </td>
+                <td style={{ 
+                  padding: '4px', 
+                  border: '1px solid #d0d0d0',
+                  color: new Date(ticket.dateOut) < new Date() ? 'red' : 'black'
+                }}>
+                  {ticket.dateOut}
+                </td>
+                <td style={{ padding: '4px', border: '1px solid #d0d0d0', textAlign: 'right' }}>
+                  {ticket.pawnAmount.toFixed(2)}
+                </td>
+                <td style={{ padding: '4px', border: '1px solid #d0d0d0', textAlign: 'right' }}>
+                  {ticket.currentCharges.toFixed(2)}
+                </td>
+                <td style={{ 
+                  padding: '4px', 
+                  border: '1px solid #d0d0d0', 
+                  textAlign: 'right',
+                  fontWeight: 'bold'
+                }}>
+                  {ticket.redemption.toFixed(2)}
+                </td>
+                <td style={{ 
+                  padding: '4px', 
+                  border: '1px solid #d0d0d0', 
+                  textAlign: 'center'
+                }}>
+                  {/* ✅ Show amount if set, otherwise show checkbox */}
+                  {ticket.otherPaymentAmount && ticket.otherPaymentAmount > 0 ? (
+                    <span style={{ 
+                      color: 'green', 
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOtherPaymentClick(ticket.id);
+                    }}>
+                      ${ticket.otherPaymentAmount.toFixed(2)}
+                    </span>
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        if (e.target.checked) {
+                          handleOtherPaymentClick(ticket.id);
+                        }
+                      }}
+                      style={{ transform: 'scale(0.8)' }}
+                    />
+                  )}
+                </td>
+              </tr>
+            ))}
+            {tickets.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ 
+                  padding: '20px', 
+                  textAlign: 'center', 
+                  fontStyle: 'italic' 
+                }}>
+                  No active pawn tickets found for this customer
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Customer Notes Section */}
+      <div style={{
+        border: '2px inset #c0c0c0',
+        backgroundColor: 'white',
+        marginTop: '8px',
+        height: '80px'
+      }}>
+        <div style={{
+          backgroundColor: '#c0c0c0',
+          padding: '2px 4px',
+          fontWeight: 'bold',
+          fontSize: '10px'
+        }}>
+          Cust Note
+        </div>
+        <div style={{ padding: '4px', fontSize: '10px', height: '60px', overflow: 'auto' }}>
+          {customer?.description || 'No customer notes available.'}
+        </div>
+      </div>
+
+      {/* Service Charge Modal */}
+      <ServiceChargeModal
+        open={serviceChargeModalOpen}
+        ticketNumber={selectedTicketForPayment ? 
+          tickets.find(t => t.id === selectedTicketForPayment)?.controlNumber || '' : ''}
+        pawnTicket={selectedTicketForPayment ? 
+          // ✅ Map the ticket data properly as shown in previous fix
+          (() => {
+            const ticket = tickets.find(t => t.id === selectedTicketForPayment);
+            if (!ticket) return null;
+            
+            return {
+              id: ticket.id,
+              controlNumber: ticket.controlNumber,
+              transactionDate: ticket.dateIn ? 
+                new Date(`${ticket.dateIn} 00:00:00`).toISOString() : 
+                new Date().toISOString(),
+              transaction_date: ticket.dateIn ? 
+                new Date(`${ticket.dateIn} 00:00:00`).toISOString() : 
+                new Date().toISOString(),
+              maturityDate: ticket.dateOut ? 
+                new Date(`${ticket.dateOut} 23:59:59`).toISOString() : 
+                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              maturity_date: ticket.dateOut ? 
+                new Date(`${ticket.dateOut} 23:59:59`).toISOString() : 
+                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              amountFinanced: ticket.pawnAmount,
+              amount_financed: ticket.pawnAmount,
+              financeCharge: ticket.currentCharges,
+              finance_charge: ticket.currentCharges,
+              totalOfPayments: ticket.redemption,
+              total_of_payments: ticket.redemption,
+              type: 'PAWN',
+              transaction_type: 'PAWN',
+              customerId: customerId,
+              customer_id: customerId,
+              pawnStatus: 'active',
+              pawn_status: 'active'
+            };
+          })() : null}
+        onCancel={() => {
+          setServiceChargeModalOpen(false);
+          setSelectedTicketForPayment(null);
+        }}
+        onDone={handleServiceChargeComplete}
+      />
+
+      {/* Payment Method Modal */}
+      <PaymentMethodModal
+        open={paymentMethodModalOpen}
+        totalAmount={parseFloat(totalPayment)}
+        onCancel={() => setPaymentMethodModalOpen(false)}
+        onDone={handlePaymentMethodComplete}
+      />
     </div>
   );
 }
