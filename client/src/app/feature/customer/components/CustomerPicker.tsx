@@ -6,8 +6,15 @@ import { CustomerIdScanModal } from './CustomerIdScanModal';
 import { IdConflictModal } from './IdConflictModal';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord, recordToDto, apiToRecordLoose } from '../mappers';
-import './customerPicker.css'; // ← ensure the case matches the actual filename
-import { http } from '@/app/core/api/http'; // ✅ Add this import
+import './customerPicker.css';
+import { http } from '@/app/core/api/http';
+import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 // Centralized config (env override with safe defaults)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -18,12 +25,13 @@ interface Props {
   onChange?: (c: CustomerDto | null) => void;
   onCreateNew?(tempId: string): void;
   onSelected?(id: string): void;
+  onCancelTransaction?(): void;
 }
 
 const EYE_COLORS = ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Amber', 'Black'] as const;
 const HAIR_COLORS = ['Brown', 'Black', 'Blonde', 'Red', 'Gray', 'White', 'Bald', 'Auburn'] as const;
 const RACES = ['White', 'Black or African American', 'Asian', 'Native American', 'Pacific Islander', 'Hispanic', 'Other'] as const;
-const US_STATES = ['', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
+const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] as const;
 const ID_TYPES = ['Driver License', 'State ID', 'Passport', 'US Military ID', 'Social Security Card', 'Green Card', 'Other'] as const;
 
 // utils
@@ -51,114 +59,220 @@ function normalizeHeight(feet: string, inches: string): string | undefined {
 // sections
 interface SectionProps { form: CustomerRecord; update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]): void; editing: boolean; }
 const IdentityContactSection = ({ form, update, editing }: SectionProps) => (
-  <fieldset className="card section">
-    <legend>Personal Information</legend>
-    <div className="grid cols-4 gap">
-      <label>First Name<input value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="First" /></label>
-      <label>Middle<input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" /></label>
-      <label>Last Name *<input value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Last" /></label>
-      <label>Date of Birth<input type="date" value={form.dateOfBirth || ''} onChange={e => update('dateOfBirth', e.target.value || undefined)} /></label>
+  <FieldSet className="card section">
+    <FieldLegend className="mb-2 text-sm">Personal Information</FieldLegend>
+    <div className="grid grid-cols-2 gap-2">
+      <Field>
+        <FieldLabel>First Name</FieldLabel>
+        <Input value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="First" />
+      </Field>
+      <Field>
+        <FieldLabel>Middle</FieldLabel>
+        <Input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" />
+      </Field>
+      <Field>
+        <FieldLabel>Last Name *</FieldLabel>
+        <Input value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Last" />
+      </Field>
+      <Field>
+        <FieldLabel>Date of Birth</FieldLabel>
+        <Input type="date" value={form.dateOfBirth || ''} onChange={e => update('dateOfBirth', e.target.value || undefined)} />
+      </Field>
 
-      <label>Phone (primary)<input value={form.phoneNumber || ''} onChange={e => update('phoneNumber', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" /></label>
-      <label>Cell Phone<input value={form.cellPhone || ''} onChange={e => update('cellPhone', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 987-6543" /></label>
-      <label>Email<input value={form.email || ''} onChange={e => update('email', e.target.value)} disabled={!editing} /></label>
-      <label>SS Number<input value={form.ssNumber || ''} onChange={e => update('ssNumber', e.target.value)} disabled={!editing} placeholder="###-##-####" /></label>
+      <Field>
+        <FieldLabel>Phone (primary)</FieldLabel>
+        <Input value={form.phoneNumber || ''} onChange={e => update('phoneNumber', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 123-4567" />
+      </Field>
+      <Field>
+        <FieldLabel>Cell Phone</FieldLabel>
+        <Input value={form.cellPhone || ''} onChange={e => update('cellPhone', formatPhone(e.target.value))} disabled={!editing} placeholder="(555) 987-6543" />
+      </Field>
+      <Field>
+        <FieldLabel>Email</FieldLabel>
+        <Input value={form.email || ''} onChange={e => update('email', e.target.value)} disabled={!editing} />
+      </Field>
+      <Field>
+        <FieldLabel>SS Number</FieldLabel>
+        <Input value={form.ssNumber || ''} onChange={e => update('ssNumber', e.target.value)} disabled={!editing} placeholder="###-##-####" />
+      </Field>
     </div>
-  </fieldset>
+  </FieldSet>
 );
 
 interface AddressProps extends SectionProps { useIdAddr: boolean; setUseIdAddr(v: boolean): void; }
 const AddressSection = ({ form, update, editing, useIdAddr, setUseIdAddr }: AddressProps) => (
-  <fieldset className="card section">
-    <legend>Address</legend>
+  <FieldSet className="card section">
+    <FieldLegend className="mb-1 text-sm">Address</FieldLegend>
 
-    <div className="checkbox-row">
-      <input id="sameAsId" type="checkbox" checked={useIdAddr} onChange={e => {
-        const checked = e.target.checked;
-        setUseIdAddr(checked);
-        if (checked) {
-          update('streetAddress', form.idAddress || '');
-          update('city', form.idCity || '');
-          update('stateUs', form.idState || '');
-          update('zipCode', form.idZip || '');
-        }
-      }} />
-      <label htmlFor="sameAsId">Use ID address as primary address</label>
+    <div className="flex items-center space-x-2">
+      <Checkbox 
+        id="sameAsId" 
+        checked={useIdAddr} 
+        onCheckedChange={(checked) => {
+          setUseIdAddr(!!checked);
+          if (checked) {
+            update('streetAddress', form.idAddress || '');
+            update('city', form.idCity || '');
+            update('stateUs', form.idState || '');
+            update('zipCode', form.idZip || '');
+          }
+        }}
+      />
+      <Label htmlFor="sameAsId" className="text-sm">Use ID address as primary address</Label>
     </div>
 
-    <div className="grid cols-4 gap">
-      <label className="col-span-2">Street Address<input value={form.streetAddress || ''} onChange={e => update('streetAddress', e.target.value)} disabled={!editing || useIdAddr} /></label>
-      <label>City<input value={form.city || ''} onChange={e => update('city', e.target.value)} disabled={!editing || useIdAddr} /></label>
-      <label>State
-        <select value={form.stateUs || ''} onChange={e => update('stateUs', e.target.value)} disabled={!editing || useIdAddr}>
-          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>Zip<input value={form.zipCode || ''} onChange={e => update('zipCode', e.target.value)} disabled={!editing || useIdAddr} /></label>
+    <div className="flex gap-2">
+      <Field className="flex-1">
+        <FieldLabel>Street Address</FieldLabel>
+        <Input value={form.streetAddress || ''} onChange={e => update('streetAddress', e.target.value)} disabled={!editing || useIdAddr} />
+      </Field>
+      <Field className="w-48">
+        <FieldLabel>City</FieldLabel>
+        <Input value={form.city || ''} onChange={e => update('city', e.target.value)} disabled={!editing || useIdAddr} />
+      </Field>
+      <Field className="w-20">
+        <FieldLabel>State</FieldLabel>
+        <Select value={form.stateUs || undefined} onValueChange={(value) => update('stateUs', value)} disabled={!editing || useIdAddr}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select state" />
+          </SelectTrigger>
+          <SelectContent>
+            {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="w-28">
+        <FieldLabel>Zip</FieldLabel>
+        <Input value={form.zipCode || ''} onChange={e => update('zipCode', e.target.value)} disabled={!editing || useIdAddr} />
+      </Field>
     </div>
-  </fieldset>
+  </FieldSet>
 );
 
 const GovernmentIdSection = ({ form, update, editing }: SectionProps) => (
-  <fieldset className="card section">
-    <legend>Government ID</legend>
-    <div className="grid cols-4 gap">
-      <label>ID Type
-        <input list="idTypes" value={form.idType || ''} onChange={e => update('idType', e.target.value)} disabled={!editing} />
-      </label>
-      <label>ID Number
-        <input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} />
-      </label>
-      <label>Issuing State
-        <select value={form.idState || ''} onChange={e => update('idState', e.target.value)} disabled={!editing}>
-          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>ID Issue Date
-        <input type="date" value={form.idIssueDate || ''} onChange={e => update('idIssueDate', e.target.value)} disabled={!editing} />
-      </label>
-      <label>ID Expiration
-        <input type="date" value={form.idExpiration || ''} onChange={e => update('idExpiration', e.target.value)} disabled={!editing} />
-      </label>
+  <FieldSet className="card section">
+    <FieldLegend className="mb-1 text-sm">Government ID</FieldLegend>
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2 items-end">
+        <Field className="flex-1">
+          <FieldLabel>ID Type</FieldLabel>
+          <Input list="idTypes" value={form.idType || ''} onChange={e => update('idType', e.target.value)} disabled={!editing} />
+        </Field>
+        <Field className="flex-1">
+          <FieldLabel>ID Number</FieldLabel>
+          <Input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} />
+        </Field>
+        <Field className="w-20">
+          <FieldLabel>Issuing State</FieldLabel>
+          <Select value={form.idState || undefined} onValueChange={(value) => update('idState', value)} disabled={!editing}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field className="w-36">
+          <FieldLabel>ID Issue Date</FieldLabel>
+          <Input type="date" value={form.idIssueDate || ''} onChange={e => update('idIssueDate', e.target.value)} disabled={!editing} />
+        </Field>
+        <Field className="w-36">
+          <FieldLabel>ID Expiration</FieldLabel>
+          <Input type="date" value={form.idExpiration || ''} onChange={e => update('idExpiration', e.target.value)} disabled={!editing} />
+        </Field>
+      </div>
 
-      <label className="col-span-2">ID Address<input value={form.idAddress || ''} onChange={e => update('idAddress', e.target.value)} disabled={!editing} /></label>
-      <label>ID City<input value={form.idCity || ''} onChange={e => update('idCity', e.target.value)} disabled={!editing} /></label>
-      <label>ID Zip<input value={form.idZip || ''} onChange={e => update('idZip', e.target.value)} disabled={!editing} /></label>
+      <div className="flex gap-2">
+        <Field className="flex-1">
+          <FieldLabel>ID Address</FieldLabel>
+          <Input value={form.idAddress || ''} onChange={e => update('idAddress', e.target.value)} disabled={!editing} />
+        </Field>
+        <Field className="w-48">
+          <FieldLabel>ID City</FieldLabel>
+          <Input value={form.idCity || ''} onChange={e => update('idCity', e.target.value)} disabled={!editing} />
+        </Field>
+        <Field className="w-28">
+          <FieldLabel>ID Zip</FieldLabel>
+          <Input value={form.idZip || ''} onChange={e => update('idZip', e.target.value)} disabled={!editing} />
+        </Field>
+      </div>
     </div>
-  </fieldset>
+  </FieldSet>
 );
 
 interface PhysicalProps extends SectionProps { setHeight(feet: string, inches: string): void; heightFeet: string; heightInches: string; }
 const PhysicalTraitsSection = ({ form, update, editing, setHeight, heightFeet, heightInches }: PhysicalProps) => (
-  <fieldset className="card section">
-    <legend>Physical Traits & Birth</legend>
-    <div className="grid cols-5 gap">
-      <label>Sex
-        <select value={form.sex || ''} onChange={e => update('sex', e.target.value || undefined)} disabled={!editing}>
-          <option value="">--</option><option value="M">M</option><option value="F">F</option><option value="O">Other</option>
-        </select>
-      </label>
-      <label>Height
-        <div style={{ display: 'flex', gap: 4 }}>
-          <input style={{ width: 50 }} disabled={!editing} value={heightFeet} placeholder="ft" onChange={e => setHeight(e.target.value, heightInches)} />
-          <input style={{ width: 50 }} disabled={!editing} value={heightInches} placeholder="in" onChange={e => setHeight(heightFeet, e.target.value)} />
+  <FieldSet className="card section">
+    <FieldLegend>Physical Traits & Birth</FieldLegend>
+    <div className="grid grid-cols-5 gap-4">
+      <Field>
+        <FieldLabel>Sex</FieldLabel>
+        <Select value={form.sex || undefined} onValueChange={(value) => update('sex', value || undefined)} disabled={!editing}>
+          <SelectTrigger>
+            <SelectValue placeholder="--" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="M">M</SelectItem>
+            <SelectItem value="F">F</SelectItem>
+            <SelectItem value="O">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel>Height</FieldLabel>
+        <div className="flex gap-1">
+          <Input className="w-14" disabled={!editing} value={heightFeet} placeholder="ft" onChange={e => setHeight(e.target.value, heightInches)} />
+          <Input className="w-14" disabled={!editing} value={heightInches} placeholder="in" onChange={e => setHeight(heightFeet, e.target.value)} />
         </div>
-      </label>
-      <label>Weight <input value={form.weight || ''} onChange={e => update('weight', e.target.value)} disabled={!editing} placeholder="lbs" /></label>
-      <label>Hair Color <input list="hairColors" value={form.hairColor || ''} onChange={e => update('hairColor', e.target.value)} disabled={!editing} /></label>
-      <label>Eye Color <input list="eyeColors" value={form.eyeColor || ''} onChange={e => update('eyeColor', e.target.value)} disabled={!editing} /></label>
+      </Field>
+      <Field>
+        <FieldLabel>Weight</FieldLabel>
+        <Input value={form.weight || ''} onChange={e => update('weight', e.target.value)} disabled={!editing} placeholder="lbs" />
+      </Field>
+      <Field>
+        <FieldLabel>Hair Color</FieldLabel>
+        <Input list="hairColors" value={form.hairColor || ''} onChange={e => update('hairColor', e.target.value)} disabled={!editing} />
+      </Field>
+      <Field>
+        <FieldLabel>Eye Color</FieldLabel>
+        <Input list="eyeColors" value={form.eyeColor || ''} onChange={e => update('eyeColor', e.target.value)} disabled={!editing} />
+      </Field>
 
-      <label>Race <input list="races" value={form.race || ''} onChange={e => update('race', e.target.value)} disabled={!editing} /></label>
-      <label>Birth City<input value={form.birthCity || ''} onChange={e => update('birthCity', e.target.value)} disabled={!editing} /></label>
-      <label>Birth State
-        <select value={form.birthState || ''} onChange={e => update('birthState', e.target.value)} disabled={!editing}>
-          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>Birth Country<input value={form.birthCountry || ''} onChange={e => update('birthCountry', e.target.value)} disabled={!editing} /></label>
-      <label className="col-span-2">Marks<textarea value={form.marks || ''} onChange={e => update('marks', e.target.value)} disabled={!editing} rows={2} /></label>
+      <Field>
+        <FieldLabel>Race</FieldLabel>
+        <Input list="races" value={form.race || ''} onChange={e => update('race', e.target.value)} disabled={!editing} />
+      </Field>
+      <Field>
+        <FieldLabel>Birth City</FieldLabel>
+        <Input value={form.birthCity || ''} onChange={e => update('birthCity', e.target.value)} disabled={!editing} />
+      </Field>
+      <Field>
+        <FieldLabel>Birth State</FieldLabel>
+        <Select value={form.birthState || undefined} onValueChange={(value) => update('birthState', value)} disabled={!editing}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select state" />
+          </SelectTrigger>
+          <SelectContent>
+            {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field>
+        <FieldLabel>Birth Country</FieldLabel>
+        <Input value={form.birthCountry || ''} onChange={e => update('birthCountry', e.target.value)} disabled={!editing} />
+      </Field>
+      <Field className="col-span-2">
+        <FieldLabel>Marks</FieldLabel>
+        <Textarea 
+          value={form.marks || ''} 
+          onChange={e => update('marks', e.target.value)} 
+          disabled={!editing} 
+          rows={2} 
+        />
+      </Field>
     </div>
-  </fieldset>
+  </FieldSet>
 );
 
 /** Results modal */
@@ -249,7 +363,7 @@ const SearchResultsModal = ({
 };
 
 // main
-export default function CustomerPicker({ value, onChange, onSelected, onCreateNew }: Props) {
+export default function CustomerPicker({ value, onChange, onSelected, onCreateNew, onCancelTransaction }: Props) {
   const [form, setForm] = useState<CustomerRecord>(() => dtoToRecord(value ?? null));
   const [results, setResults] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -646,34 +760,55 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   return (
     <div className={containerClass}>
       <form onSubmit={search} aria-label="Customer search / create">
-        <IdentityContactSection form={form} update={update} editing={editingNew} />
-        <AddressSection form={form} update={update} editing={editingNew} useIdAddr={useIdAddr} setUseIdAddr={setUseIdAddr} />
-        <GovernmentIdSection form={form} update={update} editing={editingNew} />
-        <PhysicalTraitsSection form={form} update={update} editing={editingNew} setHeight={setHeight} heightFeet={heightFeet} heightInches={heightInches} />
-
-        <fieldset className="card section">
-          <legend>Notes</legend>
-          <label className="block">
-            <textarea value={form.description || ''} onChange={e => update('description', e.target.value)} rows={3} placeholder="Notes / description" />
-          </label>
-        </fieldset>
-
-        <div className="actions-row">
-          {!editingNew && (
-            <>
-              <button type="submit" disabled={disableSearch || loading}>{loading ? 'Searching…' : 'Find'}</button>
-              <button type="button" onClick={clearAll} disabled={loading}>Clear</button>
-              <button type="button" onClick={() => { setEditingNew(true); setResults([]); onCreateNew?.(crypto.randomUUID()); }} disabled={loading}>Add New</button>
-              <button type="button" onClick={() => setScanModalOpen(true)}>Scan ID</button>
-            </>
-          )}
-          {editingNew && (
-            <>
-              <button type="button" onClick={saveNew} disabled={saving}>{saving ? 'Saving…' : 'Save Customer'}</button>
-              <button type="button" onClick={clearAll} disabled={saving}>Cancel</button>
-            </>
-          )}
+        <div className="grid grid-cols-3 gap-3">
+          <IdentityContactSection form={form} update={update} editing={editingNew} />
+          <div className="col-span-2 flex flex-col gap-2">
+            <AddressSection form={form} update={update} editing={editingNew} useIdAddr={useIdAddr} setUseIdAddr={setUseIdAddr} />
+            <GovernmentIdSection form={form} update={update} editing={editingNew} />
+          </div>
+          
+          <div className="col-span-3 grid grid-cols-12 gap-4">
+            <div className="col-span-7">
+              <PhysicalTraitsSection form={form} update={update} editing={editingNew} setHeight={setHeight} heightFeet={heightFeet} heightInches={heightInches} />
+            </div>
+            <div className="col-span-3">
+              <FieldSet className="card section h-full">
+                <FieldLegend>Notes</FieldLegend>
+                <Field className="h-[calc(100%-2rem)]">
+                  <Textarea 
+                    value={form.description || ''} 
+                    onChange={e => update('description', e.target.value)} 
+                    className="h-full resize-none"
+                    placeholder="Notes / description" 
+                  />
+                </Field>
+              </FieldSet>
+            </div>
+            <div className="col-span-2 flex flex-col justify-between py-4">
+              <div className="flex flex-col gap-2">
+                {!editingNew && (
+                  <>
+                    <Button type="submit" disabled={disableSearch || loading}>{loading ? 'Searching…' : 'Find'}</Button>
+                    <Button type="button" variant="outline" onClick={clearAll} disabled={loading}>Clear</Button>
+                    <Button type="button" variant="secondary" onClick={() => { setEditingNew(true); setResults([]); onCreateNew?.(crypto.randomUUID()); }} disabled={loading}>Add New</Button>
+                    <Button type="button" variant="secondary" onClick={() => setScanModalOpen(true)}>Scan ID</Button>
+                  </>
+                )}
+                {editingNew && (
+                  <>
+                    <Button type="button" onClick={saveNew} disabled={saving}>{saving ? 'Saving…' : 'Save Customer'}</Button>
+                    <Button type="button" variant="outline" onClick={clearAll} disabled={saving}>Cancel</Button>
+                  </>
+                )}
+              </div>
+              {!editingNew && onCancelTransaction && (
+                <Button type="button" variant="destructive" onClick={onCancelTransaction}>Cancel Transaction</Button>
+              )}
+            </div>
+          </div>
         </div>
+
+
 
         {saveError && <div className="error" role="alert">{saveError}</div>}
         {statusMessage && <div className="cp-status">{statusMessage}</div>}

@@ -11,14 +11,14 @@
     "isolatedModules": true,
     "noEmit": true,
     "strict": true,
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "types": ["node"],
     "paths": {
-      "@/*": ["*"],
-      "app/*": ["app/*"],
-      "core/*": ["app/core/*"],
-      "feature/*": ["app/feature/*"],
-      "shared/*": ["app/shared/*"]
+      "@/*": ["./src/*"],
+      "app/*": ["./src/app/*"],
+      "core/*": ["./src/app/core/*"],
+      "feature/*": ["./src/app/feature/*"],
+      "shared/*": ["./src/app/shared/*"]
     }
   },
   "include": ["./src","./electron"],

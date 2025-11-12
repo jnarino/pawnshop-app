@@ -1,3 +1,4 @@
+
 .idscan-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:4000; }
 .idscan-modal { background:#222; border:2px solid #ffcc33; padding:18px 22px; width:360px; max-width:90vw; color:#eee; font:14px/1.4 sans-serif; }
 .idscan-modal h3 { margin:0 0 10px; font-size:16px; color:#ffdd55; }
