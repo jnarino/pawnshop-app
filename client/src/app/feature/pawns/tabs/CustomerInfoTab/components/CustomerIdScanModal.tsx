@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { parseAamva, AamvaData } from '../../../shared/hooks/useIdScan';
+import { parseAamva, AamvaData } from '@/app/shared/hooks/useIdScan';
 
 interface Props {
     open: boolean;

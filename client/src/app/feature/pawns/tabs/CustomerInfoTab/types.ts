@@ -1,4 +1,4 @@
-// src/app/feature/customer/types.ts
+// src/app/feature/pawns/tabs/CustomerInfoTab/types.ts
 import { z } from "zod";
 
 /**

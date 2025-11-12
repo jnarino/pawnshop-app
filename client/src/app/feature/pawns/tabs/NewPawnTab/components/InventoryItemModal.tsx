@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useBarcodeScan } from '../../../shared/hooks/useBarcodeScan';
+import './InventoryItemModal.css';
+import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 import { useCategoryLookup } from '../hooks/useCategoryLookup';
 import {

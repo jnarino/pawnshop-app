@@ -1,7 +1,11 @@
-// src/app/feature/pawnTicket/hooks/usePawnTicketCreation.ts
+// src/app/feature/pawns/tabs/NewPawnTab/hooks/usePawnTicketCreation.ts
 import { useState } from 'react';
 import { http } from '@/app/core/api/http';
 import type { CreatePawnTicketDto, PawnTicketDto } from '@/app/shared/types/pawnTicket';
+import type { Customer } from '../../CustomerInfoTab/types';
+
+// Re-export Customer type for convenience
+export type { Customer } from '../../CustomerInfoTab/types';
 
 export function usePawnTicketCreation() {
     const [loading, setLoading] = useState(false);
@@ -28,5 +32,16 @@ export function usePawnTicketCreation() {
         }
     };
 
-    return { createPawnTicket, loading, error };
+    const getCustomerInfo = async (customerId: string): Promise<Customer> => {
+        try {
+            const customer = await http<Customer>(`/api/customer/${customerId}`);
+            return customer;
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch customer';
+            setError(errorMessage);
+            throw err;
+        }
+    };
+
+    return { createPawnTicket, getCustomerInfo, loading, error };
 }

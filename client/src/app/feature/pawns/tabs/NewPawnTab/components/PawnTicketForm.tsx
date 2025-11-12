@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import InventoryItemModal, { InventoryItemDraft } from './InventoryItemModal';
 import type { PawnDraft } from '../types';
-import { http } from '@/app/core/api/http';
 import type { CreatePawnTicketDto } from '@/app/shared/types/pawnTicket';
 import { useCategoryLookup } from '../hooks/useCategoryLookup';
+import { usePawnTicketCreation } from '../hooks/usePawnTicketCreation';
 import { PrintLabelsModal } from './PrintLabelsModal';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '@/app/core/auth/authService';
@@ -76,13 +76,13 @@ interface PrintData {
 export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: Props) {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [printData, setPrintData] = useState<PrintData | null>(null); // ✅ Use the type
+  const [printData, setPrintData] = useState<PrintData | null>(null);
 
   const navigate = useNavigate();
+  const { createPawnTicket, getCustomerInfo, loading: saving } = usePawnTicketCreation();
+  const [error, setError] = useState<string | null>(null);
 
   const updateDraft = (patch: Partial<PawnDraft>) =>
     setDraft(prev => ({ ...prev, ...patch }));
@@ -105,11 +105,12 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
   // Helpers to parse numbers safely
   const toMoney = (s?: string) => {
-    const n = parseFloat(String(s ?? '').replace(/[^0-9.\-]/g, ''));
+    // eslint-disable-next-line prefer-named-capture-group
+    const n = Number.parseFloat(String(s ?? '').replace(/[^0-9.-]/g, ''));
     return Number.isFinite(n) ? n : 0;
   };
   const toQty = (s?: string) => {
-    const n = parseInt(String(s ?? '1'), 10);
+    const n = Number.parseInt(String(s ?? '1'), 10);
     return Number.isFinite(n) && n > 0 ? n : 1;
   };
 
@@ -121,7 +122,7 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
   // Clamp rate percent between 10 and 25
   function setClampedRatePercent(v: string) {
-    const num = parseFloat(v);
+    const num = Number.parseFloat(v);
     if (!Number.isFinite(num)) { updateDraft({ ratePercent: '' }); return; }
     const clamped = Math.min(25, Math.max(10, num));
     updateDraft({ ratePercent: String(clamped) });
@@ -131,7 +132,7 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null); setSaving(true); setCreatedId(null);
+    setCreatedId(null);
 
     try {
       // ✅ CONVERT CATEGORY CODES TO UUIDs
@@ -149,7 +150,7 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
           serialNumber: it.serial || undefined,
           colorId: null, // Will be set when color lookup is implemented
           itemCondition: 'Good', // Default condition
-          quantity: parseInt(it.quantity || '1') || 1,
+          quantity: Number.parseInt(it.quantity || '1', 10) || 1,
           priceAmount: it.amount ? Number(toMoney(it.amount)) : undefined,
           resale: undefined, // Add when UI supports it
           minResale: undefined, // Add when UI supports it
@@ -184,77 +185,65 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
       if (draft.type === 'PAWN') {
         body.amountFinanced = itemsTotal;
-        body.periodicRate = (parseFloat(draft.ratePercent) || 0) / 100;
+        body.periodicRate = (Number.parseFloat(draft.ratePercent) || 0) / 100;
       }
 
-      const data = await http('/api/pawnTicket', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
+      // ✅ Use hook instead of direct HTTP call
+      const data = await createPawnTicket(body);
       setCreatedId(data.id);
 
-      // ✅ Fetch customer name
-      const customer = await http(`/api/customer/${customerId}`);
+      // ✅ Use hook to fetch customer info
+      const customer = await getCustomerInfo(customerId);
 
-      const formatMoney = (val?: number | null) =>
-        val == null ? '' : `$${Number(val).toFixed(2)}`;
-
-      // ✅ FIXED: Check if inventoryItems exists, fallback to draft items
-      const inventoryItems = data.inventoryItems || [];
-
-      if (inventoryItems.length === 0) {
-        console.warn('[PawnTicket] No inventory items in response, using draft items');
-      }
+      // ✅ Helper to convert null to undefined
+      const nullToUndefined = (val: string | null | undefined): string | undefined => 
+        val === null ? undefined : val;
 
       // ✅ Prepare print data with enhanced info
       const printDataPrepared: PrintData = {
-        controlNumber: data.controlNumber,
+        controlNumber: data.controlNumber ?? '',
         customerName: `${customer.firstName} ${customer.lastName}`,
         customerFirst: customer.firstName,
-        customerMiddle: customer.middleName,
+        customerMiddle: nullToUndefined(customer.middleName),
         customerMiddleInitial: customer.middleName ? customer.middleName[0] : undefined,
         customerLastName: customer.lastName,
         customerFirstInitial: customer.firstName?.charAt(0) ?? '',
         ticketType: draft.type,
         transactionDate: data.transactionDate ?? new Date().toISOString(),
         maturityDate: data.maturityDate ?? null,
-        customerAddress: customer.streetAddress,
-        customerCity: customer.city,
-        customerState: customer.stateUs,
-        customerZip: customer.zipCode,
-        customerPhone: customer.phoneNumber ?? customer.cellPhone,
-        customerEmployer: customer.employerName ?? '',
-        customerIdNumber: customer.idNumber,
-        customerIdType: customer.idType,
-        customerIdState: customer.idState,
-        customerBirthdate: customer.dateOfBirth,
-        customerSex: customer.sex,
-        customerHeight: customer.height,
-        customerWeight: customer.weight,
-        customerEyes: customer.eyeColor,
-        customerHair: customer.hairColor,
-        customerRace: customer.race,
+        customerAddress: nullToUndefined(customer.streetAddress),
+        customerCity: nullToUndefined(customer.city),
+        customerState: nullToUndefined(customer.stateUs),
+        customerZip: nullToUndefined(customer.zipCode),
+        customerPhone: nullToUndefined(customer.phoneNumber ?? customer.cellPhone),
+        customerEmployer: nullToUndefined(customer.employerName) ?? '',
+        customerIdNumber: nullToUndefined(customer.idNumber),
+        customerIdType: nullToUndefined(customer.idType),
+        customerIdState: nullToUndefined(customer.idState),
+        customerBirthdate: nullToUndefined(customer.dateOfBirth),
+        customerSex: nullToUndefined(customer.sex),
+        customerHeight: nullToUndefined(customer.height),
+        customerWeight: nullToUndefined(customer.weight),
+        customerEyes: nullToUndefined(customer.eyeColor),
+        customerHair: nullToUndefined(customer.hairColor),
+        customerRace: nullToUndefined(customer.race),
         defaultDate: data.defaultDate ?? null,
-        items: (inventoryItems.length > 0 ? inventoryItems : draft.items).map((item: any, idx: number) => {
-          const src = inventoryItems.length > 0 ? item : draft.items[idx];
-          const attrs = src.attributes ?? {};
+        items: draft.items.map((draftItem: InventoryItemDraft, idx: number) => {
           return {
-            id: item.id ?? `draft-${idx}`,
-            inventoryNumber: item.inventoryNumber || `${data.controlNumber}-${idx + 1}`,
-            description: (item.itemDescription || buildDescription(src)).toUpperCase(),
-            amount: (item.priceAmount ?? src.amount ?? '0').toString(),
-            brand: item.brand ?? src.brand,
-            category: src.type ?? '',
-            categoryLabel: src.type ?? '',
-            karat: attrs.karat ?? attrs.Karat ?? '',
-            weight: attrs.weight ?? attrs.Weight ?? '',
-            weightUnit: attrs.weightUnit ?? attrs.WeightUnit ?? '',
-            quantity: attrs.quantity ?? attrs.Quantity ?? src.quantity ?? 1,
-            typeCode: attrs.typeCode ?? attrs.metal ?? '',
-            modelNumber: src.model ?? attrs.model ?? '',
-            serialNumber: attrs.serial ?? attrs.serialNumber ?? src.serial ?? ''
+            id: `draft-${idx}`,
+            inventoryNumber: `${data.controlNumber ?? 'PENDING'}-${idx + 1}`,
+            description: buildDescription(draftItem).toUpperCase(),
+            amount: (draftItem.amount ?? '0').toString(),
+            brand: draftItem.brand ?? '',
+            category: draftItem.type ?? '',
+            categoryLabel: draftItem.type ?? '',
+            karat: (draftItem as any).karat ?? '',
+            weight: (draftItem as any).weight ?? '',
+            weightUnit: (draftItem as any).weightUnit ?? '',
+            quantity: Number.parseInt((draftItem as any).quantity || '1', 10),
+            typeCode: (draftItem as any).metal ?? '',
+            modelNumber: draftItem.model ?? '',
+            serialNumber: draftItem.serial ?? ''
           };
         })
       };
@@ -274,8 +263,6 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
 
     } catch (e: any) {
       setError(e.message || 'Save failed');
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -326,24 +313,32 @@ export default function PawnTicketForm({ customerId, draft, setDraft, onBack }: 
       <h2>Pawn Ticket Details</h2>
       <form onSubmit={submit} className="pawn-ticket-layout">
         <section className="pawn-ticket-left">
-          <div className="row"><label>Type
-            <select value={draft.type} onChange={e => updateDraft({ type: e.target.value as PawnDraft['type'] })}>
-              <option value="PAWN">Pawn</option>
-              <option value="PURCHASE">Purchase</option>
-            </select>
-          </label></div>
+          <div className="row">
+            <label>
+              Type
+              {' '}
+              <select value={draft.type} onChange={e => updateDraft({ type: e.target.value as PawnDraft['type'] })}>
+                <option value="PAWN">Pawn</option>
+                <option value="PURCHASE">Purchase</option>
+              </select>
+            </label>
+          </div>
 
           {/* ❌ REMOVED Control Number input - auto-generated by server */}
 
           {draft.type === 'PAWN' && <>
-            <div className="row"><label>Amount Financed
-              <input
-                value={itemsTotal.toFixed(2)}
-                readOnly
-                inputMode="decimal"
-                aria-readonly="true"
-              />
-            </label></div>
+            <div className="row">
+              <label>
+                Amount Financed
+                {' '}
+                <input
+                  value={itemsTotal.toFixed(2)}
+                  readOnly
+                  inputMode="decimal"
+                  aria-readonly="true"
+                />
+              </label>
+            </div>
 
             <div className="row"><label>Rate
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
