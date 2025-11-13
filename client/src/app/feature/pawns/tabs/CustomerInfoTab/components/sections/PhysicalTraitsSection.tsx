@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerRecord } from '../../mappers';
-import { US_STATES } from '../../constants/customerConstants';
+import { US_STATES, HAIR_COLORS, RACES, EYE_COLORS } from '../../constants/customerConstants';
 
 interface PhysicalTraitsSectionProps {
   form: CustomerRecord;
@@ -45,16 +45,37 @@ export function PhysicalTraitsSection({ form, update, editing, setHeight, height
         </Field>
         <Field>
           <FieldLabel>Hair Color</FieldLabel>
-          <Input list="hairColors" value={form.hairColor || ''} onChange={e => update('hairColor', e.target.value)} disabled={!editing} />
+          <Select value={form.hairColor || undefined} onValueChange={(value) => update('hairColor', value)} disabled={!editing}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select color" />
+            </SelectTrigger>
+            <SelectContent>
+              {HAIR_COLORS.map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </Field>
         <Field>
           <FieldLabel>Eye Color</FieldLabel>
-          <Input list="eyeColors" value={form.eyeColor || ''} onChange={e => update('eyeColor', e.target.value)} disabled={!editing} />
+          <Select value={form.eyeColor || undefined} onValueChange={(value) => update('eyeColor', value)} disabled={!editing}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select color" />
+            </SelectTrigger>
+            <SelectContent>
+              {EYE_COLORS.map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </Field>
 
         <Field>
           <FieldLabel>Race</FieldLabel>
-          <Input list="races" value={form.race || ''} onChange={e => update('race', e.target.value)} disabled={!editing} />
+          <Select value={form.race || undefined} onValueChange={(value) => update('race', value)} disabled={!editing}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select race" />
+            </SelectTrigger>
+            <SelectContent>
+              {RACES.map(race => <SelectItem key={race} value={race}>{race}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </Field>
         <Field>
           <FieldLabel>Birth City</FieldLabel>
@@ -82,6 +103,7 @@ export function PhysicalTraitsSection({ form, update, editing, setHeight, height
             onChange={e => update('marks', e.target.value)} 
             disabled={!editing} 
             rows={2} 
+            className="resize-none"
           />
         </Field>
       </div>

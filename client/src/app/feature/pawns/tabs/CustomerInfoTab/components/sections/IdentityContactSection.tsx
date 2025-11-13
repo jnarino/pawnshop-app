@@ -5,9 +5,9 @@ import { CustomerRecord } from '../../mappers';
 import { formatPhone } from '../../utils/formatters';
 
 interface IdentityContactSectionProps {
-  form: CustomerRecord;
-  update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]): void;
-  editing: boolean;
+  readonly form: CustomerRecord;
+  readonly update: <K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) => void;
+  readonly editing: boolean;
 }
 
 export function IdentityContactSection({ form, update, editing }: IdentityContactSectionProps) {
@@ -21,7 +21,7 @@ export function IdentityContactSection({ form, update, editing }: IdentityContac
         </Field>
         <Field>
           <FieldLabel>Middle</FieldLabel>
-          <Input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" />
+          <Input value={form.middleName || ''} onChange={e => update('middleName', e.target.value)} placeholder="M" disabled={!editing} />
         </Field>
         <Field>
           <FieldLabel>Last Name *</FieldLabel>

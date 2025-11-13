@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Customer } from '../tabs/CustomerInfoTab/types';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 
-export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'history';
+export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'customerPerformance' | 'history';
 
 interface PawnWorkflowState {
   // Customer state

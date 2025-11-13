@@ -1,9 +1,9 @@
 import AppRouter from './AppRouter';
 import AuthMenuSync from './shared/components/AuthMenuSync';
+import { Toaster } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { isAuthenticated, initializeAuth } from './core/auth/authService';
-import { getAccessToken } from './core/auth/authService';
+import { isAuthenticated, initializeAuth, getAccessToken } from './core/auth/authService';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -44,4 +44,4 @@ if (typeof window !== 'undefined') {
   };
 }
 
-export default function App() { return <><AuthMenuSync /><ElectronNavHandler /><AppRouter /></>; }
+export default function App() { return <><AuthMenuSync /><ElectronNavHandler /><AppRouter /><Toaster position="top-right" /></>; }

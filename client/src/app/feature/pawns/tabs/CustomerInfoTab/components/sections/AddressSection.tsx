@@ -7,11 +7,11 @@ import { CustomerRecord } from '../../mappers';
 import { US_STATES } from '../../constants/customerConstants';
 
 interface AddressSectionProps {
-  form: CustomerRecord;
-  update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]): void;
-  editing: boolean;
-  useIdAddr: boolean;
-  setUseIdAddr(v: boolean): void;
+  readonly form: CustomerRecord;
+  readonly update: <K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) => void;
+  readonly editing: boolean;
+  readonly useIdAddr: boolean;
+  readonly setUseIdAddr: (v: boolean) => void;
 }
 
 export function AddressSection({ form, update, editing, useIdAddr, setUseIdAddr }: AddressSectionProps) {
@@ -22,7 +22,8 @@ export function AddressSection({ form, update, editing, useIdAddr, setUseIdAddr 
       <div className="flex items-center space-x-2">
         <Checkbox 
           id="sameAsId" 
-          checked={useIdAddr} 
+          checked={useIdAddr}
+          disabled={!editing}
           onCheckedChange={(checked) => {
             setUseIdAddr(!!checked);
             if (checked) {

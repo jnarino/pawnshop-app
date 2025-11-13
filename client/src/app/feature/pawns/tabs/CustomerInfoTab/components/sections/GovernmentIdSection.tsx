@@ -6,12 +6,13 @@ import { CustomerRecord } from '../../mappers';
 import { US_STATES } from '../../constants/customerConstants';
 
 interface GovernmentIdSectionProps {
-  form: CustomerRecord;
+  readonly form: CustomerRecord;
   update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]): void;
-  editing: boolean;
+  readonly editing: boolean;
+  readonly loading?: boolean;
 }
 
-export function GovernmentIdSection({ form, update, editing }: GovernmentIdSectionProps) {
+export function GovernmentIdSection({ form, update, editing, loading }: GovernmentIdSectionProps) {
   return (
     <FieldSet className="card section">
       <FieldLegend className="mb-1 text-sm">Government ID</FieldLegend>
@@ -23,7 +24,7 @@ export function GovernmentIdSection({ form, update, editing }: GovernmentIdSecti
           </Field>
           <Field className="flex-1">
             <FieldLabel>ID Number</FieldLabel>
-            <Input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} />
+            <Input value={form.idNumber || ''} onChange={e => update('idNumber', e.target.value)} disabled={loading || !editing} />
           </Field>
           <Field className="w-20">
             <FieldLabel>Issuing State</FieldLabel>

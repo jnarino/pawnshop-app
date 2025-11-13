@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
+import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
 
 function PawnsWorkspaceContent() {
@@ -21,8 +22,8 @@ function PawnsWorkspaceContent() {
           <TabsTrigger value="customer">
             Customer Info
           </TabsTrigger>
-          <TabsTrigger value="additional" disabled={!canNavigateToTab('additional')}>
-            Additional Info
+          <TabsTrigger value="customerPerformance" disabled={!canNavigateToTab('customerPerformance')}>
+            Customer Performance
           </TabsTrigger>
           <TabsTrigger value="newPawn" disabled={!canNavigateToTab('newPawn')}>
             New Pawn
@@ -39,12 +40,6 @@ function PawnsWorkspaceContent() {
           <CustomerInfoTab />
         </TabsContent>
 
-        <TabsContent value="additional" className="h-[calc(100%-4rem)]">
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Additional Info - Coming Soon
-          </div>
-        </TabsContent>
-
         <TabsContent value="newPawn" className="h-[calc(100%-4rem)]">
           <NewPawnTab />
         </TabsContent>
@@ -53,6 +48,10 @@ function PawnsWorkspaceContent() {
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Previous Items - Coming Soon
           </div>
+        </TabsContent>
+
+        <TabsContent value="customerPerformance" className="h-[calc(100%-4rem)]">
+          <CustomerPerformanceTab />
         </TabsContent>
 
         <TabsContent value="history" className="h-[calc(100%-4rem)]">

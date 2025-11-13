@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { Customer as CustomerDto } from '../types';
 import { recordToDto } from '../mappers';
 import './CustomerPicker.css';
-import { CustomerActionButtons } from './CustomerActionButtons';
 import { IdentityContactSection } from './sections/IdentityContactSection';
 import { AddressSection } from './sections/AddressSection';
 import { GovernmentIdSection } from './sections/GovernmentIdSection';
@@ -23,10 +22,32 @@ interface Props {
   onCreateNew?(tempId: string): void;
   onSelected?(id: string): void;
   onCancelTransaction?(): void;
+  onStateChange?(state: {
+    editingNew: boolean;
+    editingExisting: boolean;
+    loading: boolean;
+    saving: boolean;
+    disableSearch: boolean;
+  }): void;
 }
 
-export default function CustomerPicker({ value, onChange, onSelected, onCreateNew, onCancelTransaction }: Props) {
+export interface CustomerPickerRef {
+  handleSearch: () => void;
+  handleClearAll: () => void;
+  handleAddNew: () => void;
+  handleScanId: () => void;
+  handleSaveNew: () => void;
+  handleUpdateExisting: () => void;
+  editingNew: boolean;
+  editingExisting: boolean;
+  loading: boolean;
+  saving: boolean;
+  disableSearch: boolean;
+}
+
+const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange }, ref) => {
   const [editingNew, setEditingNew] = useState(false);
+  const [editingExisting, setEditingExisting] = useState(false);
 
   const customerForm = useCustomerForm(value);
   const customerSearch = useCustomerSearch();
@@ -45,6 +66,9 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
   useEffect(() => {
     if (value) {
       customerForm.setForm(value as any);
+      setEditingExisting(true);
+    } else {
+      setEditingExisting(false);
     }
   }, [value]);
 
@@ -66,8 +90,20 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [customerSearch.searchModalOpen, idScanHandler.scanModalOpen]);
 
+  // Find button enabled only if at least one of: First Name, Last Name, or DOB has a value
   const disableSearch = !customerForm.form.firstName && !customerForm.form.lastName && 
-                        !customerForm.form.dateOfBirth && !customerForm.form.idNumber;
+                        !customerForm.form.dateOfBirth;
+
+  // Notify parent of state changes
+  useEffect(() => {
+    onStateChange?.({
+      editingNew,
+      editingExisting,
+      loading: customerSearch.loading,
+      saving: customerSave.saving,
+      disableSearch,
+    });
+  }, [editingNew, editingExisting, customerSearch.loading, customerSave.saving, disableSearch, onStateChange]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -83,13 +119,17 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
     customerForm.clearForm();
     customerSearch.resetSearch();
     setEditingNew(false);
+    setEditingExisting(false);
     customerSave.clearStatus();
     idScanHandler.clearScanData();
+    onChange?.(null);
   };
 
   const handleAddNew = () => {
+    customerForm.clearForm();
     setEditingNew(true);
     customerSearch.resetSearch();
+    onChange?.(null);
     onCreateNew?.(crypto.randomUUID());
   };
 
@@ -101,6 +141,34 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       onChange?.(recordToDto(customerForm.form, newId));
     }
   };
+
+  const handleUpdateExisting = async () => {
+    if (!value?.id) return;
+    const success = await customerSave.updateExisting(customerForm.form, value.id);
+    if (success) {
+      setEditingExisting(false);
+      onChange?.(recordToDto(customerForm.form, value.id));
+    }
+  };
+
+  const handleScanId = () => {
+    idScanHandler.setScanModalOpen(true);
+  };
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    handleSearch,
+    handleClearAll,
+    handleAddNew,
+    handleScanId,
+    handleSaveNew,
+    handleUpdateExisting,
+    editingNew,
+    editingExisting,
+    loading: customerSearch.loading,
+    saving: customerSave.saving,
+    disableSearch,
+  }));
 
   const handleSelectCustomer = (id: string, record: any) => {
     onSelected?.(id);
@@ -119,21 +187,22 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
           <IdentityContactSection 
             form={customerForm.form} 
             update={customerForm.update} 
-            editing={editingNew} 
+            editing={editingNew || editingExisting} 
           />
           
           <div className="col-span-2 flex flex-col gap-2">
             <AddressSection 
               form={customerForm.form} 
               update={customerForm.update} 
-              editing={editingNew} 
+              editing={editingNew || editingExisting} 
               useIdAddr={customerForm.useIdAddr}
               setUseIdAddr={customerForm.setUseIdAddr}
             />
             <GovernmentIdSection 
               form={customerForm.form} 
               update={customerForm.update} 
-              editing={editingNew} 
+              editing={editingNew || editingExisting}
+              loading={customerSearch.loading}
             />
           </div>
           
@@ -142,32 +211,19 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
               <PhysicalTraitsSection 
                 form={customerForm.form} 
                 update={customerForm.update} 
-                editing={editingNew}
+                editing={editingNew || editingExisting}
                 setHeight={customerForm.setHeight}
                 heightFeet={customerForm.heightFeet}
                 heightInches={customerForm.heightInches}
               />
             </div>
-            <div className="col-span-3">
+            <div className="col-span-5">
               <NotesSection 
                 form={customerForm.form} 
-                update={customerForm.update} 
+                update={customerForm.update}
+                editing={editingNew || editingExisting}
               />
             </div>
-            
-            <CustomerActionButtons
-              editingNew={editingNew}
-              loading={customerSearch.loading}
-              saving={customerSave.saving}
-              disableSearch={disableSearch}
-              onSearch={handleSearch}
-              onClear={handleClearAll}
-              onAddNew={handleAddNew}
-              onScanId={() => idScanHandler.setScanModalOpen(true)}
-              onSave={handleSaveNew}
-              onCancel={handleClearAll}
-              onCancelTransaction={onCancelTransaction}
-            />
           </div>
         </div>
 
@@ -214,4 +270,8 @@ export default function CustomerPicker({ value, onChange, onSelected, onCreateNe
       />
     </div>
   );
-}
+});
+
+CustomerPicker.displayName = 'CustomerPicker';
+
+export default CustomerPicker;
