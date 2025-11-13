@@ -5,7 +5,9 @@ export interface CreateInventoryItemDTO {
     inventoryNumber?: string; // externally assigned (e.g., controlNumber-seq)
     status?: InventoryItem['status'];
     categoryId: string; // required now (leaf category)
-    brand?: string; model?: string; serialNumber?: string; colorId?: string; itemCondition?: string;
+    brand?: string; model?: string; serialNumber?: string; 
+    colorId?: string | null; // ✅ Allow null
+    itemCondition?: string;
     quantity?: number; priceAmount?: number; resale?: number; minResale?: number; itemReplace?: number; binNumber?: string; ownerMark?: string; itemDescription?: string;
     attributes?: Record<string, any>; // merged flexible attributes
 }
@@ -16,14 +18,14 @@ export interface UpdateInventoryItemDTO extends Partial<CreateInventoryItemDTO> 
     brand?: string;
     model?: string;
     serialNumber?: string;
-    colorId?: string;                    // ✅ Changed from color to colorId
+    colorId?: string | null; // ✅ Allow null
     itemCondition?: string;
     quantity?: number;
     priceAmount?: number;
     resale?: number;
-    minResale?: number;                  // ✅ Added minResale
+    minResale?: number;
     itemReplace?: number;
-    ownerMark?: string;                  // ✅ Renamed from ownerTag
+    ownerMark?: string;
     itemDescription?: string;
     attributes?: Record<string, any>;
 }
