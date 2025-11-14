@@ -102,7 +102,7 @@ export default function CustomerManager({
 
   return (
     <div className={`h-full w-full flex flex-col ${className}`}>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {showAlertWhenEmpty && !customer && !pickerState.editingNew && (
           <div className="px-4 pt-1">
             <Alert variant="info">
@@ -150,7 +150,7 @@ export default function CustomerManager({
       </div>
 
       {!hideDefaultActions && (
-        <div className="border-t p-4 flex items-center justify-between gap-4">
+        <div className="border-t px-4 py-2 flex items-center justify-between gap-4 flex-shrink-0">
           <div className="flex-1">
             {renderLeftActions?.(pickerState)}
           </div>

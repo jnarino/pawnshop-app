@@ -29,8 +29,8 @@ function PawnsWorkspaceContent() {
 
   return (
     <div className="pawn-flow">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
+        <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
           <TabsTrigger value="customer">
             Customer Info
           </TabsTrigger>
@@ -48,7 +48,7 @@ function PawnsWorkspaceContent() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="customer" className="h-[calc(100%-4rem)]">
+        <TabsContent value="customer" className="flex-1 min-h-0">
           <CustomerInfoTab 
             customer={customer}
             onCustomerChange={setCustomer}
@@ -57,24 +57,24 @@ function PawnsWorkspaceContent() {
           />
         </TabsContent>
 
-        <TabsContent value="newPawn" className="h-[calc(100%-4rem)]">
+        <TabsContent value="newPawn" className="flex-1 min-h-0">
           <NewPawnTab 
             customerId={customerId}
             customer={customer}
           />
         </TabsContent>
 
-        <TabsContent value="previousItems" className="h-[calc(100%-4rem)]">
+        <TabsContent value="previousItems" className="flex-1 min-h-0">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Previous Items - Coming Soon
           </div>
         </TabsContent>
 
-        <TabsContent value="customerPerformance" className="h-[calc(100%-4rem)]">
+        <TabsContent value="customerPerformance" className="flex-1 min-h-0">
           <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
-        <TabsContent value="history" className="h-[calc(100%-4rem)]">
+        <TabsContent value="history" className="flex-1 min-h-0">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             History - Coming Soon
           </div>

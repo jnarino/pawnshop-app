@@ -5,6 +5,10 @@
 
 @layer base {
   :root {
+    /* Fluid Typography Base - scales from 10px to 16px based on viewport */
+    font-size: clamp(10px, 0.833vw, 16px);
+    
+    /* Color Variables */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -30,6 +34,26 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Fluid Spacing System (rem-based, will scale with root font-size) */
+    --spacing-xs: 0.25rem;    /* 4px at 16px base */
+    --spacing-sm: 0.5rem;     /* 8px at 16px base */
+    --spacing-md: 1rem;       /* 16px at 16px base */
+    --spacing-lg: 1.5rem;     /* 24px at 16px base */
+    --spacing-xl: 2rem;       /* 32px at 16px base */
+    --spacing-2xl: 3rem;      /* 48px at 16px base */
+    --spacing-3xl: 4rem;      /* 64px at 16px base */
+    
+    /* Fluid Font Sizes (using rem for scaling) */
+    --text-xs: 0.75rem;       /* 12px at 16px base */
+    --text-sm: 0.875rem;      /* 14px at 16px base */
+    --text-base: 1rem;        /* 16px at 16px base */
+    --text-lg: 1.125rem;      /* 18px at 16px base */
+    --text-xl: 1.25rem;       /* 20px at 16px base */
+    --text-2xl: 1.5rem;       /* 24px at 16px base */
+    --text-3xl: 1.875rem;     /* 30px at 16px base */
+    --text-4xl: 2.25rem;      /* 36px at 16px base */
+    --text-5xl: 3rem;         /* 48px at 16px base */
   }
 
   .dark {
@@ -64,8 +88,43 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+  
+  html {
+    height: 100vh;
+    overflow: hidden;
+    /* Base font-size set via clamp() in :root */
+  }
+  
   body {
     @apply bg-background text-foreground;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    /* Font-size inherited from html (1rem = whatever clamp() resolves to) */
+    font-size: 1rem;
+  }
+  
+  #root {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Prevent text from becoming too small to read */
+  button, input, select, textarea, label {
+    font-size: max(0.875rem, 12px);
+  }
+  
+  /* Ensure all interactive elements scale fluidly */
+  button {
+    padding: clamp(0.25rem, 0.5vw, 0.5rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  }
+  
+  input, select, textarea {
+    padding: clamp(0.25rem, 0.5vw, 0.5rem) clamp(0.5rem, 1vw, 1rem);
   }
 }

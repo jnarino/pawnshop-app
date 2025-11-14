@@ -7,6 +7,28 @@ export default {
   ],
   theme: {
   	extend: {
+  		/* Fluid Spacing - scales automatically with root font-size */
+  		spacing: {
+  			'fluid-xs': 'var(--spacing-xs)',
+  			'fluid-sm': 'var(--spacing-sm)',
+  			'fluid-md': 'var(--spacing-md)',
+  			'fluid-lg': 'var(--spacing-lg)',
+  			'fluid-xl': 'var(--spacing-xl)',
+  			'fluid-2xl': 'var(--spacing-2xl)',
+  			'fluid-3xl': 'var(--spacing-3xl)',
+  		},
+  		/* Fluid Font Sizes */
+  		fontSize: {
+  			'fluid-xs': 'var(--text-xs)',
+  			'fluid-sm': 'var(--text-sm)',
+  			'fluid-base': 'var(--text-base)',
+  			'fluid-lg': 'var(--text-lg)',
+  			'fluid-xl': 'var(--text-xl)',
+  			'fluid-2xl': 'var(--text-2xl)',
+  			'fluid-3xl': 'var(--text-3xl)',
+  			'fluid-4xl': 'var(--text-4xl)',
+  			'fluid-5xl': 'var(--text-5xl)',
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

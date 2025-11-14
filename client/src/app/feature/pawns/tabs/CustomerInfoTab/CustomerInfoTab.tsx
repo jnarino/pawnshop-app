@@ -22,6 +22,7 @@ export default function CustomerInfoTab({
       onCustomerSelected={onCustomerSelected}
       showAdditionalInfo={true}
       showAlertWhenEmpty={true}
+      className="h-full"
       renderLeftActions={(state) => (
         !state.editingNew && (
           <Button 
