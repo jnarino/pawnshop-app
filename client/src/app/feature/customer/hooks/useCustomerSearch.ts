@@ -18,24 +18,12 @@ export function useCustomerSearch() {
   const [modalEmpty, setModalEmpty] = useState(false);
   const [searchFromScan, setSearchFromScan] = useState(false);
 
-  const manualSearchInFlight = useRef(false);
-  const lastManualQueryKey = useRef<string | null>(null);
-
   async function search(params: SearchParams) {
     const { firstName, lastName, dateOfBirth, idNumber } = params;
     
     if (!firstName && !lastName && !dateOfBirth && !idNumber) {
       return;
     }
-
-    const manualQueryKey = `${firstName || ''}|${lastName || ''}|${dateOfBirth || ''}|${idNumber || ''}`;
-    
-    if (lastManualQueryKey.current === manualQueryKey || manualSearchInFlight.current) {
-      return;
-    }
-
-    manualSearchInFlight.current = true;
-    lastManualQueryKey.current = manualQueryKey;
 
     try {
       setLoading(true);
@@ -61,7 +49,6 @@ export function useCustomerSearch() {
       setSearchFromScan(false);
       setSearchModalOpen(true);
     } finally {
-      manualSearchInFlight.current = false;
       setLoading(false);
     }
   }
@@ -74,7 +61,6 @@ export function useCustomerSearch() {
     setResults([]);
     setError(null);
     setModalEmpty(false);
-    lastManualQueryKey.current = null;
   }
 
   return {

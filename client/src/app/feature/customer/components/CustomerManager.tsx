@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import CustomerPicker from './CustomerPicker';
 import type { Customer } from '../types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -81,8 +81,15 @@ export default function CustomerManager({
     disableSearch: true,
   });
 
+  const [accordionValue, setAccordionValue] = useState<string[]>(defaultOpenSections);
+
   const handleCustomerChange = (c: Customer | null) => {
     onCustomerChange(c);
+    
+    // If clearing customer (Cancel button), close additional-info section
+    if (!c) {
+      setAccordionValue(prev => prev.filter(section => section !== 'additional-info'));
+    }
   };
 
   const handleCustomerSelected = (id: string) => {
@@ -97,8 +104,9 @@ export default function CustomerManager({
     }
   };
 
-  // Additional info should be available when customer exists or when creating new
-  const canShowAdditionalInfo = showAdditionalInfo && (!!customer || pickerState.editingNew);
+  // Determine the mode for Additional Information section
+  const isSearchMode = !pickerState.editingNew && !pickerState.editingExisting && !customer;
+  const shouldDisableAdditionalInfo = isSearchMode;
 
   return (
     <div className={`h-full w-full flex flex-col ${className}`}>
@@ -112,7 +120,7 @@ export default function CustomerManager({
           </div>
         )}
 
-        <Accordion type="multiple" defaultValue={defaultOpenSections} className="w-full">
+        <Accordion type="multiple" value={accordionValue} onValueChange={setAccordionValue} className="w-full">
           <AccordionItem value="customer-info">
             <AccordionTrigger className="px-4 text-base font-semibold">
               Customer Information
@@ -128,24 +136,29 @@ export default function CustomerManager({
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="additional-info" disabled={!canShowAdditionalInfo}>
-            <AccordionTrigger className="px-4 text-base font-semibold">
-              Additional Information
-            </AccordionTrigger>
-            <AccordionContent className="px-4">
-              <div className="grid grid-cols-2 gap-4">
-                <EmployerInfoSection 
-                  customer={customer} 
-                  onUpdate={handleUpdate}
-                />
-                
-                <ComplianceSection 
-                  customer={customer} 
-                  onUpdate={handleUpdate}
-                />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+          {showAdditionalInfo && (
+            <AccordionItem value="additional-info">
+              <AccordionTrigger 
+                disabled={shouldDisableAdditionalInfo}
+                className="px-4 text-base font-semibold"
+              >
+                Additional Information
+              </AccordionTrigger>
+              <AccordionContent className="px-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <EmployerInfoSection 
+                    customer={customer} 
+                    onUpdate={handleUpdate}
+                  />
+                  
+                  <ComplianceSection 
+                    customer={customer} 
+                    onUpdate={handleUpdate}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
         </Accordion>
       </div>
 
@@ -183,8 +196,8 @@ export default function CustomerManager({
                   Clear
                 </Button>
                 <Button 
-                  type="button" 
-                  onClick={() => pickerRef.current?.handleSearch()} 
+                  type="submit" 
+                  form="customer-search-form"
                   disabled={pickerState.disableSearch || pickerState.loading}
                   className="w-24"
                 >
@@ -195,8 +208,8 @@ export default function CustomerManager({
             {pickerState.editingNew && (
               <>
                 <Button 
-                  type="button" 
-                  onClick={() => pickerRef.current?.handleSaveNew()} 
+                  type="submit" 
+                  form="customer-search-form"
                   disabled={pickerState.saving}
                 >
                   {pickerState.saving ? 'Saving…' : 'Save Customer'}
@@ -214,8 +227,8 @@ export default function CustomerManager({
             {pickerState.editingExisting && (
               <>
                 <Button 
-                  type="button" 
-                  onClick={() => pickerRef.current?.handleUpdateExisting()} 
+                  type="submit" 
+                  form="customer-search-form"
                   disabled={pickerState.saving}
                 >
                   {pickerState.saving ? 'Saving…' : 'Save'}

@@ -105,14 +105,23 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
     });
   }, [editingNew, editingExisting, customerSearch.loading, customerSave.saving, disableSearch, onStateChange]);
 
-  const handleSearch = async (e?: React.FormEvent) => {
+  const handleFormSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    await customerSearch.search({
-      firstName: customerForm.form.firstName,
-      lastName: customerForm.form.lastName,
-      dateOfBirth: customerForm.form.dateOfBirth || undefined,
-      idNumber: customerForm.form.idNumber || undefined,
-    });
+    
+    // If editing, save the customer
+    if (editingNew) {
+      await handleSaveNew();
+    } else if (editingExisting) {
+      await handleUpdateExisting();
+    } else {
+      // Otherwise, perform search
+      await customerSearch.search({
+        firstName: customerForm.form.firstName,
+        lastName: customerForm.form.lastName,
+        dateOfBirth: customerForm.form.dateOfBirth || undefined,
+        idNumber: customerForm.form.idNumber || undefined,
+      });
+    }
   };
 
   const handleClearAll = () => {
@@ -157,7 +166,7 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
-    handleSearch,
+    handleSearch: handleFormSubmit,
     handleClearAll,
     handleAddNew,
     handleScanId,
@@ -182,7 +191,11 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
 
   return (
     <div className={containerClass}>
-      <form onSubmit={handleSearch} aria-label="Customer search / create">
+      <form 
+        id="customer-search-form" 
+        onSubmit={handleFormSubmit} 
+        aria-label="Customer search / create"
+      >
         <div className="grid grid-cols-3 gap-3">
           <IdentityContactSection 
             form={customerForm.form} 

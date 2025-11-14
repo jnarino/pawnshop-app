@@ -21,7 +21,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
             value={customer?.fflNumber || ''} 
             onChange={(e) => onUpdate('fflNumber', e.target.value)} 
             placeholder="FFL number"
-            disabled={!customer}
           />
         </Field>
         
@@ -30,7 +29,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
           <DatePicker 
             value={customer?.fflExpireDate || undefined} 
             onChange={(value) => onUpdate('fflExpireDate', value)} 
-            disabled={!customer}
           />
         </Field>
         
@@ -40,7 +38,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
             value={customer?.taxId || ''} 
             onChange={(e) => onUpdate('taxId', e.target.value)} 
             placeholder="Tax ID"
-            disabled={!customer}
           />
         </Field>
         
@@ -60,7 +57,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
               id="military" 
               checked={customer?.military || false}
               onCheckedChange={(checked) => onUpdate('military', !!checked)}
-              disabled={!customer}
             />
             <Label htmlFor="military" className="text-sm">Military</Label>
           </div>
@@ -70,7 +66,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
               id="locked" 
               checked={customer?.locked || false}
               onCheckedChange={(checked) => onUpdate('locked', !!checked)}
-              disabled={!customer}
             />
             <Label htmlFor="locked" className="text-sm">LOCKED</Label>
           </div>
@@ -80,7 +75,6 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
               id="taxExempt" 
               checked={customer?.taxExempt || false}
               onCheckedChange={(checked) => onUpdate('taxExempt', !!checked)}
-              disabled={!customer}
             />
             <Label htmlFor="taxExempt" className="text-sm">Tax Exempt</Label>
           </div>

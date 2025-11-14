@@ -20,7 +20,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
             value={customer?.employerName || ''} 
             onChange={(e) => onUpdate('employerName', e.target.value)} 
             placeholder="Employer name"
-            disabled={!customer}
           />
         </Field>
         
@@ -30,7 +29,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
             value={customer?.employerAddress || ''} 
             onChange={(e) => onUpdate('employerAddress', e.target.value)} 
             placeholder="Street address"
-            disabled={!customer}
           />
         </Field>
         
@@ -41,7 +39,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
               value={customer?.employerCity || ''} 
               onChange={(e) => onUpdate('employerCity', e.target.value)} 
               placeholder="City"
-              disabled={!customer}
             />
           </Field>
           
@@ -50,7 +47,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
             <Select 
               value={customer?.employerState || undefined} 
               onValueChange={(value) => onUpdate('employerState', value)}
-              disabled={!customer}
             >
               <SelectTrigger>
                 <SelectValue placeholder="State" />
@@ -69,7 +65,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
               value={customer?.employerZip || ''} 
               onChange={(e) => onUpdate('employerZip', e.target.value)} 
               placeholder="Zip"
-              disabled={!customer}
             />
           </Field>
         </div>
@@ -80,7 +75,6 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
             value={customer?.employerPhoneNumber || ''} 
             onChange={(e) => onUpdate('employerPhoneNumber', e.target.value)} 
             placeholder="(555) 123-4567"
-            disabled={!customer}
           />
         </Field>
       </div>

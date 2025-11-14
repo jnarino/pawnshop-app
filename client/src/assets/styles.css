@@ -120,11 +120,12 @@
   }
   
   /* Ensure all interactive elements scale fluidly */
-  button {
+  /* Exclude checkbox and radio buttons from padding */
+  button:not([role="checkbox"]):not([role="radio"]) {
     padding: clamp(0.25rem, 0.5vw, 0.5rem) clamp(0.75rem, 1.5vw, 1.5rem);
   }
   
-  input, select, textarea {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     padding: clamp(0.25rem, 0.5vw, 0.5rem) clamp(0.5rem, 1vw, 1rem);
   }
 }

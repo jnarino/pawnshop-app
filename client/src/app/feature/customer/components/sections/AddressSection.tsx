@@ -19,7 +19,7 @@ export function AddressSection({ form, update, editing, useIdAddr, setUseIdAddr 
     <FieldSet className="card section">
       <FieldLegend className="mb-1 text-sm">Address</FieldLegend>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2">
         <Checkbox 
           id="sameAsId" 
           checked={useIdAddr}
@@ -34,7 +34,7 @@ export function AddressSection({ form, update, editing, useIdAddr, setUseIdAddr 
             }
           }}
         />
-        <Label htmlFor="sameAsId" className="text-sm">Use ID address as primary address</Label>
+        <Label htmlFor="sameAsId" className="text-sm leading-none cursor-pointer">Use ID address as primary address</Label>
       </div>
 
       <div className="flex gap-2">
