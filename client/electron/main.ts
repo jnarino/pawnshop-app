@@ -1,5 +1,5 @@
 // electron/main.ts
-import { app, BrowserWindow, Menu, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, dialog, ipcMain, screen } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -29,15 +29,24 @@ function buildMenu() {
 }
 
 function createMainWindow() {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+
     mainWindow = new BrowserWindow({
-        width: 1024,
-        height: 768,
+    width,
+    height,
+    show: false,
         webPreferences: {
             contextIsolation: true,     // security best practice
             sandbox: true,              // security best practice
             preload: join(__dirname, 'preload.js'),
         },
     })
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize(); // Full screen window
+    mainWindow.show();
+  });
 
     const isDev = !app.isPackaged   // <-- reliable dev/prod check
 

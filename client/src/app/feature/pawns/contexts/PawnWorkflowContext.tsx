@@ -1,15 +1,10 @@
 import { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Customer } from '../tabs/CustomerInfoTab/types';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 
 export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'customerPerformance' | 'history';
 
 interface PawnWorkflowState {
-  // Customer state
-  customer: Customer | null;
-  customerId: string | null;
-  
   // Current tab
   activeTab: TabKey;
   
@@ -17,8 +12,6 @@ interface PawnWorkflowState {
   cancelModalOpen: boolean;
   
   // Actions
-  setCustomer: (customer: Customer | null) => void;
-  setCustomerId: (id: string | null) => void;
   setActiveTab: (tab: TabKey) => void;
   canNavigateToTab: (tab: TabKey) => boolean;
   openCancelModal: () => void;
@@ -28,22 +21,15 @@ interface PawnWorkflowState {
 
 const PawnWorkflowContext = createContext<PawnWorkflowState | null>(null);
 
-export function PawnWorkflowProvider({ children }: { children: ReactNode }) {
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
+export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   
   const navigate = useNavigate();
 
-  const handleSetCustomer = (c: Customer | null) => {
-    setCustomer(c);
-    setCustomerId(c?.id || null);
-  };
-
   const canNavigateToTab = (tab: TabKey) => {
-    if (tab === 'customer') return true;
-    return !!customerId;
+    // All tabs are accessible now
+    return true;
   };
 
   const openCancelModal = () => {
@@ -55,9 +41,7 @@ export function PawnWorkflowProvider({ children }: { children: ReactNode }) {
   };
 
   const confirmCancelTransaction = () => {
-    // Reset all state
-    setCustomer(null);
-    setCustomerId(null);
+    // Reset workflow state
     setActiveTab('customer');
     setCancelModalOpen(false);
     // Navigate back to home
@@ -65,18 +49,14 @@ export function PawnWorkflowProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({
-    customer,
-    customerId,
     activeTab,
     cancelModalOpen,
-    setCustomer: handleSetCustomer,
-    setCustomerId,
     setActiveTab,
     canNavigateToTab,
     openCancelModal,
     closeCancelModal,
     confirmCancelTransaction
-  }), [customer, customerId, activeTab, cancelModalOpen]);
+  }), [activeTab, cancelModalOpen]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>

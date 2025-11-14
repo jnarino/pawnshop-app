@@ -1,12 +1,24 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
+import type { Customer } from '@/app/feature/customer';
 import './pawns.css';
 
 function PawnsWorkspaceContent() {
-  const { activeTab, setActiveTab, canNavigateToTab } = usePawnWorkflow();
+  const { activeTab, setActiveTab, openCancelModal } = usePawnWorkflow();
+  const [customer, setCustomer] = useState<Customer | null>(null);
+
+  const customerId = customer?.id || null;
+
+  const canNavigateToTab = (tab: TabKey) => {
+    // Customer tab is always accessible
+    if (tab === 'customer') return true;
+    // Other tabs require a customer to be selected
+    return !!customerId;
+  };
 
   const handleTabChange = (tab: string) => {
     const tabKey = tab as TabKey;
@@ -37,11 +49,19 @@ function PawnsWorkspaceContent() {
         </TabsList>
 
         <TabsContent value="customer" className="h-[calc(100%-4rem)]">
-          <CustomerInfoTab />
+          <CustomerInfoTab 
+            customer={customer}
+            onCustomerChange={setCustomer}
+            onCustomerSelected={(id: string) => setActiveTab('newPawn')}
+            onCancelTransaction={openCancelModal}
+          />
         </TabsContent>
 
         <TabsContent value="newPawn" className="h-[calc(100%-4rem)]">
-          <NewPawnTab />
+          <NewPawnTab 
+            customerId={customerId}
+            customer={customer}
+          />
         </TabsContent>
 
         <TabsContent value="previousItems" className="h-[calc(100%-4rem)]">
@@ -51,7 +71,7 @@ function PawnsWorkspaceContent() {
         </TabsContent>
 
         <TabsContent value="customerPerformance" className="h-[calc(100%-4rem)]">
-          <CustomerPerformanceTab />
+          <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
         <TabsContent value="history" className="h-[calc(100%-4rem)]">

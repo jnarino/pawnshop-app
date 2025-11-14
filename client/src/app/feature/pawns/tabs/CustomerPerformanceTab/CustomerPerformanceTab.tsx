@@ -1,9 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
+import type { Customer } from '@/app/feature/customer';
 
-export default function CustomerPerformanceTab() {
-  const { customer } = usePawnWorkflow();
+interface CustomerPerformanceTabProps {
+  customer: Customer | null;
+}
+
+export default function CustomerPerformanceTab({ customer }: Readonly<CustomerPerformanceTabProps>) {
   
   const performanceData = [
     { label: 'Active', value: '0' },
