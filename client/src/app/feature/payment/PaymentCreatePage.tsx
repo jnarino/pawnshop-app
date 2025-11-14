@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PaymentCreatePage.css';
 import type { Customer as CustomerDto } from '../customer/types';
-import CustomerPicker from '../customer/components/CustomerPicker';
+import { CustomerManager } from '../customer';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
@@ -24,7 +24,6 @@ interface SelectedPawnTicket {
 }
 
 export default function PaymentCreatePage() {
-  const [customerId, setCustomerId] = useState<string | null>(null);
   const [active, setActive] = useState<TabKey>('customer');
   const [customer, setCustomer] = useState<CustomerDto | null>(null);
   const [selectedPawn, setSelectedPawn] = useState<SelectedPawnTicket | null>(null);
@@ -36,16 +35,15 @@ export default function PaymentCreatePage() {
 
   const tabs: { key: TabKey; label: string; disabled?: boolean }[] = [
     { key: 'customer', label: '1 - Customer Info' },
-    { key: 'additional', label: '2 - Additional Info', disabled: !customerId },
-    { key: 'viewPawn', label: '3 - View Pawn', disabled: !customerId },
-    { key: 'locatePawns', label: '4 - Locate Pawns', disabled: !customerId },
+    { key: 'additional', label: '2 - Additional Info', disabled: !customer?.id },
+    { key: 'viewPawn', label: '3 - View Pawn', disabled: !customer?.id },
+    { key: 'locatePawns', label: '4 - Locate Pawns', disabled: !customer?.id },
     { key: 'makePayment', label: '5 - Make Payment', disabled: !selectedPawn },
   ];
 
   const confirmCancel = () => {
     setCancelOpen(false);
     // Reset flow
-    setCustomerId(null);
     setCustomer(null);
     setSelectedPawn(null);
     setActive('customer');
@@ -79,17 +77,18 @@ export default function PaymentCreatePage() {
         {/* TAB CONTENT */}
         {active === 'customer' && (
           <div className="payment-panel">
-            <CustomerPicker
-              value={customer}
-              onChange={setCustomer}
-              onSelected={(id) => { setCustomerId(id); setActive('locatePawns'); }}
-              onCreateNew={(tempId) => { setCustomerId(tempId); }}
+            <CustomerManager
+              customer={customer}
+              onCustomerChange={setCustomer}
+              onCustomerSelected={() => setActive('locatePawns')}
+              showAdditionalInfo={false}
+              showAlertWhenEmpty={true}
+              className="h-full"
             />
-            <p className="hint">Select a customer to view their pawn tickets and make payments.</p>
           </div>
         )}
 
-        {active === 'additional' && customerId && (
+        {active === 'additional' && customer?.id && (
           <div className="payment-panel placeholder">
             <h2>Additional Customer Info</h2>
             <p>Extended customer profile information.</p>
@@ -97,7 +96,7 @@ export default function PaymentCreatePage() {
           </div>
         )}
 
-        {active === 'viewPawn' && customerId && selectedPawn && (
+        {active === 'viewPawn' && customer?.id && selectedPawn && (
           <ViewPawnTab
             pawnTicket={selectedPawn}
             onBack={() => setActive('locatePawns')}
@@ -105,9 +104,9 @@ export default function PaymentCreatePage() {
           />
         )}
 
-        {active === 'locatePawns' && customerId && (
+        {active === 'locatePawns' && customer?.id && (
           <LocatePawnsTab
-            customerId={customerId}
+            customerId={customer.id}
             onBack={() => setActive('customer')}
             onPawnSelected={handlePawnSelected}
             onViewPawn={(pawn) => {
@@ -117,10 +116,10 @@ export default function PaymentCreatePage() {
           />
         )}
 
-        {active === 'makePayment' && selectedPawn && (
+        {active === 'makePayment' && selectedPawn && customer?.id && (
           <MakePaymentTab
             pawnTicket={selectedPawn}
-            customerId={customerId!}
+            customerId={customer.id}
             onBack={() => setActive('locatePawns')}
             onPaymentComplete={() => {
               // Reset and go back to locate pawns to refresh data
