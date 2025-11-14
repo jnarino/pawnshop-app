@@ -33,6 +33,8 @@ import { makeCategoryController } from './controller/category/categoryController
 import { RatePlanRepository } from './infrastructure/persistence/RatePlanRepository';
 import { StoreTransactionRepository } from './infrastructure/persistence/StoreTransactionRepository';
 import { GunlogRepository } from './infrastructure/persistence/GunlogRepository';
+import { CreatePawnTicketPaymentUseCase } from './application/useCase/payment/CreatePawnTicketPaymentUseCase';
+import { makePaymentController } from './controller/payment/paymentController';
 
 const repo = new CustomerRepository();
 const inventoryRepo = new InventoryRepository();
@@ -89,6 +91,11 @@ export const pawnTicketController = makePawnTicketController({
     updateDates: new UpdatePawnTicketDatesUseCase(pawnTicketRepo),
     delete: new DeletePawnTicketUseCase(pawnTicketRepo),
     search: new SearchPawnTicketsUseCase(pawnTicketRepo),
+});
+
+// ✅ Add dedicated payment controller
+export const paymentController = makePaymentController({
+  createPawnTicketPayment: new CreatePawnTicketPaymentUseCase(),
 });
 
 export const categoryController = makeCategoryController({

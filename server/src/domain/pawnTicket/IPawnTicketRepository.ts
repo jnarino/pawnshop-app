@@ -13,15 +13,21 @@ export interface CreatePawnTicketPaymentInput {
 }
 
 export interface IPawnTicketRepository {
-    create(input: CreatePawnTicketInput): Promise<string>; // ✅ Renamed
-    createInTransaction(client: PoolClient, ticket: PawnTicket): Promise<string>; // ✅ Accept PawnTicket object
-    createPawnTicketPayment(client: PoolClient, input: CreatePawnTicketPaymentInput): Promise<string>;
-    findAll(limit?: number, offset?: number, filters?: { customerId?: string; pawnStatus?: PawnTicket['pawnStatus'] }): Promise<PawnTicket[]>;
+    findAll(limit?: number, offset?: number, filters?: { customerId?: string; pawnStatus?: string; }): Promise<any[]>;
     findById(id: string): Promise<PawnTicket | null>;
     findByControlNumberWithPayments(controlNumber: string): Promise<any | null>;
-    search(opts: { customerId?: string; type?: string; startDate?: string; endDate?: string; limit?: number; offset?: number; }): Promise<PawnTicket[]>;
-    update(id: string, dto: Partial<PawnTicket>): Promise<boolean>;
-    updateDates(id: string, maturityDate?: string, defaultDate?: string): Promise<boolean>;
+    create(input: CreatePawnTicketInput): Promise<string>;
+    createInTransaction(client: PoolClient, ticket: PawnTicket): Promise<string>; // ✅ Fix: Return string like implementation
+    updateDates(id: string, maturityDate: string, defaultDate: string): Promise<boolean>;
     delete(id: string): Promise<boolean>;
+    search(filters: {
+        controlNumber?: string;
+        customerId?: string;
+        status?: string;
+        type?: string;
+        dateFrom?: string;
+        dateTo?: string;
+    }, limit?: number, offset?: number): Promise<any[]>;
     getNextControlNumber(): Promise<string>;
+    createPawnTicketPayment(client: PoolClient, input: CreatePawnTicketPaymentInput): Promise<string>; // ✅ Fix: Return string like implementation
 }

@@ -21,6 +21,7 @@ import inventoryStatusRouter from './infrastructure/http/routes/inventoryStatusR
 import pawnTicketRouter from './infrastructure/http/routes/pawnTicketRoute';
 import categoryRouter from './infrastructure/http/routes/categoryRoutes';
 import debugRouter from './infrastructure/http/routes/debugRoutes';
+import paymentRoutes from './infrastructure/http/routes/paymentRoutes';
 import { validateJwt } from './infrastructure/http/middleware/auth';
 import { shutdownAuthCache } from './infrastructure/http/routes/authRoutes';
 import { categoryCache } from './container';
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/inventory-status', inventoryStatusRouter);
   app.use('/api/pawnTicket', pawnTicketRouter);
   app.use('/api/categories', categoryRouter);
+  app.use('/api/payment', paymentRoutes); // ✅ Add payment routes
 
   app.use(notFound);
   app.use(errorHandler);
