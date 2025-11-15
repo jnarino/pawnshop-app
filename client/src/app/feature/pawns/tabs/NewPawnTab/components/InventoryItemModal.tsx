@@ -3,6 +3,7 @@ import './InventoryItemModal.css';
 import { Modal } from '@/app/shared/components/Modal';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
+import { useSubtypeMapping } from '@/app/shared/hooks/useSubtypeMapping';
 import {
   JEWELRY_COLORS,
   JEWELRY_METALS,
@@ -11,6 +12,11 @@ import {
   WEIGHT_UNITS,
   GENDER_OPTIONS
 } from '@/app/shared/constants/jewelry';
+import {
+  FIREARM_CALIBERS,
+  FIREARM_ACTIONS,
+  FIREARM_FINISHES
+} from '@/app/shared/constants/firearms';
 
 export interface InventoryItemDraft {
   id?: string;
@@ -66,6 +72,9 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const categories = categoriesHook?.leafCategories || [];
   const isLoading = categoriesHook?.loading || false;
 
+  // ✅ Get subtypes based on selected category
+  const subtypes = useSubtypeMapping(draft.type);
+
   // ✅ Initialize form data with proper defaults to prevent controlled/uncontrolled switches
   useEffect(() => {
     if (open) {
@@ -100,7 +109,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
 
   // ✅ Karat options based on metal
-  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase()] || [];
+  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
 
   // ✅ Update field handler
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
@@ -153,11 +162,26 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     onSave(itemData);
   }, [draft, isJewelry, onSave]);
 
+  // ✅ Auto-fill karat when metal changes
+  const handleMetalChange = useCallback((metal: string) => {
+    const metalKey = metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL;
+    const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
+
+    updateField('metal', metal.toUpperCase());
+
+    // ✅ Auto-select first karat option if available
+    if (karatOptions.length > 0) {
+      updateField('karat', karatOptions[0]);
+    } else {
+      updateField('karat', '');
+    }
+  }, [updateField]);
+
   if (!open) return null;
 
   return (
-    <Modal 
-      isOpen={open} 
+    <Modal
+      isOpen={open}
       onClose={onCancel}
     >
       <div className="inventory-modal">
@@ -199,11 +223,23 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
             <div className="form-group subtype-field">
               <label>Type</label>
-              <input
-                value={draft.sub1 || ''}
-                onChange={(e) => updateField('sub1', e.target.value)}
-                placeholder="e.g., Necklace, Ring, Pistol"
-              />
+              {subtypes.length > 0 ? (
+                <select
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
+                >
+                  <option value="">Select type...</option>
+                  {subtypes.map(subtype => (
+                    <option key={subtype} value={subtype}>{subtype}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
+                  placeholder="Enter type"
+                />
+              )}
             </div>
 
             {/* Row 2: Basic Item Info */}
@@ -236,12 +272,24 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
             <div className="form-group">
               <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
-              <input
-                list="colors"
-                value={draft.color || ''}
-                onChange={(e) => updateField('color', e.target.value)}
-                placeholder={isFirearm ? "Finish/Color" : "Color"}
-              />
+              {isFirearm ? (
+                <select
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                >
+                  <option value="">Select finish...</option>
+                  {FIREARM_FINISHES.map(finish => (
+                    <option key={finish} value={finish}>{finish}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  list="colors"
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                  placeholder="Color"
+                />
+              )}
               <datalist id="colors">
                 {JEWELRY_COLORS.map(color => (
                   <option key={color} value={color} />
@@ -291,16 +339,16 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <>
                 <div className="form-group">
                   <label className="required">Metal</label>
-                  <input
-                    list="metals"
+                  <select
                     value={draft.metal || ''}
-                    onChange={(e) => {
-                      updateField('metal', e.target.value.toUpperCase());
-                      updateField('karat', '');
-                    }}
-                    placeholder="GOLD, SILVER..."
+                    onChange={(e) => handleMetalChange(e.target.value)}
                     required
-                  />
+                  >
+                    <option value="">Select metal...</option>
+                    {JEWELRY_METALS.map(metal => (
+                      <option key={metal} value={metal}>{metal.toUpperCase()}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -311,7 +359,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       onChange={(e) => updateField('karat', e.target.value)}
                       required
                     >
-                      <option value="">Select...</option>
+                      <option value="">Select karat...</option>
                       {karatOptions.map(k => (
                         <option key={k} value={k}>{k}</option>
                       ))}
@@ -320,7 +368,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     <input
                       value={draft.karat || ''}
                       onChange={(e) => updateField('karat', e.target.value)}
-                      placeholder="14K, .925"
+                      placeholder="Enter karat/fineness"
                       required
                     />
                   )}
@@ -393,20 +441,28 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <>
                 <div className="form-group">
                   <label>Caliber</label>
-                  <input
+                  <select
                     value={draft.caliber || ''}
                     onChange={(e) => updateField('caliber', e.target.value)}
-                    placeholder="9MM, .45 ACP"
-                  />
+                  >
+                    <option value="">Select caliber...</option>
+                    {FIREARM_CALIBERS.map(caliber => (
+                      <option key={caliber} value={caliber}>{caliber}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
                   <label>Action</label>
-                  <input
+                  <select
                     value={draft.action || ''}
                     onChange={(e) => updateField('action', e.target.value)}
-                    placeholder="Semi-auto, Bolt"
-                  />
+                  >
+                    <option value="">Select action...</option>
+                    {FIREARM_ACTIONS.map(action => (
+                      <option key={action} value={action}>{action}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
