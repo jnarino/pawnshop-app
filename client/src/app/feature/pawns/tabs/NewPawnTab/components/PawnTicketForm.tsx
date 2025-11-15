@@ -105,7 +105,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   return (
     <div className="pawn-ticket-form">
       <form onSubmit={handleSubmit}>
-        {/* Items Section - Now the main content */}
+        {/* Items Section - Now starts immediately */}
         <div className="items-section">
           <div className="items-header">
             <h3 className="section-title">📦 Items ({formData.items.length})</h3>

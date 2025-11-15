@@ -1,33 +1,12 @@
 .tab-content {
-  padding: 24px;
+  padding: 0; /* ✅ Removed padding since no header */
   max-width: 1200px;
   margin: 0 auto;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* ✅ Removed border-radius and box-shadow since no container needed */
 }
 
-.tab-header {
-  margin-bottom: 32px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.tab-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.tab-subtitle {
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0;
-}
+/* ✅ REMOVED: All tab-header, tab-title, tab-subtitle styles */
 
 .status-message {
   padding: 16px 20px;
@@ -74,15 +53,7 @@
 
 @media (max-width: 768px) {
   .tab-content {
-    margin: 16px;
-    padding: 20px;
-  }
-
-  .tab-title {
-    font-size: 24px;
-  }
-
-  .tab-subtitle {
-    font-size: 14px;
+    margin: 0; /* ✅ No margin on mobile */
+    padding: 0; /* ✅ No padding on mobile */
   }
 }

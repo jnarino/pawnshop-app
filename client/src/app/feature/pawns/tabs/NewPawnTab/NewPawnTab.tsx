@@ -44,15 +44,6 @@ export default function NewPawnTab({ onTicketCreated }: NewPawnTabProps) {
 
   return (
     <div className="tab-content">
-      <div className="tab-header">
-        <h1 className="tab-title">
-          🎫 New Pawn Transaction
-        </h1>
-        <p className="tab-subtitle">
-          Create a new pawn loan or purchase transaction with inventory items
-        </p>
-      </div>
-
       {success && (
         <div className="status-message status-success">
           ✅ {success}
