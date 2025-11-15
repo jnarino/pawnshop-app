@@ -1,41 +1,76 @@
-import { useState } from 'react';
-import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
-import NewPawnTabComponent from './components/NewPawnTab';
-import { createInitialPawnDraft, type PawnDraft } from './types';
-import type { Customer } from '@/app/feature/customer';
+import { useState, useCallback } from 'react';
+import './NewPawnTab.css';
+import PawnTicketForm from './components/PawnTicketForm';
+import type { InventoryItemDraft } from './components/InventoryItemModal';
 
-interface NewPawnTabWrapperProps {
-  customerId: string | null;
-  customer: Customer | null;
+interface NewPawnTabProps {
+  onTicketCreated?: (ticketId: string) => void;
 }
 
-export default function NewPawnTabWrapper({ customerId, customer }: Readonly<NewPawnTabWrapperProps>) {
-  const { setActiveTab } = usePawnWorkflow();
-  const [pawnDraft, setPawnDraft] = useState<PawnDraft>(() => createInitialPawnDraft());
+export default function NewPawnTab({ onTicketCreated }: NewPawnTabProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  if (!customerId) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Please select a customer first
-      </div>
-    );
-  }
+  const handleSubmit = useCallback(async (formData: {
+    customerId: string;
+    type: 'PAWN' | 'PURCHASE';
+    amountFinanced?: number;
+    purchaseTradeValue?: number;
+    periodicRate?: number;
+    items: InventoryItemDraft[];
+  }) => {
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
 
-  const handleBack = () => {
-    setActiveTab('customer');
-  };
-
-  const handleGoPreviousItems = () => {
-    setActiveTab('previousItems');
-  };
+    try {
+      // TODO: Implement API call to create pawn ticket
+      console.log('Creating pawn ticket:', formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mockTicketId = 'ticket_' + Date.now();
+      setSuccess(`Pawn ticket ${mockTicketId} created successfully!`);
+      onTicketCreated?.(mockTicketId);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create pawn ticket');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [onTicketCreated]);
 
   return (
-    <NewPawnTabComponent 
-      customerId={customerId}
-      draft={pawnDraft}
-      setDraft={setPawnDraft}
-      onBack={handleBack}
-      onGoPreviousItems={handleGoPreviousItems}
-    />
+    <div className="tab-content">
+      <div className="tab-header">
+        <h1 className="tab-title">
+          🎫 New Pawn Transaction
+        </h1>
+        <p className="tab-subtitle">
+          Create a new pawn loan or purchase transaction with inventory items
+        </p>
+      </div>
+
+      {success && (
+        <div className="status-message status-success">
+          ✅ {success}
+        </div>
+      )}
+
+      {error && (
+        <div className="status-message status-error">
+          ❌ {error}
+        </div>
+      )}
+
+      <div className={isSubmitting ? 'form-loading' : ''}>
+        <PawnTicketForm
+          onSubmit={handleSubmit}
+          disabled={isSubmitting}
+        />
+      </div>
+    </div>
   );
 }

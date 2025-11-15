@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import './InventoryItemModal.css';
 import { Modal } from '@/app/shared/components/Modal';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
@@ -64,10 +65,23 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const categories = categoriesHook?.leafCategories || [];
   const isLoading = categoriesHook?.loading || false;
 
-  // ✅ Initialize form data
+  // ✅ Initialize form data with proper defaults to prevent controlled/uncontrolled switches
   useEffect(() => {
     if (open) {
-      const formData = initial ? { ...DEFAULT_ITEM, ...initial } : { ...DEFAULT_ITEM };
+      const formData = initial ? { 
+        ...DEFAULT_ITEM, 
+        ...initial,
+        // ✅ Ensure all select fields have default values
+        condition: initial.condition || '',
+        gender: initial.gender || '',
+        weightUnit: initial.weightUnit || 'Grams'
+      } : { 
+        ...DEFAULT_ITEM,
+        // ✅ Ensure all select fields have default values
+        condition: '',
+        gender: '',
+        weightUnit: 'Grams'
+      };
       setDraft(formData);
       setTypeQuery(initial?.type || '');
       setError(null);
@@ -148,270 +162,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
       description="Enter the item details for this pawn transaction"
     >
       <div className="inventory-modal">
-        <style>{`
-          .inventory-modal {
-            width: 100%;
-            max-width: 900px;
-            padding: 24px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-          }
-          
-          .modal-header {
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #e5e7eb;
-          }
-          
-          .modal-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0 0 8px 0;
-          }
-          
-          .modal-subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin: 0;
-          }
-          
-          .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-          }
-          
-          .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-          }
-          
-          .form-group label {
-            font-weight: 600;
-            font-size: 14px;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          }
-          
-          .required::after {
-            content: '*';
-            color: #dc2626;
-            font-weight: bold;
-          }
-          
-          .form-group input,
-          .form-group select,
-          .form-group textarea {
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            background: white;
-          }
-          
-          .form-group input:focus,
-          .form-group select:focus,
-          .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: #fefefe;
-          }
-          
-          .form-group input:disabled,
-          .form-group select:disabled {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-          }
-          
-          .type-selector {
-            position: relative;
-          }
-          
-          .suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 240px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-          }
-          
-          .suggestion-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            font-size: 14px;
-            border-bottom: 1px solid #f3f4f6;
-            transition: background-color 0.15s ease;
-          }
-          
-          .suggestion-item:hover {
-            background-color: #f8fafc;
-          }
-          
-          .suggestion-item:last-child {
-            border-bottom: none;
-          }
-          
-          .flex-row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-          }
-          
-          .full-width {
-            grid-column: 1 / -1;
-          }
-          
-          .section-divider {
-            grid-column: 1 / -1;
-            height: 1px;
-            background: linear-gradient(to right, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
-            margin: 16px 0;
-          }
-          
-          .section-header {
-            grid-column: 1 / -1;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 16px 0 8px 0;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          
-          .error-message {
-            color: #dc2626;
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            padding: 16px;
-            border-radius: 8px;
-            margin: 16px 0;
-            font-size: 14px;
-            border: 1px solid #fecaca;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .error-message::before {
-            content: '⚠️';
-            font-size: 16px;
-          }
-          
-          .modal-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 24px;
-            border-top: 2px solid #e5e7eb;
-            margin-top: 24px;
-          }
-          
-          .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            border: 2px solid;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-          
-          .btn-secondary {
-            background: white;
-            color: #374151;
-            border-color: #d1d5db;
-          }
-          
-          .btn-secondary:hover:not(:disabled) {
-            background: #f9fafb;
-            border-color: #9ca3af;
-          }
-          
-          .btn-primary {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-          }
-          
-          .btn-primary:hover:not(:disabled) {
-            background: #2563eb;
-            border-color: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-          
-          .btn-scanner {
-            background: ${barcodeMode ? '#dc2626' : '#6b7280'};
-            color: white;
-            border-color: ${barcodeMode ? '#dc2626' : '#6b7280'};
-          }
-          
-          .btn-scanner:hover:not(:disabled) {
-            background: ${barcodeMode ? '#b91c1c' : '#4b5563'};
-            border-color: ${barcodeMode ? '#b91c1c' : '#4b5563'};
-          }
-          
-          .scanner-status {
-            color: #059669;
-            font-size: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          }
-          
-          .scanner-status::before {
-            content: '📱';
-          }
-          
-          /* Responsive adjustments */
-          @media (max-width: 768px) {
-            .inventory-modal {
-              max-width: 100%;
-              margin: 16px;
-              padding: 20px;
-            }
-            
-            .form-grid {
-              grid-template-columns: 1fr;
-              gap: 16px;
-            }
-            
-            .modal-actions {
-              flex-direction: column-reverse;
-              gap: 12px;
-            }
-            
-            .btn {
-              width: 100%;
-              justify-content: center;
-            }
-          }
-        `}</style>
-
         <div className="modal-header">
           <h2 className="modal-title">{initial ? 'Edit Item' : 'Add New Item'}</h2>
           <p className="modal-subtitle">Enter the item details for this pawn transaction</p>
@@ -711,7 +461,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <button
                 type="button"
-                className="btn btn-scanner"
+                className={`btn btn-scanner ${barcodeMode ? 'active' : ''}`}
                 onClick={() => setBarcodeMode(!barcodeMode)}
               >
                 {barcodeMode ? '⏹️ Stop Scanner' : '📱 Scan Barcode'}
