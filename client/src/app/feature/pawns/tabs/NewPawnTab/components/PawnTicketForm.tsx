@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 import './PawnTicketForm.css';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
-import { useCustomerSearch } from '@/app/feature/customer/hooks/useCustomerSearch';
-
 
 interface Props {
   onSubmit: (formData: {
@@ -20,7 +18,7 @@ interface Props {
 export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   // ✅ Form state with proper initialization
   const [formData, setFormData] = useState({
-    customerId: '',
+    customerId: 'temp-customer', // ✅ Temporary - remove customer selection for now
     type: 'PAWN' as 'PAWN' | 'PURCHASE',
     amountFinanced: '',
     purchaseTradeValue: '',
@@ -30,19 +28,10 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-
-  // ✅ Customer search functionality
-  // const { searchCustomers, loading: customerLoading } = useCustomerSearch();
 
   // ✅ Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.customerId) {
-      alert('Please select a customer');
-      return;
-    }
 
     if (formData.items.length === 0) {
       alert('Please add at least one item');
@@ -116,97 +105,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   return (
     <div className="pawn-ticket-form">
       <form onSubmit={handleSubmit}>
-        {/* Customer Selection */}
-        <div className="form-section">
-          <h3 className="section-title">👤 Customer Information</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Customer *</label>
-              <input
-                type="text"
-                placeholder="Search customers..."
-                value={selectedCustomer?.fullName || ''}
-                onChange={(e) => {
-                  // TODO: Implement customer search
-                  console.log('Search:', e.target.value);
-                }}
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Transaction Type */}
-        <div className="form-section">
-          <h3 className="section-title">💰 Transaction Details</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Transaction Type *</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  type: e.target.value as 'PAWN' | 'PURCHASE'
-                }))}
-                required
-              >
-                <option value="PAWN">Pawn (Loan)</option>
-                <option value="PURCHASE">Purchase (Buy)</option>
-              </select>
-            </div>
-
-            {formData.type === 'PAWN' && (
-              <>
-                <div className="form-group">
-                  <label>Amount Financed *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.amountFinanced}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      amountFinanced: e.target.value
-                    }))}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Periodic Rate</label>
-                  <select
-                    value={formData.periodicRate}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      periodicRate: e.target.value
-                    }))}
-                  >
-                    <option value="0.10">10%</option>
-                    <option value="0.15">15%</option>
-                    <option value="0.20">20%</option>
-                    <option value="0.25">25%</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            {formData.type === 'PURCHASE' && (
-              <div className="form-group">
-                <label>Purchase Amount *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.purchaseTradeValue}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    purchaseTradeValue: e.target.value
-                  }))}
-                  required
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Items Section */}
+        {/* Items Section - Now the main content */}
         <div className="items-section">
           <div className="items-header">
             <h3 className="section-title">📦 Items ({formData.items.length})</h3>
@@ -289,13 +188,13 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
         <button
           type="submit"
           className="submit-btn"
-          disabled={disabled || !formData.customerId || formData.items.length === 0}
+          disabled={disabled || formData.items.length === 0}
         >
           {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
         </button>
       </form>
 
-      {/* Item Modal */}
+      {/* ✅ Horizontal Modal */}
       <InventoryItemModal
         open={showItemModal}
         initial={editingItem}

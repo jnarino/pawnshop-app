@@ -169,7 +169,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
 
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            {/* Type Selection */}
+            {/* Row 1: Basic Information */}
             <div className="form-group">
               <label className="required">Type</label>
               <div className="type-selector">
@@ -183,7 +183,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   }}
                   onFocus={() => setShowSuggestions(typeQuery.length > 0)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  placeholder={isLoading ? "Loading categories..." : "Type to search categories..."}
+                  placeholder={isLoading ? "Loading..." : "Search categories..."}
                   disabled={isLoading}
                   required
                 />
@@ -203,13 +203,12 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               </div>
             </div>
 
-            {/* Basic Information */}
             <div className="form-group">
               <label>Brand</label>
               <input
                 value={draft.brand || ''}
                 onChange={(e) => updateField('brand', e.target.value)}
-                placeholder="e.g., Apple, Samsung, Rolex"
+                placeholder="e.g., Apple, Samsung"
               />
             </div>
 
@@ -218,7 +217,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <input
                 value={draft.model || ''}
                 onChange={(e) => updateField('model', e.target.value)}
-                placeholder="e.g., iPhone 13, Galaxy S21"
+                placeholder="e.g., iPhone 13"
               />
             </div>
 
@@ -227,7 +226,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <input
                 value={draft.serial || ''}
                 onChange={(e) => updateField('serial', e.target.value)}
-                placeholder="Serial or IMEI number"
+                placeholder="Serial/IMEI"
               />
             </div>
 
@@ -237,7 +236,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 list="colors"
                 value={draft.color || ''}
                 onChange={(e) => updateField('color', e.target.value)}
-                placeholder="Select or type color"
+                placeholder="Color"
               />
               <datalist id="colors">
                 {JEWELRY_COLORS.map(color => (
@@ -252,7 +251,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 value={draft.condition || ''}
                 onChange={(e) => updateField('condition', e.target.value)}
               >
-                <option value="">Select condition...</option>
+                <option value="">Select...</option>
                 <option value="Excellent">Excellent</option>
                 <option value="Good">Good</option>
                 <option value="Fair">Fair</option>
@@ -260,6 +259,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               </select>
             </div>
 
+            {/* Row 2: Value & Quantity */}
             <div className="form-group">
               <label className="required">Value</label>
               <input
@@ -282,7 +282,25 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               />
             </div>
 
-            {/* Jewelry Fields */}
+            <div className="form-group">
+              <label>Owner Marks</label>
+              <input
+                value={draft.ownerNumber || ''}
+                onChange={(e) => updateField('ownerNumber', e.target.value)}
+                placeholder="Marks/engravings"
+              />
+            </div>
+
+            {/* Spacer for alignment when no jewelry/firearm fields */}
+            {!isJewelry && !isFirearm && (
+              <>
+                <div></div>
+                <div></div>
+                <div></div>
+              </>
+            )}
+
+            {/* Jewelry Fields - displayed in same grid */}
             {isJewelry && (
               <>
                 <div className="section-header">💎 Jewelry Details</div>
@@ -296,20 +314,20 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       updateField('metal', e.target.value.toUpperCase());
                       updateField('karat', '');
                     }}
-                    placeholder="e.g., GOLD, SILVER, PLATINUM"
+                    placeholder="GOLD, SILVER..."
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="required">Karat / Fineness</label>
+                  <label className="required">Karat</label>
                   {karatOptions.length > 0 ? (
                     <select
                       value={draft.karat || ''}
                       onChange={(e) => updateField('karat', e.target.value)}
                       required
                     >
-                      <option value="">Select karat...</option>
+                      <option value="">Select...</option>
                       {karatOptions.map(k => (
                         <option key={k} value={k}>{k}</option>
                       ))}
@@ -318,7 +336,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     <input
                       value={draft.karat || ''}
                       onChange={(e) => updateField('karat', e.target.value)}
-                      placeholder="e.g. 14K, .925, .999"
+                      placeholder="14K, .925"
                       required
                     />
                   )}
@@ -339,7 +357,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     <select
                       value={draft.weightUnit || 'Grams'}
                       onChange={(e) => updateField('weightUnit', e.target.value)}
-                      style={{ minWidth: '100px' }}
+                      style={{ minWidth: '80px' }}
                     >
                       {WEIGHT_UNITS.map(unit => (
                         <option key={unit} value={unit}>{unit}</option>
@@ -354,7 +372,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     value={draft.gender || ''}
                     onChange={(e) => updateField('gender', e.target.value)}
                   >
-                    <option value="">Select gender...</option>
+                    <option value="">Select...</option>
                     {GENDER_OPTIONS.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
@@ -368,7 +386,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       value={draft.sizeLength || ''}
                       onChange={(e) => updateField('sizeLength', e.target.value)}
                     >
-                      <option value="">Select ring size...</option>
+                      <option value="">Ring size...</option>
                       {RING_SIZES.map(size => (
                         <option key={size} value={size}>{size}</option>
                       ))}
@@ -381,14 +399,14 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                         placeholder="Length"
                         style={{ flex: 1 }}
                       />
-                      <span>inches</span>
+                      <span>in</span>
                     </div>
                   )}
                 </div>
               </>
             )}
 
-            {/* Firearm Fields */}
+            {/* Firearm Fields - displayed in same grid */}
             {isFirearm && (
               <>
                 <div className="section-header">🔫 Firearm Details</div>
@@ -398,7 +416,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.caliber || ''}
                     onChange={(e) => updateField('caliber', e.target.value)}
-                    placeholder="e.g., 9MM, .45 ACP, .22 LR"
+                    placeholder="9MM, .45 ACP"
                   />
                 </div>
 
@@ -407,7 +425,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.action || ''}
                     onChange={(e) => updateField('action', e.target.value)}
-                    placeholder="e.g., Semi-auto, Bolt action"
+                    placeholder="Semi-auto, Bolt"
                   />
                 </div>
 
@@ -416,7 +434,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.barrelLength || ''}
                     onChange={(e) => updateField('barrelLength', e.target.value)}
-                    placeholder="e.g., 16 inches"
+                    placeholder="16 inches"
                   />
                 </div>
 
@@ -425,28 +443,20 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.capacity || ''}
                     onChange={(e) => updateField('capacity', e.target.value)}
-                    placeholder="e.g., 15 rounds"
+                    placeholder="15 rounds"
                   />
                 </div>
               </>
             )}
-
-            <div className="form-group">
-              <label>Owner Marks</label>
-              <input
-                value={draft.ownerNumber || ''}
-                onChange={(e) => updateField('ownerNumber', e.target.value)}
-                placeholder="Any identifying marks or engravings"
-              />
-            </div>
           </div>
 
+          {/* Description - Full Width */}
           <div className="form-group full-width">
             <label>Description</label>
             <textarea
               value={draft.description || ''}
               onChange={(e) => updateField('description', e.target.value)}
-              rows={4}
+              rows={3}
               placeholder="Detailed description of the item, including any notable features, damage, or special characteristics..."
             />
           </div>

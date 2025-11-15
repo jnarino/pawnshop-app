@@ -66,11 +66,14 @@
 
 .inventory-modal {
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px; /* ✅ Increased for horizontal layout */
+  min-width: 1200px; /* ✅ Ensure minimum width for all fields */
   padding: 24px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-height: 90vh; /* ✅ Limit height to fit screen */
+  overflow-y: auto;
 }
 
 .inventory-modal .modal-header {
@@ -94,8 +97,8 @@
 
 .inventory-modal .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(6, 1fr); /* ✅ 6 columns for horizontal layout */
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -107,11 +110,12 @@
 
 .inventory-modal .form-group label {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px; /* ✅ Slightly smaller for space */
   color: #374151;
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap; /* ✅ Prevent label wrapping */
 }
 
 .inventory-modal .required::after {
@@ -123,12 +127,13 @@
 .inventory-modal .form-group input,
 .inventory-modal .form-group select,
 .inventory-modal .form-group textarea {
-  padding: 12px 16px;
+  padding: 10px 12px; /* ✅ Slightly reduced padding */
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px; /* ✅ Smaller font for compactness */
   transition: all 0.2s ease;
   background: white;
+  min-height: 36px; /* ✅ Consistent height */
 }
 
 .inventory-modal .form-group input:focus,
@@ -136,7 +141,7 @@
 .inventory-modal .form-group textarea:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); /* ✅ Smaller shadow */
   background: #fefefe;
 }
 
@@ -159,17 +164,17 @@
   background: white;
   border: 2px solid #e5e7eb;
   border-top: none;
-  border-radius: 0 0 8px 8px;
-  max-height: 240px;
+  border-radius: 0 0 6px 6px;
+  max-height: 200px; /* ✅ Reduced height */
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1); /* ✅ Smaller shadow */
 }
 
 .inventory-modal .suggestion-item {
-  padding: 12px 16px;
+  padding: 10px 12px; /* ✅ Smaller padding */
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.15s ease;
 }
@@ -184,7 +189,7 @@
 
 .inventory-modal .flex-row {
   display: flex;
-  gap: 12px;
+  gap: 8px; /* ✅ Smaller gap */
   align-items: center;
 }
 
@@ -197,18 +202,21 @@
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-  margin: 16px 0 8px 0;
-  padding-bottom: 8px;
+  margin: 12px 0 8px 0; /* ✅ Smaller margins */
+  padding-bottom: 6px;
   border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc; /* ✅ Light background to separate sections */
+  padding: 8px 12px;
+  border-radius: 4px;
 }
 
 .inventory-modal .error-message {
   color: #dc2626;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  padding: 16px;
-  border-radius: 8px;
-  margin: 16px 0;
-  font-size: 14px;
+  padding: 12px 16px; /* ✅ Smaller padding */
+  border-radius: 6px;
+  margin: 12px 0; /* ✅ Smaller margins */
+  font-size: 13px;
   border: 1px solid #fecaca;
   display: flex;
   align-items: center;
@@ -217,29 +225,29 @@
 
 .inventory-modal .error-message::before {
   content: '⚠️';
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .inventory-modal .modal-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 24px;
+  padding-top: 20px;
   border-top: 2px solid #e5e7eb;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .inventory-modal .btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 10px 20px; /* ✅ Smaller padding */
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   border: 2px solid;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .inventory-modal .btn:disabled {
@@ -294,7 +302,7 @@
 
 .inventory-modal .scanner-status {
   color: #059669;
-  font-size: 12px;
+  font-size: 11px; /* ✅ Smaller font */
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -305,17 +313,38 @@
   content: '📱';
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ✅ Enhanced responsive design for horizontal layout */
+@media (max-width: 1400px) {
   .inventory-modal {
-    max-width: 100%;
-    margin: 16px;
+    min-width: unset;
+    max-width: 95vw;
+    margin: 20px;
     padding: 20px;
   }
   
   .inventory-modal .form-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(4, 1fr); /* ✅ 4 columns on smaller screens */
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .inventory-modal .form-grid {
+    grid-template-columns: repeat(3, 1fr); /* ✅ 3 columns on tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-modal {
+    max-width: 100%;
+    margin: 10px;
+    padding: 16px;
+    max-height: 95vh;
+  }
+  
+  .inventory-modal .form-grid {
+    grid-template-columns: repeat(2, 1fr); /* ✅ 2 columns on mobile */
+    gap: 12px;
   }
   
   .inventory-modal .modal-actions {
@@ -327,4 +356,17 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ✅ Special styling for compact fields */
+.inventory-modal .form-group.compact {
+  grid-column: span 1;
+}
+
+.inventory-modal .form-group.wide {
+  grid-column: span 2;
+}
+
+.inventory-modal .form-group.extra-wide {
+  grid-column: span 3;
 }
