@@ -1,10 +1,13 @@
 // server/src/infrastructure/persistence/CustomerRepository.ts
 // Updated for expanded customer schema.
 
+import type { Pool } from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
 import { pool } from '../db';
 import { getSQL } from '../db/sqlLoader';
-import { Customer } from '../../domain/customer/Customer';
-import { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
+import type { Customer } from '../../domain/customer/Customer';
+import type { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
 
 // Map camelCase -> snake_case DB columns
 const COL_MAP: Record<string, string> = {
@@ -133,11 +136,11 @@ function buildInsert(dto: Omit<Customer, 'id'>) {
   const columns: string[] = [];
   const placeholders: string[] = [];
   const values: any[] = [];
-  
+
   // Required fields
   if (!dto.firstName) throw new Error('firstName required');
   if (!dto.lastName) throw new Error('lastName required');
-  
+
   Object.entries(COL_MAP).forEach(([camel, snake]) => {
     const val = (dto as any)[camel];
     if (val !== undefined) {
@@ -146,7 +149,7 @@ function buildInsert(dto: Omit<Customer, 'id'>) {
       placeholders.push(`$${values.length}`);
     }
   });
-  
+
   const sql = `INSERT INTO customer (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`;
   return { sql, values };
 }
@@ -167,54 +170,55 @@ function buildUpdate(id: string, dto: Partial<Customer>) {
 }
 
 export class CustomerRepository implements ICustomerRepository {
-  async findAll(limit?: number, offset?: number, filters?: { firstName?: string; lastName?: string; dateOfBirth?: string }): Promise<Customer[]> {
+  private readonly findCustomersByQuerySql: string;
+  private readonly findCustomerByIdSql: string;
+  private readonly createCustomerSql: string;
+
+  constructor(private readonly pool: Pool) {
+    // ✅ Load SQL queries from files
+    const queryPath = path.join(__dirname, '../db/query/customer');
+    this.findCustomersByQuerySql = fs.readFileSync(path.join(queryPath, 'findCustomersByQuery.sql'), 'utf8');
+    this.findCustomerByIdSql = fs.readFileSync(path.join(queryPath, 'findCustomerById.sql'), 'utf8');
+    this.createCustomerSql = fs.readFileSync(path.join(queryPath, 'createCustomer.sql'), 'utf8');
+  }
+  async findAll(limit?: number, offset?: number, filters?: { firstName?: string; lastName?: string; dateOfBirth?: string; }): Promise<Customer[]> {
     const sql = getSQL('query', 'customer', 'findAllCustomers');
-    const conditions: string[] = [];
-    const params: any[] = [];
-    
-    if (filters?.firstName) { 
-      params.push(filters.firstName + '%'); 
-      conditions.push(`first_name ILIKE $${params.length}`); 
-    }
-    if (filters?.lastName) { 
-      params.push(filters.lastName + '%'); 
-      conditions.push(`last_name ILIKE $${params.length}`); 
-    }
-    if (filters?.dateOfBirth) { 
-      params.push(filters.dateOfBirth); 
-      conditions.push(`date_of_birth = $${params.length}`); 
-    }
-    
-    let finalSql = sql;
-    if (conditions.length) {
-      // ✅ Fix: Insert WHERE clause before ORDER BY properly
-      const orderByIndex = finalSql.toUpperCase().indexOf('ORDER BY');
-      if (orderByIndex !== -1) {
-        const beforeOrderBy = finalSql.substring(0, orderByIndex).trim();
-        const orderByClause = finalSql.substring(orderByIndex);
-        finalSql = `${beforeOrderBy} WHERE ${conditions.join(' AND ')} ${orderByClause}`;
-      } else {
-        finalSql = `${sql} WHERE ${conditions.join(' AND ')}`;
-      }
-    }
-    
-    if (typeof limit === 'number') { 
-      params.push(limit); 
-      finalSql += ` LIMIT $${params.length}`; 
-    }
-    if (typeof offset === 'number') { 
-      params.push(offset); 
-      finalSql += ` OFFSET $${params.length}`; 
-    }
-    
-    const { rows } = await pool.query(finalSql, params);
+    const values: any[] = [
+      filters?.firstName || null,
+      filters?.lastName || null,
+      filters?.dateOfBirth || null,
+      limit || null,
+      offset || null
+    ];
+
+    const { rows } = await this.pool.query(sql, values);
     return rows.map(mapRow);
   }
 
+  async findByQuery(params: {
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    phoneNumber?: string;
+    idNumber?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Customer[]> {
+    const result = await this.pool.query(this.findCustomersByQuerySql, [
+      params.firstName || null,
+      params.lastName || null,
+      params.dateOfBirth || null,
+      params.phoneNumber || null,
+      params.idNumber || null,
+      params.limit || 50,
+      params.offset || 0
+    ]);
+    return result.rows;
+  }
+
   async findById(id: string): Promise<Customer | null> {
-    const sql = getSQL('query', 'customer', 'findCustomerById');
-    const { rows } = await pool.query(sql, [id]);
-    return rows[0] ? mapRow(rows[0]) : null;
+    const result = await this.pool.query(this.findCustomerByIdSql, [id]);
+    return result.rows[0] || null;
   }
 
   async findByDobAndIdNumber(dateOfBirth: string, idNumber: string): Promise<Customer | null> {
@@ -223,10 +227,29 @@ export class CustomerRepository implements ICustomerRepository {
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
-  async create(dto: Omit<Customer, 'id'>): Promise<string> {
-    const { sql, values } = buildInsert(dto);
-    const { rows } = await pool.query(sql, values);
-    return rows[0].id;
+  async create(customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    // ✅ Validate required fields
+    if (!customer.firstName?.trim()) {
+      throw new Error('First name is required');
+    }
+    if (!customer.lastName?.trim()) {
+      throw new Error('Last name is required');
+    }
+
+    const result = await this.pool.query(this.createCustomerSql, [
+      customer.firstName,
+      customer.middleName,
+      customer.lastName,
+      customer.streetAddress,
+      customer.suiteNumber,
+      customer.city,
+      customer.stateUs,
+      customer.zipCode,
+      customer.phoneNumber,
+      customer.dateOfBirth,
+      customer.idNumber
+    ]);
+    return result.rows[0].id;
   }
 
   async update(id: string, dto: Partial<Customer>): Promise<boolean> {

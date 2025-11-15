@@ -1,50 +1,65 @@
-import { ensureFreshAccessToken, getAccessToken, refreshAccessToken, logout } from '@/app/core/auth/authService';
+import { getAccessToken, ensureFreshAccessToken } from '../auth/authService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+// ✅ Base URL configuration with fallback
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-export async function http<T = any>(url: string, init: RequestInit = {}, retry = true): Promise<T> {
-    await ensureFreshAccessToken();
-
-    const finalUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-    const headers = new Headers(init.headers || {});
-
-    headers.set('Accept', 'application/json');
+// ✅ Enhanced error handling and logging
+export async function http(
+  path: string, 
+  options: RequestInit = {}
+): Promise<any> {
+  
+  console.log(`🌐 Making request to: ${path}`);
+  
+  try {
+    // ✅ Ensure we have a fresh access token
+    const hasValidToken = await ensureFreshAccessToken();
+    if (!hasValidToken) {
+      console.warn('❌ No valid token available');
+      throw new Error('Authentication required');
+    }
 
     const token = getAccessToken();
-    if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+    
+    const fullUrl = path.startsWith('/') ? path : `/${path}`;
+    const absoluteUrl = path.startsWith('http') ? path : `${BASE_URL}${fullUrl}`;
+    
+    console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
+    
+    const response = await fetch(absoluteUrl, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+    });
+
+    console.log(`📥 Response: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ HTTP Error ${response.status}:`, errorText);
+      
+      if (response.status === 401) {
+        throw new Error('Authentication failed - please login again');
+      }
+      
+      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
     }
 
-    if (init.body && !(init.body instanceof FormData)) {
-        headers.set('Content-Type', headers.get('Content-Type') ?? 'application/json');
+    const data = await response.json();
+    console.log(`✅ Success:`, data);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Request failed:', error);
+    
+    // ✅ Network connection errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Cannot connect to server. Please check if the server is running on http://localhost:3000');
     }
-
-    console.log('[http] Making request to:', finalUrl);
-
-    const resp = await fetch(finalUrl, { ...init, headers });
-
-    if (resp.status === 401 && retry) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-            // Retry request with new token
-            return http<T>(finalUrl, { ...init, headers }, false);
-        }
-        await logout();
-        throw new Error('Unauthorized');
-    }
-
-    if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(text || resp.statusText);
-    }
-
-    if (resp.status === 204) {
-        return undefined as T;
-    }
-
-    const data = await resp.json();
-    return data as T;
+    
+    throw error;
+  }
 }
-
-// Legacy alias for backward compatibility
-export const api = http;

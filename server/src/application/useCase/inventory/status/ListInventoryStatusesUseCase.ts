@@ -1,9 +1,10 @@
-import { InventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
-import { InventoryStatus } from '../../../../domain/inventory/InventoryStatus';
+import type { IInventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
+import type { InventoryStatus } from '../../../../domain/inventory/InventoryStatus';
 
 export class ListInventoryStatusesUseCase {
-  constructor(private repo: InventoryStatusRepository) {}
+  constructor(private readonly repo: IInventoryStatusRepository) {}
+
   async execute(): Promise<InventoryStatus[]> {
-    return this.repo.list();
+    return this.repo.findAll(); // ✅ Use correct method name
   }
 }

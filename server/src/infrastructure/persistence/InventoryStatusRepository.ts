@@ -1,43 +1,83 @@
 import { pool } from '../db';
-import { getSQL } from '../db/sqlLoader';
-import { InventoryStatus } from '../../domain/inventory/InventoryStatus';
+import type { InventoryStatus } from '../../domain/inventory/InventoryStatus';
 
-export class InventoryStatusRepository {
-  async list(): Promise<InventoryStatus[]> {
-    const sql = getSQL('query','inventory','listStatuses');
-    const { rows } = await pool.query(sql);
-    return rows.map(r => ({
-      code: r.code,
-      description: r.description ?? undefined,
-      isTerminal: r.is_terminal,
-      sortOrder: r.sort_order,
-      active: r.active,
-    }));
-  }
-  async find(code: string): Promise<InventoryStatus | null> {
-    const sql = getSQL('query','inventory','findStatusByCode');
-    const { rows } = await pool.query(sql,[code]);
-    const r = rows[0];
-    if (!r) return null;
-    return {
-      code: r.code,
-      description: r.description ?? undefined,
-      isTerminal: r.is_terminal,
-      sortOrder: r.sort_order,
-      active: r.active,
-    };
-  }
-  async insert(input: { code: string; description?: string; isTerminal: boolean; sortOrder: number; }) {
-    const sql = getSQL('command', 'inventory', 'insertStatus');
-    await pool.query(sql, [
-      input.code, 
-      input.description ?? null, 
-      input.isTerminal, 
-      input.sortOrder
-    ]);
-  }
-  async deactivate(code: string) {
-    const sql = getSQL('command', 'inventory', 'deactivateStatus');
-    await pool.query(sql, [code]);
-  }
+export interface IInventoryStatusRepository {
+    findAll(): Promise<InventoryStatus[]>;
+    create(status: Omit<InventoryStatus, 'sortOrder' | 'active'>): Promise<InventoryStatus>;
+    deactivate(code: string): Promise<boolean>;
+}
+
+export class InventoryStatusRepository implements IInventoryStatusRepository {
+    
+    async findAll(): Promise<InventoryStatus[]> {
+        try {
+            const sql = `
+                SELECT 
+                    code,
+                    description,
+                    is_terminal as "isTerminal",
+                    sort_order as "sortOrder",
+                    active
+                FROM inventory_status 
+                WHERE active = true
+                ORDER BY sort_order, code
+            `;
+            
+            const result = await pool.query(sql);
+            return result.rows;
+        } catch (error) {
+            console.error('[InventoryStatusRepository] Failed to get statuses:', error);
+            throw new Error(`Failed to fetch inventory statuses: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    async create(status: Omit<InventoryStatus, 'sortOrder' | 'active'>): Promise<InventoryStatus> {
+        try {
+            const sql = `
+                INSERT INTO inventory_status (
+                    code, 
+                    description, 
+                    is_terminal,
+                    sort_order,
+                    active
+                ) VALUES ($1, $2, $3, 
+                    COALESCE((SELECT MAX(sort_order) + 10 FROM inventory_status), 10),
+                    true
+                )
+                RETURNING 
+                    code,
+                    description,
+                    is_terminal as "isTerminal",
+                    sort_order as "sortOrder",
+                    active
+            `;
+            
+            const result = await pool.query(sql, [
+                status.code,
+                status.description,
+                status.isTerminal
+            ]);
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('[InventoryStatusRepository] Failed to create status:', error);
+            throw new Error(`Failed to create inventory status: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    async deactivate(code: string): Promise<boolean> {
+        try {
+            const sql = `
+                UPDATE inventory_status 
+                SET active = false, updated_at = now()
+                WHERE code = $1 AND active = true
+            `;
+            
+            const result = await pool.query(sql, [code]);
+            return result.rowCount === 1;
+        } catch (error) {
+            console.error('[InventoryStatusRepository] Failed to deactivate status:', error);
+            throw new Error(`Failed to deactivate inventory status: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
 }

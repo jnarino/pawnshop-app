@@ -1,16 +1,28 @@
-import { runAll } from './testHarness';
-import fs from 'fs';
-import path from 'path';
+import { runTests } from './testHarness'; // ✅ Fixed import - use runTests instead of runAll
 
-function loadTests(dir: string) {
-	for (const entry of fs.readdirSync(dir)) {
-		const full = path.join(dir, entry);
-		const stat = fs.statSync(full);
-		if (stat.isDirectory()) loadTests(full);
-		else if (/\.test\.js$/.test(entry)) require(full);
-	}
+async function main() {
+    console.log('🧪 Running test suite...\n');
+    
+    const results = await runTests();
+    
+    const passed = results.filter(r => r.passed).length;
+    const total = results.length;
+    const percentage = total > 0 ? Math.round((passed / total) * 100) : 0;
+    
+    console.log(`\n📊 Test Results: ${passed}/${total} passed (${percentage}%)`);
+    
+    if (passed < total) {
+        console.log('\n❌ Some tests failed');
+        process.exit(1);
+    } else {
+        console.log('\n✅ All tests passed');
+        process.exit(0);
+    }
 }
 
-// compiled JS location mirrors TS; __dirname points to dist/tests
-loadTests(__dirname);
-runAll();
+if (require.main === module) {
+    main().catch(error => {
+        console.error('❌ Test runner failed:', error);
+        process.exit(1);
+    });
+}

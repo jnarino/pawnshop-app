@@ -1,53 +1,128 @@
 import assert from 'assert';
 import { makeCustomerController } from '../../../controller/customer/customerControllerFactory';
-import type { ListCustomersUseCase } from '../../../application/useCase/customer/ListCustomersUseCase';
-import type { GetCustomerUseCase } from '../../../application/useCase/customer/GetCustomerUseCase';
-import type { CreateCustomerUseCase } from '../../../application/useCase/customer/CreateCustomerUseCase';
-import type { UpdateCustomerUseCase } from '../../../application/useCase/customer/UpdateCustomerUseCase';
-import type { DeleteCustomerUseCase } from '../../../application/useCase/customer/DeleteCustomerUseCase';
+import { ValidationError } from '../../../application/errors';
 import { test } from '../../testHarness';
 
-// Simple mock use cases
-function uc<T>(value: T) { return { execute: async () => value }; }
-function throwingUC(err: any) { return { execute: async () => { throw err; } }; }
+// Mock use cases
+const mockUseCases = {
+  list: {
+    execute: async (params: any) => [
+      { id: '1', firstName: 'John', lastName: 'Doe', dateOfBirth: params.dateOfBirth }
+    ]
+  },
+  get: {
+    execute: async (id: string) =>
+      id === 'existing' ? { id, firstName: 'John', lastName: 'Doe' } : null
+  },
+  create: {
+    execute: async (data: any) => 'new-customer-id'
+  },
+  update: {
+    execute: async (id: string, data: any) => id === 'existing'
+  },
+  delete: {
+    execute: async (id: string) => Promise.resolve()
+  }
+};
 
-const baseCustomer = { id: '1', firstName:'A', lastName:'B', dateOfBirth:'2000-01-01', sex:'M', eyeColor:'', height:'', streetAddress:'', city:'', stateUs:'', zipcode:'', idNumber:'', issueDate:'', expirationDate:'', issuingState:'', phone:'', email:'' };
+function createMockRequest(params = {}, query = {}, body = {}) {
+  return { params, query, body } as any;
+}
 
-function mockRes() {
-  const res: any = {};
-  res.statusCode = 200;
-  res.status = (c:number) => { res.statusCode = c; return res; };
-  res.jsonData = undefined;
-  res.json = (d:any) => { res.jsonData = d; return res; };
-  res.sentStatus = undefined;
-  res.sendStatus = (c:number) => { res.sentStatus = c; return res; };
+function createMockResponse() {
+  const res: any = {
+    status: function (code: number) { this.statusCode = code; return this; },
+    json: function (data: any) { this.jsonData = data; return this; },
+    send: function (data?: any) { this.sentData = data; return this; },
+    sendStatus: function (code: number) { this.statusCode = code; return this; }
+  };
   return res;
 }
 
-const controller = makeCustomerController({
-  list: uc([baseCustomer]) as unknown as ListCustomersUseCase,
-  get: uc(baseCustomer) as unknown as GetCustomerUseCase,
-  create: { execute: async () => 'new-id' } as unknown as CreateCustomerUseCase,
-  update: { execute: async () => true } as unknown as UpdateCustomerUseCase,
-  delete: { execute: async () => true } as unknown as DeleteCustomerUseCase,
+test('customerController: list customers with pagination', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({}, { limit: '10', offset: '0', firstName: 'John' });
+  const res = createMockResponse();
+
+  await controller.list(req, res, () => { });
+
+  assert.strictEqual(res.jsonData.length, 1);
+  assert.strictEqual(res.jsonData[0].firstName, 'John');
 });
 
-test('controller/customer: list returns array', async () => {
-  const res = mockRes();
-  const req: any = { query: {} };
-  await controller.list(req as any, res as any, (e:any)=>{ if (e) throw e; });
-  assert.ok(Array.isArray(res.jsonData));
-});
+test('customerController: list validates pagination parameters', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({}, { limit: 'invalid' });
+  const res = createMockResponse();
+  let nextCalled = false;
 
-test('controller/customer: get 404 when missing', async () => {
-  const c2 = makeCustomerController({
-    list: uc([]) as unknown as ListCustomersUseCase,
-    get: uc(null) as unknown as GetCustomerUseCase,
-    create: { execute: async () => 'id' } as unknown as CreateCustomerUseCase,
-    update: { execute: async () => false } as unknown as UpdateCustomerUseCase,
-    delete: { execute: async () => false } as unknown as DeleteCustomerUseCase,
+  await controller.list(req, res, (error: any) => {
+    nextCalled = true;
+    assert(error instanceof ValidationError);
+    assert(error.message.includes('limit/offset must be numbers'));
   });
-  const res = mockRes();
-  await c2.get({ params:{ id:'x'} } as any, res as any, ()=>{});
-  assert.strictEqual(res.sentStatus, 404);
+
+  assert(nextCalled);
+});
+
+test('customerController: get existing customer', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({ id: 'existing' });
+  const res = createMockResponse();
+
+  await controller.get(req, res, () => { });
+
+  assert.strictEqual(res.jsonData.id, 'existing');
+  assert.strictEqual(res.jsonData.firstName, 'John');
+});
+
+test('customerController: get non-existing customer returns 404', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({ id: 'non-existing' });
+  const res = createMockResponse();
+
+  await controller.get(req, res, () => { });
+
+  assert.strictEqual(res.statusCode, 404);
+});
+
+test('customerController: create customer', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({}, {}, { firstName: 'Jane', lastName: 'Smith' });
+  const res = createMockResponse();
+
+  await controller.create(req, res, () => { });
+
+  assert.strictEqual(res.statusCode, 201);
+  assert.strictEqual(res.jsonData.id, 'new-customer-id');
+});
+
+test('customerController: update existing customer', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({ id: 'existing' }, {}, { firstName: 'Updated' });
+  const res = createMockResponse();
+
+  await controller.update(req, res, () => { });
+
+  assert.strictEqual(res.statusCode, 204);
+});
+
+test('customerController: update non-existing customer returns 404', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({ id: 'non-existing' }, {}, { firstName: 'Updated' });
+  const res = createMockResponse();
+
+  await controller.update(req, res, () => { });
+
+  assert.strictEqual(res.statusCode, 404);
+});
+
+test('customerController: delete customer', async () => {
+  const controller = makeCustomerController(mockUseCases as any);
+  const req = createMockRequest({ id: 'existing' });
+  const res = createMockResponse();
+
+  await controller.delete(req, res, () => { });
+
+  assert.strictEqual(res.statusCode, 204);
 });

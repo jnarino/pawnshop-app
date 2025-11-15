@@ -1,8 +1,20 @@
 // src/app/feature/auth/LoginPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/app/core/auth/authService';
 import './LoginPage.css';
+
+// ✅ Single Responsibility: Handle Electron notifications safely
+const notifyElectronAuth = (authenticated: boolean): void => {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.electronAPI?.authChanged) {
+      globalThis.electronAPI.authChanged(authenticated);
+    }
+  } catch (electronError) {
+    console.warn('[LoginPage] Failed to notify Electron:', electronError);
+    // Continue - this is not critical for web version
+  }
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,8 +26,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Reset form when component mounts
-  useEffect(() => {
+  // ✅ Single Responsibility: Reset form state
+  const resetForm = useCallback(() => {
     setUsername('');
     setPassword('');
     setShowPw(false);
@@ -23,7 +35,13 @@ export default function LoginPage() {
     setError('');
   }, []);
 
-  const onSubmit = async (e?: React.FormEvent) => {
+  // Reset form when component mounts
+  useEffect(() => {
+    resetForm();
+  }, [resetForm]);
+
+  // ✅ Single Responsibility: Handle form submission
+  const onSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (loading) return;
 
@@ -33,10 +51,8 @@ export default function LoginPage() {
     try {
       const success = await login(username, password);
       if (success) {
-        // Notify Electron
-        if (window.electronAPI?.authChanged) {
-          window.electronAPI.authChanged(true);
-        }
+        notifyElectronAuth(true);
+        
         const from = (location.state as any)?.from?.pathname ?? '/';
         navigate(from, { replace: true });
       } else {
@@ -47,7 +63,20 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username, password, loading, location.state, navigate]);
+
+  // ✅ Single Responsibility: Toggle password visibility
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPw(prev => !prev);
+  }, []);
+
+  // ✅ Single Responsibility: Clear error message
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
+
+  // ✅ Derived state: Check if form is valid
+  const isFormValid = username.trim() && password.trim() && !loading;
 
   return (
     <div className="login-overlay">
@@ -58,12 +87,13 @@ export default function LoginPage() {
           <p className="login-subtitle">Sign in to continue</p>
 
           {error && (
-            <div className="login-error">
+            <div className="login-error" role="alert">
               {error}{' '}
               <button
                 type="button"
                 className="underline"
-                onClick={() => setError('')}
+                onClick={clearError}
+                aria-label="Dismiss error message"
               >
                 dismiss
               </button>
@@ -78,7 +108,9 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
               autoComplete="username"
-              disabled={loading} // ✅ Add disabled state
+              disabled={loading}
+              required
+              aria-describedby={error ? "error-message" : undefined}
             />
           </label>
 
@@ -91,14 +123,16 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                disabled={loading} // ✅ Add disabled state
+                disabled={loading}
+                required
+                aria-describedby={error ? "error-message" : undefined}
               />
               <button
                 type="button"
-                onClick={() => setShowPw((v) => !v)}
+                onClick={togglePasswordVisibility}
                 className="login-pw-toggle"
                 aria-label={showPw ? 'Hide password' : 'Show password'}
-                disabled={loading} // ✅ Add disabled state
+                disabled={loading}
               >
                 {showPw ? '🙈' : '👁️'}
               </button>
@@ -108,7 +142,7 @@ export default function LoginPage() {
           <button
             type="submit"
             className="login-button"
-            disabled={loading || !username || !password}
+            disabled={!isFormValid}
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

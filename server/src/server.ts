@@ -2,114 +2,174 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
-
-import healthRouter from './infrastructure/http/routes/healthRoutes';
-import readyRouter from './infrastructure/http/routes/readyRoutes';
-import { runMigrations } from './infrastructure/db/migrations/runMigrations';
-import { pool } from './infrastructure/db';
-import { notFound, errorHandler } from './infrastructure/http/errorHandler';
-import { config } from './config';
 import { logger } from './infrastructure/log/logger';
-import { requestIdMiddleware } from './infrastructure/http/requestId';
-import { accessLog } from './infrastructure/http/accessLog';
-import { securityHeaders } from './infrastructure/http/securityHeaders';
-import authRouter from './infrastructure/http/routes/authRoutes';
-import customerRouter from './infrastructure/http/routes/customerRoutes';
-import inventoryRouter from './infrastructure/http/routes/inventoryRoute';
-import inventoryStatusRouter from './infrastructure/http/routes/inventoryStatusRoute';
-import pawnTicketRouter from './infrastructure/http/routes/pawnTicketRoute';
-import categoryRouter from './infrastructure/http/routes/categoryRoutes';
-import debugRouter from './infrastructure/http/routes/debugRoutes';
-import paymentRoutes from './infrastructure/http/routes/paymentRoutes';
-import { validateJwt } from './infrastructure/http/middleware/auth';
-import { shutdownAuthCache } from './infrastructure/http/routes/authRoutes';
-import { categoryCache } from './container';
+import { pool } from './infrastructure/db';
 
-const SKIP_MIGRATIONS = process.env.SKIP_MIGRATIONS === 'true';
-let activeRequests = 0;
+const app = express();
 
-export function createApp() {
-  const app = express();
-  app.use(cors({ origin: true, credentials: true }));
-  app.use(cookieParser());
-  app.use(express.json({ limit: config.jsonLimit }));
-  app.use(requestIdMiddleware);
-  app.use((req, res, next) => { activeRequests++; res.on('finish', () => { activeRequests--; }); next(); });
-  app.use(accessLog);
-  app.use(securityHeaders);
+// ✅ Enhanced CORS configuration for development
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // Vite dev server
+    'http://localhost:3000', // Potential local dev
+    'http://127.0.0.1:5173', // Alternative localhost
+    'http://127.0.0.1:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Authorization']
+}));
 
-  // Public endpoints (no JWT required)
-  app.use('/api/health', healthRouter);
-  app.use('/api/ready', readyRouter);
-  app.use('/api/auth', authRouter);
-  app.use('/api/debug', debugRouter); // Temporary debug endpoint
+// ✅ Add request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`📥 ${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
 
-  // Protect all other /api routes with JWT
-  app.use('/api', validateJwt);
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-  // Protected routes
-  app.use('/api/customer', customerRouter);
-  app.use('/api/inventory', inventoryRouter);
-  app.use('/api/inventory-status', inventoryStatusRouter);
-  app.use('/api/pawnTicket', pawnTicketRouter);
-  app.use('/api/categories', categoryRouter);
-  app.use('/api/payment', paymentRoutes); // ✅ Add payment routes
+// ✅ Improved route initialization with better error handling
+async function initializeRoutes() {
+  try {
+    console.log('[Server] Loading container...');
 
-  app.use(notFound);
-  app.use(errorHandler);
-  return app;
-}
+    // Initialize container first
+    const { container, categoryCache } = await import('./container');
 
-async function ensureDbReady() {
-  const { retries, backoffMs } = config.dbConnect;
-  let attempt = 0;
-  // simple linear backoff (could add jitter later)
-  while (true) {
-    try {
-      await pool.query('SELECT 1');
-      if (!SKIP_MIGRATIONS) { logger.info('startup_migrations'); await runMigrations(); }
-      return;
-    } catch (e) {
-      attempt++;
-      if (attempt > retries) {
-        logger.error('startup_db_failed', { attempts: attempt, error: (e as any)?.message });
-        throw e;
+    console.log('[Server] Container loaded, initializing cache...');
+
+    // Initialize category cache
+    await categoryCache.refreshCache().catch(err => {
+      logger.error('[Server] Failed to initialize category cache:', err);
+    });
+
+    console.log('[Server] Cache initialized, loading routes...');
+
+    // ✅ Import routes one by one with error handling
+    const routeImports = [
+      { name: 'auth', path: './infrastructure/http/routes/authRoutes' },
+      { name: 'customer', path: './infrastructure/http/routes/customerRoutes' },
+      { name: 'pawnTicket', path: './infrastructure/http/routes/pawnTicketRoutes' },
+      { name: 'category', path: './infrastructure/http/routes/categoryRoutes' },
+      { name: 'payment', path: './infrastructure/http/routes/paymentRoutes' },
+      { name: 'inventory', path: './infrastructure/http/routes/inventoryRoutes' },
+      { name: 'inventoryStatus', path: './infrastructure/http/routes/inventoryStatusRoutes' }
+    ];
+
+    const routes: Record<string, any> = {};
+
+    for (const route of routeImports) {
+      try {
+        console.log(`[Server] Loading ${route.name} routes...`);
+        const module = await import(route.path);
+        routes[route.name] = module.default;
+
+        if (!routes[route.name]) {
+          throw new Error(`${route.name} routes module has no default export`);
+        }
+
+        console.log(`[Server] ✓ ${route.name} routes loaded`);
+      } catch (error) {
+        logger.error(`[Server] Failed to load ${route.name} routes:`, { error: error instanceof Error ? error.message : String(error) });
+        throw error;
       }
-      logger.warn('startup_db_retry', { attempt, remaining: retries - attempt, backoffMs });
-      await new Promise(r => setTimeout(r, backoffMs));
     }
+
+    console.log('[Server] All routes loaded, registering...');
+
+    // Register routes
+    app.use('/api/auth', routes.auth);
+    app.use('/api/customer', routes.customer);
+    app.use('/api/inventory', routes.inventory);
+    app.use('/api/inventory-status', routes.inventoryStatus);
+    app.use('/api/pawnTicket', routes.pawnTicket);
+    app.use('/api/category', routes.category);
+    app.use('/api/payment', routes.payment);
+
+    logger.info('[Server] All routes registered successfully');
+    return container;
+  } catch (error) {
+    logger.error('[Server] Failed to initialize routes:', { error: error instanceof Error ? error.message : String(error) });
+    throw error;
   }
 }
 
-async function start() {
-  logger.info('startup_begin', { env: config.nodeEnv, port: config.port, build: config.buildId });
-  await ensureDbReady();
-  const app = createApp();
-  const server = app.listen(config.port, () => logger.info('startup_listening', { url: `http://localhost:${config.port}` }));
+// Health check (available before route initialization)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-  const shutdown = async (signal: string) => {
-    logger.warn('shutdown_initiated', { signal });
-    const timer = setTimeout(() => { logger.error('shutdown_force_exit'); process.exit(1); }, config.shutdownTimeoutMs);
+// ✅ Add a simple test endpoint to verify server is responding
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Server is running', 
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 3000
+  });
+});
 
-    server.close(async () => {
-      try {
-        await categoryCache.disconnect();
-        await shutdownAuthCache();
-        await pool.end();
-        clearTimeout(timer);
-        logger.info('shutdown_complete');
-        process.exit(0);
-      } catch (error) {
-        logger.error('shutdown_error', { error });
-        process.exit(1);
+// Error handling middleware
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error('unhandled_route_error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method
+  });
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  res.status(500).json({
+    error: 'internal_server_error',
+    message: 'Something went wrong'
+  });
+});
+
+// ✅ Initialize routes and setup graceful shutdown
+let appContainer: any = null;
+
+initializeRoutes().then((container) => {
+  appContainer = container;
+
+  // Setup graceful shutdown after container is ready
+  async function gracefulShutdown(signal: string) {
+    logger.info('shutdown_signal_received', { signal });
+
+    try {
+      if (appContainer) {
+        await appContainer.shutdown();
       }
-    });
-  };
+      await pool.end();
 
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-}
+      logger.info('graceful_shutdown_complete');
+      process.exit(0);
+    } catch (error) {
+      logger.error('graceful_shutdown_error', { error: error instanceof Error ? error.message : String(error) });
+      process.exit(1);
+    }
+  }
 
-if (require.main === module) start();
+  // Register shutdown handlers
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('uncaughtException', (error) => {
+    logger.error('uncaught_exception', { error: error.message });
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+  });
+  process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled_rejection', { reason: String(reason) });
+    gracefulShutdown('UNHANDLED_REJECTION');
+  });
+
+}).catch((error) => {
+  logger.error('[Server] Failed to start:', error);
+  process.exit(1);
+});
+
+export { app };
 
