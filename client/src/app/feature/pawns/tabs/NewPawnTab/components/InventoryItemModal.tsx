@@ -109,11 +109,18 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
 
   // ✅ Karat options based on metal
-  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
+  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
 
-  // ✅ Update field handler
+  // ✅ Update field handler with uppercase conversion
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
-    setDraft(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // ✅ Convert to uppercase for all fields except description and ownerNumber
+    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber') {
+      processedValue = value.toUpperCase();
+    }
+    
+    setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 
   // ✅ Type selection
@@ -162,13 +169,21 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     onSave(itemData);
   }, [draft, isJewelry, onSave]);
 
-  // ✅ Auto-fill karat when metal changes
+  // ✅ FIXED: Auto-fill karat when metal changes
   const handleMetalChange = useCallback((metal: string) => {
-    const metalKey = metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL;
+    if (!metal) {
+      updateField('metal', '');
+      updateField('karat', '');
+      return;
+    }
+
+    // ✅ The metal value from select is already in lowercase (from JEWELRY_METALS array)
+    const metalKey = metal as keyof typeof KARAT_OPTIONS_BY_METAL;
     const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
-
+    
+    // ✅ Store the metal in uppercase for display
     updateField('metal', metal.toUpperCase());
-
+    
     // ✅ Auto-select first karat option if available
     if (karatOptions.length > 0) {
       updateField('karat', karatOptions[0]);
@@ -180,14 +195,14 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   if (!open) return null;
 
   return (
-    <Modal
-      isOpen={open}
+    <Modal 
+      isOpen={open} 
       onClose={onCancel}
     >
       <div className="inventory-modal">
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            {/* Row 1: Category and Subtype */}
+            {/* Row 1: Category and Type */}
             <div className="form-group category-field">
               <label className="required">Category</label>
               <div className="type-selector">
@@ -195,15 +210,17 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   type="text"
                   value={typeQuery}
                   onChange={(e) => {
-                    setTypeQuery(e.target.value);
-                    updateField('type', e.target.value);
-                    setShowSuggestions(e.target.value.length > 0);
+                    const upperValue = e.target.value.toUpperCase();
+                    setTypeQuery(upperValue);
+                    updateField('type', upperValue);
+                    setShowSuggestions(upperValue.length > 0);
                   }}
                   onFocus={() => setShowSuggestions(typeQuery.length > 0)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  placeholder={isLoading ? "Loading..." : "Search categories..."}
+                  placeholder={isLoading ? "LOADING..." : "SEARCH CATEGORIES..."}
                   disabled={isLoading}
                   required
+                  style={{ textTransform: 'uppercase' }}
                 />
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="suggestions">
@@ -211,9 +228,9 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       <div
                         key={cat.id || index}
                         className="suggestion-item"
-                        onClick={() => selectType(cat.name)}
+                        onClick={() => selectType(cat.name.toUpperCase())}
                       >
-                        {cat.name}
+                        {cat.name.toUpperCase()}
                       </div>
                     ))}
                   </div>
@@ -221,83 +238,28 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               </div>
             </div>
 
-            <div className="form-group subtype-field">
+            <div className="form-group">
               <label>Type</label>
               {subtypes.length > 0 ? (
                 <select
                   value={draft.sub1 || ''}
                   onChange={(e) => updateField('sub1', e.target.value)}
                 >
-                  <option value="">Select type...</option>
+                  <option value="">SELECT TYPE...</option>
                   {subtypes.map(subtype => (
-                    <option key={subtype} value={subtype}>{subtype}</option>
+                    <option key={subtype} value={subtype.toUpperCase()}>{subtype.toUpperCase()}</option>
                   ))}
                 </select>
               ) : (
                 <input
                   value={draft.sub1 || ''}
                   onChange={(e) => updateField('sub1', e.target.value)}
-                  placeholder="Enter type"
+                  placeholder="ENTER TYPE"
+                  style={{ textTransform: 'uppercase' }}
                 />
               )}
             </div>
 
-            {/* Row 2: Basic Item Info */}
-            <div className="form-group">
-              <label>Brand</label>
-              <input
-                value={draft.brand || ''}
-                onChange={(e) => updateField('brand', e.target.value)}
-                placeholder="Brand name"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Model</label>
-              <input
-                value={draft.model || ''}
-                onChange={(e) => updateField('model', e.target.value)}
-                placeholder="Model"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Serial Number</label>
-              <input
-                value={draft.serial || ''}
-                onChange={(e) => updateField('serial', e.target.value)}
-                placeholder="Serial/IMEI"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
-              {isFirearm ? (
-                <select
-                  value={draft.color || ''}
-                  onChange={(e) => updateField('color', e.target.value)}
-                >
-                  <option value="">Select finish...</option>
-                  {FIREARM_FINISHES.map(finish => (
-                    <option key={finish} value={finish}>{finish}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  list="colors"
-                  value={draft.color || ''}
-                  onChange={(e) => updateField('color', e.target.value)}
-                  placeholder="Color"
-                />
-              )}
-              <datalist id="colors">
-                {JEWELRY_COLORS.map(color => (
-                  <option key={color} value={color} />
-                ))}
-              </datalist>
-            </div>
-
-            {/* Row 3: Value, Quantity, Owner Marks */}
             <div className="form-group value-field">
               <label className="required">Value ($)</label>
               <input
@@ -330,21 +292,83 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <input
                 value={draft.ownerNumber || ''}
                 onChange={(e) => updateField('ownerNumber', e.target.value)}
-                placeholder="Marks/engravings"
+                placeholder="Marks/engravings (free text)"
               />
             </div>
 
-            {/* Jewelry Specific Fields */}
+            {/* Row 2: Basic Item Info */}
+            <div className="form-group">
+              <label>Brand</label>
+              <input
+                value={draft.brand || ''}
+                onChange={(e) => updateField('brand', e.target.value)}
+                placeholder="BRAND NAME"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Model</label>
+              <input
+                value={draft.model || ''}
+                onChange={(e) => updateField('model', e.target.value)}
+                placeholder="MODEL"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Serial Number</label>
+              <input
+                value={draft.serial || ''}
+                onChange={(e) => updateField('serial', e.target.value)}
+                placeholder="SERIAL/IMEI"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
+              {isFirearm ? (
+                <select
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                >
+                  <option value="">SELECT FINISH...</option>
+                  {FIREARM_FINISHES.map(finish => (
+                    <option key={finish} value={finish.toUpperCase()}>{finish.toUpperCase()}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  list="colors"
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                  placeholder="COLOR"
+                  style={{ textTransform: 'uppercase' }}
+                />
+              )}
+              <datalist id="colors">
+                {JEWELRY_COLORS.map(color => (
+                  <option key={color} value={color.toUpperCase()} />
+                ))}
+              </datalist>
+            </div>
+
+            {/* Fill empty space if no specific item type */}
+            {!isJewelry && !isFirearm && <div></div>}
+
+            {/* Row 3: Jewelry-specific fields */}
             {isJewelry && (
               <>
                 <div className="form-group">
                   <label className="required">Metal</label>
                   <select
-                    value={draft.metal || ''}
+                    value={draft.metal?.toLowerCase() || ''} // ✅ Convert stored uppercase back to lowercase for select
                     onChange={(e) => handleMetalChange(e.target.value)}
                     required
                   >
-                    <option value="">Select metal...</option>
+                    <option value="">SELECT METAL...</option>
                     {JEWELRY_METALS.map(metal => (
                       <option key={metal} value={metal}>{metal.toUpperCase()}</option>
                     ))}
@@ -359,7 +383,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       onChange={(e) => updateField('karat', e.target.value)}
                       required
                     >
-                      <option value="">Select karat...</option>
+                      <option value="">SELECT KARAT...</option>
                       {karatOptions.map(k => (
                         <option key={k} value={k}>{k}</option>
                       ))}
@@ -368,8 +392,9 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     <input
                       value={draft.karat || ''}
                       onChange={(e) => updateField('karat', e.target.value)}
-                      placeholder="Enter karat/fineness"
+                      placeholder="14K, .925"
                       required
+                      style={{ textTransform: 'uppercase' }}
                     />
                   )}
                 </div>
@@ -406,7 +431,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     value={draft.gender || ''}
                     onChange={(e) => updateField('gender', e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="">SELECT...</option>
                     {GENDER_OPTIONS.map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
@@ -420,7 +445,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       value={draft.sizeLength || ''}
                       onChange={(e) => updateField('sizeLength', e.target.value)}
                     >
-                      <option value="">Ring size...</option>
+                      <option value="">RING SIZE...</option>
                       {RING_SIZES.map(size => (
                         <option key={size} value={size}>{size}</option>
                       ))}
@@ -429,14 +454,15 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     <input
                       value={draft.sizeLength || ''}
                       onChange={(e) => updateField('sizeLength', e.target.value)}
-                      placeholder="Length (inches)"
+                      placeholder="LENGTH (INCHES)"
+                      style={{ textTransform: 'uppercase' }}
                     />
                   )}
                 </div>
               </>
             )}
 
-            {/* Firearm Specific Fields */}
+            {/* Row 3: Firearm-specific fields */}
             {isFirearm && (
               <>
                 <div className="form-group">
@@ -445,7 +471,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     value={draft.caliber || ''}
                     onChange={(e) => updateField('caliber', e.target.value)}
                   >
-                    <option value="">Select caliber...</option>
+                    <option value="">SELECT CALIBER...</option>
                     {FIREARM_CALIBERS.map(caliber => (
                       <option key={caliber} value={caliber}>{caliber}</option>
                     ))}
@@ -458,7 +484,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                     value={draft.action || ''}
                     onChange={(e) => updateField('action', e.target.value)}
                   >
-                    <option value="">Select action...</option>
+                    <option value="">SELECT ACTION...</option>
                     {FIREARM_ACTIONS.map(action => (
                       <option key={action} value={action}>{action}</option>
                     ))}
@@ -470,7 +496,8 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.barrelLength || ''}
                     onChange={(e) => updateField('barrelLength', e.target.value)}
-                    placeholder="16 inches"
+                    placeholder="16 INCHES"
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </div>
 
@@ -479,21 +506,22 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   <input
                     value={draft.capacity || ''}
                     onChange={(e) => updateField('capacity', e.target.value)}
-                    placeholder="15 rounds"
+                    placeholder="15 ROUNDS"
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </div>
               </>
             )}
           </div>
 
-          {/* Description - Full Width */}
+          {/* Description - Full Width - FREE TEXT */}
           <div className="form-group full-width">
             <label>Description</label>
             <textarea
               value={draft.description || ''}
               onChange={(e) => updateField('description', e.target.value)}
               rows={2}
-              placeholder="Brief description..."
+              placeholder="Brief description (free text)..."
             />
           </div>
 

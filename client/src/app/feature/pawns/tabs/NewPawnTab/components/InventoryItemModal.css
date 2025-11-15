@@ -66,8 +66,8 @@
 
 .inventory-modal {
   width: 100%;
-  max-width: 1200px;
-  min-width: 1000px;
+  max-width: 1100px; /* ✅ Reduced for 5-column layout */
+  min-width: 900px;  /* ✅ Reduced minimum width */
   padding: 20px;
   background: white;
   border-radius: 12px;
@@ -78,7 +78,7 @@
 
 .inventory-modal .form-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; /* ✅ 6 columns: Category wider, Type and others smaller */
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr; /* ✅ 5 columns: Category wider, others equal */
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -117,23 +117,19 @@
   min-height: 32px;
 }
 
-/* ✅ Specific field sizing */
+/* ✅ Specific field sizing for 5-column layout */
 .inventory-modal .category-field {
-  grid-column: 1; /* First column, widest */
-}
-
-.inventory-modal .subtype-field {
-  grid-column: 2; /* Second column for Type */
+  /* Takes up first column (2fr - wider for category) */
 }
 
 .inventory-modal .value-field .value-input {
-  max-width: 120px;
+  max-width: 110px; /* ✅ Slightly reduced for tighter layout */
   font-weight: 600;
   color: #059669;
 }
 
 .inventory-modal .qty-field .qty-input {
-  max-width: 80px;
+  max-width: 70px; /* ✅ Reduced for 5-column layout */
   text-align: center;
 }
 
@@ -143,18 +139,18 @@
 
 .inventory-modal .weight-container {
   display: flex;
-  gap: 6px;
+  gap: 4px; /* ✅ Reduced gap for tighter layout */
   align-items: center;
 }
 
 .inventory-modal .weight-input {
-  max-width: 80px;
+  max-width: 70px; /* ✅ Reduced for 5-column layout */
   font-weight: 600;
   color: #d97706;
 }
 
 .inventory-modal .weight-unit {
-  min-width: 70px;
+  min-width: 65px; /* ✅ Reduced for tighter fit */
   font-size: 11px;
 }
 
@@ -316,8 +312,8 @@
   content: '📱';
 }
 
-/* ✅ Enhanced responsive design for no scrolling */
-@media (max-width: 1400px) {
+/* ✅ Enhanced responsive design for 5-column layout */
+@media (max-width: 1200px) {
   .inventory-modal {
     min-width: unset;
     max-width: 95vw;
@@ -332,16 +328,6 @@
   
   .inventory-modal .category-field {
     grid-column: 1 / -1; /* ✅ Full width for category */
-  }
-  
-  .inventory-modal .subtype-field {
-    grid-column: unset; /* ✅ Reset column span */
-  }
-}
-
-@media (max-width: 1024px) {
-  .inventory-modal .form-grid {
-    grid-template-columns: 1fr 1fr; /* ✅ 2 columns on tablets */
   }
 }
 
@@ -377,4 +363,22 @@
   .inventory-modal .qty-input {
     max-width: unset; /* ✅ Full width on mobile */
   }
+}
+
+/* ✅ Add styling for uppercase fields */
+.inventory-modal .form-group input[style*="textTransform: uppercase"],
+.inventory-modal .form-group select {
+  text-transform: uppercase;
+}
+
+/* ✅ Override uppercase for description and owner marks */
+.inventory-modal .form-group textarea,
+.inventory-modal .form-group input[placeholder*="free text"],
+.inventory-modal .form-group input[placeholder*="Marks/engravings"] {
+  text-transform: none !important;
+}
+
+/* ✅ Ensure placeholders are also uppercase where needed */
+.inventory-modal .form-group input[style*="textTransform: uppercase"]::placeholder {
+  text-transform: uppercase;
 }
