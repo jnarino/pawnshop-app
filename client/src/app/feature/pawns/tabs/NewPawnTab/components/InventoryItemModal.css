@@ -66,56 +66,37 @@
 
 .inventory-modal {
   width: 100%;
-  max-width: 1400px; /* ✅ Increased for horizontal layout */
-  min-width: 1200px; /* ✅ Ensure minimum width for all fields */
-  padding: 24px;
+  max-width: 1200px;
+  min-width: 1000px;
+  padding: 20px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-height: 90vh; /* ✅ Limit height to fit screen */
+  max-height: 85vh;
   overflow-y: auto;
-}
-
-.inventory-modal .modal-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.inventory-modal .modal-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-}
-
-.inventory-modal .modal-subtitle {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
 }
 
 .inventory-modal .form-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* ✅ 6 columns for horizontal layout */
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; /* ✅ 6 columns: Category wider, Type and others smaller */
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .inventory-modal .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .inventory-modal .form-group label {
   font-weight: 600;
-  font-size: 13px; /* ✅ Slightly smaller for space */
+  font-size: 11px;
   color: #374151;
   display: flex;
   align-items: center;
   gap: 4px;
-  white-space: nowrap; /* ✅ Prevent label wrapping */
+  white-space: nowrap;
 }
 
 .inventory-modal .required::after {
@@ -127,13 +108,54 @@
 .inventory-modal .form-group input,
 .inventory-modal .form-group select,
 .inventory-modal .form-group textarea {
-  padding: 10px 12px; /* ✅ Slightly reduced padding */
+  padding: 8px 10px;
   border: 2px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 13px; /* ✅ Smaller font for compactness */
+  font-size: 12px;
   transition: all 0.2s ease;
   background: white;
-  min-height: 36px; /* ✅ Consistent height */
+  min-height: 32px;
+}
+
+/* ✅ Specific field sizing */
+.inventory-modal .category-field {
+  grid-column: 1; /* First column, widest */
+}
+
+.inventory-modal .subtype-field {
+  grid-column: 2; /* Second column for Type */
+}
+
+.inventory-modal .value-field .value-input {
+  max-width: 120px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.inventory-modal .qty-field .qty-input {
+  max-width: 80px;
+  text-align: center;
+}
+
+.inventory-modal .weight-field {
+  /* Weight field container */
+}
+
+.inventory-modal .weight-container {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.inventory-modal .weight-input {
+  max-width: 80px;
+  font-weight: 600;
+  color: #d97706;
+}
+
+.inventory-modal .weight-unit {
+  min-width: 70px;
+  font-size: 11px;
 }
 
 .inventory-modal .form-group input:focus,
@@ -141,7 +163,7 @@
 .inventory-modal .form-group textarea:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); /* ✅ Smaller shadow */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
   background: #fefefe;
 }
 
@@ -165,16 +187,16 @@
   border: 2px solid #e5e7eb;
   border-top: none;
   border-radius: 0 0 6px 6px;
-  max-height: 200px; /* ✅ Reduced height */
+  max-height: 160px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1); /* ✅ Smaller shadow */
+  box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1);
 }
 
 .inventory-modal .suggestion-item {
-  padding: 10px 12px; /* ✅ Smaller padding */
+  padding: 6px 10px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   border-bottom: 1px solid #f3f4f6;
   transition: background-color 0.15s ease;
 }
@@ -187,36 +209,17 @@
   border-bottom: none;
 }
 
-.inventory-modal .flex-row {
-  display: flex;
-  gap: 8px; /* ✅ Smaller gap */
-  align-items: center;
-}
-
 .inventory-modal .full-width {
   grid-column: 1 / -1;
-}
-
-.inventory-modal .section-header {
-  grid-column: 1 / -1;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 12px 0 8px 0; /* ✅ Smaller margins */
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f8fafc; /* ✅ Light background to separate sections */
-  padding: 8px 12px;
-  border-radius: 4px;
 }
 
 .inventory-modal .error-message {
   color: #dc2626;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  padding: 12px 16px; /* ✅ Smaller padding */
+  padding: 10px 14px;
   border-radius: 6px;
-  margin: 12px 0; /* ✅ Smaller margins */
-  font-size: 13px;
+  margin: 10px 0;
+  font-size: 12px;
   border: 1px solid #fecaca;
   display: flex;
   align-items: center;
@@ -232,15 +235,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 20px;
+  padding-top: 16px;
   border-top: 2px solid #e5e7eb;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .inventory-modal .btn {
-  padding: 10px 20px; /* ✅ Smaller padding */
+  padding: 8px 16px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   border: 2px solid;
@@ -302,7 +305,7 @@
 
 .inventory-modal .scanner-status {
   color: #059669;
-  font-size: 11px; /* ✅ Smaller font */
+  font-size: 10px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -313,60 +316,65 @@
   content: '📱';
 }
 
-/* ✅ Enhanced responsive design for horizontal layout */
+/* ✅ Enhanced responsive design for no scrolling */
 @media (max-width: 1400px) {
   .inventory-modal {
     min-width: unset;
     max-width: 95vw;
-    margin: 20px;
-    padding: 20px;
+    margin: 16px;
+    padding: 16px;
   }
   
   .inventory-modal .form-grid {
-    grid-template-columns: repeat(4, 1fr); /* ✅ 4 columns on smaller screens */
-    gap: 12px;
+    grid-template-columns: 1fr 1fr 1fr; /* ✅ 3 columns on medium screens */
+    gap: 10px;
+  }
+  
+  .inventory-modal .category-field {
+    grid-column: 1 / -1; /* ✅ Full width for category */
+  }
+  
+  .inventory-modal .subtype-field {
+    grid-column: unset; /* ✅ Reset column span */
   }
 }
 
 @media (max-width: 1024px) {
   .inventory-modal .form-grid {
-    grid-template-columns: repeat(3, 1fr); /* ✅ 3 columns on tablets */
+    grid-template-columns: 1fr 1fr; /* ✅ 2 columns on tablets */
   }
 }
 
 @media (max-width: 768px) {
   .inventory-modal {
     max-width: 100%;
-    margin: 10px;
-    padding: 16px;
+    margin: 8px;
+    padding: 14px;
     max-height: 95vh;
   }
   
   .inventory-modal .form-grid {
-    grid-template-columns: repeat(2, 1fr); /* ✅ 2 columns on mobile */
-    gap: 12px;
+    grid-template-columns: 1fr; /* ✅ Single column on mobile */
+    gap: 8px;
   }
   
   .inventory-modal .modal-actions {
     flex-direction: column-reverse;
-    gap: 12px;
+    gap: 10px;
   }
   
   .inventory-modal .btn {
     width: 100%;
     justify-content: center;
   }
-}
-
-/* ✅ Special styling for compact fields */
-.inventory-modal .form-group.compact {
-  grid-column: span 1;
-}
-
-.inventory-modal .form-group.wide {
-  grid-column: span 2;
-}
-
-.inventory-modal .form-group.extra-wide {
-  grid-column: span 3;
+  
+  .inventory-modal .weight-container {
+    gap: 4px;
+  }
+  
+  .inventory-modal .value-input,
+  .inventory-modal .weight-input,
+  .inventory-modal .qty-input {
+    max-width: unset; /* ✅ Full width on mobile */
+  }
 }

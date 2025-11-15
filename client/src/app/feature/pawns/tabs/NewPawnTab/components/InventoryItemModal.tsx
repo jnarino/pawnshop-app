@@ -15,6 +15,7 @@ import {
 export interface InventoryItemDraft {
   id?: string;
   type: string;
+  sub1?: string; // ✅ Keep only sub1 for subtype
   brand?: string;
   model?: string;
   serial?: string;
@@ -68,14 +69,14 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
   // ✅ Initialize form data with proper defaults to prevent controlled/uncontrolled switches
   useEffect(() => {
     if (open) {
-      const formData = initial ? { 
-        ...DEFAULT_ITEM, 
+      const formData = initial ? {
+        ...DEFAULT_ITEM,
         ...initial,
         // ✅ Ensure all select fields have default values
         condition: initial.condition || '',
         gender: initial.gender || '',
         weightUnit: initial.weightUnit || 'Grams'
-      } : { 
+      } : {
         ...DEFAULT_ITEM,
         // ✅ Ensure all select fields have default values
         condition: '',
@@ -158,20 +159,13 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     <Modal 
       isOpen={open} 
       onClose={onCancel}
-      title={initial ? 'Edit Item' : 'Add New Item'}
-      description="Enter the item details for this pawn transaction"
     >
       <div className="inventory-modal">
-        <div className="modal-header">
-          <h2 className="modal-title">{initial ? 'Edit Item' : 'Add New Item'}</h2>
-          <p className="modal-subtitle">Enter the item details for this pawn transaction</p>
-        </div>
-
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            {/* Row 1: Basic Information */}
-            <div className="form-group">
-              <label className="required">Type</label>
+            {/* Row 1: Category and Subtype */}
+            <div className="form-group category-field">
+              <label className="required">Category</label>
               <div className="type-selector">
                 <input
                   type="text"
@@ -203,12 +197,22 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               </div>
             </div>
 
+            <div className="form-group subtype-field">
+              <label>Type</label>
+              <input
+                value={draft.sub1 || ''}
+                onChange={(e) => updateField('sub1', e.target.value)}
+                placeholder="e.g., Necklace, Ring, Pistol"
+              />
+            </div>
+
+            {/* Row 2: Basic Item Info */}
             <div className="form-group">
               <label>Brand</label>
               <input
                 value={draft.brand || ''}
                 onChange={(e) => updateField('brand', e.target.value)}
-                placeholder="e.g., Apple, Samsung"
+                placeholder="Brand name"
               />
             </div>
 
@@ -217,7 +221,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <input
                 value={draft.model || ''}
                 onChange={(e) => updateField('model', e.target.value)}
-                placeholder="e.g., iPhone 13"
+                placeholder="Model"
               />
             </div>
 
@@ -231,12 +235,12 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             </div>
 
             <div className="form-group">
-              <label>Color</label>
+              <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
               <input
                 list="colors"
                 value={draft.color || ''}
                 onChange={(e) => updateField('color', e.target.value)}
-                placeholder="Color"
+                placeholder={isFirearm ? "Finish/Color" : "Color"}
               />
               <datalist id="colors">
                 {JEWELRY_COLORS.map(color => (
@@ -245,40 +249,31 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               </datalist>
             </div>
 
-            <div className="form-group">
-              <label>Condition</label>
-              <select
-                value={draft.condition || ''}
-                onChange={(e) => updateField('condition', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="Excellent">Excellent</option>
-                <option value="Good">Good</option>
-                <option value="Fair">Fair</option>
-                <option value="Poor">Poor</option>
-              </select>
-            </div>
-
-            {/* Row 2: Value & Quantity */}
-            <div className="form-group">
-              <label className="required">Value</label>
+            {/* Row 3: Value, Quantity, Owner Marks */}
+            <div className="form-group value-field">
+              <label className="required">Value ($)</label>
               <input
                 type="number"
                 step="0.01"
+                min="0"
+                max="999999.99"
                 value={draft.amount || ''}
                 onChange={(e) => updateField('amount', e.target.value)}
-                placeholder="0.00"
+                placeholder="10000.00"
                 required
+                className="value-input"
               />
             </div>
 
-            <div className="form-group">
-              <label>Quantity</label>
+            <div className="form-group qty-field">
+              <label>Qty</label>
               <input
                 type="number"
                 min="1"
+                max="999"
                 value={draft.quantity || '1'}
                 onChange={(e) => updateField('quantity', e.target.value)}
+                className="qty-input"
               />
             </div>
 
@@ -291,20 +286,9 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               />
             </div>
 
-            {/* Spacer for alignment when no jewelry/firearm fields */}
-            {!isJewelry && !isFirearm && (
-              <>
-                <div></div>
-                <div></div>
-                <div></div>
-              </>
-            )}
-
-            {/* Jewelry Fields - displayed in same grid */}
+            {/* Jewelry Specific Fields */}
             {isJewelry && (
               <>
-                <div className="section-header">💎 Jewelry Details</div>
-                
                 <div className="form-group">
                   <label className="required">Metal</label>
                   <input
@@ -342,22 +326,24 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                   )}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group weight-field">
                   <label className="required">Weight</label>
-                  <div className="flex-row">
+                  <div className="weight-container">
                     <input
                       type="number"
                       step="0.01"
+                      min="0"
+                      max="999.99"
                       value={draft.weight || ''}
                       onChange={(e) => updateField('weight', e.target.value)}
-                      placeholder="0.00"
+                      placeholder="5.25"
                       required
-                      style={{ flex: 1 }}
+                      className="weight-input"
                     />
                     <select
                       value={draft.weightUnit || 'Grams'}
                       onChange={(e) => updateField('weightUnit', e.target.value)}
-                      style={{ minWidth: '80px' }}
+                      className="weight-unit"
                     >
                       {WEIGHT_UNITS.map(unit => (
                         <option key={unit} value={unit}>{unit}</option>
@@ -392,25 +378,19 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                       ))}
                     </select>
                   ) : (
-                    <div className="flex-row">
-                      <input
-                        value={draft.sizeLength || ''}
-                        onChange={(e) => updateField('sizeLength', e.target.value)}
-                        placeholder="Length"
-                        style={{ flex: 1 }}
-                      />
-                      <span>in</span>
-                    </div>
+                    <input
+                      value={draft.sizeLength || ''}
+                      onChange={(e) => updateField('sizeLength', e.target.value)}
+                      placeholder="Length (inches)"
+                    />
                   )}
                 </div>
               </>
             )}
 
-            {/* Firearm Fields - displayed in same grid */}
+            {/* Firearm Specific Fields */}
             {isFirearm && (
               <>
-                <div className="section-header">🔫 Firearm Details</div>
-                
                 <div className="form-group">
                   <label>Caliber</label>
                   <input
@@ -456,8 +436,8 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <textarea
               value={draft.description || ''}
               onChange={(e) => updateField('description', e.target.value)}
-              rows={3}
-              placeholder="Detailed description of the item, including any notable features, damage, or special characteristics..."
+              rows={2}
+              placeholder="Brief description..."
             />
           </div>
 
