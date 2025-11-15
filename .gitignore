@@ -68,3 +68,12 @@ dump.rdb
 # Electron (if applicable)
 electron-builder.yml
 dist_electron/
+
+# Client build outputs
+client/dist/
+client/dist-electron/
+client/build/
+
+# Server build outputs  
+server/dist/
+server/build/
