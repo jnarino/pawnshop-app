@@ -4,8 +4,6 @@
 import type { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
-import { pool } from '../db';
-import { getSQL } from '../db/sqlLoader';
 import type { Customer } from '../../domain/customer/Customer';
 import type { ICustomerRepository } from '../../domain/customer/ICustomerRepository';
 
@@ -62,13 +60,6 @@ const COL_MAP: Record<string, string> = {
   taxExempt: 'tax_exempt',
   taxExemptCertificate: 'tax_exempt_certificate'
 };
-
-const SELECT_COLUMNS = [
-  'id',
-  ...Object.values(COL_MAP),
-  'created_at',
-  'updated_at'
-].join(', ');
 
 function mapRow(r: any): Customer {
   if (!r) return r;
@@ -132,7 +123,7 @@ function mapRow(r: any): Customer {
 // Test helper (back-compat with earlier tests importing mapRowToCustomer)
 export function mapRowToCustomer(r: any): Customer { return mapRow(r); }
 
-function buildInsert(dto: Omit<Customer, 'id'>) {
+function buildInsert(dto: Omit<Customer, 'id'>): { sql: string; values: any[] } {
   const columns: string[] = [];
   const placeholders: string[] = [];
   const values: any[] = [];
@@ -154,16 +145,19 @@ function buildInsert(dto: Omit<Customer, 'id'>) {
   return { sql, values };
 }
 
-function buildUpdate(id: string, dto: Partial<Customer>) {
+function buildUpdate(id: string, dto: Partial<Customer>): { sql: string; values: any[] } | null {
   const sets: string[] = [];
   const values: any[] = [];
+  
   Object.entries(COL_MAP).forEach(([camel, snake]) => {
     if ((dto as any)[camel] !== undefined) {
       values.push((dto as any)[camel]);
       sets.push(`${snake} = $${values.length}`);
     }
   });
+  
   if (!sets.length) return null;
+  
   values.push(id);
   const sql = `UPDATE customer SET ${sets.join(', ')}, updated_at = now() WHERE id = $${values.length}`;
   return { sql, values };
@@ -173,16 +167,28 @@ export class CustomerRepository implements ICustomerRepository {
   private readonly findCustomersByQuerySql: string;
   private readonly findCustomerByIdSql: string;
   private readonly createCustomerSql: string;
+  private readonly findAllCustomersSql: string;
+  private readonly findByDobAndIdSql: string;
+  private readonly deleteCustomerSql: string;
+  private readonly lockCustomerSql: string;
+  private readonly unlockCustomerSql: string;
 
   constructor(private readonly pool: Pool) {
-    // ✅ Load SQL queries from files
+    // ✅ Load ALL SQL queries from files
     const queryPath = path.join(__dirname, '../db/query/customer');
+    const commandPath = path.join(__dirname, '../db/command/customer');
+    
     this.findCustomersByQuerySql = fs.readFileSync(path.join(queryPath, 'findCustomersByQuery.sql'), 'utf8');
     this.findCustomerByIdSql = fs.readFileSync(path.join(queryPath, 'findCustomerById.sql'), 'utf8');
+    this.findAllCustomersSql = fs.readFileSync(path.join(queryPath, 'findAllCustomers.sql'), 'utf8');
+    this.findByDobAndIdSql = fs.readFileSync(path.join(queryPath, 'findCustomerByDobAndId.sql'), 'utf8');
     this.createCustomerSql = fs.readFileSync(path.join(queryPath, 'createCustomer.sql'), 'utf8');
+    this.deleteCustomerSql = fs.readFileSync(path.join(commandPath, 'deleteCustomer.sql'), 'utf8');
+    this.lockCustomerSql = fs.readFileSync(path.join(commandPath, 'lockCustomer.sql'), 'utf8');
+    this.unlockCustomerSql = fs.readFileSync(path.join(commandPath, 'unlockCustomer.sql'), 'utf8');
   }
+
   async findAll(limit?: number, offset?: number, filters?: { firstName?: string; lastName?: string; dateOfBirth?: string; }): Promise<Customer[]> {
-    const sql = getSQL('query', 'customer', 'findAllCustomers');
     const values: any[] = [
       filters?.firstName || null,
       filters?.lastName || null,
@@ -191,7 +197,7 @@ export class CustomerRepository implements ICustomerRepository {
       offset || null
     ];
 
-    const { rows } = await this.pool.query(sql, values);
+    const { rows } = await this.pool.query(this.findAllCustomersSql, values);
     return rows.map(mapRow);
   }
 
@@ -213,17 +219,16 @@ export class CustomerRepository implements ICustomerRepository {
       params.limit || 50,
       params.offset || 0
     ]);
-    return result.rows;
+    return result.rows.map(mapRow);
   }
 
   async findById(id: string): Promise<Customer | null> {
     const result = await this.pool.query(this.findCustomerByIdSql, [id]);
-    return result.rows[0] || null;
+    return result.rows[0] ? mapRow(result.rows[0]) : null;
   }
 
   async findByDobAndIdNumber(dateOfBirth: string, idNumber: string): Promise<Customer | null> {
-    const sql = getSQL('query', 'customer', 'findCustomerByDobAndId');
-    const { rows } = await pool.query(sql, [dateOfBirth, idNumber]);
+    const { rows } = await this.pool.query(this.findByDobAndIdSql, [dateOfBirth, idNumber]);
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
@@ -255,13 +260,12 @@ export class CustomerRepository implements ICustomerRepository {
   async update(id: string, dto: Partial<Customer>): Promise<boolean> {
     const built = buildUpdate(id, dto);
     if (!built) return true;
-    const res = await pool.query(built.sql, built.values);
+    const res = await this.pool.query(built.sql, built.values);
     return res.rowCount === 1;
   }
 
   async delete(id: string): Promise<boolean> {
-    const sql = getSQL('command', 'customer', 'deleteCustomer');
-    const res = await pool.query(sql, [id]);
+    const res = await this.pool.query(this.deleteCustomerSql, [id]);
     return res.rowCount === 1;
   }
 
@@ -278,13 +282,11 @@ export class CustomerRepository implements ICustomerRepository {
   }
 
   async lockCustomer(id: string): Promise<Customer | null> {
-    const sql = getSQL('command', 'customer', 'lockCustomer');
-    const { rows } = await pool.query(sql, [id]);
+    const { rows } = await this.pool.query(this.lockCustomerSql, [id]);
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
   async unlockCustomer(id: string): Promise<void> {
-    const sql = getSQL('command', 'customer', 'unlockCustomer');
-    await pool.query(sql, [id]);
+    await this.pool.query(this.unlockCustomerSql, [id]);
   }
 }

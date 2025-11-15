@@ -1,10 +1,10 @@
 import { InventoryRepository } from '../persistence/InventoryRepository';
 import { InventoryStatusRepository } from '../persistence/InventoryStatusRepository';
 import { CreateInventoryItemUseCase } from '../../application/useCase/inventory/CreateInventoryItemUseCase';
-import { DeleteInventoryItemUseCase } from '../../application/useCase/inventory/DeleteInventoryItemUseCase';
-import { GetInventoryItemUseCase } from '../../application/useCase/inventory/GetInventoryItemUseCase';
 import { ListInventoryItemsUseCase } from '../../application/useCase/inventory/ListInventoryItemsUseCase';
+import { GetInventoryItemUseCase } from '../../application/useCase/inventory/GetInventoryItemUseCase';
 import { UpdateInventoryItemUseCase } from '../../application/useCase/inventory/UpdateInventoryItemUseCase';
+import { DeleteInventoryItemUseCase } from '../../application/useCase/inventory/DeleteInventoryItemUseCase';
 import { ListInventoryStatusesUseCase } from '../../application/useCase/inventory/status/ListInventoryStatusesUseCase';
 import { CreateInventoryStatusUseCase } from '../../application/useCase/inventory/status/CreateInventoryStatusUseCase';
 import { DeactivateInventoryStatusUseCase } from '../../application/useCase/inventory/status/DeactivateInventoryStatusUseCase';
@@ -26,7 +26,7 @@ export class InventoryContainer {
         
         try {
             console.log('[InventoryContainer] Creating repositories...');
-            this._repository = new InventoryRepository(dbProvider.getPool());
+            this._repository = new InventoryRepository(dbProvider.getPool()); // ✅ Pass pool
             this._statusRepository = new InventoryStatusRepository();
             
             console.log('[InventoryContainer] Creating use cases...');
@@ -65,7 +65,14 @@ export class InventoryContainer {
     }
 
     public getRepository() { return this._repository; }
+    public getStatusRepository() { return this._statusRepository; }
     public getUseCases() { return this._useCases; }
+    public getStatusUseCases() { return this._statusUseCases; }
     public getController() { return this._controller; }
     public getStatusController() { return this._statusController; }
+
+    public async shutdown(): Promise<void> {
+        // ✅ No specific cleanup needed for inventory repositories
+        console.log('[InventoryContainer] Shutdown complete');
+    }
 }

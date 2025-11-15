@@ -87,6 +87,7 @@ async function initializeRoutes() {
     app.use('/api/inventory-status', routes.inventoryStatus);
     app.use('/api/pawnTicket', routes.pawnTicket);
     app.use('/api/category', routes.category);
+    app.use('/api/categories', routes.category); // ✅ Add alias route for client compatibility
     app.use('/api/payment', routes.payment);
 
     logger.info('[Server] All routes registered successfully');

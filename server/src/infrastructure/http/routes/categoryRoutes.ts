@@ -4,6 +4,12 @@ import { logger } from '../../log/logger';
 
 const router = express.Router();
 
+// ✅ Add request logging to debug the issue
+router.use((req, res, next) => {
+  console.log(`[CategoryRoutes] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // ✅ Lazy load container to avoid circular dependencies
 const getContainer = () => {
   try {
@@ -18,17 +24,45 @@ const getContainer = () => {
   }
 };
 
-// Get categories tree from cache
+// ✅ Add both routes to handle different client expectations
 router.get('/', validateJwt, async (req, res, next) => {
   try {
+    console.log('[CategoryRoutes] GET / - Getting categories tree');
     const { categoryController } = getContainer();
+    
     if (!categoryController.tree || typeof categoryController.tree !== 'function') {
       throw new Error('categoryController.tree is not a function');
     }
+    
     return categoryController.tree(req, res, next);
   } catch (error) {
+    console.error('[CategoryRoutes] Error getting categories:', error);
     logger.error('category_tree_error', { error: error instanceof Error ? error.message : String(error) });
-    return res.status(500).json({ error: 'Failed to load categories' });
+    return res.status(500).json({ 
+      error: 'Failed to load categories',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// ✅ Add explicit /tree route to match client expectations
+router.get('/tree', validateJwt, async (req, res, next) => {
+  try {
+    console.log('[CategoryRoutes] GET /tree - Getting categories tree');
+    const { categoryController } = getContainer();
+    
+    if (!categoryController.tree || typeof categoryController.tree !== 'function') {
+      throw new Error('categoryController.tree is not a function');
+    }
+    
+    return categoryController.tree(req, res, next);
+  } catch (error) {
+    console.error('[CategoryRoutes] Error getting categories tree:', error);
+    logger.error('category_tree_error', { error: error instanceof Error ? error.message : String(error) });
+    return res.status(500).json({ 
+      error: 'Failed to load categories',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

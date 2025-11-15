@@ -27,7 +27,11 @@ export default defineConfig({
             console.log('🔍 Check if server is running on http://localhost:3000');
           });
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('📤 Proxying:', req.method, req.url, '→', options.target + req.url);
+            // ✅ Safe access to both options.target and req.url with fallbacks
+            const target = options.target || 'http://localhost:3000';
+            const url = req.url || '/unknown';
+            const method = req.method || 'GET';
+            console.log('📤 Proxying:', method, url, '→', target + url);
           });
         }
       }
