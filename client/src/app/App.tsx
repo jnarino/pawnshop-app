@@ -10,10 +10,9 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    initializeAuth().then(() => {
-      setInitialized(true);
-      if (!isAuthenticated()) navigate('/login');
-    });
+    initializeAuth();
+    setInitialized(true);
+    if (!isAuthenticated()) navigate('/login');
   }, [navigate]);
 
   if (!initialized) return null;
