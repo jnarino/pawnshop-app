@@ -11,7 +11,7 @@ export class CreateCategoryUseCase {
   constructor(
     private repo: CategoryRepository,
     private cacheService: CategoryCacheService
-  ) {}
+  ) { }
 
   async execute(input: CreateCategoryInput): Promise<{ id: string }> {
     // Create the category in database
@@ -22,7 +22,7 @@ export class CreateCategoryUseCase {
     });
 
     // Invalidate and refresh Redis cache
-    await this.cacheService.invalidate();
+    await this.cacheService.clearCache();
     await this.cacheService.refreshCache();
 
     return { id: result.id };

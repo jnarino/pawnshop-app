@@ -7,8 +7,16 @@ import { jwt as jwtConfig } from '../../../config';
 import { validateJwt, type AuthPayload } from '../middleware/auth';
 import { logger } from '../../log/logger';
 import { authCache } from '../../cache/AuthCacheService';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = express.Router();
+
+// ✅ Load SQL queries from files
+const findUserByUsernameSql = fs.readFileSync(
+    path.join(__dirname, '../../../infrastructure/db/query/auth/findUserByUsername.sql'),
+    'utf8'
+);
 
 // Initialize Redis connection
 authCache.connect().catch(err => {
@@ -23,21 +31,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'bad_request', message: 'username and password required' });
     }
 
-    const sql = `
-      SELECT 
-        u.id, 
-        u.username, 
-        u.password_hash, 
-        u.is_active,
-        COALESCE(array_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
-      FROM app_user u
-      LEFT JOIN app_user_role ur ON ur.user_id = u.id
-      LEFT JOIN role r ON r.id = ur.role_id
-      WHERE u.username = $1
-      GROUP BY u.id, u.username, u.password_hash, u.is_active
-    `;
-    
-    const result = await pool.query(sql, [username]);
+    // ✅ Use SQL from file instead of inline
+    const result = await pool.query(findUserByUsernameSql, [username]);
     const user = result.rows[0];
 
     if (!user || !user.is_active) {

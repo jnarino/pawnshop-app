@@ -1,0 +1,577 @@
+import { useEffect, useState, useCallback } from 'react';
+import './InventoryItemModal.css';
+import { Modal } from '@/app/shared/components/Modal';
+import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
+import { useSubtypeMapping } from '@/app/shared/hooks/useSubtypeMapping';
+import {
+  JEWELRY_COLORS,
+  JEWELRY_METALS,
+  KARAT_OPTIONS_BY_METAL,
+  RING_SIZES,
+  WEIGHT_UNITS,
+  GENDER_OPTIONS
+} from '@/app/shared/constants/jewelry';
+import {
+  FIREARM_CALIBERS,
+  FIREARM_ACTIONS,
+  FIREARM_FINISHES
+} from '@/app/shared/constants/firearms';
+
+export interface InventoryItemDraft {
+  id?: string;
+  type: string;
+  sub1?: string; // ✅ Keep only sub1 for subtype
+  brand?: string;
+  model?: string;
+  serial?: string;
+  color?: string;
+  amount?: string;
+  quantity?: string;
+  metal?: string;
+  karat?: string;
+  weight?: string;
+  weightUnit?: string;
+  gender?: string;
+  style?: string;
+  sizeLength?: string;
+  description?: string;
+  resale?: string;
+  replace?: string;
+  condition?: string;
+  ownerNumber?: string;
+  // Firearm fields
+  caliber?: string;
+  action?: string;
+  barrelLength?: string;
+  capacity?: string;
+}
+
+interface Props {
+  open: boolean;
+  initial?: InventoryItemDraft | null;
+  onCancel: () => void;
+  onSave: (item: InventoryItemDraft) => void;
+}
+
+const DEFAULT_ITEM: InventoryItemDraft = {
+  type: '',
+  quantity: '1',
+  weightUnit: 'Grams'
+};
+
+// ✅ Single Responsibility: Modal for adding/editing inventory items
+export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
+  const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
+  const [error, setError] = useState<string | null>(null);
+  const [barcodeMode, setBarcodeMode] = useState(false);
+  const [typeQuery, setTypeQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const categoriesHook = useInventoryCategories();
+  const categories = categoriesHook?.leafCategories || [];
+  const isLoading = categoriesHook?.loading || false;
+
+  // ✅ Get subtypes based on selected category
+  const subtypes = useSubtypeMapping(draft.type);
+
+  // ✅ Initialize form data with proper defaults to prevent controlled/uncontrolled switches
+  useEffect(() => {
+    if (open) {
+      const formData = initial ? {
+        ...DEFAULT_ITEM,
+        ...initial,
+        // ✅ Ensure all select fields have default values
+        condition: initial.condition || '',
+        gender: initial.gender || '',
+        weightUnit: initial.weightUnit || 'Grams'
+      } : {
+        ...DEFAULT_ITEM,
+        // ✅ Ensure all select fields have default values
+        condition: '',
+        gender: '',
+        weightUnit: 'Grams'
+      };
+      setDraft(formData);
+      setTypeQuery(initial?.type || '');
+      setError(null);
+    }
+  }, [open, initial]);
+
+  // ✅ Category suggestions
+  const suggestions = categories.filter(cat =>
+    cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
+  ).slice(0, 10);
+
+  // ✅ Category type detection
+  const isJewelry = draft.type.toLowerCase().includes('jewelry');
+  const isFirearm = draft.type.toLowerCase().includes('firearm');
+  const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
+
+  // ✅ Karat options based on metal
+  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
+
+  // ✅ Update field handler with uppercase conversion
+  const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
+    let processedValue = value;
+    
+    // ✅ Convert to uppercase for all fields except description and ownerNumber
+    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber') {
+      processedValue = value.toUpperCase();
+    }
+    
+    setDraft(prev => ({ ...prev, [field]: processedValue }));
+  }, []);
+
+  // ✅ Type selection
+  const selectType = useCallback((categoryName: string) => {
+    updateField('type', categoryName);
+    setTypeQuery(categoryName);
+    setShowSuggestions(false);
+  }, [updateField]);
+
+  // ✅ Barcode scanning
+  useBarcodeScan({
+    enabled: barcodeMode,
+    onBarcode: (code) => {
+      updateField('serial', code);
+      setBarcodeMode(false);
+    },
+    allowRegex: /^[A-Z0-9\-]+$/i
+  });
+
+  // ✅ Form validation and submission
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!draft.type.trim()) {
+      setError('Type is required');
+      return;
+    }
+
+    if (!draft.amount) {
+      setError('Value is required');
+      return;
+    }
+
+    if (isJewelry && (!draft.metal || !draft.karat || !draft.weight)) {
+      setError('Metal, Karat and Weight are required for jewelry');
+      return;
+    }
+
+    // Generate ID if not editing
+    const itemData = {
+      ...draft,
+      id: draft.id || crypto.randomUUID()
+    };
+
+    onSave(itemData);
+  }, [draft, isJewelry, onSave]);
+
+  // ✅ FIXED: Auto-fill karat when metal changes
+  const handleMetalChange = useCallback((metal: string) => {
+    if (!metal) {
+      updateField('metal', '');
+      updateField('karat', '');
+      return;
+    }
+
+    // ✅ The metal value from select is already in lowercase (from JEWELRY_METALS array)
+    const metalKey = metal as keyof typeof KARAT_OPTIONS_BY_METAL;
+    const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
+    
+    // ✅ Store the metal in uppercase for display
+    updateField('metal', metal.toUpperCase());
+    
+    // ✅ Auto-select first karat option if available
+    if (karatOptions.length > 0) {
+      updateField('karat', karatOptions[0]);
+    } else {
+      updateField('karat', '');
+    }
+  }, [updateField]);
+
+  if (!open) return null;
+
+  return (
+    <Modal 
+      isOpen={open} 
+      onClose={onCancel}
+    >
+      <div className="inventory-modal">
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            {/* Row 1: Category and Type */}
+            <div className="form-group category-field">
+              <label className="required">Category</label>
+              <div className="type-selector">
+                <input
+                  type="text"
+                  value={typeQuery}
+                  onChange={(e) => {
+                    const upperValue = e.target.value.toUpperCase();
+                    setTypeQuery(upperValue);
+                    updateField('type', upperValue);
+                    setShowSuggestions(upperValue.length > 0);
+                  }}
+                  onFocus={() => setShowSuggestions(typeQuery.length > 0)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  placeholder={isLoading ? "LOADING..." : "SEARCH CATEGORIES..."}
+                  disabled={isLoading}
+                  required
+                  style={{ textTransform: 'uppercase' }}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="suggestions">
+                    {suggestions.map((cat, index) => (
+                      <div
+                        key={cat.id || index}
+                        className="suggestion-item"
+                        onClick={() => selectType(cat.name.toUpperCase())}
+                      >
+                        {cat.name.toUpperCase()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Type</label>
+              {subtypes.length > 0 ? (
+                <select
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
+                >
+                  <option value="">SELECT TYPE...</option>
+                  {subtypes.map(subtype => (
+                    <option key={subtype} value={subtype.toUpperCase()}>{subtype.toUpperCase()}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
+                  placeholder="ENTER TYPE"
+                  style={{ textTransform: 'uppercase' }}
+                />
+              )}
+            </div>
+
+            <div className="form-group value-field">
+              <label className="required">Value ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="999999.99"
+                value={draft.amount || ''}
+                onChange={(e) => updateField('amount', e.target.value)}
+                placeholder="10000.00"
+                required
+                className="value-input"
+              />
+            </div>
+
+            <div className="form-group qty-field">
+              <label>Qty</label>
+              <input
+                type="number"
+                min="1"
+                max="999"
+                value={draft.quantity || '1'}
+                onChange={(e) => updateField('quantity', e.target.value)}
+                className="qty-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Owner Marks</label>
+              <input
+                value={draft.ownerNumber || ''}
+                onChange={(e) => updateField('ownerNumber', e.target.value)}
+                placeholder="Marks/engravings (free text)"
+              />
+            </div>
+
+            {/* Row 2: Basic Item Info */}
+            <div className="form-group">
+              <label>Brand</label>
+              <input
+                value={draft.brand || ''}
+                onChange={(e) => updateField('brand', e.target.value)}
+                placeholder="BRAND NAME"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Model</label>
+              <input
+                value={draft.model || ''}
+                onChange={(e) => updateField('model', e.target.value)}
+                placeholder="MODEL"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Serial Number</label>
+              <input
+                value={draft.serial || ''}
+                onChange={(e) => updateField('serial', e.target.value)}
+                placeholder="SERIAL/IMEI"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
+              {isFirearm ? (
+                <select
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                >
+                  <option value="">SELECT FINISH...</option>
+                  {FIREARM_FINISHES.map(finish => (
+                    <option key={finish} value={finish.toUpperCase()}>{finish.toUpperCase()}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  list="colors"
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                  placeholder="COLOR"
+                  style={{ textTransform: 'uppercase' }}
+                />
+              )}
+              <datalist id="colors">
+                {JEWELRY_COLORS.map(color => (
+                  <option key={color} value={color.toUpperCase()} />
+                ))}
+              </datalist>
+            </div>
+
+            {/* Fill empty space if no specific item type */}
+            {!isJewelry && !isFirearm && <div></div>}
+
+            {/* Row 3: Jewelry-specific fields */}
+            {isJewelry && (
+              <>
+                <div className="form-group">
+                  <label className="required">Metal</label>
+                  <select
+                    value={draft.metal?.toLowerCase() || ''} // ✅ Convert stored uppercase back to lowercase for select
+                    onChange={(e) => handleMetalChange(e.target.value)}
+                    required
+                  >
+                    <option value="">SELECT METAL...</option>
+                    {JEWELRY_METALS.map(metal => (
+                      <option key={metal} value={metal}>{metal.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="required">Karat</label>
+                  {karatOptions.length > 0 ? (
+                    <select
+                      value={draft.karat || ''}
+                      onChange={(e) => updateField('karat', e.target.value)}
+                      required
+                    >
+                      <option value="">SELECT KARAT...</option>
+                      {karatOptions.map(k => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={draft.karat || ''}
+                      onChange={(e) => updateField('karat', e.target.value)}
+                      placeholder="14K, .925"
+                      required
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  )}
+                </div>
+
+                <div className="form-group weight-field">
+                  <label className="required">Weight</label>
+                  <div className="weight-container">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="999.99"
+                      value={draft.weight || ''}
+                      onChange={(e) => updateField('weight', e.target.value)}
+                      placeholder="5.25"
+                      required
+                      className="weight-input"
+                    />
+                    <select
+                      value={draft.weightUnit || 'Grams'}
+                      onChange={(e) => updateField('weightUnit', e.target.value)}
+                      className="weight-unit"
+                    >
+                      {WEIGHT_UNITS.map(unit => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Gender</label>
+                  <select
+                    value={draft.gender || ''}
+                    onChange={(e) => updateField('gender', e.target.value)}
+                  >
+                    <option value="">SELECT...</option>
+                    {GENDER_OPTIONS.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Size/Length</label>
+                  {isRing ? (
+                    <select
+                      value={draft.sizeLength || ''}
+                      onChange={(e) => updateField('sizeLength', e.target.value)}
+                    >
+                      <option value="">RING SIZE...</option>
+                      {RING_SIZES.map(size => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={draft.sizeLength || ''}
+                      onChange={(e) => updateField('sizeLength', e.target.value)}
+                      placeholder="LENGTH (INCHES)"
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Row 3: Firearm-specific fields */}
+            {isFirearm && (
+              <>
+                <div className="form-group">
+                  <label>Caliber</label>
+                  <select
+                    value={draft.caliber || ''}
+                    onChange={(e) => updateField('caliber', e.target.value)}
+                  >
+                    <option value="">SELECT CALIBER...</option>
+                    {FIREARM_CALIBERS.map(caliber => (
+                      <option key={caliber} value={caliber}>{caliber}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Action</label>
+                  <select
+                    value={draft.action || ''}
+                    onChange={(e) => updateField('action', e.target.value)}
+                  >
+                    <option value="">SELECT ACTION...</option>
+                    {FIREARM_ACTIONS.map(action => (
+                      <option key={action} value={action}>{action}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Barrel Length</label>
+                  <input
+                    value={draft.barrelLength || ''}
+                    onChange={(e) => updateField('barrelLength', e.target.value)}
+                    placeholder="16 INCHES"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Capacity</label>
+                  <input
+                    value={draft.capacity || ''}
+                    onChange={(e) => updateField('capacity', e.target.value)}
+                    placeholder="15 ROUNDS"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Description - Full Width - FREE TEXT */}
+          <div className="form-group full-width">
+            <label>Description</label>
+            <textarea
+              value={draft.description || ''}
+              onChange={(e) => updateField('description', e.target.value)}
+              rows={2}
+              placeholder="Brief description (free text)..."
+            />
+          </div>
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                type="button"
+                className={`btn btn-scanner ${barcodeMode ? 'active' : ''}`}
+                onClick={() => setBarcodeMode(!barcodeMode)}
+              >
+                {barcodeMode ? '⏹️ Stop Scanner' : '📱 Scan Barcode'}
+              </button>
+              {barcodeMode && (
+                <div className="scanner-status">
+                  Scanner active - scan barcode now
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+              >
+                {initial ? '💾 Update Item' : '➕ Add Item'}
+              </button>
+            </div>
+          </div>
+
+          {/* Hidden datalists */}
+          <datalist id="metals">
+            {JEWELRY_METALS.map(metal => (
+              <option key={metal} value={metal.toUpperCase()} />
+            ))}
+          </datalist>
+        </form>
+      </div>
+    </Modal>
+  );
+}

@@ -1,20 +1,61 @@
-// Minimal test harness (no external deps)
-// Register tests via test(name, fn). Then run runAll().
+// Simple test harness for running unit tests without external dependencies
 
-type TestFn = () => any | Promise<any>;
-interface Test { name: string; fn: TestFn; }
-const tests: Test[] = [];
-export function test(name: string, fn: TestFn) { tests.push({ name, fn }); }
+interface TestResult {
+    name: string;
+    passed: boolean;
+    error?: Error;
+    duration: number;
+}
 
-export async function runAll() {
-  let passed = 0;
-  const failures: { name: string; error: any }[] = [];
-  for (const t of tests) {
-    try { await t.fn(); passed++; console.log(`✓ ${t.name}`); } catch (e) { failures.push({ name: t.name, error: e }); console.error(`✗ ${t.name}`); }
-  }
-  console.log(`\nTest Results: ${passed} passed, ${failures.length} failed, total ${tests.length}`);
-  for (const f of failures) {
-    console.error(`--- Failure: ${f.name}\n`, f.error && f.error.stack ? f.error.stack : f.error);
-  }
-  if (failures.length) process.exitCode = 1; else console.log('All tests passed');
+const tests: Array<() => Promise<void> | void> = [];
+const testNames: string[] = [];
+
+export function test(name: string, testFn: () => Promise<void> | void): void {
+    tests.push(testFn);
+    testNames.push(name);
+}
+
+export async function runTests(): Promise<TestResult[]> {
+    const results: TestResult[] = [];
+    
+    for (let i = 0; i < tests.length; i++) {
+        const testName = testNames[i];
+        const testFn = tests[i];
+        const startTime = Date.now();
+        
+        try {
+            await testFn();
+            results.push({
+                name: testName,
+                passed: true,
+                duration: Date.now() - startTime
+            });
+            console.log(`✅ ${testName}`);
+        } catch (error) {
+            results.push({
+                name: testName,
+                passed: false,
+                error: error as Error,
+                duration: Date.now() - startTime
+            });
+            console.log(`❌ ${testName}: ${(error as Error).message}`);
+        }
+    }
+    
+    return results;
+}
+
+// Run tests if this file is executed directly
+if (require.main === module) {
+    runTests().then(results => {
+        const passed = results.filter(r => r.passed).length;
+        const total = results.length;
+        const percentage = total > 0 ? Math.round((passed / total) * 100) : 0;
+        
+        console.log(`\n📊 Test Results: ${passed}/${total} passed (${percentage}%)`);
+        
+        if (passed < total) {
+            process.exit(1);
+        }
+    });
 }

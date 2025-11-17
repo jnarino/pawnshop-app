@@ -1,15 +1,22 @@
-import { InventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
-import { ValidationError } from '../../../errors';
+import type { IInventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
 
 export class DeactivateInventoryStatusUseCase {
-  constructor(private repo: InventoryStatusRepository) {}
-  async execute(code: string) {
-    if (!code) throw new ValidationError('code required');
-    const existing = await this.repo.find(code);
-    if (!existing) throw new ValidationError('status not found');
-    if (existing.isTerminal) {
-      // Allow deactivation of terminal statuses? We'll allow but could restrict.
+  constructor(private readonly repo: IInventoryStatusRepository) {}
+
+  async execute(code: string): Promise<boolean> {
+    // ✅ Validate input
+    if (!code || code.trim() === '') {
+      throw new Error('Status code is required');
     }
-    await this.repo.deactivate(code);
+
+    // ✅ Check if status exists (using findAll and filtering)
+    const allStatuses = await this.repo.findAll();
+    const existing = allStatuses.find(status => status.code === code);
+    if (!existing) {
+      return false; // Status doesn't exist
+    }
+
+    // ✅ Deactivate the status
+    return await this.repo.deactivate(code);
   }
 }

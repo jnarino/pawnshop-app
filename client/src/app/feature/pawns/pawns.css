@@ -1,0 +1,68 @@
+.pawn-flow { padding: 1rem 1.5rem 0.15rem; max-width: 95%; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.pawn-flow__title { margin: 0 0 1rem; }
+.pawn-flow__steps { display:flex; gap:1rem; margin-bottom:1.25rem; }
+.pawn-flow__step { padding: .5rem .75rem; border-radius: 4px; background:#eee; font-size:.875rem; }
+.pawn-flow__step.active { background:#2563eb; color:#fff; }
+.pawn-flow__step.done { background:#16a34a; color:#fff; }
+.customer-picker { border:1px solid #ddd; padding:1rem; border-radius:6px; background:#fafafa; }
+.customer-picker__search { display:flex; gap:.5rem; margin-bottom:.75rem; }
+.customer-picker__list { list-style:none; margin:0; padding:0; max-height:260px; overflow:auto; }
+.customer-picker__list li { margin:0 0 .25rem; }
+.customer-picker__list button { background:#fff; border:1px solid #ccc; padding:.4rem .6rem; border-radius:4px; width:100%; text-align:left; }
+.pawn-ticket-form { border:1px solid #ddd; padding:1rem; border-radius:6px; background:#fafafa; }
+.pawn-ticket-form form { display:flex; flex-direction:column; gap:.85rem; }
+.pawn-ticket-form .row { display:flex; flex-direction:column; gap:.25rem; }
+.pawn-ticket-form input, .pawn-ticket-form select { padding:.5rem; border:1px solid #bbb; border-radius:4px; }
+.items { border:1px dashed #bbb; padding:.75rem; border-radius:4px; display:flex; flex-direction:column; gap:.5rem; }
+.item-row { display:grid; grid-template-columns: 130px 1fr 110px auto; gap:.5rem; }
+.error { color:#b91c1c; font-size:.875rem; }
+.success { color:#166534; font-size:.875rem; }
+/* Customer lookup */
+.customer-lookup__fieldset { border:1px solid #444; padding:1rem; border-radius:4px; background:#f9fafb; }
+.customer-lookup__fieldset legend { font-weight:600; padding:0 .35rem; }
+.grid.cols-4 { display:grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap:.75rem; }
+.grid.cols-3 { display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:.75rem; }
+.grid.gap { gap:.75rem; }
+.top-margin { margin-top:1rem; }
+.customer-lookup input { width:100%; padding:.45rem .5rem; border:1px solid #bbb; border-radius:4px; font-size:.8rem; }
+.actions-row { display:flex; gap:.5rem; margin-top:.85rem; }
+.actions-row button { padding:.5rem .9rem; font-size:.75rem; border:1px solid #333; background:#222; color:#fff; border-radius:4px; cursor:pointer; }
+.actions-row button:disabled { opacity:.5; cursor:not-allowed; }
+.customer-lookup__results { margin-top:1rem; border:1px solid #444; border-radius:4px; background:#fff; }
+.results-header { background:#222; color:#fff; padding:.4rem .6rem; font-size:.7rem; font-weight:600; letter-spacing:.5px; }
+.results-table { width:100%; border-collapse:collapse; font-size:.72rem; }
+.results-table th, .results-table td { padding:.35rem .5rem; border-bottom:1px solid #e5e7eb; }
+.results-table tr.can-select { cursor:pointer; }
+.results-table tr.can-select:hover { background:#fef9c3; }
+.hint { font-size:.65rem; color:#555; margin-top:.4rem; }
+/* New Pawn Ticket split layout */
+.pawn-ticket-layout { display:flex; gap:1rem; align-items:stretch; }
+.pawn-ticket-left { width:260px; border:2px solid #222; background:#fefce8; padding:.75rem; display:flex; flex-direction:column; gap:.65rem; font-size:.75rem; }
+.pawn-ticket-left .row label { display:flex; flex-direction:column; gap:2px; font-weight:600; }
+.pawn-ticket-left input, .pawn-ticket-left select { padding:.35rem .4rem; font-size:.75rem; }
+.metrics-box { margin-top:.5rem; border:1px solid #444; background:#fff8c5; padding:.4rem .5rem; display:grid; grid-template-columns:repeat(2,1fr); gap:.35rem; font-size:.65rem; }
+.metric span { color:#333; }
+.pawn-ticket-right { flex:1; border:2px solid #222; background:#fefce8; padding:.5rem .75rem; display:flex; flex-direction:column; }
+.items-header { display:flex; align-items:center; gap:.5rem; margin-bottom:.35rem; }
+.items-header button { padding:.35rem .6rem; font-size:.65rem; background:#222; color:#fff; border:1px solid #111; border-radius:3px; }
+.items-table-wrapper { flex:1; border:1px solid #555; background:#fff; overflow:auto; }
+.items-table { width:100%; border-collapse:collapse; font-size:.65rem; }
+.items-table th { background:#222; color:#fff; text-align:left; padding:.35rem .4rem; position:sticky; top:0; }
+.items-table td { padding:.3rem .4rem; border-bottom:1px solid #e0e0e0; }
+.items-table .desc-cell { max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row-actions { display:flex; gap:4px; }
+.row-actions button { padding:.25rem .4rem; font-size:.6rem; background:#444; color:#fff; border:0; border-radius:3px; cursor:pointer; }
+.row-actions button:last-child { background:#7f1d1d; }
+/* Modal */
+.pawn-modal__backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.pawn-modal { width:880px; max-height:90vh; overflow:auto; background:#fefce8; border:3px solid #333; border-radius:6px; padding:.75rem 1rem 1rem; box-shadow:0 6px 18px rgba(0,0,0,.35); }
+.pawn-modal__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+.pawn-modal__header h3 { margin:0; font-size:.95rem; background:#222; color:#fff; padding:.3rem .6rem; border-radius:3px; }
+.pawn-item-form { display:flex; flex-direction:column; gap:.6rem; font-size:.7rem; }
+.pawn-item-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:.5rem; background:#fff; padding:.6rem; border:1px solid #888; border-radius:4px; }
+.pawn-item-grid label { display:flex; flex-direction:column; gap:2px; font-weight:600; }
+.pawn-item-grid input, .pawn-item-grid select { padding:.3rem .4rem; font-size:.7rem; border:1px solid #555; background:#dff8ff; }
+.pawn-item-note textarea { width:100%; padding:.4rem; font-family:inherit; resize:vertical; border:1px solid #555; background:#fff; font-size:.7rem; }
+.pawn-modal__actions { display:flex; justify-content:flex-end; gap:.5rem; }
+.pawn-modal__actions button { padding:.45rem .9rem; font-size:.65rem; background:#222; color:#fff; border:1px solid #111; border-radius:3px; cursor:pointer; }
+.pawn-modal__actions button:first-child { background:#555; }

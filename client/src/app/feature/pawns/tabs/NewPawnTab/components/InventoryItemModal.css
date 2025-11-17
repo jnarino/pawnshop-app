@@ -1,0 +1,384 @@
+.type-autocomplete {
+    position: relative;
+}
+
+.type-autocomplete input:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.dropdown {
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.15s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item.selected {
+    background-color: #e3f2fd;
+}
+
+.dropdown-item:not(:last-child) {
+    border-bottom: 1px solid #eee;
+}
+
+.dropdown-item:active {
+    background-color: #bbdefb;
+}
+
+/* Scrollbar styling for dropdown */
+.dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.dropdown::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.dropdown::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.inventory-modal {
+  width: 100%;
+  max-width: 1100px; /* ✅ Reduced for 5-column layout */
+  min-width: 900px;  /* ✅ Reduced minimum width */
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.inventory-modal .form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr; /* ✅ 5 columns: Category wider, others equal */
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.inventory-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventory-modal .form-group label {
+  font-weight: 600;
+  font-size: 11px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.inventory-modal .required::after {
+  content: '*';
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.inventory-modal .form-group input,
+.inventory-modal .form-group select,
+.inventory-modal .form-group textarea {
+  padding: 8px 10px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  background: white;
+  min-height: 32px;
+}
+
+/* ✅ Specific field sizing for 5-column layout */
+.inventory-modal .category-field {
+  /* Takes up first column (2fr - wider for category) */
+}
+
+.inventory-modal .value-field .value-input {
+  max-width: 110px; /* ✅ Slightly reduced for tighter layout */
+  font-weight: 600;
+  color: #059669;
+}
+
+.inventory-modal .qty-field .qty-input {
+  max-width: 70px; /* ✅ Reduced for 5-column layout */
+  text-align: center;
+}
+
+.inventory-modal .weight-field {
+  /* Weight field container */
+}
+
+.inventory-modal .weight-container {
+  display: flex;
+  gap: 4px; /* ✅ Reduced gap for tighter layout */
+  align-items: center;
+}
+
+.inventory-modal .weight-input {
+  max-width: 70px; /* ✅ Reduced for 5-column layout */
+  font-weight: 600;
+  color: #d97706;
+}
+
+.inventory-modal .weight-unit {
+  min-width: 65px; /* ✅ Reduced for tighter fit */
+  font-size: 11px;
+}
+
+.inventory-modal .form-group input:focus,
+.inventory-modal .form-group select:focus,
+.inventory-modal .form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  background: #fefefe;
+}
+
+.inventory-modal .form-group input:disabled,
+.inventory-modal .form-group select:disabled {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.inventory-modal .type-selector {
+  position: relative;
+}
+
+.inventory-modal .suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-modal .suggestion-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.inventory-modal .suggestion-item:hover {
+  background-color: #f8fafc;
+}
+
+.inventory-modal .suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.inventory-modal .full-width {
+  grid-column: 1 / -1;
+}
+
+.inventory-modal .error-message {
+  color: #dc2626;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-size: 12px;
+  border: 1px solid #fecaca;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventory-modal .error-message::before {
+  content: '⚠️';
+  font-size: 14px;
+}
+
+.inventory-modal .modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 2px solid #e5e7eb;
+  margin-top: 16px;
+}
+
+.inventory-modal .btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 2px solid;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inventory-modal .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inventory-modal .btn-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.inventory-modal .btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.inventory-modal .btn-primary {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.inventory-modal .btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.inventory-modal .btn-scanner {
+  background: #6b7280;
+  color: white;
+  border-color: #6b7280;
+}
+
+.inventory-modal .btn-scanner.active {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.inventory-modal .btn-scanner:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #4b5563;
+}
+
+.inventory-modal .btn-scanner.active:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.inventory-modal .scanner-status {
+  color: #059669;
+  font-size: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inventory-modal .scanner-status::before {
+  content: '📱';
+}
+
+/* ✅ Enhanced responsive design for 5-column layout */
+@media (max-width: 1200px) {
+  .inventory-modal {
+    min-width: unset;
+    max-width: 95vw;
+    margin: 16px;
+    padding: 16px;
+  }
+  
+  .inventory-modal .form-grid {
+    grid-template-columns: 1fr 1fr 1fr; /* ✅ 3 columns on medium screens */
+    gap: 10px;
+  }
+  
+  .inventory-modal .category-field {
+    grid-column: 1 / -1; /* ✅ Full width for category */
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-modal {
+    max-width: 100%;
+    margin: 8px;
+    padding: 14px;
+    max-height: 95vh;
+  }
+  
+  .inventory-modal .form-grid {
+    grid-template-columns: 1fr; /* ✅ Single column on mobile */
+    gap: 8px;
+  }
+  
+  .inventory-modal .modal-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .inventory-modal .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .inventory-modal .weight-container {
+    gap: 4px;
+  }
+  
+  .inventory-modal .value-input,
+  .inventory-modal .weight-input,
+  .inventory-modal .qty-input {
+    max-width: unset; /* ✅ Full width on mobile */
+  }
+}
+
+/* ✅ Add styling for uppercase fields */
+.inventory-modal .form-group input[style*="textTransform: uppercase"],
+.inventory-modal .form-group select {
+  text-transform: uppercase;
+}
+
+/* ✅ Override uppercase for description and owner marks */
+.inventory-modal .form-group textarea,
+.inventory-modal .form-group input[placeholder*="free text"],
+.inventory-modal .form-group input[placeholder*="Marks/engravings"] {
+  text-transform: none !important;
+}
+
+/* ✅ Ensure placeholders are also uppercase where needed */
+.inventory-modal .form-group input[style*="textTransform: uppercase"]::placeholder {
+  text-transform: uppercase;
+}

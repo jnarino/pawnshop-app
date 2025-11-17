@@ -6,7 +6,7 @@ export function buildInventoryStatusRoute(controller: InventoryStatusController)
   const router = Router();
   router.get('/', controller.list);
   router.post('/', controller.create);
-  router.delete('/:code', controller.remove);
+  //router.delete('/:code', controller.remove);
   return router;
 }
 

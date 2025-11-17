@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
-
-import type { Customer } from './types'; // use client type, not server
-import CustomerPicker from './components/CustomerPicker';
-
+import { useState } from 'react';
+import { CustomerManager } from './index';
+import type { Customer } from './types';
 
 export default function CustomerPage() {
-    const [picked, setPicked] = useState<Customer | null>(null);
-    return (
-        <div>
-            <h2>Customers</h2>
-           {/* <CustomerPicker value={picked} onChange={setPicked} /> */}
+  const [customer, setCustomer] = useState<Customer | null>(null);
 
-        </div>
-    );
+  return (
+    <div className="h-screen flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <CustomerManager
+          customer={customer}
+          onCustomerChange={setCustomer}
+          onCustomerSelected={(id) => console.log('Customer selected:', id)}
+          showAdditionalInfo={true}
+          showAlertWhenEmpty={true}
+          className="h-full"
+        />
+      </div>
+    </div>
+  );
 }

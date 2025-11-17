@@ -1,25 +1,33 @@
-import { InventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
-import { ValidationError } from '../../../errors';
+import type { IInventoryStatusRepository } from '../../../../infrastructure/persistence/InventoryStatusRepository';
+import type { InventoryStatus } from '../../../../domain/inventory/InventoryStatus';
 
-export interface CreateInventoryStatusDTO {
+export interface CreateInventoryStatusInput {
   code: string;
   description?: string;
   isTerminal?: boolean;
-  sortOrder?: number;
 }
 
 export class CreateInventoryStatusUseCase {
-  constructor(private repo: InventoryStatusRepository) {}
-  async execute(dto: CreateInventoryStatusDTO) {
-    if (!dto.code || !/^[a-z0-9_]+$/.test(dto.code)) throw new ValidationError('invalid code');
-    dto.code = dto.code.toLowerCase();
-    const existing = await this.repo.find(dto.code);
-    if (existing) throw new ValidationError('status code already exists');
-    await this.repo.insert({
-      code: dto.code,
+  constructor(private readonly repo: IInventoryStatusRepository) {}
+
+  async execute(dto: CreateInventoryStatusInput): Promise<InventoryStatus> {
+    // ✅ Validate input
+    if (!dto.code || dto.code.trim() === '') {
+      throw new Error('Status code is required');
+    }
+
+    // ✅ Check if status already exists (using findAll and filtering)
+    const allStatuses = await this.repo.findAll();
+    const existing = allStatuses.find(status => status.code === dto.code);
+    if (existing) {
+      throw new Error(`Status code '${dto.code}' already exists`);
+    }
+
+    // ✅ Create new status
+    return await this.repo.create({
+      code: dto.code.toUpperCase(), // Normalize to uppercase
       description: dto.description,
-      isTerminal: !!dto.isTerminal,
-      sortOrder: dto.sortOrder ?? 100,
+      isTerminal: dto.isTerminal || false
     });
   }
 }

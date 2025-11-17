@@ -1,37 +1,40 @@
 import { InventoryRepository } from '../../../infrastructure/persistence/InventoryRepository';
+import { pool } from '../../../infrastructure/db'; // ✅ Import pool
 import { test } from '../../testHarness';
 import assert from 'assert';
 
-test('infrastructure/persistence: InventoryRepository mapping', async () => {
-  const repo = new InventoryRepository();
-  // ✅ Use the private method through a test helper or create a public method for testing
+test('InventoryRepository: maps database row correctly', async () => {
+  const repo = new InventoryRepository(pool); // ✅ Pass pool to constructor
+  
+  // Mock database row
   const mockRow = {
-    id: '123',
-    inventory_number: 'TEST-001',
+    id: 'test-id',
+    inventory_number: 'INV-001',
     status: 'I',
-    category_id: 'cat-123',
-    brand: 'TestBrand',
-    model: 'TestModel',
+    category_id: 'cat-1',
+    brand: 'Test Brand',
+    model: 'Test Model',
     serial_number: 'SN123',
-    color_id: 'color-123', // ✅ Updated to match new schema
+    color_id: 'color-1',
     item_condition: 'Good',
     quantity: 1,
     price_amount: 100.00,
     resale: 150.00,
-    min_resale: 120.00, // ✅ Added
+    min_resale: 120.00,
     item_replace: 200.00,
-    owner_mark: 'OWNER123', // ✅ Updated field name
+    owner_mark: 'OM123',
     item_description: 'Test item',
-    attributes: { test: true },
+    attributes: { test: 'value' },
     created_at: new Date(),
     updated_at: new Date()
   };
 
-  // ✅ Access the private method or create a test-specific public method
+  // Test the private mapping method by accessing it
   const mapped = (repo as any).mapRowToInventoryItem(mockRow);
-
-  assert.strictEqual(mapped.id, '123');
-  assert.strictEqual(mapped.colorId, 'color-123'); // ✅ Updated assertion
-  assert.strictEqual(mapped.ownerMark, 'OWNER123'); // ✅ Updated assertion
-  assert.strictEqual(mapped.minResale, 120.00); // ✅ Added assertion
+  
+  assert.strictEqual(mapped.id, 'test-id');
+  assert.strictEqual(mapped.inventoryNumber, 'INV-001');
+  assert.strictEqual(mapped.colorId, 'color-1');
+  assert.strictEqual(mapped.ownerMark, 'OM123');
+  assert.deepStrictEqual(mapped.attributes, { test: 'value' });
 });
