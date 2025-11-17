@@ -17,8 +17,8 @@ export function JewelryFieldGroup({ draft, onFieldChange }: Props) {
   // ✅ Karat options based on selected metal
   const karatOptions = useMemo(() => {
     const metalKey = draft.metal?.toLowerCase();
-    return metalKey && KARAT_OPTIONS_BY_METAL[metalKey] 
-      ? KARAT_OPTIONS_BY_METAL[metalKey] 
+    return metalKey && metalKey in KARAT_OPTIONS_BY_METAL
+      ? KARAT_OPTIONS_BY_METAL[metalKey as keyof typeof KARAT_OPTIONS_BY_METAL]
       : [];
   }, [draft.metal]);
 
@@ -47,8 +47,8 @@ export function JewelryFieldGroup({ draft, onFieldChange }: Props) {
       <div className="form-group">
         <label>Karat / Fineness *</label>
         {karatOptions.length > 0 ? (
-          <select 
-            value={draft.karat || ''} 
+          <select
+            value={draft.karat || ''}
             onChange={e => onFieldChange('karat', e.target.value)}
             required
           >
