@@ -48,7 +48,7 @@ function PawnsWorkspaceContent() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="customer" className="flex-1 min-h-0">
+        <TabsContent value="customer" className="flex-1 min-h-0 pt-4">
           <CustomerInfoTab 
             customer={customer}
             onCustomerChange={setCustomer}
@@ -57,24 +57,24 @@ function PawnsWorkspaceContent() {
           />
         </TabsContent>
 
-        <TabsContent value="newPawn" className="flex-1 min-h-0">
+        <TabsContent value="newPawn" className="flex-1 min-h-0 pt-4">
           <NewPawnTab 
             customerId={customerId}
             customer={customer}
           />
         </TabsContent>
 
-        <TabsContent value="previousItems" className="flex-1 min-h-0">
+        <TabsContent value="previousItems" className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Previous Items - Coming Soon
           </div>
         </TabsContent>
 
-        <TabsContent value="customerPerformance" className="flex-1 min-h-0">
+        <TabsContent value="customerPerformance" className="flex-1 min-h-0 pt-4">
           <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
-        <TabsContent value="history" className="flex-1 min-h-0">
+        <TabsContent value="history" className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             History - Coming Soon
           </div>
