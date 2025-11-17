@@ -95,33 +95,18 @@ export function BasicInfoFields({ draft, updateField, isFirearm }: BasicInfoFiel
       {/* Row 2: Color */}
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'}</Label>
-        {isFirearm ? (
-          <Select value={draft.color || ''} onValueChange={(value) => updateField('color', value)}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="SELECT FINISH..." />
-            </SelectTrigger>
-            <SelectContent>
-              {FIREARM_FINISHES.map(finish => (
-                <SelectItem key={finish} value={finish.toUpperCase()} className="text-xs uppercase">
-                  {finish.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            list="colors"
-            value={draft.color || ''}
-            onChange={(e) => updateField('color', e.target.value)}
-            placeholder="COLOR"
-            className="uppercase text-xs h-8"
-          />
-        )}
-        <datalist id="colors">
-          {JEWELRY_COLORS.map(color => (
-            <option key={color} value={color.toUpperCase()} />
-          ))}
-        </datalist>
+        <Select value={draft.color || ''} onValueChange={(value) => updateField('color', value)}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."} />
+          </SelectTrigger>
+          <SelectContent>
+            {(isFirearm ? FIREARM_FINISHES : JEWELRY_COLORS).map(item => (
+              <SelectItem key={item} value={item.toUpperCase()} className="text-xs uppercase">
+                {item.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </>
   );

@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import packageIcon from '@/assets/icons/package.svg';
+import addIcon from '@/assets/icons/add.svg';
+import editIcon from '@/assets/icons/edit.svg';
+import deleteIcon from '@/assets/icons/delete.svg';
+import overviewIcon from '@/assets/icons/overview.svg';
 
 interface Props {
   onSubmit: (formData: {
@@ -106,13 +111,13 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   }, 0);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
         {/* Items Section */}
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              📦 Items <Badge variant="secondary">{formData.items.length}</Badge>
+              <img src={packageIcon} alt="Items" className="w-5 h-5" /> Items <Badge variant="secondary">{formData.items.length}</Badge>
             </CardTitle>
             <Button
               type="button"
@@ -120,7 +125,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
               disabled={disabled}
               size="sm"
             >
-              ➕ Add Item
+              <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item
             </Button>
           </CardHeader>
 
@@ -131,43 +136,48 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
                   No items added yet. Click "Add Item" to get started.
                 </div>
               ) : (
-                <div className="divide-y">
-                  {formData.items.map((item) => (
-                    <div key={item.id} className="px-5 py-4 flex justify-between items-center hover:bg-slate-50">
-                      <div className="grid grid-cols-4 gap-4 items-center flex-1">
+                <div>
+                  {/* Table Header */}
+                  <div className="px-5 py-3 bg-slate-100 border-b font-semibold text-sm grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center">
+                    <div>Item</div>
+                    <div>Quantity</div>
+                    <div>Value</div>
+                    <div>Total</div>
+                    <div className="text-center">Actions</div>
+                  </div>
+                  {/* Table Body */}
+                  <div className="divide-y">
+                    {formData.items.map((item) => (
+                      <div key={item.id} className="px-5 py-4 grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center hover:bg-slate-50">
                         <div>
                           <div className="font-semibold">{item.type}</div>
                           {item.brand && <div className="text-sm text-gray-600">Brand: {item.brand}</div>}
                           {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                         </div>
-                        <div className="text-sm">Qty: {item.quantity || 1}</div>
+                        <div className="text-sm">{item.quantity || 1}</div>
                         <div className="text-sm">${Number(item.amount || 0).toFixed(2)}</div>
                         <div className="font-semibold">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</div>
+                        <div className="flex gap-3 justify-center items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleEditItem(item)}
+                            disabled={disabled}
+                            className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                          >
+                            <img src={editIcon} alt="Edit" className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id!)}
+                            disabled={disabled}
+                            className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                          >
+                            <img src={deleteIcon} alt="Delete" className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEditItem(item)}
-                          disabled={disabled}
-                          className="h-8 w-8"
-                        >
-                          ✏️
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => handleRemoveItem(item.id!)}
-                          disabled={disabled}
-                          className="h-8 w-8"
-                        >
-                          🗑️
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </ScrollArea>
@@ -176,10 +186,10 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
         {/* Summary */}
         {formData.items.length > 0 && (
-          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200">
+          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200 mt-6 max-w-md ml-auto">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                📊 Summary
+                <img src={overviewIcon} alt="Summary" className="w-5 h-5" /> Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -204,7 +214,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
           </Card>
         )}
 
-        <div className="flex justify-center">
+        <div className="flex justify-center mt-6">
           <Button
             type="submit"
             disabled={disabled || formData.items.length === 0}

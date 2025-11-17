@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import addIcon from '@/assets/icons/add.svg';
+import barcodeReaderIcon from '@/assets/icons/barcode_reader.svg';
+import barcodeScannerIcon from '@/assets/icons/barcode_scanner.svg';
 import { CategoryFields } from './CategoryFields';
 import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
@@ -118,11 +121,13 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 onClick={() => setBarcodeMode(!barcodeMode)}
                 className="text-xs"
               >
-                {barcodeMode ? '⏹️ Stop Scanner' : '📱 Scan Barcode'}
+                {!barcodeMode && <img src={barcodeReaderIcon} alt="Barcode" className="w-4 h-4 mr-1" />}
+                {barcodeMode ? 'Stop Scanner' : 'Scan Barcode'}
               </Button>
               {barcodeMode && (
                 <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
-                  📱 Scanner active - scan barcode now
+                  <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />
+                  Scanner active - scan barcode now
                 </span>
               )}
             </div>
@@ -142,7 +147,8 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 size="sm"
                 className="text-xs"
               >
-                {initial ? '💾 Update Item' : '➕ Add Item'}
+                <img src={addIcon} alt={initial ? 'Update' : 'Add'} className="w-4 h-4 mr-1 brightness-0 invert" />
+                {initial ? 'Update Item' : 'Add Item'}
               </Button>
             </div>
           </div>
