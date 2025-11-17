@@ -1,13 +1,20 @@
-import { useState, useEffect } from 'react';
+// src/app/feature/auth/LoginPage.tsx
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '@/app/core/auth/authService';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import VisibilityIcon from '@/assets/icons/visibility.svg?react';
-import VisibilityOffIcon from '@/assets/icons/visibility_off.svg?react';
+import './LoginPage.css';
+
+// ✅ Single Responsibility: Handle Electron notifications safely
+const notifyElectronAuth = (authenticated: boolean): void => {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.electronAPI?.authChanged) {
+      globalThis.electronAPI.authChanged(authenticated);
+    }
+  } catch (electronError) {
+    console.warn('[LoginPage] Failed to notify Electron:', electronError);
+    // Continue - this is not critical for web version
+  }
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -19,7 +26,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  // ✅ Single Responsibility: Reset form state
+  const resetForm = useCallback(() => {
     setUsername('');
     setPassword('');
     setShowPw(false);
@@ -27,7 +35,13 @@ export default function LoginPage() {
     setError('');
   }, []);
 
-  const onSubmit = async (e?: React.FormEvent) => {
+  // Reset form when component mounts
+  useEffect(() => {
+    resetForm();
+  }, [resetForm]);
+
+  // ✅ Single Responsibility: Handle form submission
+  const onSubmit = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (loading) return;
 
@@ -37,9 +51,8 @@ export default function LoginPage() {
     try {
       const success = await login(username, password);
       if (success) {
-        if (window.electronAPI?.authChanged) {
-          window.electronAPI.authChanged(true);
-        }
+        notifyElectronAuth(true);
+        
         const from = (location.state as any)?.from?.pathname ?? '/';
         navigate(from, { replace: true });
       } else {
@@ -50,89 +63,96 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username, password, loading, location.state, navigate]);
+
+  // ✅ Single Responsibility: Toggle password visibility
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPw(prev => !prev);
+  }, []);
+
+  // ✅ Single Responsibility: Clear error message
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
+
+  // ✅ Derived state: Check if form is valid
+  const isFormValid = username.trim() && password.trim() && !loading;
 
   return (
-    <div className="fixed inset-0 grid place-items-center z-[9999]">
-      <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-      <Card className="relative z-[10000] w-[360px] max-w-[90vw] shadow-2xl">
+    <div className="login-overlay">
+      <div className="login-backdrop" aria-hidden="true" />
+      <dialog open className="login-dialog">
         <form onSubmit={onSubmit}>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold">PawnExpress</CardTitle>
-            <CardDescription>Sign in to continue</CardDescription>
-          </CardHeader>
+          <h1 className="login-title">PawnExpress</h1>
+          <p className="login-subtitle">Sign in to continue</p>
 
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription className="flex items-center justify-between">
-                  <span>{error}</span>
-                  <button
-                    type="button"
-                    className="underline text-sm"
-                    onClick={() => setError('')}
-                  >
-                    dismiss
-                  </button>
-                </AlertDescription>
-              </Alert>
-            )}
+          {error && (
+            <div className="login-error" role="alert">
+              {error}{' '}
+              <button
+                type="button"
+                className="underline"
+                onClick={clearError}
+                aria-label="Dismiss error message"
+              >
+                dismiss
+              </button>
+            </div>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                autoComplete="username"
+          <label className="login-label">
+            <span>Username</span>
+            <input
+              className="login-input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+              autoComplete="username"
+              disabled={loading}
+              required
+              aria-describedby={error ? "error-message" : undefined}
+            />
+          </label>
+
+          <label className="login-label">
+            <span>Password</span>
+            <div className="login-pw-wrap">
+              <input
+                className="login-input pw"
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 disabled={loading}
+                required
+                aria-describedby={error ? "error-message" : undefined}
               />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="login-pw-toggle"
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+                disabled={loading}
+              >
+                {showPw ? '🙈' : '👁️'}
+              </button>
             </div>
+          </label>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  disabled={loading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                  aria-label={showPw ? 'Hide password' : 'Show password'}
-                  disabled={loading}
-                >
-                  {showPw ? (
-                    <VisibilityOffIcon className="w-5 h-5 fill-current" />
-                  ) : (
-                    <VisibilityIcon className="w-5 h-5 fill-current" />
-                  )}
-                </button>
-              </div>
-            </div>
+          <button
+            type="submit"
+            className="login-button"
+            disabled={!isFormValid}
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || !username || !password}
-            >
-              {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </CardContent>
-
-          <CardFooter className="flex flex-col text-center text-xs text-gray-500 space-y-1">
+          <div className="login-foot">
             <p className="text-sm text-gray-600">Default: admin / admin</p>
             <p>© {new Date().getFullYear()} PawnExpress</p>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </dialog>
     </div>
   );
 }

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import './InventoryItemModal.css';
-import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
+import { Modal } from '@/app/shared/components/Modal';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
-import { useCategoryLookup } from '../hooks/useCategoryLookup';
+import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
+import { useSubtypeMapping } from '@/app/shared/hooks/useSubtypeMapping';
 import {
   JEWELRY_COLORS,
   JEWELRY_METALS,
@@ -11,22 +12,16 @@ import {
   WEIGHT_UNITS,
   GENDER_OPTIONS
 } from '@/app/shared/constants/jewelry';
-
-// Extended interface to include firearm-specific fields
-interface FirearmFields {
-  caliber?: string;
-  action?: string;
-  barrelLength?: string;
-  capacity?: string;
-}
+import {
+  FIREARM_CALIBERS,
+  FIREARM_ACTIONS,
+  FIREARM_FINISHES
+} from '@/app/shared/constants/firearms';
 
 export interface InventoryItemDraft {
   id?: string;
   type: string;
-  sub1?: string;
-  sub2?: string;
-  sub3?: string;
-  sub4?: string;
+  sub1?: string; // ✅ Keep only sub1 for subtype
   brand?: string;
   model?: string;
   serial?: string;
@@ -43,264 +38,110 @@ export interface InventoryItemDraft {
   description?: string;
   resale?: string;
   replace?: string;
-  storageFee?: string;
   condition?: string;
   ownerNumber?: string;
-  bin?: string;
+  // Firearm fields
+  caliber?: string;
+  action?: string;
+  barrelLength?: string;
+  capacity?: string;
 }
-
-type EnhancedInventoryItemDraft = InventoryItemDraft & FirearmFields;
 
 interface Props {
   open: boolean;
   initial?: InventoryItemDraft | null;
-  onCancel(): void;
-  onSave(item: InventoryItemDraft): void;
+  onCancel: () => void;
+  onSave: (item: InventoryItemDraft) => void;
 }
 
-// Constants
-const DEFAULT_ITEM: InventoryItemDraft = { type: '', quantity: '1', weightUnit: 'Grams' };
+const DEFAULT_ITEM: InventoryItemDraft = {
+  type: '',
+  quantity: '1',
+  weightUnit: 'Grams'
+};
 
+// ✅ Single Responsibility: Modal for adding/editing inventory items
 export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
-  // State
-  const [draft, setDraft] = useState<EnhancedInventoryItemDraft>(DEFAULT_ITEM);
+  const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [subcat1Filter, setSubcat1Filter] = useState('');
-  const [brandFilter, setBrandFilter] = useState('');
-  const [styleFilter, setStyleFilter] = useState('');
   const [typeQuery, setTypeQuery] = useState('');
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0); // ✅ Add cycling index
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Load categories from DB
-  const { loading: catLoading, error: catError, typeOptions, subcat1OptionsFor, brandOptionsFor } = useInventoryCategories();
-  const { categories, loading: categoriesLoading } = useCategoryLookup();
+  const categoriesHook = useInventoryCategories();
+  const categories = categoriesHook?.leafCategories || [];
+  const isLoading = categoriesHook?.loading || false;
 
-  // Derived options - removed brandOptionsFor from dependencies
-  const subcat1Options = useMemo(() => subcat1OptionsFor(draft.type), [draft.type, subcat1OptionsFor]);
-  const brandOptions = useMemo(() => brandOptionsFor(draft.sub1 || ''), [draft.sub1, brandOptionsFor]);
+  // ✅ Get subtypes based on selected category
+  const subtypes = useSubtypeMapping(draft.type);
 
-  // Category detection
-  const isJewelry = useMemo(() => (draft.type || '').toLowerCase() === 'jewelry', [draft.type]);
-  const isFirearm = useMemo(() => (draft.type || '').toLowerCase() === 'firearms', [draft.type]);
-
-  // Style options based on jewelry subcategory - fixed dependency
-  const styleOptions = useMemo(() => {
-    if (!isJewelry || !draft.sub1) return [];
-    const selectedSubcat = subcat1Options.find(s => s.code === draft.sub1);
-    if (!selectedSubcat) return [];
-    return brandOptionsFor(selectedSubcat.code);
-  }, [isJewelry, draft.sub1, subcat1Options, brandOptionsFor]);
-
-  // Ring detection
-  const isRing = useMemo(() => {
-    if (!isJewelry || !draft.sub1) return false;
-    const subcat1Name = subcat1Options.find(s => s.code === draft.sub1)?.name || '';
-    return subcat1Name.toUpperCase().includes('RING');
-  }, [isJewelry, draft.sub1, subcat1Options]);
-
-  // Karat options based on metal
-  const canonicalMetalKey = useMemo(() => {
-    const m = (draft.metal || '').trim().toLowerCase();
-    if (!m) return undefined;
-    return Object.keys(KARAT_OPTIONS_BY_METAL).find(k => k.toLowerCase() === m);
-  }, [draft.metal]);
-
-  const karatOptions = useMemo(() => {
-    if (!canonicalMetalKey) return [];
-    return KARAT_OPTIONS_BY_METAL[canonicalMetalKey] || [];
-  }, [canonicalMetalKey]);
-
-  // Filtered options for autocomplete
-  const filteredTypeOptions = useMemo(() =>
-    typeOptions.filter(t => t.name.toUpperCase().includes(typeFilter.toUpperCase())),
-    [typeOptions, typeFilter]
-  );
-
-  const filteredSubcat1Options = useMemo(() =>
-    subcat1Options.filter(s => s.name.toUpperCase().includes(subcat1Filter.toUpperCase())),
-    [subcat1Options, subcat1Filter]
-  );
-
-  const filteredBrandOptions = useMemo(() =>
-    brandOptions.filter(b => b.name.toUpperCase().includes(brandFilter.toUpperCase())),
-    [brandOptions, brandFilter]
-  );
-
-  const filteredStyleOptions = useMemo(() =>
-    styleOptions.filter(s => s.name.toUpperCase().includes(styleFilter.toUpperCase())),
-    [styleOptions, styleFilter]
-  );
-
-  // Initialize form when modal opens
+  // ✅ Initialize form data with proper defaults to prevent controlled/uncontrolled switches
   useEffect(() => {
-    if (!open) return;
-    setDraft(initial ? { ...DEFAULT_ITEM, ...initial } : { ...DEFAULT_ITEM });
+    if (open) {
+      const formData = initial ? {
+        ...DEFAULT_ITEM,
+        ...initial,
+        // ✅ Ensure all select fields have default values
+        condition: initial.condition || '',
+        gender: initial.gender || '',
+        weightUnit: initial.weightUnit || 'Grams'
+      } : {
+        ...DEFAULT_ITEM,
+        // ✅ Ensure all select fields have default values
+        condition: '',
+        gender: '',
+        weightUnit: 'Grams'
+      };
+      setDraft(formData);
+      setTypeQuery(initial?.type || '');
+      setError(null);
+    }
   }, [open, initial]);
 
-  useEffect(() => {
-    if (!open) return;
+  // ✅ Category suggestions
+  const suggestions = categories.filter(cat =>
+    cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
+  ).slice(0, 10);
 
-    if (!initial) {
-      if (typeFilter || subcat1Filter || brandFilter || styleFilter) {
-        setTypeFilter('');
-        setSubcat1Filter('');
-        setBrandFilter('');
-        setStyleFilter('');
-      }
-      return;
+  // ✅ Category type detection
+  const isJewelry = draft.type.toLowerCase().includes('jewelry');
+  const isFirearm = draft.type.toLowerCase().includes('firearm');
+  const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
+
+  // ✅ Karat options based on metal
+  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
+
+  // ✅ Update field handler with uppercase conversion
+  const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
+    let processedValue = value;
+    
+    // ✅ Convert to uppercase for all fields except description and ownerNumber
+    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber') {
+      processedValue = value.toUpperCase();
     }
+    
+    setDraft(prev => ({ ...prev, [field]: processedValue }));
+  }, []);
 
-    const typeName = typeOptions.find(t => t.code === initial.type)?.name || initial.type || '';
-    const subcatOptions = subcat1OptionsFor(initial.type);
-    const subcat1Name = subcatOptions.find(s => s.code === initial.sub1)?.name || '';
-    const nextTypeFilter = typeName.toUpperCase();
-    const nextSubcatFilter = subcat1Name.toUpperCase();
-    const nextBrandFilter = (initial.brand || '').toUpperCase();
-    const nextStyleFilter = (initial.style || '').toUpperCase();
+  // ✅ Type selection
+  const selectType = useCallback((categoryName: string) => {
+    updateField('type', categoryName);
+    setTypeQuery(categoryName);
+    setShowSuggestions(false);
+  }, [updateField]);
 
-    if (typeFilter !== nextTypeFilter) setTypeFilter(nextTypeFilter);
-    if (subcat1Filter !== nextSubcatFilter) setSubcat1Filter(nextSubcatFilter);
-    if (brandFilter !== nextBrandFilter) setBrandFilter(nextBrandFilter);
-    if (styleFilter !== nextStyleFilter) setStyleFilter(nextStyleFilter);
-  }, [open, initial, typeOptions, subcat1OptionsFor]);
-
-  // Generic update function for draft fields
-  function update<K extends keyof EnhancedInventoryItemDraft>(k: K, v: EnhancedInventoryItemDraft[K]) {
-    if (typeof v === 'string' && k !== 'description' && k !== 'ownerNumber') {
-      setDraft(d => ({ ...d, [k]: v.toUpperCase() }));
-    } else {
-      setDraft(d => ({ ...d, [k]: v }));
-    }
-  }
-
-  // Cascading category changes
-  const onTypeChange = (code: string) => {
-    setDraft(prev => ({
-      ...prev,
-      type: code || '',
-      sub1: undefined,
-      sub3: undefined,
-      brand: undefined
-    }));
-  };
-
-  const onSub1Change = (code: string) => {
-    setDraft(prev => ({
-      ...prev,
-      sub1: code || undefined,
-      sub3: undefined,
-      brand: undefined
-    }));
-  };
-
-  const onBrandChange = (code: string) => {
-    const opt = brandOptions.find(o => o.code === code);
-    setDraft(prev => ({
-      ...prev,
-      sub3: code || undefined,
-      brand: opt?.name || ''
-    }));
-  };
-
-  // Autocomplete input handlers
-  const handleTypeInput = (value: string) => {
-    const uppercaseValue = value.toUpperCase();
-    setTypeFilter(uppercaseValue);
-
-    const matchedType = typeOptions.find(t => t.name.toUpperCase() === uppercaseValue);
-    if (matchedType) {
-      onTypeChange(matchedType.code);
-    } else {
-      setDraft(prev => ({ ...prev, type: uppercaseValue }));
-    }
-  };
-
-  const handleSubcat1Input = (value: string) => {
-    const uppercaseValue = value.toUpperCase();
-    setSubcat1Filter(uppercaseValue);
-
-    const matchedSubcat = subcat1Options.find(s => s.name.toUpperCase() === uppercaseValue);
-    if (matchedSubcat) {
-      onSub1Change(matchedSubcat.code);
-    } else {
-      setDraft(prev => ({ ...prev, sub1: uppercaseValue }));
-    }
-  };
-
-  const handleBrandInput = (value: string) => {
-    const uppercaseValue = value.toUpperCase();
-    setBrandFilter(uppercaseValue);
-
-    const matchedBrand = brandOptions.find(b => b.name.toUpperCase() === uppercaseValue);
-    if (matchedBrand) {
-      onBrandChange(matchedBrand.code);
-    } else {
-      setDraft(prev => ({ ...prev, sub3: undefined, brand: uppercaseValue }));
-    }
-  };
-
-  const handleStyleInput = (value: string) => {
-    const uppercaseValue = value.toUpperCase();
-    setStyleFilter(uppercaseValue);
-
-    const matchedStyle = styleOptions.find(s => s.name.toUpperCase() === uppercaseValue);
-    if (matchedStyle) {
-      update('style', matchedStyle.name);
-    } else {
-      update('style', uppercaseValue);
-    }
-  };
-
-  // Keyboard handlers for autocomplete
-  const handleSubcat1KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === 'Tab') && filteredSubcat1Options.length > 0) {
-      e.preventDefault();
-      handleSubcat1Input(filteredSubcat1Options[0].name);
-
-      if (e.key === 'Tab') {
-        setTimeout(() => document.querySelector<HTMLInputElement>('[name="brand"]')?.focus(), 0);
-      }
-    }
-  };
-
-  const handleBrandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === 'Tab') && filteredBrandOptions.length > 0) {
-      e.preventDefault();
-      handleBrandInput(filteredBrandOptions[0].name);
-
-      if (e.key === 'Tab') {
-        setTimeout(() => document.querySelector<HTMLInputElement>('[name="model"]')?.focus(), 0);
-      }
-    }
-  };
-
-  const handleStyleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === 'Tab') && filteredStyleOptions.length > 0) {
-      e.preventDefault();
-      handleStyleInput(filteredStyleOptions[0].name);
-
-      if (e.key === 'Tab') {
-        setTimeout(() => document.querySelector<HTMLInputElement>('[name="sizeLength"]')?.focus(), 0);
-      }
-    }
-  };
-
-  // Barcode scanning
+  // ✅ Barcode scanning
   useBarcodeScan({
     enabled: barcodeMode,
     onBarcode: (code) => {
-      setDraft(i => ({ ...i, serial: i.serial || code }));
+      updateField('serial', code);
       setBarcodeMode(false);
     },
     allowRegex: /^[A-Z0-9\-]+$/i
   });
 
-  // Form submission
-  function handleSubmit(e: React.FormEvent) {
+  // ✅ Form validation and submission
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -315,479 +156,422 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     }
 
     if (isJewelry && (!draft.metal || !draft.karat || !draft.weight)) {
-      setError('Metal, Karat and Weight required for jewelry');
+      setError('Metal, Karat and Weight are required for jewelry');
       return;
     }
 
-    onSave({ ...draft, id: draft.id || crypto.randomUUID() });
-  }
+    // Generate ID if not editing
+    const itemData = {
+      ...draft,
+      id: draft.id || crypto.randomUUID()
+    };
 
-  // ✅ Fixed autocomplete suggestions - no more duplicates
-  const typeSuggestions = useMemo(() => {
-    console.log('[TypeSuggestions] Query:', typeQuery, 'All categories:', categories.map(c => c.name));
-    
-    if (!typeQuery.trim()) {
-      return categories.slice(0, 10);
-    }
+    onSave(itemData);
+  }, [draft, isJewelry, onSave]);
 
-    const query = typeQuery.toLowerCase();
-    
-    // ✅ Filter categories that match the query
-    const matches = categories.filter(cat => 
-      cat.name.toLowerCase().includes(query)
-    );
-    
-    // ✅ Sort: exact matches first, then starts-with, then contains
-    matches.sort((a, b) => {
-      const aName = a.name.toLowerCase();
-      const bName = b.name.toLowerCase();
-      
-      // Exact match
-      if (aName === query && bName !== query) return -1;
-      if (bName === query && aName !== query) return 1;
-      
-      // Starts with
-      const aStarts = aName.startsWith(query);
-      const bStarts = bName.startsWith(query);
-      if (aStarts && !bStarts) return -1;
-      if (bStarts && !aStarts) return 1;
-      
-      // Alphabetical
-      return aName.localeCompare(bName);
-    });
-    
-    console.log('[TypeSuggestions] Filtered matches:', matches.map(m => m.name));
-    
-    return matches.slice(0, 10);
-  }, [typeQuery, categories]);
-
-  // ✅ Handle type selection and close dropdown
-  const handleTypeSelect = (categoryName: string) => {
-    setDraft(prev => ({ ...prev, type: categoryName }));
-    setTypeQuery(categoryName);
-    setShowTypeDropdown(false);
-    setSelectedTypeIndex(-1);
-    setCurrentMatchIndex(0);
-  };
-
-  // ✅ Enhanced input change with smart auto-completion
-  const handleTypeInputChange = (value: string) => {
-    setTypeQuery(value);
-    setDraft(prev => ({ ...prev, type: value }));
-    setShowTypeDropdown(value.length > 0);
-    setSelectedTypeIndex(-1);
-    setCurrentMatchIndex(0);
-    
-    // ✅ Smart auto-completion: if there's an exact start match, suggest it
-    if (value.length >= 1) {
-      const matches = categories.filter(cat => 
-        cat.name.toLowerCase().startsWith(value.toLowerCase())
-      );
-      
-      if (matches.length > 0) {
-        const bestMatch = matches[0];
-        // Don't auto-complete if user is typing in the middle of a word
-        if (bestMatch.name.toLowerCase() !== value.toLowerCase()) {
-          console.log('[TypeInput] Auto-suggesting:', bestMatch.name);
-          // Update the cycling index to match the suggestion
-          const suggestionIndex = typeSuggestions.findIndex(s => s.id === bestMatch.id);
-          if (suggestionIndex >= 0) {
-            setCurrentMatchIndex(suggestionIndex);
-            setSelectedTypeIndex(suggestionIndex);
-          }
-        }
-      }
-    }
-  };
-
-  // ✅ Enhanced keyboard handler - TAB moves to next field after selection
-  const handleTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Tab' && typeSuggestions.length > 0) {
-      e.preventDefault();
-      
-      // ✅ Select first match and move to next field
-      const selectedCategory = typeSuggestions[0];
-      handleTypeSelect(selectedCategory.name);
-      
-      // ✅ Move focus to next field (subcategory)
-      setTimeout(() => {
-        const nextField = document.querySelector<HTMLInputElement>('[name="subcat1"]');
-        if (nextField) {
-          nextField.focus();
-        }
-      }, 0);
-      
+  // ✅ FIXED: Auto-fill karat when metal changes
+  const handleMetalChange = useCallback((metal: string) => {
+    if (!metal) {
+      updateField('metal', '');
+      updateField('karat', '');
       return;
     }
 
-    if (!showTypeDropdown || typeSuggestions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedTypeIndex(prev => 
-          prev < typeSuggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedTypeIndex(prev => 
-          prev > 0 ? prev - 1 : typeSuggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedTypeIndex >= 0 && selectedTypeIndex < typeSuggestions.length) {
-          handleTypeSelect(typeSuggestions[selectedTypeIndex].name);
-        } else if (typeSuggestions.length > 0) {
-          handleTypeSelect(typeSuggestions[0].name);
-        }
-        // ✅ Move to next field after Enter selection
-        setTimeout(() => {
-          const nextField = document.querySelector<HTMLInputElement>('[name="subcat1"]');
-          if (nextField) {
-            nextField.focus();
-          }
-        }, 0);
-        break;
-      case 'Escape':
-        setShowTypeDropdown(false);
-        setSelectedTypeIndex(-1);
-        setCurrentMatchIndex(0);
-        break;
-    }
-  };
-
-  // ✅ Initialize typeQuery when modal opens
-  useEffect(() => {
-    if (!open) return;
-    if (initial?.type) {
-      setTypeQuery(initial.type);
-      setCurrentMatchIndex(0);
+    // ✅ The metal value from select is already in lowercase (from JEWELRY_METALS array)
+    const metalKey = metal as keyof typeof KARAT_OPTIONS_BY_METAL;
+    const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
+    
+    // ✅ Store the metal in uppercase for display
+    updateField('metal', metal.toUpperCase());
+    
+    // ✅ Auto-select first karat option if available
+    if (karatOptions.length > 0) {
+      updateField('karat', karatOptions[0]);
     } else {
-      setTypeQuery('');
-      setCurrentMatchIndex(0);
+      updateField('karat', '');
     }
-  }, [open, initial?.type]);
+  }, [updateField]);
 
   if (!open) return null;
 
   return (
-    <div className="pawn-modal__backdrop" role="dialog" aria-modal="true" aria-label={initial ? 'Edit Item' : 'New Item'}>
-      <div className="pawn-modal">
-        <header className="pawn-modal__header">
-          <h3>{initial ? 'Edit Pawn Item' : 'New Pawn Item'}</h3>
-        </header>
-
-        <form onSubmit={handleSubmit} className="pawn-item-form">
-          {/* ✅ Add consistent styling for all input boxes */}
-          <style>{`
-            .pawn-item-grid input,
-            .pawn-item-grid select {
-              width: 100% !important;
-              padding: 8px 12px !important;
-              border: 1px solid #ccc !important;
-              border-radius: 4px !important;
-              font-size: 14px !important;
-              box-sizing: border-box !important;
-            }
-            
-            .pawn-item-grid input:focus,
-            .pawn-item-grid select:focus {
-              outline: none !important;
-              border-color: #2196f3 !important;
-              box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
-            }
-            
-            .pawn-item-grid label {
-              display: flex;
-              flex-direction: column;
-              gap: 4px;
-              font-weight: 500;
-            }
-          `}</style>
-          
-          <div className="pawn-item-grid">
-            <label>Type *
-              <div className="type-autocomplete" style={{ position: 'relative' }}>
+    <Modal 
+      isOpen={open} 
+      onClose={onCancel}
+    >
+      <div className="inventory-modal">
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            {/* Row 1: Category and Type */}
+            <div className="form-group category-field">
+              <label className="required">Category</label>
+              <div className="type-selector">
                 <input
-                  name="type"
                   type="text"
                   value={typeQuery}
-                  onChange={(e) => handleTypeInputChange(e.target.value)}
-                  onKeyDown={handleTypeKeyDown}
-                  onFocus={() => setShowTypeDropdown(true)}
-                  placeholder="Type 'J' for JEWELRY, TAB to cycle..."
-                  disabled={categoriesLoading}
-                  autoComplete="off"
+                  onChange={(e) => {
+                    const upperValue = e.target.value.toUpperCase();
+                    setTypeQuery(upperValue);
+                    updateField('type', upperValue);
+                    setShowSuggestions(upperValue.length > 0);
+                  }}
+                  onFocus={() => setShowSuggestions(typeQuery.length > 0)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  placeholder={isLoading ? "LOADING..." : "SEARCH CATEGORIES..."}
+                  disabled={isLoading}
+                  required
+                  style={{ textTransform: 'uppercase' }}
                 />
-
-                {/* ✅ Enhanced dropdown */}
-                {showTypeDropdown && (
-                  <div 
-                    className="dropdown" 
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#fff',
-                      border: '1px solid #ccc',
-                      borderTop: 'none',
-                      borderRadius: '0 0 4px 4px',
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      zIndex: 1000,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    {typeSuggestions.length > 0 ? (
-                      typeSuggestions.map((cat, index) => (
-                        <div
-                          key={cat.id}
-                          className="dropdown-item"
-                          onClick={() => handleTypeSelect(cat.name)}
-                          style={{
-                            padding: '10px 12px',
-                            cursor: 'pointer',
-                            borderBottom: index < typeSuggestions.length - 1 ? '1px solid #eee' : 'none',
-                            backgroundColor: selectedTypeIndex === index ? '#e3f2fd' : '#fff',
-                            fontSize: '14px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}
-                          onMouseEnter={() => setSelectedTypeIndex(index)}
-                          onMouseLeave={() => setSelectedTypeIndex(-1)}
-                        >
-                          <span style={{ fontWeight: 500 }}>{cat.name}</span>
-                          <span style={{ 
-                            fontSize: '12px', 
-                            color: '#666',
-                            fontFamily: 'monospace'
-                          }}>
-                            {cat.code}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{
-                        padding: '10px 12px',
-                        color: '#666',
-                        fontStyle: 'italic',
-                        fontSize: '14px'
-                      }}>
-                        {categoriesLoading ? 'Loading...' : typeQuery.trim() ? 'No matching categories' : 'Start typing to search...'}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="suggestions">
+                    {suggestions.map((cat, index) => (
+                      <div
+                        key={cat.id || index}
+                        className="suggestion-item"
+                        onClick={() => selectType(cat.name.toUpperCase())}
+                      >
+                        {cat.name.toUpperCase()}
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
-            </label>
+            </div>
 
-            <label>Subcategory 1
-              <input
-                name="subcat1"
-                list="subcat1Options"
-                value={subcat1Filter || (draft.sub1 ? subcat1Options.find(s => s.code === draft.sub1)?.name : '') || ''}
-                onChange={e => handleSubcat1Input(e.target.value)}
-                onKeyDown={handleSubcat1KeyDown}
-                disabled={!draft.type || catLoading}
-                placeholder="Select or type"
-                autoComplete="off"
-              />
-              <datalist id="subcat1Options">
-                {filteredSubcat1Options.map(s => <option key={s.code} value={s.name} />)}
-              </datalist>
-            </label>
-
-            <label>Brand
-              <input
-                name="brand"
-                list="brandOptions"
-                value={brandFilter || draft.brand || ''}
-                onChange={e => handleBrandInput(e.target.value)}
-                onKeyDown={handleBrandKeyDown}
-                disabled={!draft.sub1 || catLoading}
-                placeholder="Select or type"
-                autoComplete="off"
-              />
-              <datalist id="brandOptions">
-                {filteredBrandOptions.map(b => <option key={b.code} value={b.name} />)}
-              </datalist>
-            </label>
-
-            <label>Model
-              <input name="model" value={draft.model || ''} onChange={e => update('model', e.target.value)} />
-            </label>
-
-            <label>Serial #
-              <input name="serial" value={draft.serial || ''} onChange={e => update('serial', e.target.value)} />
-            </label>
-
-            <label>Color
-              <input
-                name="color"
-                list="jewelryColors"
-                value={draft.color || ''}
-                onChange={e => update('color', e.target.value)}
-                autoComplete="off"
-              />
-            </label>
-
-            <label>Owner Marks
-              <input name="ownerNumber" value={draft.ownerNumber || ''} onChange={e => update('ownerNumber', e.target.value)} />
-            </label>
-
-            <label>Value
-              <input name="amount" type="number" step="0.01" value={draft.amount || ''} onChange={e => update('amount', e.target.value)} />
-            </label>
-
-            <label>Quantity
-              <input name="quantity" type="number" value={draft.quantity || ''} onChange={e => update('quantity', e.target.value)} />
-            </label>
-
-            {isJewelry && <>
-              <label>Metal
-                <input
-                  name="metal"
-                  list="jewelryMetals"
-                  value={draft.metal || ''}
-                  onChange={e => setDraft(d => ({ ...d, metal: e.target.value.toUpperCase(), karat: undefined }))}
-                  autoComplete="off"
-                />
-              </label>
-
-              <label>Karat / Fineness
-                {karatOptions.length > 0 ? (
-                  <select name="karat" value={draft.karat || ''} onChange={e => update('karat', e.target.value)}>
-                    <option value="" />
-                    {karatOptions.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                ) : (
-                  <input
-                    name="karat"
-                    value={draft.karat || ''}
-                    onChange={e => update('karat', e.target.value)}
-                    placeholder="e.g. 14K, .925"
-                    disabled={!draft.metal}
-                  />
-                )}
-              </label>
-
-              <label>Weight
-                <div className="flex">
-                  <input
-                    name="weight"
-                    value={draft.weight || ''}
-                    onChange={e => update('weight', e.target.value)}
-                    style={{ width: '70%' }}
-                  />
-                  <select
-                    name="weightUnit"
-                    value={draft.weightUnit || 'Grams'}
-                    onChange={e => update('weightUnit', e.target.value)}
-                    style={{ width: '30%' }}
-                  >
-                    {WEIGHT_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
-              </label>
-
-              <label>Gender
+            <div className="form-group">
+              <label>Type</label>
+              {subtypes.length > 0 ? (
                 <select
-                  name="gender"
-                  value={draft.gender || ''}
-                  onChange={e => update('gender', e.target.value)}
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
                 >
-                  {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                  <option value="">SELECT TYPE...</option>
+                  {subtypes.map(subtype => (
+                    <option key={subtype} value={subtype.toUpperCase()}>{subtype.toUpperCase()}</option>
+                  ))}
                 </select>
-              </label>
-
-              <label>Style
+              ) : (
                 <input
-                  name="style"
-                  list="jewelryStyles"
-                  value={styleFilter || draft.style || ''}
-                  onChange={e => handleStyleInput(e.target.value)}
-                  onKeyDown={handleStyleKeyDown}
-                  placeholder="Type to search styles"
-                  autoComplete="off"
+                  value={draft.sub1 || ''}
+                  onChange={(e) => updateField('sub1', e.target.value)}
+                  placeholder="ENTER TYPE"
+                  style={{ textTransform: 'uppercase' }}
                 />
-                <datalist id="jewelryStyles">
-                  {filteredStyleOptions.map(s => <option key={s.code} value={s.name} />)}
-                </datalist>
-              </label>
+              )}
+            </div>
 
-              <label>Size/Length
-                {isRing ? (
+            <div className="form-group value-field">
+              <label className="required">Value ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="999999.99"
+                value={draft.amount || ''}
+                onChange={(e) => updateField('amount', e.target.value)}
+                placeholder="10000.00"
+                required
+                className="value-input"
+              />
+            </div>
+
+            <div className="form-group qty-field">
+              <label>Qty</label>
+              <input
+                type="number"
+                min="1"
+                max="999"
+                value={draft.quantity || '1'}
+                onChange={(e) => updateField('quantity', e.target.value)}
+                className="qty-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Owner Marks</label>
+              <input
+                value={draft.ownerNumber || ''}
+                onChange={(e) => updateField('ownerNumber', e.target.value)}
+                placeholder="Marks/engravings (free text)"
+              />
+            </div>
+
+            {/* Row 2: Basic Item Info */}
+            <div className="form-group">
+              <label>Brand</label>
+              <input
+                value={draft.brand || ''}
+                onChange={(e) => updateField('brand', e.target.value)}
+                placeholder="BRAND NAME"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Model</label>
+              <input
+                value={draft.model || ''}
+                onChange={(e) => updateField('model', e.target.value)}
+                placeholder="MODEL"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Serial Number</label>
+              <input
+                value={draft.serial || ''}
+                onChange={(e) => updateField('serial', e.target.value)}
+                placeholder="SERIAL/IMEI"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{isFirearm ? 'Finish/Color' : 'Color'}</label>
+              {isFirearm ? (
+                <select
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                >
+                  <option value="">SELECT FINISH...</option>
+                  {FIREARM_FINISHES.map(finish => (
+                    <option key={finish} value={finish.toUpperCase()}>{finish.toUpperCase()}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  list="colors"
+                  value={draft.color || ''}
+                  onChange={(e) => updateField('color', e.target.value)}
+                  placeholder="COLOR"
+                  style={{ textTransform: 'uppercase' }}
+                />
+              )}
+              <datalist id="colors">
+                {JEWELRY_COLORS.map(color => (
+                  <option key={color} value={color.toUpperCase()} />
+                ))}
+              </datalist>
+            </div>
+
+            {/* Fill empty space if no specific item type */}
+            {!isJewelry && !isFirearm && <div></div>}
+
+            {/* Row 3: Jewelry-specific fields */}
+            {isJewelry && (
+              <>
+                <div className="form-group">
+                  <label className="required">Metal</label>
                   <select
-                    name="sizeLength"
-                    value={draft.sizeLength || ''}
-                    onChange={e => update('sizeLength', e.target.value)}
+                    value={draft.metal?.toLowerCase() || ''} // ✅ Convert stored uppercase back to lowercase for select
+                    onChange={(e) => handleMetalChange(e.target.value)}
+                    required
                   >
-                    <option value="">Select Ring Size</option>
-                    {RING_SIZES.map(size => (
-                      <option key={size} value={size}>{size}</option>
+                    <option value="">SELECT METAL...</option>
+                    {JEWELRY_METALS.map(metal => (
+                      <option key={metal} value={metal}>{metal.toUpperCase()}</option>
                     ))}
                   </select>
-                ) : (
-                  <div className="flex">
+                </div>
+
+                <div className="form-group">
+                  <label className="required">Karat</label>
+                  {karatOptions.length > 0 ? (
+                    <select
+                      value={draft.karat || ''}
+                      onChange={(e) => updateField('karat', e.target.value)}
+                      required
+                    >
+                      <option value="">SELECT KARAT...</option>
+                      {karatOptions.map(k => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                  ) : (
                     <input
-                      name="sizeLength"
-                      value={draft.sizeLength || ''}
-                      onChange={e => update('sizeLength', e.target.value)}
-                      style={{ width: '70%' }}
+                      value={draft.karat || ''}
+                      onChange={(e) => updateField('karat', e.target.value)}
+                      placeholder="14K, .925"
+                      required
+                      style={{ textTransform: 'uppercase' }}
                     />
-                    <span style={{ marginLeft: '5px', alignSelf: 'center' }}>inches</span>
+                  )}
+                </div>
+
+                <div className="form-group weight-field">
+                  <label className="required">Weight</label>
+                  <div className="weight-container">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="999.99"
+                      value={draft.weight || ''}
+                      onChange={(e) => updateField('weight', e.target.value)}
+                      placeholder="5.25"
+                      required
+                      className="weight-input"
+                    />
+                    <select
+                      value={draft.weightUnit || 'Grams'}
+                      onChange={(e) => updateField('weightUnit', e.target.value)}
+                      className="weight-unit"
+                    >
+                      {WEIGHT_UNITS.map(unit => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
                   </div>
-                )}
-              </label>
-            </>}
+                </div>
 
-            {isFirearm && <>
-              <label>Caliber
-                <input name="caliber" value={draft.caliber || ''} onChange={e => update('caliber', e.target.value)} />
-              </label>
-              <label>Action
-                <input name="action" value={draft.action || ''} onChange={e => update('action', e.target.value)} placeholder="e.g. Semi-auto, Bolt" />
-              </label>
-              <label>Barrel Length
-                <input name="barrelLength" value={draft.barrelLength || ''} onChange={e => update('barrelLength', e.target.value)} placeholder="e.g. 16 in" />
-              </label>
-              <label>Capacity
-                <input name="capacity" value={draft.capacity || ''} onChange={e => update('capacity', e.target.value)} />
-              </label>
-            </>}
+                <div className="form-group">
+                  <label>Gender</label>
+                  <select
+                    value={draft.gender || ''}
+                    onChange={(e) => updateField('gender', e.target.value)}
+                  >
+                    <option value="">SELECT...</option>
+                    {GENDER_OPTIONS.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Size/Length</label>
+                  {isRing ? (
+                    <select
+                      value={draft.sizeLength || ''}
+                      onChange={(e) => updateField('sizeLength', e.target.value)}
+                    >
+                      <option value="">RING SIZE...</option>
+                      {RING_SIZES.map(size => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={draft.sizeLength || ''}
+                      onChange={(e) => updateField('sizeLength', e.target.value)}
+                      placeholder="LENGTH (INCHES)"
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Row 3: Firearm-specific fields */}
+            {isFirearm && (
+              <>
+                <div className="form-group">
+                  <label>Caliber</label>
+                  <select
+                    value={draft.caliber || ''}
+                    onChange={(e) => updateField('caliber', e.target.value)}
+                  >
+                    <option value="">SELECT CALIBER...</option>
+                    {FIREARM_CALIBERS.map(caliber => (
+                      <option key={caliber} value={caliber}>{caliber}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Action</label>
+                  <select
+                    value={draft.action || ''}
+                    onChange={(e) => updateField('action', e.target.value)}
+                  >
+                    <option value="">SELECT ACTION...</option>
+                    {FIREARM_ACTIONS.map(action => (
+                      <option key={action} value={action}>{action}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Barrel Length</label>
+                  <input
+                    value={draft.barrelLength || ''}
+                    onChange={(e) => updateField('barrelLength', e.target.value)}
+                    placeholder="16 INCHES"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Capacity</label>
+                  <input
+                    value={draft.capacity || ''}
+                    onChange={(e) => updateField('capacity', e.target.value)}
+                    placeholder="15 ROUNDS"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          <label className="pawn-item-note">Description
-            <textarea name="description" value={draft.description || ''} onChange={e => update('description', e.target.value)} rows={2} />
-          </label>
-
-          {error && <div style={{ color: '#b91c1c', fontSize: '.65rem' }}>{error}</div>}
-          {catError && <div style={{ color: '#b45309', fontSize: '.65rem' }}>Could not load categories.</div>}
-
-          <div className="pawn-modal__actions">
-            <button type="button" onClick={onCancel}>Cancel</button>
-            <button type="submit">{initial ? 'Update' : 'Add Item'}</button>
+          {/* Description - Full Width - FREE TEXT */}
+          <div className="form-group full-width">
+            <label>Description</label>
+            <textarea
+              value={draft.description || ''}
+              onChange={(e) => updateField('description', e.target.value)}
+              rows={2}
+              placeholder="Brief description (free text)..."
+            />
           </div>
 
-          <datalist id="jewelryColors">
-            {JEWELRY_COLORS.map(c => <option key={c} value={c.toUpperCase()} />)}
-          </datalist>
-          <datalist id="jewelryMetals">
-            {JEWELRY_METALS.map(m => <option key={m} value={m.toUpperCase()} />)}
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                type="button"
+                className={`btn btn-scanner ${barcodeMode ? 'active' : ''}`}
+                onClick={() => setBarcodeMode(!barcodeMode)}
+              >
+                {barcodeMode ? '⏹️ Stop Scanner' : '📱 Scan Barcode'}
+              </button>
+              {barcodeMode && (
+                <div className="scanner-status">
+                  Scanner active - scan barcode now
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+              >
+                {initial ? '💾 Update Item' : '➕ Add Item'}
+              </button>
+            </div>
+          </div>
+
+          {/* Hidden datalists */}
+          <datalist id="metals">
+            {JEWELRY_METALS.map(metal => (
+              <option key={metal} value={metal.toUpperCase()} />
+            ))}
           </datalist>
         </form>
-
-        <div className="toolbar">
-          <button type="button" onClick={() => setBarcodeMode(m => !m)}
-            style={{ background: barcodeMode ? '#c33' : '#444' }}>
-            {barcodeMode ? 'Stop Scan' : 'Scan Barcode'}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -7,8 +7,20 @@ export class CreateInventoryItemUseCase {
   constructor(private readonly repo: IInventoryRepository) {}
 
   async execute(dto: CreateInventoryItemDTO): Promise<string> {
-    if (!dto.categoryId) throw new ValidationError('categoryId is required');
-    return this.repo.createSingleItem(dto);
+    // ✅ Validate required fields
+    if (!dto.categoryId) {
+      throw new Error('categoryId is required');
+    }
+
+    // ✅ Set defaults
+    const itemData: CreateInventoryItemDTO = {
+      ...dto,
+      quantity: dto.quantity || 1,
+      attributes: dto.attributes || {},
+      status: dto.status || 'I'
+    };
+
+    return await this.repo.createSingleItem(itemData);
   }
 
   async createInTransaction(client: PoolClient, dto: CreateInventoryItemDTO): Promise<string> {

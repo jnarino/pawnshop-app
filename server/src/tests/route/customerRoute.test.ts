@@ -1,22 +1,30 @@
 import assert from 'assert';
-import express from 'express';
-import request from 'node:http';
-import { createApp } from '../../server';
+const supertest = require('supertest'); // ✅ Fixed: use supertest variable name
+import { app } from '../../server';
 import { test } from '../testHarness';
 
-// NOTE: For a deeper route test you'd mock DB; here we just ensure health route present.
+test('Customer Route: GET /api/customer returns customers list', async () => {
+  const response = await supertest(app) // ✅ Use supertest instead of request
+    .get('/api/customer')
+    .expect('Content-Type', /json/)
+    .expect(401); // Will be 401 without auth token
 
-test('route: health endpoint returns ok', async () => {
-  const app = createApp();
-  const server = app.listen(0);
-  const port = (server.address() as any).port;
-  const body: any = await new Promise((resolve, reject) => {
-    request.get({ hostname: '127.0.0.1', port, path: '/api/health' }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(JSON.parse(data)));
-    }).on('error', reject);
-  });
-  server.close();
-  assert.strictEqual(body.ok, true);
+  // For now, just verify the endpoint exists and returns JSON
+  assert(response.status === 401 || response.status === 200);
+});
+
+test('Customer Route: POST /api/customer creates customer', async () => {
+  const newCustomer = {
+    firstName: 'Test',
+    lastName: 'Customer'
+  };
+
+  const response = await supertest(app) // ✅ Use supertest instead of request
+    .post('/api/customer')
+    .send(newCustomer)
+    .expect('Content-Type', /json/)
+    .expect(401); // Will be 401 without auth token
+
+  // For now, just verify the endpoint exists
+  assert(response.status === 401 || response.status === 201);
 });

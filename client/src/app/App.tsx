@@ -21,18 +21,18 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 function ElectronNavHandler() {
-	const navigate = useNavigate();
-	useEffect(() => {
-		// @ts-ignore preload injection
-		if (window.electronAPI?.onNavigate) {
-			// Avoid duplicate handlers: remove previous then add
-			const handler = (route: string) => {
-				if (route && typeof route === 'string') navigate(route);
-			};
-			window.electronAPI.onNavigate(handler);
-		}
-	}, [navigate]);
-	return null;
+  const navigate = useNavigate();
+  useEffect(() => {
+    // @ts-ignore preload injection
+    if (window.electronAPI?.onNavigate) {
+      // Avoid duplicate handlers: remove previous then add
+      const handler = (route: string) => {
+        if (route && typeof route === 'string') navigate(route);
+      };
+      window.electronAPI.onNavigate(handler);
+    }
+  }, [navigate]);
+  return null;
 }
 
 // Add this temporarily for debugging

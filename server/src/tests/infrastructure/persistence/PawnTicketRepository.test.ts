@@ -1,6 +1,8 @@
 import { Pool, PoolClient } from 'pg';
 import { CreatePawnTicketInput, PawnTicket } from '../../../domain/pawnTicket/PawnTicket';
-import { pool } from '../../../infrastructure/persistence/db';
+import { pool } from '../../../infrastructure/db'; // ✅ Fixed import path
+import { test } from '../../testHarness';
+import assert from 'assert';
 
 export class PawnTicketRepository {
     // ...existing methods...
