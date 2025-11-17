@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import './NewPawnTab.css';
 import PawnTicketForm from './components/PawnTicketForm';
 import type { InventoryItemDraft } from './components/InventoryItemModal';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface NewPawnTabProps {
   onTicketCreated?: (ticketId: string) => void;
@@ -43,20 +43,29 @@ export default function NewPawnTab({ onTicketCreated }: NewPawnTabProps) {
   }, [onTicketCreated]);
 
   return (
-    <div className="tab-content">
+    <div className="max-w-[1200px] mx-auto bg-white">
       {success && (
-        <div className="status-message status-success">
-          ✅ {success}
-        </div>
+        <Alert className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <AlertDescription className="text-green-800 flex items-center gap-2">
+            <span className="text-lg">✅</span> {success}
+          </AlertDescription>
+        </Alert>
       )}
 
       {error && (
-        <div className="status-message status-error">
-          ❌ {error}
-        </div>
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription className="flex items-center gap-2">
+            <span className="text-lg">❌</span> {error}
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className={isSubmitting ? 'form-loading' : ''}>
+      <div className={isSubmitting ? 'opacity-60 pointer-events-none relative' : ''}>
+        {isSubmitting && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-3 rounded-lg shadow-lg font-medium text-gray-700">
+            Processing...
+          </div>
+        )}
         <PawnTicketForm
           onSubmit={handleSubmit}
           disabled={isSubmitting}

@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import './PrintLabelsModal.css';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PrintItem {
   id: string;
@@ -50,100 +54,88 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
     setLabelCounts(reset);
   };
 
-  if (!open) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="print-labels-modal">
-        <div className="modal-header">
-          <h3>Enter # of PAWN Labels</h3>
-          <button 
-            type="button" 
-            className="modal-close"
-            onClick={onCancel}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Enter # of PAWN Labels</DialogTitle>
+        </DialogHeader>
 
-        <div className="modal-content">
-          <div style={{ 
-            padding: '12px', 
-            backgroundColor: '#d4edda', 
-            border: '1px solid #c3e6cb', 
-            borderRadius: '4px', 
-            marginBottom: '16px',
-            fontSize: '14px'
-          }}>
-            📄 <strong>Pawn ticket form is printing...</strong><br />
-            Select label quantities below and click "Print Labels" to complete the transaction.
-          </div>
+        <div className="space-y-4">
+          <Alert className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+            <AlertDescription className="text-sm">
+              📄 <strong>Pawn ticket form is printing...</strong><br />
+              Select label quantities below and click "Print Labels" to complete the transaction.
+            </AlertDescription>
+          </Alert>
 
-          <div className="labels-table-container">
-            <table className="labels-table">
-              <thead>
-                <tr>
-                  <th># Labels</th>
-                  <th>Quantity</th>
-                  <th>Description of Item</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[120px]"># Labels</TableHead>
+                  <TableHead className="w-[100px]">Quantity</TableHead>
+                  <TableHead>Description of Item</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <input
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Input
                         type="number"
                         min="0"
                         max="99"
                         value={labelCounts[item.id] || 1}
                         onChange={(e) => updateLabelCount(item.id, parseInt(e.target.value) || 0)}
-                        className="label-count-input"
+                        className="w-20 h-8 text-center"
                       />
-                    </td>
-                    <td>{item.quantity || 1}.00</td>
-                    <td className="item-description">
+                    </TableCell>
+                    <TableCell>{item.quantity || 1}.00</TableCell>
+                    <TableCell className="uppercase font-medium">
                       {item.description.toUpperCase()}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
-          <div className="modal-actions">
-            <button 
-              type="button" 
-              onClick={handlePrint}
-              className="btn-primary"
-              disabled={getTotalLabels() === 0}
-            >
-              Print Labels & Complete
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={handleReset}
-              className="btn-secondary"
-            >
-              Reset
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={onCancel}
-              className="btn-secondary"
-            >
-              Skip Labels
-            </button>
-          </div>
-
-          <div className="labels-summary">
-            Total Labels: <strong>{getTotalLabels()}</strong>
+          <div className="flex justify-between items-center gap-3 pt-2">
+            <div className="text-sm">
+              Total Labels: <strong className="text-lg">{getTotalLabels()}</strong>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+              >
+                Reset
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="secondary"
+                size="sm"
+                onClick={onCancel}
+              >
+                Skip Labels
+              </Button>
+              
+              <Button 
+                type="button" 
+                onClick={handlePrint}
+                disabled={getTotalLabels() === 0}
+                size="sm"
+              >
+                Print Labels & Complete
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

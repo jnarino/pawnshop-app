@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
-import './PawnTicketForm.css';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Props {
   onSubmit: (formData: {
@@ -103,95 +106,114 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   }, 0);
 
   return (
-    <div className="pawn-ticket-form">
+    <div className="flex flex-col gap-6">
       <form onSubmit={handleSubmit}>
-        {/* Items Section - Now starts immediately */}
-        <div className="items-section">
-          <div className="items-header">
-            <h3 className="section-title">📦 Items ({formData.items.length})</h3>
-            <button
+        {/* Items Section */}
+        <Card className="border-2">
+          <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              📦 Items <Badge variant="secondary">{formData.items.length}</Badge>
+            </CardTitle>
+            <Button
               type="button"
-              className="add-item-btn"
               onClick={() => setShowItemModal(true)}
               disabled={disabled}
+              size="sm"
             >
               ➕ Add Item
-            </button>
-          </div>
+            </Button>
+          </CardHeader>
 
-          <div className="items-list">
-            {formData.items.length === 0 ? (
-              <div className="empty-state">
-                No items added yet. Click "Add Item" to get started.
-              </div>
-            ) : (
-              formData.items.map((item) => (
-                <div key={item.id} className="item-row">
-                  <div className="item-details">
-                    <div>
-                      <strong>{item.type}</strong>
-                      {item.brand && <div>Brand: {item.brand}</div>}
-                      {item.model && <div>Model: {item.model}</div>}
-                    </div>
-                    <div>Qty: {item.quantity || 1}</div>
-                    <div>${Number(item.amount || 0).toFixed(2)}</div>
-                    <div>${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</div>
-                  </div>
-                  <div className="item-actions">
-                    <button
-                      type="button"
-                      className="btn-icon btn-edit"
-                      onClick={() => handleEditItem(item)}
-                      disabled={disabled}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-icon btn-remove"
-                      onClick={() => handleRemoveItem(item.id!)}
-                      disabled={disabled}
-                    >
-                      🗑️
-                    </button>
-                  </div>
+          <CardContent className="p-0">
+            <ScrollArea className="max-h-[400px]">
+              {formData.items.length === 0 ? (
+                <div className="py-10 text-center text-gray-500">
+                  No items added yet. Click "Add Item" to get started.
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              ) : (
+                <div className="divide-y">
+                  {formData.items.map((item) => (
+                    <div key={item.id} className="px-5 py-4 flex justify-between items-center hover:bg-slate-50">
+                      <div className="grid grid-cols-4 gap-4 items-center flex-1">
+                        <div>
+                          <div className="font-semibold">{item.type}</div>
+                          {item.brand && <div className="text-sm text-gray-600">Brand: {item.brand}</div>}
+                          {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
+                        </div>
+                        <div className="text-sm">Qty: {item.quantity || 1}</div>
+                        <div className="text-sm">${Number(item.amount || 0).toFixed(2)}</div>
+                        <div className="font-semibold">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEditItem(item)}
+                          disabled={disabled}
+                          className="h-8 w-8"
+                        >
+                          ✏️
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleRemoveItem(item.id!)}
+                          disabled={disabled}
+                          className="h-8 w-8"
+                        >
+                          🗑️
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
 
         {/* Summary */}
         {formData.items.length > 0 && (
-          <div className="summary-section">
-            <h3 className="section-title">📊 Summary</h3>
-            <div className="summary-row">
-              <span>Total Items:</span>
-              <span>{formData.items.length}</span>
-            </div>
-            <div className="summary-row">
-              <span>Total Value:</span>
-              <span>${totalValue.toFixed(2)}</span>
-            </div>
-            <div className="summary-row summary-total">
-              <span>Transaction Amount:</span>
-              <span>
-                ${formData.type === 'PAWN'
-                  ? Number(formData.amountFinanced || 0).toFixed(2)
-                  : Number(formData.purchaseTradeValue || 0).toFixed(2)
-                }
-              </span>
-            </div>
-          </div>
+          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                📊 Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Total Items:</span>
+                <span className="font-medium">{formData.items.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Total Value:</span>
+                <span className="font-medium">${totalValue.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-semibold border-t-2 border-sky-300 pt-2 mt-2">
+                <span>Transaction Amount:</span>
+                <span>
+                  ${formData.type === 'PAWN'
+                    ? Number(formData.amountFinanced || 0).toFixed(2)
+                    : Number(formData.purchaseTradeValue || 0).toFixed(2)
+                  }
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        <button
-          type="submit"
-          className="submit-btn"
-          disabled={disabled || formData.items.length === 0}
-        >
-          {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
-        </button>
+        <div className="flex justify-center">
+          <Button
+            type="submit"
+            disabled={disabled || formData.items.length === 0}
+            size="lg"
+            className="px-8"
+          >
+            {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
+          </Button>
+        </div>
       </form>
 
       {/* ✅ Horizontal Modal */}
