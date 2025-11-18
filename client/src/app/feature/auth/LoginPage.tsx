@@ -1,8 +1,13 @@
 // src/app/feature/auth/LoginPage.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { login } from '@/app/core/auth/authService';
-import './LoginPage.css';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // ✅ Single Responsibility: Handle Electron notifications safely
 const notifyElectronAuth = (authenticated: boolean): void => {
@@ -79,80 +84,89 @@ export default function LoginPage() {
   const isFormValid = username.trim() && password.trim() && !loading;
 
   return (
-    <div className="login-overlay">
-      <div className="login-backdrop" aria-hidden="true" />
-      <dialog open className="login-dialog">
+    <div className="fixed inset-0 grid place-items-center z-[9999]">
+      <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
+      <Card className="relative z-[10000] w-[360px] max-w-[90vw] shadow-2xl">
         <form onSubmit={onSubmit}>
-          <h1 className="login-title">PawnExpress</h1>
-          <p className="login-subtitle">Sign in to continue</p>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">PawnExpress</CardTitle>
+            <CardDescription>Sign in to continue</CardDescription>
+          </CardHeader>
 
-          {error && (
-            <div className="login-error" role="alert">
-              {error}{' '}
-              <button
-                type="button"
-                className="underline"
-                onClick={clearError}
-                aria-label="Dismiss error message"
-              >
-                dismiss
-              </button>
-            </div>
-          )}
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    className="underline text-xs ml-2"
+                    onClick={clearError}
+                    aria-label="Dismiss error message"
+                  >
+                    dismiss
+                  </button>
+                </AlertDescription>
+              </Alert>
+            )}
 
-          <label className="login-label">
-            <span>Username</span>
-            <input
-              className="login-input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoFocus
-              autoComplete="username"
-              disabled={loading}
-              required
-              aria-describedby={error ? "error-message" : undefined}
-            />
-          </label>
-
-          <label className="login-label">
-            <span>Password</span>
-            <div className="login-pw-wrap">
-              <input
-                className="login-input pw"
-                type={showPw ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+                autoComplete="username"
                 disabled={loading}
                 required
                 aria-describedby={error ? "error-message" : undefined}
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="login-pw-toggle"
-                aria-label={showPw ? 'Hide password' : 'Show password'}
-                disabled={loading}
-              >
-                {showPw ? '🙈' : '👁️'}
-              </button>
             </div>
-          </label>
 
-          <button
-            type="submit"
-            className="login-button"
-            disabled={!isFormValid}
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  disabled={loading}
+                  required
+                  className="pr-10"
+                  aria-describedby={error ? "error-message" : undefined}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  disabled={loading}
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
 
-          <div className="login-foot">
-            <p className="text-sm text-gray-600">Default: admin / admin</p>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!isFormValid}
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </Button>
+          </CardContent>
+
+          <CardFooter className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+            <p>Default: admin / admin</p>
             <p>© {new Date().getFullYear()} PawnExpress</p>
-          </div>
+          </CardFooter>
         </form>
-      </dialog>
+      </Card>
     </div>
   );
 }

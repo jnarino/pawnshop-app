@@ -55,9 +55,9 @@ export function SearchResultsModal({
         )}
 
         {!loading && !isCompact && results.length > 0 && (
-          <div className="max-h-[60vh] overflow-auto">
+          <div className="border rounded-md max-h-[50vh] overflow-auto">
             <table className="w-full border-collapse text-sm">
-              <thead className="border-b">
+              <thead className="border-b sticky top-0 bg-background z-10">
                 <tr className="bg-muted/50">
                   <th className="p-2 text-left font-semibold">Name</th>
                   <th className="p-2 text-left font-semibold">DOB</th>
