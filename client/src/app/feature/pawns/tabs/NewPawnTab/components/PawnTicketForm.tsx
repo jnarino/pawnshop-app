@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
+import TransactionDetails from './TransactionDetails';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, addDays } from 'date-fns';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
@@ -17,6 +19,9 @@ interface Props {
     amountFinanced?: number;
     purchaseTradeValue?: number;
     periodicRate?: number;
+    transactionDate?: string;
+    maturityDate?: string;
+    expirationDate?: string;
     items: InventoryItemDraft[];
   }) => Promise<void>;
   disabled?: boolean;
@@ -30,7 +35,10 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     type: 'PAWN' as 'PAWN' | 'PURCHASE',
     amountFinanced: '',
     purchaseTradeValue: '',
-    periodicRate: '0.25',
+    periodicRate: '25',
+    transactionDate: format(new Date(), 'yyyy-MM-dd'),
+    maturityDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    expirationDate: format(addDays(new Date(), 60), 'yyyy-MM-dd'),
     items: [] as InventoryItemDraft[]
   });
 
@@ -63,6 +71,9 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
       amountFinanced: formData.amountFinanced ? Number(formData.amountFinanced) : undefined,
       purchaseTradeValue: formData.purchaseTradeValue ? Number(formData.purchaseTradeValue) : undefined,
       periodicRate: Number(formData.periodicRate),
+      transactionDate: formData.transactionDate,
+      maturityDate: formData.maturityDate,
+      expirationDate: formData.expirationDate,
       items: formData.items
     };
 
@@ -113,6 +124,23 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
+        {/* Transaction Details Card */}
+        <TransactionDetails
+          type={formData.type}
+          amountFinanced={formData.amountFinanced}
+          periodicRate={formData.periodicRate}
+          transactionDate={formData.transactionDate}
+          maturityDate={formData.maturityDate}
+          expirationDate={formData.expirationDate}
+          totalValue={totalValue}
+          onTypeChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+          onAmountFinancedChange={(value) => setFormData(prev => ({ ...prev, amountFinanced: value }))}
+          onPeriodicRateChange={(value) => setFormData(prev => ({ ...prev, periodicRate: value }))}
+          onTransactionDateChange={(value) => setFormData(prev => ({ ...prev, transactionDate: value }))}
+          onMaturityDateChange={(value) => setFormData(prev => ({ ...prev, maturityDate: value }))}
+          onExpirationDateChange={(value) => setFormData(prev => ({ ...prev, expirationDate: value }))}
+        />
+
         {/* Items Section */}
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
@@ -184,32 +212,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
           </CardContent>
         </Card>
 
-        {/* Summary */}
-        {formData.items.length > 0 && (
-          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200 mt-6 max-w-md ml-auto">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <img src={overviewIcon} alt="Summary" className="w-5 h-5" /> Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Total Items:</span>
-                <span className="font-medium">{formData.items.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Total Value:</span>
-                <span className="font-medium">${totalValue.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-semibold border-t-2 border-sky-300 pt-2 mt-2">
-                <span>Transaction Amount:</span>
-                <span>
-                  ${formData.type === 'PAWN'
-                    ? Number(formData.amountFinanced || 0).toFixed(2)
-                    : Number(formData.purchaseTradeValue || 0).toFixed(2)
-                  }
-                </span>
-              </div>
+        {formData.type === 'PAWN' && formData.items.length > 0 && (
+          <Card className="mt-4 border-2 border-slate-200 bg-slate-50 max-w-xs ml-auto">
+            <CardContent className="p-4 flex justify-between items-center">
+              <span className="font-semibold text-gray-700">Total Item Value:</span>
+              <span className="text-xl font-bold text-slate-900">${totalValue.toFixed(2)}</span>
             </CardContent>
           </Card>
         )}

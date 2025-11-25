@@ -35,14 +35,17 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     suggestions,
     isLoading,
     subtypes,
+    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
     selectType,
+    handleSubtypeChange,
     handleSubmit,
-    handleMetalChange
+    handleMetalChange,
+    categories
   } = useInventoryItemForm({ open, initial, onSave });
 
   return (
@@ -65,12 +68,15 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               draft={draft}
               subtypes={subtypes}
               updateField={updateField}
+              handleSubtypeChange={handleSubtypeChange}
+              allCategories={categories}
             />
             
             <BasicInfoFields
               draft={draft}
               updateField={updateField}
               isFirearm={isFirearm}
+              brandOptions={brandOptions}
             />
 
             {!isJewelry && !isFirearm && <div></div>}
@@ -82,6 +88,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 handleMetalChange={handleMetalChange}
                 karatOptions={karatOptions}
                 isRing={isRing}
+                styleOptions={brandOptions}
               />
             )}
             

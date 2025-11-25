@@ -59,7 +59,6 @@ function PawnsWorkspaceContent() {
 
         <TabsContent value="newPawn" className="flex-1 min-h-0 pt-4">
           <NewPawnTab 
-            customerId={customerId}
             customer={customer}
           />
         </TabsContent>

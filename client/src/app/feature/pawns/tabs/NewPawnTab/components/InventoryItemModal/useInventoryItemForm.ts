@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
-import { useSubtypeMapping } from '@/app/shared/hooks/useSubtypeMapping';
 import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft, DEFAULT_ITEM } from './types';
 
@@ -19,9 +18,37 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const categoriesHook = useInventoryCategories();
-  const categories = categoriesHook?.leafCategories || [];
+  const categories = categoriesHook?.rootCategories || [];
+  const allCategories = categoriesHook?.categories || [];
+  const buildCategoryTree = categoriesHook?.buildCategoryTree;
   const isLoading = categoriesHook?.loading || false;
-  const subtypes = useSubtypeMapping(draft.type);
+
+  // Find selected category object
+  const selectedCategory = useMemo(() => 
+    allCategories.find(c => c.name.toUpperCase() === draft.type?.toUpperCase()),
+    [allCategories, draft.type]
+  );
+  
+  // Get subtypes (children of selected category)
+  const subtypes = useMemo(() => {
+    if (!selectedCategory?.id || !buildCategoryTree) return [];
+    return buildCategoryTree(selectedCategory.id).map(c => c.name);
+  }, [selectedCategory, buildCategoryTree]);
+
+  // Find selected subtype object
+  const selectedSubtype = useMemo(() => 
+    allCategories.find(c => 
+      c.name.toUpperCase() === draft.sub1?.toUpperCase() && 
+      c.parent_id === selectedCategory?.id
+    ),
+    [allCategories, draft.sub1, selectedCategory]
+  );
+
+  // Get brand options (children of selected subtype)
+  const brandOptions = useMemo(() => {
+    if (!selectedSubtype?.id || !buildCategoryTree) return [];
+    return buildCategoryTree(selectedSubtype.id).map(c => c.name);
+  }, [selectedSubtype, buildCategoryTree]);
 
   // Initialize form data
   useEffect(() => {
@@ -52,7 +79,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   // Category type detection
   const isJewelry = draft.type.toLowerCase().includes('jewelry');
   const isFirearm = draft.type.toLowerCase().includes('firearm');
-  const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
+  const isRing = isJewelry && (draft.type.toLowerCase().includes('ring') || draft.sub1?.toLowerCase().includes('ring'));
 
   // Karat options based on metal
   const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
@@ -71,8 +98,18 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   // Type selection
   const selectType = useCallback((categoryName: string) => {
     updateField('type', categoryName);
+    updateField('sub1', ''); // Clear subtype
+    updateField('brand', ''); // Clear brand
+    updateField('style', ''); // Clear style
     setTypeQuery(categoryName);
     setShowSuggestions(false);
+  }, [updateField]);
+
+  // Subtype selection
+  const handleSubtypeChange = useCallback((subtype: string) => {
+    updateField('sub1', subtype);
+    updateField('brand', ''); // Clear brand
+    updateField('style', ''); // Clear style
   }, [updateField]);
 
   // Barcode scanning
@@ -146,13 +183,15 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     suggestions,
     isLoading,
     subtypes,
+    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
     selectType,
+    handleSubtypeChange,
     handleSubmit,
-    handleMetalChange
+    handleMetalChange,
   };
 }

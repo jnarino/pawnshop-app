@@ -10,11 +10,37 @@ interface JewelryFieldsProps {
   handleMetalChange: (metal: string) => void;
   karatOptions: readonly string[];
   isRing: boolean;
+  styleOptions?: string[];
 }
 
-export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing }: JewelryFieldsProps) {
+export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing, styleOptions = [] }: JewelryFieldsProps) {
   return (
     <>
+      <div className="space-y-1 col-span-3">
+        <Label className="text-xs font-semibold">Style</Label>
+        {styleOptions.length > 0 ? (
+          <Select value={draft.style || ''} onValueChange={(value) => updateField('style', value)}>
+            <SelectTrigger className="h-8 text-xs uppercase">
+              <SelectValue placeholder="SELECT STYLE..." />
+            </SelectTrigger>
+            <SelectContent>
+              {styleOptions.map((style) => (
+                <SelectItem key={style} value={style.toUpperCase()} className="text-xs uppercase">
+                  {style.toUpperCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            value={draft.style || ''}
+            onChange={(e) => updateField('style', e.target.value)}
+            placeholder="STYLE"
+            className="uppercase text-xs h-8"
+          />
+        )}
+      </div>
+
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">
           Metal <span className="text-red-600">*</span>
@@ -79,10 +105,10 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             onChange={(e) => updateField('weight', e.target.value)}
             placeholder="5.25"
             required
-            className="max-w-[70px] h-8 text-xs font-semibold text-amber-600"
+            className="max-w-[70px] h-8 text-xs font-semibold text-black"
           />
           <Select 
-            value={draft.weightUnit || 'Grams'} 
+            value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
             onValueChange={(value) => updateField('weightUnit', value)}
           >
             <SelectTrigger className="min-w-[65px] h-8 text-[11px]">
@@ -90,7 +116,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             </SelectTrigger>
             <SelectContent>
               {WEIGHT_UNITS.map(unit => (
-                <SelectItem key={unit} value={unit} className="text-xs">
+                <SelectItem key={unit} value={unit.toUpperCase()} className="text-xs">
                   {unit}
                 </SelectItem>
               ))}
@@ -101,13 +127,13 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Gender</Label>
-        <Select value={draft.gender || ''} onValueChange={(value) => updateField('gender', value)}>
+        <Select value={draft.gender?.toUpperCase() || ''} onValueChange={(value) => updateField('gender', value)}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT..." />
           </SelectTrigger>
           <SelectContent>
             {GENDER_OPTIONS.map(g => (
-              <SelectItem key={g} value={g} className="text-xs">
+              <SelectItem key={g} value={g.toUpperCase()} className="text-xs">
                 {g}
               </SelectItem>
             ))}
@@ -131,12 +157,18 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             </SelectContent>
           </Select>
         ) : (
-          <Input
-            value={draft.sizeLength || ''}
-            onChange={(e) => updateField('sizeLength', e.target.value)}
-            placeholder="LENGTH (INCHES)"
-            className="uppercase text-xs h-8"
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              step="0.25"
+              min="0"
+              value={draft.sizeLength || ''}
+              onChange={(e) => updateField('sizeLength', e.target.value)}
+              placeholder="0"
+              className="text-xs h-8 pr-6"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold">"</span>
+          </div>
         )}
       </div>
     </>
