@@ -11,73 +11,15 @@ interface NewPawnTabProps {
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
-  const { createTicket, isLoading, error, success } = useCreatePawnTicket();
+  const { isLoading, error, success } = useCreatePawnTicket();
   const customerId = customer?.id;
 
-  const handleSubmit = useCallback(async (formData: {
-    customerId: string;
-    type: 'PAWN' | 'PURCHASE';
-    amountFinanced?: number;
-    purchaseTradeValue?: number;
-    periodicRate?: number;
-    transactionDate?: string;
-    maturityDate?: string;
-    expirationDate?: string;
-    items: InventoryItemDraft[];
-  }) => {
-    if (!customerId) {
-      // We can handle this validation here or let the hook/service handle it if appropriate
-      // For now, let's just alert or log, but ideally the form shouldn't submit without a customer
-      console.error("No customer selected");
-      return;
+  const handleSuccess = useCallback((data: any) => {
+    const ticketId = data.id || data.pawnTicket?.id;
+    if (onTicketCreated && ticketId) {
+      onTicketCreated(ticketId);
     }
-
-    try {
-      const payload = {
-        customerId: customerId,
-        type: formData.type,
-        amountFinanced: formData.amountFinanced,
-        periodicRate: formData.periodicRate,
-        purchaseTradeValue: formData.purchaseTradeValue,
-        transactionDate: formData.transactionDate ? new Date(formData.transactionDate).toISOString() : new Date().toISOString(),
-        maturityDate: formData.maturityDate,
-        defaultDate: formData.expirationDate, // Map expirationDate to defaultDate
-        newInventoryItems: formData.items.map(item => ({
-          categoryId: item.type, // Assuming type is categoryId
-          brand: item.brand,
-          model: item.model,
-          serialNumber: item.serial,
-          colorId: item.color,
-          itemCondition: item.condition,
-          quantity: Number(item.quantity),
-          priceAmount: Number(item.amount),
-          resale: Number(item.resale),
-          itemReplace: Number(item.replace),
-          ownerMark: item.ownerNumber,
-          itemDescription: item.description,
-          attributes: {
-            metal: item.metal,
-            karat: item.karat,
-            weight: item.weight,
-            weightUnit: item.weightUnit,
-            gender: item.gender,
-            style: item.style,
-            sizeLength: item.sizeLength,
-            caliber: item.caliber,
-            action: item.action,
-            barrelLength: item.barrelLength,
-            capacity: item.capacity
-          }
-        }))
-      };
-
-      const ticketId = await createTicket(payload);
-      onTicketCreated?.(ticketId);
-      
-    } catch (err) {
-      console.error('Error creating pawn ticket:', err);
-    }
-  }, [customerId, onTicketCreated, createTicket]);
+  }, [onTicketCreated]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -104,7 +46,8 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
-          onSubmit={handleSubmit}
+          customerId={customerId || ''}
+          onSuccess={handleSuccess}
           disabled={isLoading}
         />
       </div>

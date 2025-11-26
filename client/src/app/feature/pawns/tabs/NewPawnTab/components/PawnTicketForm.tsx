@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
 import TransactionDetails from './TransactionDetails';
 import { Button } from '@/components/ui/button';
@@ -11,27 +12,29 @@ import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 import overviewIcon from '@/assets/icons/overview.svg';
+import { http } from '@/app/core/api/http';
+import { useCategoryLookup } from '../hooks/useCategoryLookup';
 
 interface Props {
-  onSubmit: (formData: {
-    customerId: string;
-    type: 'PAWN' | 'PURCHASE';
-    amountFinanced?: number;
-    purchaseTradeValue?: number;
-    periodicRate?: number;
-    transactionDate?: string;
-    maturityDate?: string;
-    expirationDate?: string;
-    items: InventoryItemDraft[];
-  }) => Promise<void>;
+  customerId: string;
+  onSuccess?: (data: any) => void;
   disabled?: boolean;
 }
 
+function buildDescription(it: InventoryItemDraft): string {
+  if (it.description) return it.description.substring(0, 200);
+  const parts = [it.brand, it.model, it.color, it.style].filter(Boolean);
+  return parts.join(' ').substring(0, 200);
+}
+
 // ✅ Single Responsibility: Pawn ticket form with inventory management
-export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
+export default function PawnTicketForm({ customerId, onSuccess, disabled = false }: Props) {
+  const navigate = useNavigate();
+  const { getCategoryIdByPath } = useCategoryLookup();
+  const [saving, setSaving] = useState(false);
+
   // ✅ Form state with proper initialization
   const [formData, setFormData] = useState({
-    customerId: 'temp-customer', // ✅ Temporary - remove customer selection for now
     type: 'PAWN' as 'PAWN' | 'PURCHASE',
     amountFinanced: '',
     purchaseTradeValue: '',
@@ -64,21 +67,94 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
       return;
     }
 
-    // ✅ Convert string values to numbers
-    const submitData = {
-      customerId: formData.customerId,
-      type: formData.type,
-      amountFinanced: formData.amountFinanced ? Number(formData.amountFinanced) : undefined,
-      purchaseTradeValue: formData.purchaseTradeValue ? Number(formData.purchaseTradeValue) : undefined,
-      periodicRate: Number(formData.periodicRate),
-      transactionDate: formData.transactionDate,
-      maturityDate: formData.maturityDate,
-      expirationDate: formData.expirationDate,
-      items: formData.items
-    };
+    setSaving(true);
+    try {
+      // ✅ 1. Prepare Items
+      const newInventoryItems = formData.items.map(it => {
+        const categoryId = getCategoryIdByPath(it.type);
+        
+        // Note: In a real app, we should probably validate categoryId here
+        // if (!categoryId) throw new Error(`Invalid category: ${it.type}`);
 
-    await onSubmit(submitData);
-  }, [formData, onSubmit]);
+        return {
+          categoryId: categoryId || it.type, // Fallback to type string if lookup fails (or handle error)
+          brand: it.brand || undefined,
+          model: it.model || undefined,
+          serialNumber: it.serial || undefined,
+          colorId: null, // Will be set when color lookup is implemented
+          itemCondition: it.condition || 'Good',
+          quantity: parseInt(it.quantity || '1') || 1,
+          priceAmount: it.amount ? Number(it.amount) : undefined,
+          resale: it.resale ? Number(it.resale) : undefined,
+          minResale: undefined,
+          itemReplace: it.replace ? Number(it.replace) : undefined,
+          ownerMark: it.ownerNumber || undefined,
+          itemDescription: buildDescription(it),
+          attributes: {
+            brand: it.brand,
+            model: it.model,
+            serial: it.serial,
+            color: it.color,
+            ownerNumber: it.ownerNumber,
+            metal: it.metal,
+            karat: it.karat,
+            weight: it.weight,
+            weightUnit: it.weightUnit,
+            gender: it.gender,
+            style: it.style,
+            sizeLength: it.sizeLength,
+            caliber: it.caliber,
+            action: it.action,
+            barrelLength: it.barrelLength,
+            capacity: it.capacity
+          },
+          extra: {},
+        };
+      });
+
+      // ✅ 2. Prepare Payload
+      const body: any = {
+        type: formData.type,
+        customerId: customerId, // Use prop directly
+        newInventoryItems,
+        transactionDate: formData.transactionDate ? new Date(formData.transactionDate).toISOString() : new Date().toISOString(),
+        maturityDate: formData.maturityDate ? new Date(formData.maturityDate).toISOString() : undefined,
+        defaultDate: formData.expirationDate ? new Date(formData.expirationDate).toISOString() : undefined,
+      };
+
+      // ✅ 3. Business Logic (PAWN vs PURCHASE)
+      if (formData.type === 'PAWN') {
+        body.amountFinanced = Number(formData.amountFinanced);
+        body.periodicRate = (Number(formData.periodicRate) || 0) / 100;
+      } else if (formData.type === 'PURCHASE') {
+        body.purchaseTradeValue = Number(formData.purchaseTradeValue);
+      }
+
+      console.log('[PawnTicket] Submitting:', body);
+
+      // ✅ 4. API Call
+      const data = await http('/api/pawnTicket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      console.log('[PawnTicket] Created:', data);
+      
+      if (onSuccess) {
+        onSuccess(data);
+      } else {
+        alert('Transaction created successfully!');
+        // navigate('/'); // Redirect if needed
+      }
+
+    } catch (error: any) {
+      console.error('Submission failed:', error);
+      alert(`Error: ${error.message || 'Failed to create transaction'}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [formData, getCategoryIdByPath, onSuccess, customerId]);
 
   // ✅ Add or update item
   const handleSaveItem = useCallback((item: InventoryItemDraft) => {
