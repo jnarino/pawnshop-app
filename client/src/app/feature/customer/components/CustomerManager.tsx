@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import CustomerPicker from './CustomerPicker';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import CustomerPicker, { type CustomerPickerRef } from './CustomerPicker';
 import type { Customer } from '../types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { EmployerInfoSection } from './sections/EmployerInfoSection';
@@ -8,20 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
-
-export interface CustomerPickerRef {
-  handleSearch: () => void;
-  handleClearAll: () => void;
-  handleAddNew: () => void;
-  handleScanId: () => void;
-  handleSaveNew: () => void;
-  handleUpdateExisting: () => void;
-  editingNew: boolean;
-  editingExisting: boolean;
-  loading: boolean;
-  saving: boolean;
-  disableSearch: boolean;
-}
+import { recordToDto } from '../mappers';
 
 export interface CustomerManagerProps {
   // Estado
@@ -81,37 +68,46 @@ export default function CustomerManager({
     disableSearch: true,
   });
 
+  const [draftCustomer, setDraftCustomer] = useState<Customer | null>(null);
   const [accordionValue, setAccordionValue] = useState<string[]>(defaultOpenSections);
 
-  const handleCustomerChange = (c: Customer | null) => {
+  const handleCustomerChange = useCallback((c: Customer | null) => {
     onCustomerChange(c);
     
     // If clearing customer (Cancel button), close additional-info section
     if (!c) {
       setAccordionValue(prev => prev.filter(section => section !== 'additional-info'));
+      setDraftCustomer(null);
     }
-  };
+  }, [onCustomerChange]);
 
-  const handleCustomerSelected = (id: string) => {
+  const handleFormChange = useCallback((data: import('../mappers').CustomerRecord) => {
+    if (pickerState.editingNew) {
+      setDraftCustomer(recordToDto(data, ''));
+    }
+  }, [pickerState.editingNew]);
+
+  const handleCustomerSelected = useCallback((id: string) => {
     onCustomerSelected?.(id);
-  };
+  }, [onCustomerSelected]);
 
-  const handleUpdate = <K extends keyof Customer>(field: K, value: Customer[K]) => {
+  const handleUpdate = useCallback(<K extends keyof Customer>(field: K, value: Customer[K]) => {
     if (customer) {
       const updatedCustomer = { ...customer, [field]: value };
       onCustomerChange(updatedCustomer);
       onCustomerSaved?.(updatedCustomer);
+    } else if (pickerRef.current) {
+      pickerRef.current.updateFormField(field as any, value as any);
     }
-  };
+  }, [customer, onCustomerChange, onCustomerSaved]);
 
-  // Determine the mode for Additional Information section
-  const isSearchMode = !pickerState.editingNew && !pickerState.editingExisting && !customer;
-  const shouldDisableAdditionalInfo = isSearchMode;
+  const mode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
+  const displayCustomer = customer || (mode === 'create' ? draftCustomer : null);
 
   return (
     <div className={`h-full w-full flex flex-col ${className}`}>
       <div className="flex-1 overflow-y-auto min-h-0">
-        {showAlertWhenEmpty && !customer && !pickerState.editingNew && (
+        {showAlertWhenEmpty && mode === 'search' && (
           <div className="px-4 pt-1">
             <Alert variant="info">
               <Info className="h-3.5 w-3.5" />
@@ -130,6 +126,7 @@ export default function CustomerManager({
                 ref={pickerRef}
                 value={customer}
                 onChange={handleCustomerChange}
+                onFormChange={handleFormChange}
                 onSelected={handleCustomerSelected}
                 onStateChange={setPickerState}
               />
@@ -139,7 +136,7 @@ export default function CustomerManager({
           {showAdditionalInfo && (
             <AccordionItem value="additional-info">
               <AccordionTrigger 
-                disabled={shouldDisableAdditionalInfo}
+                disabled={mode === 'search'}
                 className="px-4 text-base font-semibold"
               >
                 Additional Information
@@ -147,12 +144,12 @@ export default function CustomerManager({
               <AccordionContent className="px-4">
                 <div className="grid grid-cols-2 gap-4">
                   <EmployerInfoSection 
-                    customer={customer} 
+                    customer={displayCustomer} 
                     onUpdate={handleUpdate}
                   />
                   
                   <ComplianceSection 
-                    customer={customer} 
+                    customer={displayCustomer} 
                     onUpdate={handleUpdate}
                   />
                 </div>
@@ -169,7 +166,7 @@ export default function CustomerManager({
           </div>
 
           <div className="flex gap-2 items-center">
-            {!pickerState.editingNew && !pickerState.editingExisting && (
+            {mode === 'search' && (
               <>
                 <Button 
                   type="button" 
@@ -205,7 +202,7 @@ export default function CustomerManager({
                 </Button>
               </>
             )}
-            {pickerState.editingNew && (
+            {mode === 'create' && (
               <>
                 <Button 
                   type="submit" 
@@ -224,14 +221,14 @@ export default function CustomerManager({
                 </Button>
               </>
             )}
-            {pickerState.editingExisting && (
+            {mode === 'update' && (
               <>
                 <Button 
                   type="submit" 
                   form="customer-search-form"
                   disabled={pickerState.saving}
                 >
-                  {pickerState.saving ? 'Saving…' : 'Save'}
+                  {pickerState.saving ? 'Updating…' : 'Update Customer'}
                 </Button>
                 <Button 
                   type="button" 
@@ -239,7 +236,7 @@ export default function CustomerManager({
                   onClick={() => pickerRef.current?.handleClearAll()} 
                   disabled={pickerState.saving}
                 >
-                  Cancel
+                  Change Customer
                 </Button>
               </>
             )}

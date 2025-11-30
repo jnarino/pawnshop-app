@@ -22,6 +22,7 @@ interface Props {
   onCreateNew?(tempId: string): void;
   onSelected?(id: string): void;
   onCancelTransaction?(): void;
+  onFormChange?: (data: import('../mappers').CustomerRecord) => void;
   onStateChange?(state: {
     editingNew: boolean;
     editingExisting: boolean;
@@ -38,6 +39,7 @@ export interface CustomerPickerRef {
   handleScanId: () => void;
   handleSaveNew: () => void;
   handleUpdateExisting: () => void;
+  updateFormField: <K extends keyof import('../mappers').CustomerRecord>(field: K, value: import('../mappers').CustomerRecord[K]) => void;
   editingNew: boolean;
   editingExisting: boolean;
   loading: boolean;
@@ -45,7 +47,7 @@ export interface CustomerPickerRef {
   disableSearch: boolean;
 }
 
-const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange }, ref) => {
+const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange, onFormChange }, ref) => {
   const [editingNew, setEditingNew] = useState(false);
   const [editingExisting, setEditingExisting] = useState(false);
 
@@ -71,6 +73,11 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
       setEditingExisting(false);
     }
   }, [value]);
+
+  // Notify parent of form changes
+  useEffect(() => {
+    onFormChange?.(customerForm.form);
+  }, [customerForm.form, onFormChange]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -172,6 +179,7 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
     handleScanId,
     handleSaveNew,
     handleUpdateExisting,
+    updateFormField: customerForm.update,
     editingNew,
     editingExisting,
     loading: customerSearch.loading,
