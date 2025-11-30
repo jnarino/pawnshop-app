@@ -71,6 +71,10 @@ export default function CustomerManager({
   const [draftCustomer, setDraftCustomer] = useState<Customer | null>(null);
   const [accordionValue, setAccordionValue] = useState<string[]>(defaultOpenSections);
 
+  // Keep a ref to customer to avoid recreating handleUpdate on every change
+  const customerRef = useRef(customer);
+  useEffect(() => { customerRef.current = customer; }, [customer]);
+
   const handleCustomerChange = useCallback((c: Customer | null) => {
     onCustomerChange(c);
     
@@ -92,14 +96,14 @@ export default function CustomerManager({
   }, [onCustomerSelected]);
 
   const handleUpdate = useCallback(<K extends keyof Customer>(field: K, value: Customer[K]) => {
-    if (customer) {
-      const updatedCustomer = { ...customer, [field]: value };
+    if (customerRef.current) {
+      const updatedCustomer = { ...customerRef.current, [field]: value };
       onCustomerChange(updatedCustomer);
       onCustomerSaved?.(updatedCustomer);
     } else if (pickerRef.current) {
       pickerRef.current.updateFormField(field as any, value as any);
     }
-  }, [customer, onCustomerChange, onCustomerSaved]);
+  }, [onCustomerChange, onCustomerSaved]);
 
   const mode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
   const displayCustomer = customer || (mode === 'create' ? draftCustomer : null);
@@ -144,12 +148,22 @@ export default function CustomerManager({
               <AccordionContent className="px-4">
                 <div className="grid grid-cols-2 gap-4">
                   <EmployerInfoSection 
-                    customer={displayCustomer} 
+                    employerName={displayCustomer?.employerName}
+                    employerAddress={displayCustomer?.employerAddress}
+                    employerCity={displayCustomer?.employerCity}
+                    employerState={displayCustomer?.employerState}
+                    employerZip={displayCustomer?.employerZip}
+                    employerPhoneNumber={displayCustomer?.employerPhoneNumber}
                     onUpdate={handleUpdate}
                   />
                   
                   <ComplianceSection 
-                    customer={displayCustomer} 
+                    fflNumber={displayCustomer?.fflNumber}
+                    fflExpireDate={displayCustomer?.fflExpireDate}
+                    taxId={displayCustomer?.taxId}
+                    military={displayCustomer?.military}
+                    locked={displayCustomer?.locked}
+                    taxExempt={displayCustomer?.taxExempt}
                     onUpdate={handleUpdate}
                   />
                 </div>

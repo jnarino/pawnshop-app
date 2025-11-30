@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -5,11 +6,24 @@ import type { Customer } from '../../types';
 import { US_STATES } from '../../constants/customerConstants';
 
 interface EmployerInfoSectionProps {
-  readonly customer: Customer | null;
+  readonly employerName?: string | null;
+  readonly employerAddress?: string | null;
+  readonly employerCity?: string | null;
+  readonly employerState?: string | null;
+  readonly employerZip?: string | null;
+  readonly employerPhoneNumber?: string | null;
   readonly onUpdate: <K extends keyof Customer>(field: K, value: Customer[K]) => void;
 }
 
-export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionProps) {
+export const EmployerInfoSection = memo(function EmployerInfoSection({ 
+  employerName,
+  employerAddress,
+  employerCity,
+  employerState,
+  employerZip,
+  employerPhoneNumber,
+  onUpdate 
+}: EmployerInfoSectionProps) {
   return (
     <FieldSet className="card section">
       <FieldLegend className="mb-2 text-sm">Employer Information</FieldLegend>
@@ -17,7 +31,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
         <Field>
           <FieldLabel>Name</FieldLabel>
           <Input 
-            value={customer?.employerName || ''} 
+            value={employerName || ''} 
             onChange={(e) => onUpdate('employerName', e.target.value)} 
             placeholder="Employer name"
           />
@@ -26,7 +40,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
         <Field>
           <FieldLabel>Address</FieldLabel>
           <Input 
-            value={customer?.employerAddress || ''} 
+            value={employerAddress || ''} 
             onChange={(e) => onUpdate('employerAddress', e.target.value)} 
             placeholder="Street address"
           />
@@ -36,7 +50,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
           <Field className="col-span-1">
             <FieldLabel>City, St, Zip</FieldLabel>
             <Input 
-              value={customer?.employerCity || ''} 
+              value={employerCity || ''} 
               onChange={(e) => onUpdate('employerCity', e.target.value)} 
               placeholder="City"
             />
@@ -45,7 +59,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
           <Field>
             <FieldLabel>&nbsp;</FieldLabel>
             <Select 
-              value={customer?.employerState || undefined} 
+              value={employerState || undefined} 
               onValueChange={(value) => onUpdate('employerState', value)}
             >
               <SelectTrigger>
@@ -62,7 +76,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
           <Field>
             <FieldLabel>&nbsp;</FieldLabel>
             <Input 
-              value={customer?.employerZip || ''} 
+              value={employerZip || ''} 
               onChange={(e) => onUpdate('employerZip', e.target.value)} 
               placeholder="Zip"
             />
@@ -72,7 +86,7 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
         <Field>
           <FieldLabel>Phone</FieldLabel>
           <Input 
-            value={customer?.employerPhoneNumber || ''} 
+            value={employerPhoneNumber || ''} 
             onChange={(e) => onUpdate('employerPhoneNumber', e.target.value)} 
             placeholder="(555) 123-4567"
           />
@@ -80,4 +94,4 @@ export function EmployerInfoSection({ customer, onUpdate }: EmployerInfoSectionP
       </div>
     </FieldSet>
   );
-}
+});

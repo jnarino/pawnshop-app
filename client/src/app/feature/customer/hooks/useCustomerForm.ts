@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Customer as CustomerDto } from '../types';
 import { CustomerRecord, dtoToRecord } from '../mappers';
 import { deriveHeightParts, normalizeHeight } from '../utils/formatters';
@@ -12,22 +12,22 @@ export function useCustomerForm(initialValue?: CustomerDto | null) {
     [form.height]
   );
 
-  function update<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) {
+  const update = useCallback(<K extends keyof CustomerRecord>(k: K, v: CustomerRecord[K]) => {
     setForm(prev => ({ ...prev, [k]: v }));
-  }
+  }, []);
 
-  function setHeight(feet: string, inches: string) {
+  const setHeight = useCallback((feet: string, inches: string) => {
     update('height', normalizeHeight(feet, inches));
-  }
+  }, [update]);
 
-  function clearForm() {
+  const clearForm = useCallback(() => {
     setForm({ firstName: '', lastName: '', dateOfBirth: undefined, sex: '' } as any);
     setUseIdAddr(false);
-  }
+  }, []);
 
-  function setFormData(data: CustomerRecord) {
+  const setFormData = useCallback((data: CustomerRecord) => {
     setForm(data);
-  }
+  }, []);
 
   return {
     form,
