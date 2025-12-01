@@ -18,8 +18,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const categoriesHook = useInventoryCategories();
-  const categories = categoriesHook?.rootCategories || [];
-  const allCategories = categoriesHook?.categories || [];
+  const allCategories = categoriesHook?.categories || []; // All categories with depth info
   const buildCategoryTree = categoriesHook?.buildCategoryTree;
   const isLoading = categoriesHook?.loading || false;
 
@@ -71,8 +70,8 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     }
   }, [open, initial]);
 
-  // Category suggestions
-  const suggestions = categories.filter(cat =>
+  // Category suggestions - use all categories
+  const suggestions = allCategories.filter(cat =>
     cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
   ).slice(0, 10);
 
@@ -179,7 +178,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     setTypeQuery,
     showSuggestions,
     setShowSuggestions,
-    categories,
+    categories: allCategories, // Return all categories, not just root
     suggestions,
     isLoading,
     subtypes,
