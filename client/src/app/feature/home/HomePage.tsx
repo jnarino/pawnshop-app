@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 import SellIcon from '@/assets/icons/sell.svg?react';
-import ExitToAppIcon from '@/assets/icons/exit_to_app.svg?react';
 import MoneyBagIcon from '@/assets/icons/money_bag.svg?react';
+import BurgerMenu from '../../shared/components/BurgerMenu';
 
 function ActionCard({
     to,
@@ -41,14 +41,17 @@ export default function HomePage() {
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-500 to-cyan-500" />
                     <div className="font-extrabold tracking-wide">PawnExpress</div>
                 </div>
-                <div className="opacity-85">
-                    {new Date().toLocaleString(undefined, {
-                        weekday: 'short',
-                        month: 'short',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    })}
+                <div className="flex items-center gap-4">
+                    <div className="opacity-85">
+                        {new Date().toLocaleString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                        })}
+                    </div>
+                    <BurgerMenu />
                 </div>
             </header>
 
@@ -56,7 +59,7 @@ export default function HomePage() {
                 <h1 className="text-2xl font-extrabold mb-2.5">Welcome back 👋</h1>
                 <p className="mb-6 text-gray-700">Choose an action to get started.</p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <ActionCard 
                         to="/pawns" 
                         title="Pawn" 
@@ -74,12 +77,6 @@ export default function HomePage() {
                         title="Sales" 
                         subtitle="Sale" 
                         icon={SellIcon}
-                    />
-                    <ActionCard 
-                        to="/logout" 
-                        title="Sign out" 
-                        subtitle="Back to login" 
-                        icon={ExitToAppIcon}
                     />
                 </div>
 
