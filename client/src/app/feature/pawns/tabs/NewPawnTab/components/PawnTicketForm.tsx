@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
 import TransactionDetails from './TransactionDetails';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
+  const [manualAmountOverride, setManualAmountOverride] = useState(false);
 
   // ✅ Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -121,6 +122,29 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     return sum + (value * quantity);
   }, 0);
 
+  // ✅ Auto-update amount financed when items change (unless manually overridden)
+  useEffect(() => {
+    if (!manualAmountOverride && formData.items.length > 0) {
+      if (formData.type === 'PAWN') {
+        setFormData(prev => ({
+          ...prev,
+          amountFinanced: totalValue.toString()
+        }));
+      } else if (formData.type === 'PURCHASE') {
+        setFormData(prev => ({
+          ...prev,
+          purchaseTradeValue: totalValue.toString()
+        }));
+      }
+    }
+  }, [formData.items, formData.type, totalValue, manualAmountOverride]);
+
+  // ✅ Handle manual amount change
+  const handleAmountFinancedChange = useCallback((value: string) => {
+    setManualAmountOverride(true);
+    setFormData(prev => ({ ...prev, amountFinanced: value }));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -133,8 +157,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
           maturityDate={formData.maturityDate}
           expirationDate={formData.expirationDate}
           totalValue={totalValue}
-          onTypeChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-          onAmountFinancedChange={(value) => setFormData(prev => ({ ...prev, amountFinanced: value }))}
+          onTypeChange={(value) => {
+            setManualAmountOverride(false); // Reset override when type changes
+            setFormData(prev => ({ ...prev, type: value }));
+          }}
+          onAmountFinancedChange={handleAmountFinancedChange}
           onPeriodicRateChange={(value) => setFormData(prev => ({ ...prev, periodicRate: value }))}
           onTransactionDateChange={(value) => setFormData(prev => ({ ...prev, transactionDate: value }))}
           onMaturityDateChange={(value) => setFormData(prev => ({ ...prev, maturityDate: value }))}
