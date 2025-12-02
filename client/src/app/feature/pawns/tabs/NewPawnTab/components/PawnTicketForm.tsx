@@ -124,7 +124,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
   // ✅ Auto-update amount financed when items change (unless manually overridden)
   useEffect(() => {
-    if (!manualAmountOverride && formData.items.length > 0) {
+    if (!manualAmountOverride) {
       if (formData.type === 'PAWN') {
         setFormData(prev => ({
           ...prev,
@@ -158,7 +158,6 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
           expirationDate={formData.expirationDate}
           totalValue={totalValue}
           onTypeChange={(value) => {
-            setManualAmountOverride(false); // Reset override when type changes
             setFormData(prev => ({ ...prev, type: value }));
           }}
           onAmountFinancedChange={handleAmountFinancedChange}

@@ -15,22 +15,17 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
   const inputRef = useRef<HTMLInputElement>(null)
   const [internalValue, setInternalValue] = useState(value.toString())
 
-  // Format display: add commas to integers, show decimals
   const formatDisplay = (val: string) => {
     if (!val) return ""
 
-    // Extract only numbers and one dot
     const clean = val.replace(/[^\d.]/g, "")
     const parts = clean.split(".")
 
-    // Handle integer part
     const integer = parts[0]
     const decimal = parts[1]
 
-    // Add thousands separator to integer part
     const withCommas = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
-    // Reconstruct with decimal if it exists (even if empty)
     if (parts.length > 1) {
       return `${withCommas}.${decimal}`
     }
@@ -38,14 +33,11 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
     return withCommas
   }
 
-  // Handle input change - format as user types
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value
 
-    // Only allow numbers and dots
     inputValue = inputValue.replace(/[^\d.]/g, "")
 
-    // Prevent multiple dots
     if (inputValue.includes(".")) {
       const dotIndex = inputValue.indexOf(".")
       const beforeDot = inputValue.substring(0, dotIndex)
@@ -53,7 +45,6 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
       inputValue = beforeDot + "." + afterDot
     }
 
-    // Limit to 2 decimal places
     if (inputValue.includes(".")) {
       const [integer, decimal] = inputValue.split(".")
       inputValue = integer + "." + decimal.substring(0, 2)
@@ -61,18 +52,14 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
 
     setInternalValue(inputValue)
 
-    // Only update the display value directly if it's different (avoids cursor jumping usually, but here we want to format)
     const displayValue = formatDisplay(inputValue)
     if (inputRef.current && inputRef.current.value !== displayValue) {
-      // We need to be careful about cursor position, but for this simple case replacing value works
-      // However, to support typing '.', we must ensure formatDisplay returns it with the dot
       inputRef.current.value = displayValue
     }
 
     onChange?.(inputValue)
   }
 
-  // Format on blur - ensure .00 if no decimals were entered
   const handleBlur = () => {
     if (internalValue && !internalValue.includes(".")) {
       const formatted = internalValue + ".00"
@@ -97,19 +84,19 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
   useEffect(() => {
     if (value !== undefined && value !== null) {
       const stringVal = value.toString()
-      // Only update if the value is different from internal state to avoid cursor jumps during typing
-      // But we need to handle external updates
       if (stringVal !== internalValue) {
         setInternalValue(stringVal)
         if (inputRef.current) {
           inputRef.current.value = formatDisplay(stringVal)
         }
       }
-    } else if (inputRef.current && !value) {
-      inputRef.current.value = ""
+    } else if (!value) {
+      if (inputRef.current) {
+        inputRef.current.value = ""
+      }
       setInternalValue("")
     }
-  }, [value])
+  }, [value, internalValue])
 
   return (
     <div className="space-y-2">
@@ -119,6 +106,7 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
           ref={inputRef}
           type="text"
           inputMode="decimal"
+          defaultValue={formatDisplay(value.toString())}
           onChange={handleChange}
           onBlur={handleBlur}
           disabled={disabled}
