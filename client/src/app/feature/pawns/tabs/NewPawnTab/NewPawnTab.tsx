@@ -11,15 +11,84 @@ interface NewPawnTabProps {
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
-  const { isLoading, error, success } = useCreatePawnTicket();
+  const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const customerId = customer?.id;
 
-  const handleSuccess = useCallback((data: any) => {
-    const ticketId = data.id || data.pawnTicket?.id;
+  const handleSubmit = useCallback(async (formData: {
+    customerId: string;
+    type: 'PAWN' | 'PURCHASE';
+    amountFinanced?: number;
+    purchaseTradeValue?: number;
+    periodicRate?: number;
+    transactionDate?: string;
+    maturityDate?: string;
+    expirationDate?: string;
+    items: InventoryItemDraft[];
+  }) => {
+    const toISOString = (dateStr?: string): string => {
+      if (!dateStr) return new Date().toISOString();
+      return new Date(dateStr).toISOString();
+    };
+
+    const removeNullish = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
+      return Object.fromEntries(
+        Object.entries(obj).filter(([, v]) => v != null && v !== '')
+      ) as Partial<T>;
+    };
+
+    const pawnData = removeNullish({
+      customerId: customerId || formData.customerId,
+      transactionType: formData.type,
+      amountFinanced: formData.type === 'PAWN' ? formData.amountFinanced : undefined,
+      purchaseTradeValue: formData.type === 'PURCHASE' ? formData.purchaseTradeValue : undefined,
+      transactionDate: toISOString(formData.transactionDate),
+      maturityDate: toISOString(formData.maturityDate),
+      defaultDate: toISOString(formData.expirationDate),
+    });
+
+    const payload = {
+      pawn: pawnData,
+      items: formData.items.map(item => {
+        const attributes = removeNullish({
+          sub1: item.sub1,
+          metal: item.metal,
+          karat: item.karat,
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          gender: item.gender,
+          style: item.style,
+          sizeLength: item.sizeLength,
+          caliber: item.caliber,
+          action: item.action,
+          barrelLength: item.barrelLength,
+          capacity: item.capacity,
+        });
+
+        return removeNullish({
+          categoryId: item.type,
+          quantity: Number(item.quantity) || 1,
+          brand: item.brand,
+          model: item.model,
+          serialNumber: item.serial,
+          itemDescription: item.description,
+          priceAmount: Number(item.amount) || 0,
+          resale: Number(item.resale) || 0,
+          minResale: undefined,
+          itemReplace: item.replace ? Number(item.replace) : undefined,
+          ownerMark: item.ownerNumber,
+          colorId: item.color,
+          itemCondition: item.condition,
+          extra: Object.keys({}).length > 0 ? {} : undefined,
+          attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+        });
+      }),
+    };
+
+    const ticketId = await createTicket(payload);
     if (onTicketCreated && ticketId) {
       onTicketCreated(ticketId);
     }
-  }, [onTicketCreated]);
+  }, [customerId, createTicket, onTicketCreated]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -46,8 +115,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
-          customerId={customerId || ''}
-          onSuccess={handleSuccess}
+          onSubmit={handleSubmit}
           disabled={isLoading}
         />
       </div>

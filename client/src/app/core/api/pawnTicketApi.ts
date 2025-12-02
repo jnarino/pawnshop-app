@@ -1,29 +1,37 @@
 import { http } from './http';
 
-export interface CreatePawnTicketPayload {
+export interface PawnData {
   customerId: string;
-  type: 'PAWN' | 'PURCHASE';
+  transactionType: 'PAWN' | 'PURCHASE';
   amountFinanced?: number;
-  periodicRate?: number;
   purchaseTradeValue?: number;
   transactionDate: string;
-  maturityDate?: string;
-  defaultDate?: string;
-  newInventoryItems: Array<{
-    categoryId: string;
-    brand?: string;
-    model?: string;
-    serialNumber?: string;
-    colorId?: string;
-    itemCondition?: string;
-    quantity: number;
-    priceAmount: number;
-    resale: number;
-    itemReplace: number;
-    ownerMark?: string;
-    itemDescription?: string;
-    attributes: any;
-  }>;
+  maturityDate: string;
+  defaultDate: string;
+}
+
+export interface PawnItem {
+  categoryId: string;
+  status: string;
+  quantity: number;
+  priceAmount: number;
+  resale: number;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  itemDescription?: string;
+  minResale?: number;
+  itemReplace?: number;
+  ownerMark?: string;
+  colorId?: string;
+  itemCondition?: string;
+  extra?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
+}
+
+export interface CreatePawnTicketPayload {
+  pawn: Partial<PawnData>;
+  items: Partial<PawnItem>[];
 }
 
 export interface PawnTicketResponse {
@@ -34,7 +42,7 @@ export interface PawnTicketResponse {
 
 export const pawnTicketApi = {
   create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
-    return http('/api/pawn-tickets', {
+    return http('/api/pawn-ticket', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
