@@ -2,19 +2,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { DollarInput } from '@/components/ui/dollar-input';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface TransactionDetailsProps {
   type: 'PAWN' | 'PURCHASE';
-  amountFinanced: string;
   periodicRate: string;
   transactionDate: string;
   maturityDate: string;
   expirationDate: string;
   totalValue: number;
   onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
-  onAmountFinancedChange: (value: string) => void;
   onPeriodicRateChange: (value: string) => void;
   onTransactionDateChange: (value: string) => void;
   onMaturityDateChange: (value: string) => void;
@@ -23,14 +20,12 @@ interface TransactionDetailsProps {
 
 export default function TransactionDetails({
   type,
-  amountFinanced,
   periodicRate,
   transactionDate,
   maturityDate,
   expirationDate,
   totalValue,
   onTypeChange,
-  onAmountFinancedChange,
   onPeriodicRateChange,
   onTransactionDateChange,
   onMaturityDateChange,
@@ -64,13 +59,10 @@ export default function TransactionDetails({
         {type === 'PAWN' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amountFinanced">Amount Finance</Label>
-              <DollarInput
-                id="amountFinanced"
-                placeholder="0.00"
-                value={amountFinanced}
-                onChange={onAmountFinancedChange}
-              />
+              <Label>Amount Finance</Label>
+              <div className="text-2xl font-bold">
+                ${totalValue.toFixed(2)}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="rate">Rate (%)</Label>

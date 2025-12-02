@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
@@ -30,30 +31,34 @@ function PawnsWorkspaceContent() {
   return (
     <div className="pawn-flow">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
-          <TabsTrigger value="customer">
-            Customer Info
-          </TabsTrigger>
-          <TabsTrigger value="customerPerformance" disabled={!canNavigateToTab('customerPerformance')}>
-            Customer Performance
-          </TabsTrigger>
-          <TabsTrigger value="newPawn" disabled={!canNavigateToTab('newPawn')}>
-            New Pawn
-          </TabsTrigger>
-          <TabsTrigger value="previousItems" disabled={!canNavigateToTab('previousItems')}>
-            Previous Items
-          </TabsTrigger>
-          <TabsTrigger value="history" disabled={!canNavigateToTab('history')}>
-            History
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <TabsList className="grid flex-1 grid-cols-5">
+            <TabsTrigger value="customer">
+              Customer Info
+            </TabsTrigger>
+            <TabsTrigger value="customerPerformance" disabled={!canNavigateToTab('customerPerformance')}>
+              Customer Performance
+            </TabsTrigger>
+            <TabsTrigger value="newPawn" disabled={!canNavigateToTab('newPawn')}>
+              New Pawn
+            </TabsTrigger>
+            <TabsTrigger value="previousItems" disabled={!canNavigateToTab('previousItems')}>
+              Previous Items
+            </TabsTrigger>
+            <TabsTrigger value="history" disabled={!canNavigateToTab('history')}>
+              History
+            </TabsTrigger>
+          </TabsList>
+          <Button variant="destructive" onClick={openCancelModal}>
+            Cancel Transaction
+          </Button>
+        </div>
 
         <TabsContent value="customer" className="flex-1 min-h-0 pt-4">
           <CustomerInfoTab 
             customer={customer}
             onCustomerChange={setCustomer}
             onCustomerSelected={(id: string) => setActiveTab('newPawn')}
-            onCancelTransaction={openCancelModal}
           />
         </TabsContent>
 

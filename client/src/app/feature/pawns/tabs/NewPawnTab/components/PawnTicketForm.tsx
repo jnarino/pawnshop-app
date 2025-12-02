@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
 import TransactionDetails from './TransactionDetails';
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,9 @@ interface Props {
 
 // ✅ Single Responsibility: Pawn ticket form with inventory management
 export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
-  // ✅ Form state with proper initialization
   const [formData, setFormData] = useState({
-    customerId: 'temp-customer', // ✅ Temporary - remove customer selection for now
+    customerId: 'temp-customer',
     type: 'PAWN' as 'PAWN' | 'PURCHASE',
-    amountFinanced: '',
-    purchaseTradeValue: '',
     periodicRate: '25',
     transactionDate: format(new Date(), 'yyyy-MM-dd'),
     maturityDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -44,9 +41,13 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
-  const [manualAmountOverride, setManualAmountOverride] = useState(false);
 
-  // ✅ Handle form submission
+  const totalValue = formData.items.reduce((sum, item) => {
+    const value = Number(item.amount) || 0;
+    const quantity = Number(item.quantity) || 1;
+    return sum + (value * quantity);
+  }, 0);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -55,22 +56,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
       return;
     }
 
-    if (formData.type === 'PAWN' && !formData.amountFinanced) {
-      alert('Amount financed is required for pawn transactions');
-      return;
-    }
-
-    if (formData.type === 'PURCHASE' && !formData.purchaseTradeValue) {
-      alert('Purchase trade value is required for purchase transactions');
-      return;
-    }
-
-    // ✅ Convert string values to numbers
     const submitData = {
       customerId: formData.customerId,
       type: formData.type,
-      amountFinanced: formData.amountFinanced ? Number(formData.amountFinanced) : undefined,
-      purchaseTradeValue: formData.purchaseTradeValue ? Number(formData.purchaseTradeValue) : undefined,
+      amountFinanced: formData.type === 'PAWN' ? totalValue : undefined,
+      purchaseTradeValue: formData.type === 'PURCHASE' ? totalValue : undefined,
       periodicRate: Number(formData.periodicRate),
       transactionDate: formData.transactionDate,
       maturityDate: formData.maturityDate,
@@ -79,18 +69,15 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     };
 
     await onSubmit(submitData);
-  }, [formData, onSubmit]);
+  }, [formData, totalValue, onSubmit]);
 
-  // ✅ Add or update item
   const handleSaveItem = useCallback((item: InventoryItemDraft) => {
     if (editingItem) {
-      // Update existing item
       setFormData(prev => ({
         ...prev,
         items: prev.items.map(i => i.id === item.id ? item : i)
       }));
     } else {
-      // Add new item
       setFormData(prev => ({
         ...prev,
         items: [...prev.items, item]
@@ -101,13 +88,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     setEditingItem(null);
   }, [editingItem]);
 
-  // ✅ Edit existing item
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
     setEditingItem(item);
     setShowItemModal(true);
   }, []);
 
-  // ✅ Remove item
   const handleRemoveItem = useCallback((itemId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -115,43 +100,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     }));
   }, []);
 
-  // ✅ Calculate total value
-  const totalValue = formData.items.reduce((sum, item) => {
-    const value = Number(item.amount) || 0;
-    const quantity = Number(item.quantity) || 1;
-    return sum + (value * quantity);
-  }, 0);
-
-  // ✅ Auto-update amount financed when items change (unless manually overridden)
-  useEffect(() => {
-    if (!manualAmountOverride) {
-      if (formData.type === 'PAWN') {
-        setFormData(prev => ({
-          ...prev,
-          amountFinanced: totalValue.toString()
-        }));
-      } else if (formData.type === 'PURCHASE') {
-        setFormData(prev => ({
-          ...prev,
-          purchaseTradeValue: totalValue.toString()
-        }));
-      }
-    }
-  }, [formData.items, formData.type, totalValue, manualAmountOverride]);
-
-  // ✅ Handle manual amount change
-  const handleAmountFinancedChange = useCallback((value: string) => {
-    setManualAmountOverride(true);
-    setFormData(prev => ({ ...prev, amountFinanced: value }));
-  }, []);
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
-        {/* Transaction Details Card */}
         <TransactionDetails
           type={formData.type}
-          amountFinanced={formData.amountFinanced}
           periodicRate={formData.periodicRate}
           transactionDate={formData.transactionDate}
           maturityDate={formData.maturityDate}
@@ -160,7 +113,6 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
           onTypeChange={(value) => {
             setFormData(prev => ({ ...prev, type: value }));
           }}
-          onAmountFinancedChange={handleAmountFinancedChange}
           onPeriodicRateChange={(value) => setFormData(prev => ({ ...prev, periodicRate: value }))}
           onTransactionDateChange={(value) => setFormData(prev => ({ ...prev, transactionDate: value }))}
           onMaturityDateChange={(value) => setFormData(prev => ({ ...prev, maturityDate: value }))}
