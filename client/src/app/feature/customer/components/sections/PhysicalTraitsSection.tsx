@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerRecord } from '../../mappers';
-import { US_STATES, HAIR_COLORS, RACES, EYE_COLORS } from '../../constants/customerConstants';
+import { HAIR_COLORS, RACES, EYE_COLORS } from '../../constants/customerConstants';
+import { StateSelect } from '../../../../shared/components/StateSelect';
 
 interface PhysicalTraitsSectionProps {
   readonly sex?: string | null;
@@ -107,14 +108,11 @@ export const PhysicalTraitsSection = memo(function PhysicalTraitsSection({
         </Field>
         <Field>
           <FieldLabel>Birth State</FieldLabel>
-          <Select value={birthState || undefined} onValueChange={(value) => update('birthState', value)} disabled={!editing}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select state" />
-            </SelectTrigger>
-            <SelectContent>
-              {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <StateSelect 
+            value={birthState} 
+            onValueChange={(value) => update('birthState', value)} 
+            disabled={!editing}
+          />
         </Field>
         <Field>
           <FieldLabel>Birth Country</FieldLabel>

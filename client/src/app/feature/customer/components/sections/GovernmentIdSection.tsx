@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { CustomerRecord } from '../../mappers';
-import { US_STATES } from '../../constants/customerConstants';
+import { ID_TYPES } from '../../constants/customerConstants';
+import { StateSelect } from '../../../../shared/components/StateSelect';
 
 interface GovernmentIdSectionProps {
   readonly idType?: string | null;
@@ -40,7 +41,14 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
         <div className="flex gap-2 items-end">
           <Field className="flex-1">
             <FieldLabel>ID Type</FieldLabel>
-            <Input list="idTypes" value={idType || ''} onChange={e => update('idType', e.target.value)} disabled={!editing} />
+            <Select value={idType || undefined} onValueChange={(value) => update('idType', value)} disabled={!editing}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select ID type" />
+              </SelectTrigger>
+              <SelectContent>
+                {ID_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
           <Field className="flex-1">
             <FieldLabel>ID Number</FieldLabel>
@@ -48,14 +56,11 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
           </Field>
           <Field className="w-20">
             <FieldLabel>Issuing State</FieldLabel>
-            <Select value={idState || undefined} onValueChange={(value) => update('idState', value)} disabled={!editing}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
-              <SelectContent>
-                {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <StateSelect 
+              value={idState} 
+              onValueChange={(value) => update('idState', value)} 
+              disabled={!editing}
+            />
           </Field>
           <Field className="w-36">
             <FieldLabel>ID Issue Date</FieldLabel>

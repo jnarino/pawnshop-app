@@ -1,9 +1,8 @@
 import { memo } from 'react';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Customer } from '../../types';
-import { US_STATES } from '../../constants/customerConstants';
+import { StateSelect } from '../../../../shared/components/StateSelect';
 
 interface EmployerInfoSectionProps {
   readonly employerName?: string | null;
@@ -58,19 +57,11 @@ export const EmployerInfoSection = memo(function EmployerInfoSection({
           
           <Field>
             <FieldLabel>&nbsp;</FieldLabel>
-            <Select 
-              value={employerState || undefined} 
-              onValueChange={(value) => onUpdate('employerState', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="State" />
-              </SelectTrigger>
-              <SelectContent>
-                {US_STATES.map(state => (
-                  <SelectItem key={state} value={state}>{state}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <StateSelect 
+              value={employerState} 
+              onValueChange={(value: string) => onUpdate('employerState', value)}
+              placeholder="State"
+            />
           </Field>
           
           <Field>
