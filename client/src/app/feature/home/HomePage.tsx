@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 import SellIcon from '@/assets/icons/sell.svg?react';
 import MoneyBagIcon from '@/assets/icons/money_bag.svg?react';
+import ChartReportsIcon from '@/assets/icons/chart_reports.svg?react';
 import BurgerMenu from '../../shared/components/BurgerMenu';
 
 function ActionCard({
@@ -59,7 +60,7 @@ export default function HomePage() {
                 <h1 className="text-2xl font-extrabold mb-2.5">Welcome back 👋</h1>
                 <p className="mb-6 text-gray-700">Choose an action to get started.</p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <ActionCard 
                         to="/pawns" 
                         title="Pawn" 
@@ -77,6 +78,12 @@ export default function HomePage() {
                         title="Sales" 
                         subtitle="Sale" 
                         icon={SellIcon}
+                    />
+                    <ActionCard 
+                        title="Reports" 
+                        subtitle="View Reports" 
+                        icon={ChartReportsIcon}
+                        to="/reports"
                     />
                 </div>
 
