@@ -11,6 +11,7 @@ import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 import overviewIcon from '@/assets/icons/overview.svg';
+import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 
 interface Props {
   onSubmit: (formData: {
@@ -41,6 +42,12 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
+  const { categories } = useInventoryCategories();
+
+  const getCategoryName = useCallback((id: string) => {
+    const category = categories.find(c => c.id === id);
+    return category ? category.name : id;
+  }, [categories]);
 
   const totalValue = formData.items.reduce((sum, item) => {
     const value = Number(item.amount) || 0;
@@ -156,7 +163,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
                     {formData.items.map((item) => (
                       <div key={item.id} className="px-5 py-4 grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center hover:bg-slate-50">
                         <div>
-                          <div className="font-semibold">{item.type}</div>
+                          <div className="font-semibold">{getCategoryName(item.type)}</div>
                           {item.brand && <div className="text-sm text-gray-600">Brand: {item.brand}</div>}
                           {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                         </div>

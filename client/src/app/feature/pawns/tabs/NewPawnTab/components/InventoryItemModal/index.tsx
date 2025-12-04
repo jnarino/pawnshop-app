@@ -10,6 +10,7 @@ import { CategoryFields } from './CategoryFields';
 import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
+import { StonesSection } from './StonesSection';
 import { useInventoryItemForm } from './useInventoryItemForm';
 import { InventoryItemDraft } from './types';
 
@@ -99,6 +100,13 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               />
             )}
           </div>
+
+          {isJewelry && (
+            <StonesSection
+              stones={draft.stones || []}
+              onStonesChange={(stones) => updateField('stones', stones)}
+            />
+          )}
 
           <div className="space-y-1">
             <Label className="text-xs font-semibold">Description</Label>

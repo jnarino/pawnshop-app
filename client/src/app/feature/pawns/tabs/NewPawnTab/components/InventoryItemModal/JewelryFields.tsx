@@ -92,40 +92,6 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
       </div>
 
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">
-          Weight <span className="text-red-600">*</span>
-        </Label>
-        <div className="flex gap-1 items-center">
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            max="999.99"
-            value={draft.weight || ''}
-            onChange={(e) => updateField('weight', e.target.value)}
-            placeholder="5.25"
-            required
-            className="max-w-[70px] h-8 text-xs font-semibold text-black"
-          />
-          <Select 
-            value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
-            onValueChange={(value) => updateField('weightUnit', value)}
-          >
-            <SelectTrigger className="min-w-[65px] h-8 text-[11px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {WEIGHT_UNITS.map(unit => (
-                <SelectItem key={unit} value={unit.toUpperCase()} className="text-xs">
-                  {unit}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Gender</Label>
         <Select value={draft.gender?.toUpperCase() || ''} onValueChange={(value) => updateField('gender', value)}>
           <SelectTrigger className="h-8 text-xs">
@@ -157,19 +123,52 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             </SelectContent>
           </Select>
         ) : (
-          <div className="relative">
-            <Input
-              type="number"
-              step="0.25"
-              min="0"
-              value={draft.sizeLength || ''}
-              onChange={(e) => updateField('sizeLength', e.target.value)}
-              placeholder="0"
-              className="text-xs h-8 pr-6"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold">"</span>
-          </div>
+          <Input
+            type="number"
+            step="0.25"
+            min="0"
+            value={draft.sizeLength || ''}
+            onChange={(e) => updateField('sizeLength', e.target.value)}
+            placeholder="0"
+            className="text-xs h-8"
+          />
         )}
+      </div>
+
+      <div className="space-y-1 col-span-3">
+        <Label className="text-xs font-semibold">
+          Weight <span className="text-red-600">*</span>
+        </Label>
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          max="999.99"
+          value={draft.weight || ''}
+          onChange={(e) => updateField('weight', e.target.value)}
+          placeholder="5.25"
+          required
+          className="h-8 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1 col-span-3">
+        <Label className="text-xs font-semibold">Unit</Label>
+        <Select 
+          value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
+          onValueChange={(value) => updateField('weightUnit', value)}
+        >
+          <SelectTrigger className="h-8 text-xs w-[69%]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {WEIGHT_UNITS.map(unit => (
+              <SelectItem key={unit} value={unit.toUpperCase()} className="text-xs">
+                {unit}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </>
   );

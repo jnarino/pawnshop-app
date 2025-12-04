@@ -24,9 +24,8 @@ export function CategoryFields({
   // Filter only root categories (parent_id is null)
   const rootCategories = allCategories.filter(cat => !cat.parent_id);
 
-  const selectCategory = (categoryName: string) => {
-    updateField('type', categoryName);
-    // Reset subtype when category changes
+  const selectCategory = (categoryId: string) => {
+    updateField('type', categoryId);
     updateField('sub1', '');
   };
 
@@ -51,7 +50,7 @@ export function CategoryFields({
               </SelectItem>
             )}
             {rootCategories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.name.toUpperCase()} className="text-xs uppercase">
+              <SelectItem key={cat.id} value={cat.id} className="text-xs uppercase">
                 {cat.name.toUpperCase()}
               </SelectItem>
             ))}

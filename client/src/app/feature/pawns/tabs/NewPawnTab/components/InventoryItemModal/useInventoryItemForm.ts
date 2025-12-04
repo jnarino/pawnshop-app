@@ -22,9 +22,8 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const buildCategoryTree = categoriesHook?.buildCategoryTree;
   const isLoading = categoriesHook?.loading || false;
 
-  // Find selected category object
   const selectedCategory = useMemo(() => 
-    allCategories.find(c => c.name.toUpperCase() === draft.type?.toUpperCase()),
+    allCategories.find(c => c.id === draft.type),
     [allCategories, draft.type]
   );
   
@@ -75,19 +74,19 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
   ).slice(0, 10);
 
-  // Category type detection
-  const isJewelry = draft.type.toLowerCase().includes('jewelry');
-  const isFirearm = draft.type.toLowerCase().includes('firearm');
-  const isRing = isJewelry && (draft.type.toLowerCase().includes('ring') || draft.sub1?.toLowerCase().includes('ring'));
+  const categoryName = selectedCategory?.name?.toLowerCase() || '';
+  const isJewelry = categoryName.includes('jewelry');
+  const isFirearm = categoryName.includes('firearm');
+  const isRing = isJewelry && (categoryName.includes('ring') || draft.sub1?.toLowerCase().includes('ring'));
 
   // Karat options based on metal
   const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
 
-  // Update field handler with uppercase conversion
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
-    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber') {
+    // Don't uppercase: description, ownerNumber, type, metal, karat (these need exact matching)
+    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber' && field !== 'type' && field !== 'metal' && field !== 'karat') {
       processedValue = value.toUpperCase();
     }
     

@@ -28,7 +28,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brandOptions = 
               onChange={(value) => updateField('amount', value)}
               placeholder="10000.00"
               required
-              className="h-8 text-xs font-semibold text-black"
+              className="h-8 text-xs"
             />
           </div>
           <div className="flex-[38] space-y-1">

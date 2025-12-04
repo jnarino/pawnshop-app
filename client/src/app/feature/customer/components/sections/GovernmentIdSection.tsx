@@ -50,11 +50,11 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
               </SelectContent>
             </Select>
           </Field>
-          <Field className="flex-1">
+          <Field className="flex-[0.8]">
             <FieldLabel>ID Number</FieldLabel>
             <Input value={idNumber || ''} onChange={e => update('idNumber', e.target.value)} disabled={loading || !editing} />
           </Field>
-          <Field className="w-20">
+          <Field className="w-32">
             <FieldLabel>Issuing State</FieldLabel>
             <StateSelect 
               value={idState} 
