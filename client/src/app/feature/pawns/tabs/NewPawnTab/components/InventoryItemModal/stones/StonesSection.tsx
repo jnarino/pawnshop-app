@@ -1,42 +1,61 @@
+import { useState, useCallback } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { StoneForm } from './StoneForm';
 import { StoneTable } from './StoneTable';
-import { useStonesCrud } from './useStonesCrud';
 import { Stone } from './types';
 
-interface StonesSectionProps {
-  stones: Stone[];
-  onStonesChange: (stones: Stone[]) => void;
-}
+// StonesSection usa estado local - los stones NO se envían con el form principal
+// Esto es solo visual por ahora
+export function StonesSection() {
+  const [stones, setStones] = useState<Stone[]>([]);
+  const [selectedStone, setSelectedStone] = useState<Stone | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-export function StonesSection({ stones, onStonesChange }: StonesSectionProps) {
-  const {
-    selectedStone,
-    isEditing,
-    addStone,
-    updateStone,
-    removeStone,
-    startEdit,
-    cancelEdit,
-    setSelectedStone
-  } = useStonesCrud({ stones, onStonesChange });
+  const addStone = useCallback((stone: Omit<Stone, 'id'>) => {
+    const newStone: Stone = { ...stone, id: crypto.randomUUID() };
+    setStones(prev => [...prev, newStone]);
+  }, []);
 
-  const handleAdd = (stone: Omit<Stone, 'id'>) => {
+  const updateStone = useCallback((id: string, updates: Omit<Stone, 'id'>) => {
+    setStones(prev => prev.map(s => s.id === id ? { ...updates, id } : s));
+    setSelectedStone(null);
+    setIsEditing(false);
+  }, []);
+
+  const removeStone = useCallback((id: string) => {
+    setStones(prev => prev.filter(s => s.id !== id));
+    if (selectedStone?.id === id) {
+      setSelectedStone(null);
+      setIsEditing(false);
+    }
+  }, [selectedStone]);
+
+  const startEdit = useCallback((stone: Stone) => {
+    setSelectedStone(stone);
+    setIsEditing(true);
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    setSelectedStone(null);
+    setIsEditing(false);
+  }, []);
+
+  const handleAdd = useCallback((stone: Omit<Stone, 'id'>) => {
     addStone(stone);
-  };
+  }, [addStone]);
 
-  const handleUpdate = (stone: Omit<Stone, 'id'>) => {
+  const handleUpdate = useCallback((stone: Omit<Stone, 'id'>) => {
     if (selectedStone) {
       updateStone(selectedStone.id, stone);
     }
-  };
+  }, [selectedStone, updateStone]);
 
-  const handleRemove = () => {
+  const handleRemove = useCallback(() => {
     if (selectedStone) {
       removeStone(selectedStone.id);
     }
-  };
+  }, [selectedStone, removeStone]);
 
   return (
     <Accordion type="single" collapsible className="w-full">
@@ -57,7 +76,7 @@ export function StonesSection({ stones, onStonesChange }: StonesSectionProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => isEditing ? startEdit(selectedStone!) : undefined}
+                  onClick={() => startEdit(selectedStone!)}
                   disabled={!selectedStone || isEditing}
                   className="w-full text-xs"
                 >

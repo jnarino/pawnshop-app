@@ -10,7 +10,7 @@ import { CategoryFields } from './CategoryFields';
 import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
-import { StonesSection } from './StonesSection';
+import { StonesSection } from './stones';
 import { useInventoryItemForm } from './useInventoryItemForm';
 import { InventoryItemDraft } from './types';
 
@@ -29,11 +29,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     error,
     barcodeMode,
     setBarcodeMode,
-    typeQuery,
-    setTypeQuery,
-    showSuggestions,
-    setShowSuggestions,
-    suggestions,
     isLoading,
     subtypes,
     brandOptions,
@@ -42,7 +37,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     isRing,
     karatOptions,
     updateField,
-    selectType,
     handleSubtypeChange,
     handleSubmit,
     handleMetalChange,
@@ -59,12 +53,6 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-12 gap-3">
             <CategoryFields
-              typeQuery={typeQuery}
-              setTypeQuery={setTypeQuery}
-              showSuggestions={showSuggestions}
-              setShowSuggestions={setShowSuggestions}
-              suggestions={suggestions}
-              selectType={selectType}
               isLoading={isLoading}
               draft={draft}
               subtypes={subtypes}
@@ -102,10 +90,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
           </div>
 
           {isJewelry && (
-            <StonesSection
-              stones={draft.stones || []}
-              onStonesChange={(stones) => updateField('stones', stones)}
-            />
+            <StonesSection />
           )}
 
           <div className="space-y-1">

@@ -1,16 +1,3 @@
-export interface Stone {
-  id: string;
-  type: string;
-  cut?: string;
-  color?: string;
-  clarity?: string;
-  weight?: string;
-  weightUnit?: string;
-  count?: string;
-  setting?: string;
-  certification?: string;
-}
-
 export interface InventoryItemDraft {
   id?: string;
   type: string;
@@ -33,7 +20,6 @@ export interface InventoryItemDraft {
   replace?: string;
   condition?: string;
   ownerNumber?: string;
-  stones?: Stone[];
   caliber?: string;
   action?: string;
   barrelLength?: string;

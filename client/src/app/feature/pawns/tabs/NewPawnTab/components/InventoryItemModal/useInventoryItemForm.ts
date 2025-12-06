@@ -14,8 +14,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
-  const [typeQuery, setTypeQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const categoriesHook = useInventoryCategories();
   const allCategories = categoriesHook?.categories || []; // All categories with depth info
@@ -64,20 +62,14 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
         weightUnit: 'Grams'
       };
       setDraft(formData);
-      setTypeQuery(initial?.type || '');
       setError(null);
     }
   }, [open, initial]);
 
-  // Category suggestions - use all categories
-  const suggestions = allCategories.filter(cat =>
-    cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
-  ).slice(0, 10);
-
   const categoryName = selectedCategory?.name?.toLowerCase() || '';
   const isJewelry = categoryName.includes('jewelry');
   const isFirearm = categoryName.includes('firearm');
-  const isRing = isJewelry && (categoryName.includes('ring') || draft.sub1?.toLowerCase().includes('ring'));
+  const isRing = isJewelry && (categoryName.includes('ring') || (draft.sub1?.toLowerCase().includes('ring') ?? false));
 
   // Karat options based on metal
   const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
@@ -92,16 +84,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     
     setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
-
-  // Type selection
-  const selectType = useCallback((categoryName: string) => {
-    updateField('type', categoryName);
-    updateField('sub1', ''); // Clear subtype
-    updateField('brand', ''); // Clear brand
-    updateField('style', ''); // Clear style
-    setTypeQuery(categoryName);
-    setShowSuggestions(false);
-  }, [updateField]);
 
   // Subtype selection
   const handleSubtypeChange = useCallback((subtype: string) => {
@@ -173,12 +155,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     error,
     barcodeMode,
     setBarcodeMode,
-    typeQuery,
-    setTypeQuery,
-    showSuggestions,
-    setShowSuggestions,
-    categories: allCategories, // Return all categories, not just root
-    suggestions,
+    categories: allCategories,
     isLoading,
     subtypes,
     brandOptions,
@@ -187,7 +164,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     isRing,
     karatOptions,
     updateField,
-    selectType,
     handleSubtypeChange,
     handleSubmit,
     handleMetalChange,
