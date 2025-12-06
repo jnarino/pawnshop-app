@@ -27,4 +27,10 @@ build
 *.sln
 *.sw?
 
+# Release files
 release/*
+
+# Environment files
+.env
+.env.*
+!.env.example
