@@ -12,7 +12,7 @@ export default function CustomerPage() {
           customer={customer}
           onCustomerChange={setCustomer}
           onCustomerSelected={(id) => console.log('Customer selected:', id)}
-          showAdditionalInfo={true}
+          workflowMode="pawn"
           showAlertWhenEmpty={true}
           className="h-full"
         />
