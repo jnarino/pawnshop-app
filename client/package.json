@@ -3,14 +3,53 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "start:react": "vite",
     "build:main": "tsc -p tsconfig.electron.json",
     "build:renderer": "vite build",
     "build": "npm run build:main && npm run build:renderer",
     "start:electron": "npm run build:main && electron dist-electron/main.js",
-    "start:dev": "concurrently -k \"npm run start:react\" \"wait-on http://localhost:5173 && npm run start:electron\""
+    "start:dev": "concurrently -k \"npm run start:react\" \"wait-on http://localhost:5173 && npm run start:electron\"",
+    "package": "npm run build && electron-builder"
   },
+  "build": {
+    "appId": "com.pawnshop.app",
+    "productName": "Pawnshop App",
+    "copyright": "Copyright © 2025 Pawnshop",
+    "directories": {
+      "output": "release/${version}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "public/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "public/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "public/icon.png"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ]
+  },
+  "description": "Premium Pawnshop Management Client",
+  "author": "Pawnshop Team",
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -30,7 +69,6 @@
     "clsx": "^2.1.1",
     "concurrently": "^8.2.1",
     "date-fns": "^4.1.0",
-    "electron": "^37.2.5",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.1",
@@ -44,11 +82,13 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "electron": "^37.2.5",
     "@eslint/js": "^9.30.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
