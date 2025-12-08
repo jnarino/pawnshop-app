@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,11 +7,24 @@ import { DatePicker } from '@/components/ui/date-picker';
 import type { Customer } from '../../types';
 
 interface ComplianceSectionProps {
-  readonly customer: Customer | null;
+  readonly fflNumber?: string | null;
+  readonly fflExpireDate?: string | null;
+  readonly taxId?: string | null;
+  readonly military?: boolean | null;
+  readonly locked?: boolean | null;
+  readonly taxExempt?: boolean | null;
   readonly onUpdate: <K extends keyof Customer>(field: K, value: Customer[K]) => void;
 }
 
-export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps) {
+export const ComplianceSection = memo(function ComplianceSection({ 
+  fflNumber,
+  fflExpireDate,
+  taxId,
+  military,
+  locked,
+  taxExempt,
+  onUpdate 
+}: ComplianceSectionProps) {
   return (
     <FieldSet className="card section">
       <FieldLegend className="mb-2 text-sm">Misc / Compliance</FieldLegend>
@@ -18,7 +32,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
         <Field>
           <FieldLabel>Fed. Firearms #</FieldLabel>
           <Input 
-            value={customer?.fflNumber || ''} 
+            value={fflNumber || ''} 
             onChange={(e) => onUpdate('fflNumber', e.target.value)} 
             placeholder="FFL number"
           />
@@ -27,7 +41,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
         <Field>
           <FieldLabel>Fed. Firearms Exp. Date</FieldLabel>
           <DatePicker 
-            value={customer?.fflExpireDate || undefined} 
+            value={fflExpireDate || undefined} 
             onChange={(value) => onUpdate('fflExpireDate', value)} 
           />
         </Field>
@@ -35,7 +49,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
         <Field>
           <FieldLabel>Tax ID</FieldLabel>
           <Input 
-            value={customer?.taxId || ''} 
+            value={taxId || ''} 
             onChange={(e) => onUpdate('taxId', e.target.value)} 
             placeholder="Tax ID"
           />
@@ -55,7 +69,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
           <div className="flex items-center space-x-2">
             <Checkbox 
               id="military" 
-              checked={customer?.military || false}
+              checked={military || false}
               onCheckedChange={(checked) => onUpdate('military', !!checked)}
             />
             <Label htmlFor="military" className="text-sm">Military</Label>
@@ -64,7 +78,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
           <div className="flex items-center space-x-2">
             <Checkbox 
               id="locked" 
-              checked={customer?.locked || false}
+              checked={locked || false}
               onCheckedChange={(checked) => onUpdate('locked', !!checked)}
             />
             <Label htmlFor="locked" className="text-sm">LOCKED</Label>
@@ -73,7 +87,7 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
           <div className="flex items-center space-x-2">
             <Checkbox 
               id="taxExempt" 
-              checked={customer?.taxExempt || false}
+              checked={taxExempt || false}
               onCheckedChange={(checked) => onUpdate('taxExempt', !!checked)}
             />
             <Label htmlFor="taxExempt" className="text-sm">Tax Exempt</Label>
@@ -82,4 +96,4 @@ export function ComplianceSection({ customer, onUpdate }: ComplianceSectionProps
       </div>
     </FieldSet>
   );
-}
+});

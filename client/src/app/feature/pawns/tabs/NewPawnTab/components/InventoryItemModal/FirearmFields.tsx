@@ -14,13 +14,13 @@ export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Caliber</Label>
-        <Select value={draft.caliber || ''} onValueChange={(value) => updateField('caliber', value)}>
+        <Select value={draft.caliber?.toUpperCase() || ''} onValueChange={(value) => updateField('caliber', value)}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT CALIBER..." />
           </SelectTrigger>
           <SelectContent>
             {FIREARM_CALIBERS.map(caliber => (
-              <SelectItem key={caliber} value={caliber} className="text-xs">
+              <SelectItem key={caliber} value={caliber.toUpperCase()} className="text-xs">
                 {caliber}
               </SelectItem>
             ))}
@@ -30,13 +30,13 @@ export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Action</Label>
-        <Select value={draft.action || ''} onValueChange={(value) => updateField('action', value)}>
+        <Select value={draft.action?.toUpperCase() || ''} onValueChange={(value) => updateField('action', value)}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT ACTION..." />
           </SelectTrigger>
           <SelectContent>
             {FIREARM_ACTIONS.map(action => (
-              <SelectItem key={action} value={action} className="text-xs">
+              <SelectItem key={action} value={action.toUpperCase()} className="text-xs">
                 {action}
               </SelectItem>
             ))}

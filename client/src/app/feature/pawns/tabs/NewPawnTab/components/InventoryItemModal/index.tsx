@@ -10,6 +10,7 @@ import { CategoryFields } from './CategoryFields';
 import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
+import { StonesSection } from './stones';
 import { useInventoryItemForm } from './useInventoryItemForm';
 import { InventoryItemDraft } from './types';
 
@@ -28,21 +29,18 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     error,
     barcodeMode,
     setBarcodeMode,
-    typeQuery,
-    setTypeQuery,
-    showSuggestions,
-    setShowSuggestions,
-    suggestions,
     isLoading,
     subtypes,
+    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
-    selectType,
+    handleSubtypeChange,
     handleSubmit,
-    handleMetalChange
+    handleMetalChange,
+    categories
   } = useInventoryItemForm({ open, initial, onSave });
 
   return (
@@ -55,22 +53,19 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-12 gap-3">
             <CategoryFields
-              typeQuery={typeQuery}
-              setTypeQuery={setTypeQuery}
-              showSuggestions={showSuggestions}
-              setShowSuggestions={setShowSuggestions}
-              suggestions={suggestions}
-              selectType={selectType}
               isLoading={isLoading}
               draft={draft}
               subtypes={subtypes}
               updateField={updateField}
+              handleSubtypeChange={handleSubtypeChange}
+              allCategories={categories}
             />
             
             <BasicInfoFields
               draft={draft}
               updateField={updateField}
               isFirearm={isFirearm}
+              brandOptions={brandOptions}
             />
 
             {!isJewelry && !isFirearm && <div></div>}
@@ -82,6 +77,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 handleMetalChange={handleMetalChange}
                 karatOptions={karatOptions}
                 isRing={isRing}
+                styleOptions={brandOptions}
               />
             )}
             
@@ -92,6 +88,10 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               />
             )}
           </div>
+
+          {isJewelry && (
+            <StonesSection />
+          )}
 
           <div className="space-y-1">
             <Label className="text-xs font-semibold">Description</Label>

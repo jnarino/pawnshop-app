@@ -1,69 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-
-interface ActivePawn {
-  id: string;
-  controlNumber: string;
-  customerName: string;
-  transactionDate: string;
-  maturityDate: string;
-  amountFinanced: number;
-  totalOfPayments: number;
-  status: string;
-  itemCount: number;
-}
+import { useState } from 'react';
+import { useActivePawns } from '../../hooks/useActivePawns';
 
 export default function ActivePawnTab() {
-  const [pawns, setPawns] = useState<ActivePawn[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { pawns, loading, error, refreshPawns } = useActivePawns();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-
-  const loadActivePawns = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock data
-      const mockPawns: ActivePawn[] = [
-        {
-          id: '1',
-          controlNumber: '100001',
-          customerName: 'John Smith',
-          transactionDate: '2024-01-15T10:00:00Z',
-          maturityDate: '2024-02-14T10:00:00Z',
-          amountFinanced: 500.00,
-          totalOfPayments: 625.00,
-          status: 'active',
-          itemCount: 2
-        },
-        {
-          id: '2',
-          controlNumber: '100002',
-          customerName: 'Jane Doe',
-          transactionDate: '2024-01-20T14:00:00Z',
-          maturityDate: '2024-02-19T14:00:00Z',
-          amountFinanced: 1200.00,
-          totalOfPayments: 1500.00,
-          status: 'active',
-          itemCount: 1
-        }
-      ];
-      
-      setPawns(mockPawns);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load active pawns');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadActivePawns();
-  }, [loadActivePawns]);
 
   const filteredPawns = pawns.filter(pawn => {
     const matchesSearch = searchTerm === '' || 

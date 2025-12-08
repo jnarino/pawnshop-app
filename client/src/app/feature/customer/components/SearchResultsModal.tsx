@@ -60,27 +60,33 @@ export function SearchResultsModal({
               <thead className="border-b sticky top-0 bg-background z-10">
                 <tr className="bg-muted/50">
                   <th className="p-2 text-left font-semibold">Name</th>
-                  <th className="p-2 text-left font-semibold">DOB</th>
-                  <th className="p-2 text-left font-semibold">City</th>
-                  <th className="p-2 text-left font-semibold">State</th>
-                  <th className="p-2 text-left font-semibold">Phone</th>
+                  <th className="p-2 text-left font-semibold">Date of Birth</th>
+                  <th className="p-2 text-left font-semibold">Address</th>
                 </tr>
               </thead>
               <tbody>
-                {results.map(r => (
-                  <tr
-                    key={r.id}
-                    className="border-b cursor-pointer hover:bg-muted/50 transition-colors"
-                    onDoubleClick={() => r.id && onSelect(r.id, r)}
-                    onClick={() => r.id && onSelect(r.id, r)}
-                  >
-                    <td className="p-2">{r.lastName}, {r.firstName}</td>
-                    <td className="p-2">{r.dateOfBirth || ''}</td>
-                    <td className="p-2">{r.city || ''}</td>
-                    <td className="p-2">{r.stateUs || ''}</td>
-                    <td className="p-2">{r.phoneNumber || ''}</td>
-                  </tr>
-                ))}
+                {results.map(r => {
+                  const addressParts = [
+                    r.streetAddress,
+                    r.city,
+                    r.stateUs,
+                    r.zipCode
+                  ].filter(Boolean);
+                  const fullAddress = addressParts.join(', ');
+                  
+                  return (
+                    <tr
+                      key={r.id}
+                      className="border-b cursor-pointer hover:bg-muted/50 transition-colors"
+                      onDoubleClick={() => r.id && onSelect(r.id, r)}
+                      onClick={() => r.id && onSelect(r.id, r)}
+                    >
+                      <td className="p-2">{r.lastName}, {r.firstName}</td>
+                      <td className="p-2">{r.dateOfBirth || ''}</td>
+                      <td className="p-2">{fullAddress}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

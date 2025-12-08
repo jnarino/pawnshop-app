@@ -20,7 +20,6 @@ export interface InventoryItemDraft {
   replace?: string;
   condition?: string;
   ownerNumber?: string;
-  // Firearm fields
   caliber?: string;
   action?: string;
   barrelLength?: string;
