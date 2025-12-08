@@ -46,16 +46,17 @@ export function useIdScanHandler({
     }
 
     console.log('[IDScan] 🔍 Searching for customer:', {
-      name: `${d.firstName} ${d.lastName}`,
-      dob: d.dateOfBirth,
+      idType: 'Driver License',
+      idState: d.stateUs,
       idNumber: d.idNumber
     });
 
     try {
+      // Search by Driver License + State + ID Number
       const params = new URLSearchParams();
-      if (d.dateOfBirth) params.set('dateOfBirth', d.dateOfBirth);
-      if (d.firstName) params.set('firstName', d.firstName);
-      if (d.lastName) params.set('lastName', d.lastName);
+      params.set('idType', 'Driver License');
+      if (d.stateUs) params.set('idState', d.stateUs);
+      if (d.idNumber) params.set('idNumber', d.idNumber);
       params.set('limit', '10');
 
       const customers = await http(`/api/customer?${params.toString()}`);
@@ -63,7 +64,7 @@ export function useIdScanHandler({
       console.log('[IDScan] Search results:', { count: customers?.length || 0 });
 
       if (!customers || !Array.isArray(customers) || customers.length === 0) {
-        console.log('[IDScan] ❌ No customer found by name+DOB');
+        console.log('[IDScan] ❌ No customer found by Driver License + State + ID Number');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
@@ -71,15 +72,16 @@ export function useIdScanHandler({
         return;
       }
 
-      const nameAndDobMatch = customers.find((c: any) => {
-        const firstMatch = c.firstName?.toUpperCase().trim() === d.firstName?.toUpperCase().trim();
-        const lastMatch = c.lastName?.toUpperCase().trim() === d.lastName?.toUpperCase().trim();
-        const dobMatch = c.dateOfBirth === d.dateOfBirth;
-        return firstMatch && lastMatch && dobMatch;
+      // Find exact match by idType, idState, and idNumber
+      const idMatch = customers.find((c: any) => {
+        const typeMatch = c.idType?.toUpperCase().trim() === 'DRIVER LICENSE';
+        const stateMatch = c.idState?.toUpperCase().trim() === d.stateUs?.toUpperCase().trim();
+        const numberMatch = c.idNumber?.toUpperCase().trim() === d.idNumber?.toUpperCase().trim();
+        return typeMatch && stateMatch && numberMatch;
       });
 
-      if (!nameAndDobMatch) {
-        console.log('[IDScan] ⚠️ No exact name+DOB match found');
+      if (!idMatch) {
+        console.log('[IDScan] ⚠️ No exact ID match found');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
@@ -87,39 +89,21 @@ export function useIdScanHandler({
         return;
       }
 
-      const customerRecord = apiToRecordLoose(nameAndDobMatch);
+      const customerRecord = apiToRecordLoose(idMatch);
 
       console.log('[IDScan] ✅ Customer found:', {
-        id: nameAndDobMatch.id,
-        dbIdNumber: nameAndDobMatch.idNumber,
-        scannedIdNumber: d.idNumber
+        id: idMatch.id,
+        name: `${idMatch.firstName} ${idMatch.lastName}`,
+        idType: idMatch.idType,
+        idState: idMatch.idState,
+        idNumber: idMatch.idNumber
       });
 
       setForm(customerRecord);
-      onChange?.(recordToDto(customerRecord, nameAndDobMatch.id));
-      onSelected?.(nameAndDobMatch.id);
+      onChange?.(recordToDto(customerRecord, idMatch.id));
+      onSelected?.(idMatch.id);
 
-      const dbId = nameAndDobMatch.idNumber?.toUpperCase().trim();
-      const scannedId = d.idNumber?.toUpperCase().trim();
-      const idNumbersMatch = dbId === scannedId;
-
-      console.log('[IDScan] ID comparison:', {
-        dbId,
-        scannedId,
-        match: idNumbersMatch
-      });
-
-      if (!idNumbersMatch && d.idNumber) {
-        console.log('[IDScan] ⚠️ ID MISMATCH DETECTED');
-        setIdConflictData({
-          customer: customerRecord,
-          scannedIdNumber: d.idNumber,
-          scanData: d
-        });
-        setIdConflictModalOpen(true);
-      } else {
-        console.log('[IDScan] ✅ ID numbers match - customer loaded');
-      }
+      console.log('[IDScan] ✅ Customer loaded successfully');
 
     } catch (err) {
       console.error('[IDScan] ❌ Search failed:', err);

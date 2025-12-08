@@ -22,6 +22,7 @@ interface Props {
   onCreateNew?(tempId: string): void;
   onSelected?(id: string): void;
   onCancelTransaction?(): void;
+  onFormChange?: (data: import('../mappers').CustomerRecord) => void;
   onStateChange?(state: {
     editingNew: boolean;
     editingExisting: boolean;
@@ -38,6 +39,7 @@ export interface CustomerPickerRef {
   handleScanId: () => void;
   handleSaveNew: () => void;
   handleUpdateExisting: () => void;
+  updateFormField: <K extends keyof import('../mappers').CustomerRecord>(field: K, value: import('../mappers').CustomerRecord[K]) => void;
   editingNew: boolean;
   editingExisting: boolean;
   loading: boolean;
@@ -45,7 +47,7 @@ export interface CustomerPickerRef {
   disableSearch: boolean;
 }
 
-const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange }, ref) => {
+const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange, onFormChange }, ref) => {
   const [editingNew, setEditingNew] = useState(false);
   const [editingExisting, setEditingExisting] = useState(false);
 
@@ -71,6 +73,11 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
       setEditingExisting(false);
     }
   }, [value]);
+
+  // Notify parent of form changes
+  useEffect(() => {
+    onFormChange?.(customerForm.form);
+  }, [customerForm.form, onFormChange]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -172,6 +179,7 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
     handleScanId,
     handleSaveNew,
     handleUpdateExisting,
+    updateFormField: customerForm.update,
     editingNew,
     editingExisting,
     loading: customerSearch.loading,
@@ -198,21 +206,42 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
       >
         <div className="grid grid-cols-3 gap-3">
           <IdentityContactSection 
-            form={customerForm.form} 
+            firstName={customerForm.form.firstName}
+            middleName={customerForm.form.middleName}
+            lastName={customerForm.form.lastName}
+            dateOfBirth={customerForm.form.dateOfBirth}
+            phoneNumber={customerForm.form.phoneNumber}
+            cellPhone={customerForm.form.cellPhone}
+            email={customerForm.form.email}
+            ssNumber={customerForm.form.ssNumber}
             update={customerForm.update} 
             editing={editingNew || editingExisting} 
           />
           
           <div className="col-span-2 flex flex-col gap-2">
             <AddressSection 
-              form={customerForm.form} 
+              streetAddress={customerForm.form.streetAddress}
+              city={customerForm.form.city}
+              stateUs={customerForm.form.stateUs}
+              zipCode={customerForm.form.zipCode}
+              idAddress={customerForm.form.idAddress}
+              idCity={customerForm.form.idCity}
+              idState={customerForm.form.idState}
+              idZip={customerForm.form.idZip}
               update={customerForm.update} 
               editing={editingNew || editingExisting} 
               useIdAddr={customerForm.useIdAddr}
               setUseIdAddr={customerForm.setUseIdAddr}
             />
             <GovernmentIdSection 
-              form={customerForm.form} 
+              idType={customerForm.form.idType}
+              idNumber={customerForm.form.idNumber}
+              idState={customerForm.form.idState}
+              idIssueDate={customerForm.form.idIssueDate}
+              idExpiration={customerForm.form.idExpiration}
+              idAddress={customerForm.form.idAddress}
+              idCity={customerForm.form.idCity}
+              idZip={customerForm.form.idZip}
               update={customerForm.update} 
               editing={editingNew || editingExisting}
               loading={customerSearch.loading}
@@ -222,7 +251,15 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
           <div className="col-span-3 grid grid-cols-12 gap-4">
             <div className="col-span-7">
               <PhysicalTraitsSection 
-                form={customerForm.form} 
+                sex={customerForm.form.sex}
+                weight={customerForm.form.weight}
+                hairColor={customerForm.form.hairColor}
+                eyeColor={customerForm.form.eyeColor}
+                race={customerForm.form.race}
+                birthCity={customerForm.form.birthCity}
+                birthState={customerForm.form.birthState}
+                birthCountry={customerForm.form.birthCountry}
+                marks={customerForm.form.marks}
                 update={customerForm.update} 
                 editing={editingNew || editingExisting}
                 setHeight={customerForm.setHeight}
@@ -232,7 +269,7 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
             </div>
             <div className="col-span-5">
               <NotesSection 
-                form={customerForm.form} 
+                description={customerForm.form.description}
                 update={customerForm.update}
                 editing={editingNew || editingExisting}
               />

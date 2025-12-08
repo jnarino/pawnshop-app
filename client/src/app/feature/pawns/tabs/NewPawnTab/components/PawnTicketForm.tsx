@@ -1,14 +1,17 @@
 import { useState, useCallback } from 'react';
 import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
+import TransactionDetails from './TransactionDetails';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, addDays } from 'date-fns';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 import overviewIcon from '@/assets/icons/overview.svg';
+import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 
 interface Props {
   onSubmit: (formData: {
@@ -17,6 +20,9 @@ interface Props {
     amountFinanced?: number;
     purchaseTradeValue?: number;
     periodicRate?: number;
+    transactionDate?: string;
+    maturityDate?: string;
+    expirationDate?: string;
     items: InventoryItemDraft[];
   }) => Promise<void>;
   disabled?: boolean;
@@ -24,20 +30,31 @@ interface Props {
 
 // ✅ Single Responsibility: Pawn ticket form with inventory management
 export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
-  // ✅ Form state with proper initialization
   const [formData, setFormData] = useState({
-    customerId: 'temp-customer', // ✅ Temporary - remove customer selection for now
+    customerId: 'temp-customer',
     type: 'PAWN' as 'PAWN' | 'PURCHASE',
-    amountFinanced: '',
-    purchaseTradeValue: '',
-    periodicRate: '0.25',
+    periodicRate: '25',
+    transactionDate: format(new Date(), 'yyyy-MM-dd'),
+    maturityDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    expirationDate: format(addDays(new Date(), 60), 'yyyy-MM-dd'),
     items: [] as InventoryItemDraft[]
   });
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
+  const { categories } = useInventoryCategories();
 
-  // ✅ Handle form submission
+  const getCategoryName = useCallback((id: string) => {
+    const category = categories.find(c => c.id === id);
+    return category ? category.name : id;
+  }, [categories]);
+
+  const totalValue = formData.items.reduce((sum, item) => {
+    const value = Number(item.amount) || 0;
+    const quantity = Number(item.quantity) || 1;
+    return sum + (value * quantity);
+  }, 0);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -46,39 +63,28 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
       return;
     }
 
-    if (formData.type === 'PAWN' && !formData.amountFinanced) {
-      alert('Amount financed is required for pawn transactions');
-      return;
-    }
-
-    if (formData.type === 'PURCHASE' && !formData.purchaseTradeValue) {
-      alert('Purchase trade value is required for purchase transactions');
-      return;
-    }
-
-    // ✅ Convert string values to numbers
     const submitData = {
       customerId: formData.customerId,
       type: formData.type,
-      amountFinanced: formData.amountFinanced ? Number(formData.amountFinanced) : undefined,
-      purchaseTradeValue: formData.purchaseTradeValue ? Number(formData.purchaseTradeValue) : undefined,
+      amountFinanced: formData.type === 'PAWN' ? totalValue : undefined,
+      purchaseTradeValue: formData.type === 'PURCHASE' ? totalValue : undefined,
       periodicRate: Number(formData.periodicRate),
+      transactionDate: formData.transactionDate,
+      maturityDate: formData.maturityDate,
+      expirationDate: formData.expirationDate,
       items: formData.items
     };
 
     await onSubmit(submitData);
-  }, [formData, onSubmit]);
+  }, [formData, totalValue, onSubmit]);
 
-  // ✅ Add or update item
   const handleSaveItem = useCallback((item: InventoryItemDraft) => {
     if (editingItem) {
-      // Update existing item
       setFormData(prev => ({
         ...prev,
         items: prev.items.map(i => i.id === item.id ? item : i)
       }));
     } else {
-      // Add new item
       setFormData(prev => ({
         ...prev,
         items: [...prev.items, item]
@@ -89,13 +95,11 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     setEditingItem(null);
   }, [editingItem]);
 
-  // ✅ Edit existing item
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
     setEditingItem(item);
     setShowItemModal(true);
   }, []);
 
-  // ✅ Remove item
   const handleRemoveItem = useCallback((itemId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -103,16 +107,25 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
     }));
   }, []);
 
-  // ✅ Calculate total value
-  const totalValue = formData.items.reduce((sum, item) => {
-    const value = Number(item.amount) || 0;
-    const quantity = Number(item.quantity) || 1;
-    return sum + (value * quantity);
-  }, 0);
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
+        <TransactionDetails
+          type={formData.type}
+          periodicRate={formData.periodicRate}
+          transactionDate={formData.transactionDate}
+          maturityDate={formData.maturityDate}
+          expirationDate={formData.expirationDate}
+          totalValue={totalValue}
+          onTypeChange={(value) => {
+            setFormData(prev => ({ ...prev, type: value }));
+          }}
+          onPeriodicRateChange={(value) => setFormData(prev => ({ ...prev, periodicRate: value }))}
+          onTransactionDateChange={(value) => setFormData(prev => ({ ...prev, transactionDate: value }))}
+          onMaturityDateChange={(value) => setFormData(prev => ({ ...prev, maturityDate: value }))}
+          onExpirationDateChange={(value) => setFormData(prev => ({ ...prev, expirationDate: value }))}
+        />
+
         {/* Items Section */}
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
@@ -150,7 +163,7 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
                     {formData.items.map((item) => (
                       <div key={item.id} className="px-5 py-4 grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center hover:bg-slate-50">
                         <div>
-                          <div className="font-semibold">{item.type}</div>
+                          <div className="font-semibold">{getCategoryName(item.type)}</div>
                           {item.brand && <div className="text-sm text-gray-600">Brand: {item.brand}</div>}
                           {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                         </div>
@@ -183,36 +196,6 @@ export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
             </ScrollArea>
           </CardContent>
         </Card>
-
-        {/* Summary */}
-        {formData.items.length > 0 && (
-          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200 mt-6 max-w-md ml-auto">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <img src={overviewIcon} alt="Summary" className="w-5 h-5" /> Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Total Items:</span>
-                <span className="font-medium">{formData.items.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Total Value:</span>
-                <span className="font-medium">${totalValue.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-semibold border-t-2 border-sky-300 pt-2 mt-2">
-                <span>Transaction Amount:</span>
-                <span>
-                  ${formData.type === 'PAWN'
-                    ? Number(formData.amountFinanced || 0).toFixed(2)
-                    : Number(formData.purchaseTradeValue || 0).toFixed(2)
-                  }
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="flex justify-center mt-6">
           <Button
