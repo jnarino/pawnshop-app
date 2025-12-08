@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,29 +11,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, Loader2, AlertCircle } from 'lucide-react';
 
 interface FindByTicketModalProps {
   open: boolean;
+  loading?: boolean;
+  error?: string | null;
   onClose: () => void;
   onFind: (ticketNumber: string) => void;
 }
 
-export function FindByTicketModal({ open, onClose, onFind }: FindByTicketModalProps) {
+export function FindByTicketModal({ open, loading, error, onClose, onFind }: FindByTicketModalProps) {
   const [ticketNumber, setTicketNumber] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (ticketNumber.trim()) {
+    if (ticketNumber.trim() && !loading) {
       onFind(ticketNumber.trim());
-      setTicketNumber('');
     }
-  };
+  }, [ticketNumber, loading, onFind]);
 
-  const handleClose = () => {
-    setTicketNumber('');
-    onClose();
-  };
+  const handleClose = useCallback(() => {
+    if (!loading) {
+      setTicketNumber('');
+      onClose();
+    }
+  }, [loading, onClose]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -54,6 +57,13 @@ export function FindByTicketModal({ open, onClose, onFind }: FindByTicketModalPr
               </AlertDescription>
             </Alert>
 
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="ticket-number">Ticket Number</Label>
               <Input
@@ -63,17 +73,25 @@ export function FindByTicketModal({ open, onClose, onFind }: FindByTicketModalPr
                 value={ticketNumber}
                 onChange={(e) => setTicketNumber(e.target.value)}
                 autoFocus
+                disabled={loading}
                 className="text-sm"
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!ticketNumber.trim()}>
-              Find
+            <Button type="submit" disabled={!ticketNumber.trim() || loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Finding...
+                </>
+              ) : (
+                'Find'
+              )}
             </Button>
           </DialogFooter>
         </form>

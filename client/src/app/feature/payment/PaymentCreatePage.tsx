@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import type { Customer as CustomerDto } from '../customer/types';
@@ -9,30 +9,20 @@ import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
 import ViewPawnTab from './components/ViewPawnTab';
 import MakePaymentTab from './components/MakePaymentTab';
+import { useFindByTicket } from './hooks/useFindByTicket';
+import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 
 type TabKey = 'customer' | 'viewPawn' | 'locatePawns' | 'makePayment';
-
-interface SelectedPawnTicket {
-  id: string;
-  controlNumber: string;
-  type: 'PAWN' | 'PURCHASE';
-  amountFinanced?: number;
-  totalOfPayments?: number;
-  maturityDate: string;
-  defaultDate: string;
-  pawnStatus: string;
-  items: any[];
-  payments?: any[];
-}
 
 export default function PaymentCreatePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [customer, setCustomer] = useState<CustomerDto | null>(null);
-  const [selectedPawn, setSelectedPawn] = useState<SelectedPawnTicket | null>(null);
+  const [selectedPawn, setSelectedPawn] = useState<CustomerActivePawnTicket | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [findByTicketOpen, setFindByTicketOpen] = useState(false);
 
   const navigate = useNavigate();
+  const { loading: findingTicket, error: findTicketError, findByTicket } = useFindByTicket();
 
   const canNavigateToTab = (tab: TabKey) => {
     if (tab === 'customer') return true;
@@ -56,17 +46,19 @@ export default function PaymentCreatePage() {
     navigate('/', { replace: true });
   };
 
-  const handlePawnSelected = (pawn: SelectedPawnTicket) => {
+  const handlePawnSelected = useCallback((pawn: CustomerActivePawnTicket) => {
     setSelectedPawn(pawn);
     setActiveTab('makePayment');
-  };
+  }, []);
 
-  const handleFindByTicket = (ticketNumber: string) => {
-    // TODO: Implement ticket lookup logic
-    console.log('Finding ticket:', ticketNumber);
-    setFindByTicketOpen(false);
-    setActiveTab('locatePawns');
-  };
+  const handleFindByTicket = useCallback(async (ticketNumber: string) => {
+    const foundCustomer = await findByTicket(ticketNumber);
+    if (foundCustomer) {
+      setCustomer(foundCustomer);
+      setFindByTicketOpen(false);
+      setActiveTab('locatePawns');
+    }
+  }, [findByTicket]);
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -154,6 +146,8 @@ export default function PaymentCreatePage() {
 
       <FindByTicketModal
         open={findByTicketOpen}
+        loading={findingTicket}
+        error={findTicketError}
         onClose={() => setFindByTicketOpen(false)}
         onFind={handleFindByTicket}
       />
