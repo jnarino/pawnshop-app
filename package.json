@@ -1,6 +1,19 @@
 {
+  "name": "pawnshop-app",
+  "version": "1.0.0",
+  "description": "Pawnshop Management Application",
+  "scripts": {
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install && cd ..",
+    "start": "npm run docker:up && concurrently -k -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm run start:server\" \"npm run start:client\"",
+    "start:server": "cd server && npm run dev",
+    "start:client": "cd client && npm run start:dev",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
   "dependencies": {
     "@types/pg": "^8.15.5",
+    "concurrently": "^8.2.2",
     "electron": "^39.0.0",
     "escpos": "^3.0.0-alpha.6",
     "escpos-usb": "^3.0.0-alpha.4",
