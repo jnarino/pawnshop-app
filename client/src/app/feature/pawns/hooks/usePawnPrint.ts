@@ -1,0 +1,207 @@
+import { useCallback, useState } from 'react';
+import { TransactionFormPrinter } from '@/app/core/printing/TransactionFormPrinter';
+import { LabelPrinter } from '@/app/core/printing/LabelPrinter';
+import type { TransactionPrintData } from '@/app/core/printing/TransactionFormPrinter';
+import type { LabelPrintData } from '@/app/core/printing/LabelPrinter';
+import type { PawnTicketCreateResponse } from '@/app/core/api/pawnTicketApi';
+import type { Customer } from '@/app/feature/customer';
+
+export interface PrintItem {
+  id: string;
+  inventoryNumber: string;
+  description: string;
+  amount: string;
+  quantity?: number;
+}
+
+export interface FormDataItem {
+  type: string;
+  brand?: string;
+  model?: string;
+  serial?: string;
+  description?: string;
+  amount?: string;
+  quantity?: string;
+  ownerNumber?: string;
+}
+
+interface PrintFormParams {
+  ticket: PawnTicketCreateResponse;
+  customer: Customer;
+  items: FormDataItem[];
+}
+
+interface UsePawnPrintResult {
+  printTransactionForm: (params: PrintFormParams) => Promise<boolean>;
+  printLabels: (
+    controlNumber: string,
+    items: PrintItem[],
+    labelCounts: Record<string, number>
+  ) => Promise<boolean>;
+  buildPrintItems: (ticket: PawnTicketCreateResponse, items: FormDataItem[]) => PrintItem[];
+  isFormPrinting: boolean;
+  isLabelsPrinting: boolean;
+  formError: string | null;
+  labelsError: string | null;
+}
+
+function formatDate(dateStr: string | number | Date): string {
+  const d = new Date(dateStr);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
+function formatMoney(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isFinite(num) ? num.toFixed(2) : '';
+}
+
+export function usePawnPrint(): UsePawnPrintResult {
+  const [isFormPrinting, setIsFormPrinting] = useState(false);
+  const [isLabelsPrinting, setIsLabelsPrinting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [labelsError, setLabelsError] = useState<string | null>(null);
+
+  const buildPrintItems = useCallback((
+    ticket: PawnTicketCreateResponse,
+    items: FormDataItem[]
+  ): PrintItem[] => {
+    return items.map((item, index) => ({
+      id: ticket.itemIds[index] || `item-${index}`,
+      inventoryNumber: `${ticket.controlNumber}-${index + 1}`,
+      description: item.description || `${item.brand || ''} ${item.model || ''}`.trim() || 'Item',
+      amount: formatMoney(item.amount),
+      quantity: item.quantity ? parseInt(item.quantity, 10) : 1,
+    }));
+  }, []);
+
+  const printTransactionForm = useCallback(async (params: PrintFormParams): Promise<boolean> => {
+    setIsFormPrinting(true);
+    setFormError(null);
+
+    try {
+      const { ticket, customer, items } = params;
+
+      const printData: TransactionPrintData = {
+        transactionDate: ticket.transactionDate,
+        maturityDate: ticket.maturityDate,
+        defaultDate: ticket.defaultDate,
+        controlNumber: ticket.controlNumber,
+        ticketType: ticket.transactionType,
+
+        customerLastName: customer.lastName,
+        customerFirst: customer.firstName,
+        customerMiddle: customer.middleName || undefined,
+        customerBirthdate: customer.dateOfBirth ? formatDate(customer.dateOfBirth) : undefined,
+        customerSex: customer.sex || undefined,
+        customerRace: customer.race || undefined,
+
+        customerAddress: customer.streetAddress || undefined,
+        customerCity: customer.city || undefined,
+        customerState: customer.stateUs || undefined,
+        customerZip: customer.zipCode || undefined,
+        customerPhone: customer.phoneNumber || undefined,
+
+        customerEmployer: customer.employerName || undefined,
+
+        customerIdNumber: customer.idNumber || undefined,
+        customerIdType: customer.idType || undefined,
+        customerIdState: customer.idState || undefined,
+
+        customerHeight: customer.height || undefined,
+        customerWeight: customer.weight || undefined,
+        customerEyes: customer.eyeColor || undefined,
+        customerHair: customer.hairColor || undefined,
+
+        items: items.map((item) => ({
+          serialNumber: item.serial || undefined,
+          ownerAppliedNumber: item.ownerNumber || undefined,
+          brand: item.brand || undefined,
+          modelNumber: item.model || undefined,
+          description: item.description || '',
+          amount: formatMoney(item.amount),
+        })),
+
+        amountFinanced: formatMoney(ticket.amountFinanced),
+        totalOfPayments: formatMoney(ticket.amountFinanced),
+      };
+
+      const printer = new TransactionFormPrinter();
+      const printResult = await printer.print(printData);
+
+      if (!printResult.success) {
+        setFormError(printResult.error || 'Form print failed');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Form print failed';
+      setFormError(message);
+      return false;
+    } finally {
+      setIsFormPrinting(false);
+    }
+  }, []);
+
+  const printLabels = useCallback(async (
+    controlNumber: string,
+    items: PrintItem[],
+    labelCounts: Record<string, number>
+  ): Promise<boolean> => {
+    setIsLabelsPrinting(true);
+    setLabelsError(null);
+
+    try {
+      const labels: LabelPrintData[] = [];
+
+      for (const item of items) {
+        const count = labelCounts[item.id] || 0;
+        for (let i = 0; i < count; i++) {
+          labels.push({
+            inventoryNumber: item.inventoryNumber,
+            description: item.description,
+            amount: item.amount,
+            controlNumber,
+            itemId: item.id,
+            labelIndex: i + 1,
+            totalLabels: count,
+          });
+        }
+      }
+
+      if (labels.length === 0) {
+        return true;
+      }
+
+      const printer = new LabelPrinter();
+      const printResult = await printer.printMultiple(labels);
+
+      if (!printResult.success) {
+        setLabelsError(printResult.error || 'Label print failed');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Label print failed';
+      setLabelsError(message);
+      return false;
+    } finally {
+      setIsLabelsPrinting(false);
+    }
+  }, []);
+
+  return {
+    printTransactionForm,
+    printLabels,
+    buildPrintItems,
+    isFormPrinting,
+    isLabelsPrinting,
+    formError,
+    labelsError,
+  };
+}

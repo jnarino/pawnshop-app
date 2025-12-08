@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
-import { useSubtypeMapping } from '@/app/shared/hooks/useSubtypeMapping';
 import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft, DEFAULT_ITEM } from './types';
 
@@ -15,13 +14,37 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
-  const [typeQuery, setTypeQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const categoriesHook = useInventoryCategories();
-  const categories = categoriesHook?.leafCategories || [];
+  const allCategories = categoriesHook?.categories || []; // All categories with depth info
+  const buildCategoryTree = categoriesHook?.buildCategoryTree;
   const isLoading = categoriesHook?.loading || false;
-  const subtypes = useSubtypeMapping(draft.type);
+
+  const selectedCategory = useMemo(() => 
+    allCategories.find(c => c.id === draft.type),
+    [allCategories, draft.type]
+  );
+  
+  // Get subtypes (children of selected category)
+  const subtypes = useMemo(() => {
+    if (!selectedCategory?.id || !buildCategoryTree) return [];
+    return buildCategoryTree(selectedCategory.id).map(c => c.name);
+  }, [selectedCategory, buildCategoryTree]);
+
+  // Find selected subtype object
+  const selectedSubtype = useMemo(() => 
+    allCategories.find(c => 
+      c.name.toUpperCase() === draft.sub1?.toUpperCase() && 
+      c.parent_id === selectedCategory?.id
+    ),
+    [allCategories, draft.sub1, selectedCategory]
+  );
+
+  // Get brand options (children of selected subtype)
+  const brandOptions = useMemo(() => {
+    if (!selectedSubtype?.id || !buildCategoryTree) return [];
+    return buildCategoryTree(selectedSubtype.id).map(c => c.name);
+  }, [selectedSubtype, buildCategoryTree]);
 
   // Initialize form data
   useEffect(() => {
@@ -39,40 +62,34 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
         weightUnit: 'Grams'
       };
       setDraft(formData);
-      setTypeQuery(initial?.type || '');
       setError(null);
     }
   }, [open, initial]);
 
-  // Category suggestions
-  const suggestions = categories.filter(cat =>
-    cat?.name?.toLowerCase().includes(typeQuery.toLowerCase())
-  ).slice(0, 10);
-
-  // Category type detection
-  const isJewelry = draft.type.toLowerCase().includes('jewelry');
-  const isFirearm = draft.type.toLowerCase().includes('firearm');
-  const isRing = isJewelry && draft.type.toLowerCase().includes('ring');
+  const categoryName = selectedCategory?.name?.toLowerCase() || '';
+  const isJewelry = categoryName.includes('jewelry');
+  const isFirearm = categoryName.includes('firearm');
+  const isRing = isJewelry && (categoryName.includes('ring') || (draft.sub1?.toLowerCase().includes('ring') ?? false));
 
   // Karat options based on metal
   const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
 
-  // Update field handler with uppercase conversion
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
-    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber') {
+    // Don't uppercase: description, ownerNumber, type, metal, karat (these need exact matching)
+    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber' && field !== 'type' && field !== 'metal' && field !== 'karat') {
       processedValue = value.toUpperCase();
     }
     
     setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 
-  // Type selection
-  const selectType = useCallback((categoryName: string) => {
-    updateField('type', categoryName);
-    setTypeQuery(categoryName);
-    setShowSuggestions(false);
+  // Subtype selection
+  const handleSubtypeChange = useCallback((subtype: string) => {
+    updateField('sub1', subtype);
+    updateField('brand', ''); // Clear brand
+    updateField('style', ''); // Clear style
   }, [updateField]);
 
   // Barcode scanning
@@ -138,21 +155,17 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     error,
     barcodeMode,
     setBarcodeMode,
-    typeQuery,
-    setTypeQuery,
-    showSuggestions,
-    setShowSuggestions,
-    categories,
-    suggestions,
+    categories: allCategories,
     isLoading,
     subtypes,
+    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
-    selectType,
+    handleSubtypeChange,
     handleSubmit,
-    handleMetalChange
+    handleMetalChange,
   };
 }
