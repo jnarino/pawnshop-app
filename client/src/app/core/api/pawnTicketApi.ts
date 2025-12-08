@@ -34,14 +34,22 @@ export interface CreatePawnTicketPayload {
   items: Partial<PawnItem>[];
 }
 
-export interface PawnTicketResponse {
+export interface PawnTicketCreateResponse {
   id: string;
   controlNumber: string;
-  // Add other fields if needed
+  transactionType: 'PAWN' | 'PURCHASE';
+  customerId: string;
+  amountFinanced: number | null;
+  purchaseTradeValue: number | null;
+  transactionDate: string;
+  maturityDate: string;
+  defaultDate: string;
+  pawnStatus: string;
+  itemIds: string[];
 }
 
 export const pawnTicketApi = {
-  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
+  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketCreateResponse> => {
     return http('/api/pawn-ticket', {
       method: 'POST',
       body: JSON.stringify(payload),
