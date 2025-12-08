@@ -16,15 +16,15 @@ type JwtPayload = {
   role: string;
 };
 
-export class InvalidCredentialsError extends Error {}
-export class InvalidRefreshTokenError extends Error {}
+export class InvalidCredentialsError extends Error { }
+export class InvalidRefreshTokenError extends Error { }
 
 export class AuthService {
   constructor(
     private readonly userRepo: AppUserRepository,
     private readonly sessionRepo: AppUserSessionRepository,
     private readonly jwtSecret: string
-  ) {}
+  ) { }
 
   async login(username: string, password: string): Promise<LoginResponseDto> {
     const user = await this.userRepo.findByUsername(username);
