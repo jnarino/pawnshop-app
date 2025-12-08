@@ -71,66 +71,22 @@ CREATE TABLE IF NOT EXISTS app_user (
   starting_date DATE NOT NULL DEFAULT CURRENT_DATE,
   terminated_date DATE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  role_id SMALLINT NOT NULL REFERENCES role(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS app_user_name_idx ON app_user (last_name, first_name);
 
-CREATE TABLE IF NOT EXISTS app_user_role (
-  user_id UUID REFERENCES app_user(id) ON DELETE CASCADE,
-  role_id SMALLINT REFERENCES role(id) ON DELETE RESTRICT,
-  PRIMARY KEY (user_id, role_id)
-);
-
-CREATE TABLE IF NOT EXISTS session (
+CREATE TABLE IF NOT EXISTS app_user_session (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at TIMESTAMPTZ NOT NULL,
-  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoked_at TIMESTAMPTZ,
+  refresh_token_hash TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS session_user_idx ON session(user_id);
-
--- Seed / ensure admin user (idempotent)
-DO $$
-DECLARE
-  v_user_id uuid;
-BEGIN
-  INSERT INTO app_user (username, password_hash, first_name, last_name, is_active)
-  VALUES (
-    'admin',
-    '$argon2id$v=19$m=65536,t=3,p=4$oMsE07oMFJ3aaU5sjkoxmA$E+zNFg6jX8oOT1sqf647JfRRWo956qHXGnTo8zdV7YM',
-    'System','Admin', TRUE
-  )
-  ON CONFLICT (username) DO UPDATE SET is_active = TRUE
-  RETURNING id INTO v_user_id;
-
-  INSERT INTO app_user_role (user_id, role_id)
-  VALUES (v_user_id, 1)
-  ON CONFLICT (user_id, role_id) DO NOTHING;
-END
-$$ LANGUAGE plpgsql;
-
------------------------
--- COLORS (master data)
------------------------
-CREATE TABLE IF NOT EXISTS color_group (
-  code TEXT PRIMARY KEY,          -- 'GENERIC_ITEM','FIREARM','JEWELRY_METAL_TONE','JEWELRY_STONE_COLOR','PERSON_HAIR','PERSON_EYE'
-  name TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS color (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_code TEXT NOT NULL REFERENCES color_group(code) ON DELETE RESTRICT,
-  slug TEXT NOT NULL,             -- e.g., 'YELLOW','WHITE','BLACK'
-  name TEXT NOT NULL,             -- display label
-  hex TEXT,                       -- optional swatch (#RRGGBB)
-  legacy_code TEXT,               -- optional short legacy/print code
-  sort_order INT NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE (group_code, slug)
-);
-CREATE INDEX IF NOT EXISTS idx_color_group ON color(group_code);
+CREATE INDEX IF NOT EXISTS app_user_session_user_idx ON app_user_session(user_id);
+CREATE INDEX IF NOT EXISTS app_user_session_refresh_hash_idx ON app_user_session(refresh_token_hash);
 
 -----------------------
 -- Customer
@@ -154,8 +110,8 @@ CREATE TABLE IF NOT EXISTS customer (
   phone_number        TEXT,
   height              TEXT,
   weight              TEXT,
-  hair_color_id       UUID REFERENCES color(id) ON DELETE SET NULL,
-  eye_color_id        UUID REFERENCES color(id) ON DELETE SET NULL,
+  hair_color          TEXT,
+  eye_color           TEXT,
   race                TEXT,
   sex                 TEXT,
   marks               TEXT,
@@ -271,6 +227,33 @@ VALUES
   ('V', NULL, 130)
 ON CONFLICT DO NOTHING;
 
+------------------------------------
+-- Item Attributes: Types & Values
+------------------------------------
+
+-----------------------------
+-- Inventory: Attributes
+-----------------------------
+CREATE TABLE IF NOT EXISTS item_attribute_type (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL UNIQUE,
+    description text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS item_attribute_value (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    attribute_type_id uuid NOT NULL REFERENCES item_attribute_type(id) ON DELETE CASCADE,
+    value text NOT NULL,
+    sort_order integer DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(attribute_type_id, value)
+);
+
+CREATE INDEX IF NOT EXISTS idx_item_attribute_value_type ON item_attribute_value(attribute_type_id);
+
 -----------------------------
 -- Inventory: inventory_item
 -----------------------------
@@ -283,7 +266,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   brand TEXT,
   model TEXT,
   serial_number TEXT,
-  color_id UUID REFERENCES color(id) ON DELETE SET NULL,
+  -- color now stored in item attributes JSONB
   item_condition TEXT,
 
   quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -296,15 +279,17 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   owner_mark TEXT,
   item_description TEXT,
 
-  -- JSON payload for guns/jewelry extras from Composite3/4
+  -- New fields
+  bin_location TEXT,
+  storage_fee NUMERIC(12,2) DEFAULT 0,
   extra JSONB NOT NULL DEFAULT '{}'::jsonb,
   attributes JSONB NOT NULL DEFAULT '{}'::jsonb,
 
   -- Legacy linkages
-  legacy_inventory_number TEXT,       -- INVNUM
-  legacy_item_guid TEXT,              -- Items_ID
-  legacy_category_description TEXT,   -- Composite
-  legacy_brand_color_description TEXT,-- Composit2
+  legacy_inventory_number TEXT,
+  legacy_item_guid TEXT,
+  legacy_category_description TEXT,
+  legacy_brand_color_description TEXT,
 
   inventory_number TEXT UNIQUE,
 
@@ -313,8 +298,6 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS inventory_item_serial_unique
-  ON inventory_item(serial_number) WHERE serial_number IS NOT NULL;
 CREATE INDEX IF NOT EXISTS inventory_item_category_idx ON inventory_item(category_id);
 CREATE INDEX IF NOT EXISTS inventory_item_status_idx   ON inventory_item(status);
 CREATE INDEX IF NOT EXISTS inventory_item_brand_model_idx ON inventory_item(brand, model);
@@ -744,38 +727,4 @@ $$ LANGUAGE plpgsql;
 -----------------------
 -- Attribute dictionary (schema only; seeds later)
 -----------------------
-CREATE TABLE IF NOT EXISTS item_attribute (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  key TEXT UNIQUE NOT NULL,                    -- e.g. 'firearm.type'
-  label TEXT NOT NULL,
-  value_type TEXT NOT NULL DEFAULT 'option'
-    CHECK (value_type IN ('option','text','number','boolean')),
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  sort_order INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-DROP TRIGGER IF EXISTS t_item_attribute_upd ON item_attribute;
-CREATE TRIGGER t_item_attribute_upd
-BEFORE UPDATE ON item_attribute
-FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
-
-CREATE TABLE IF NOT EXISTS item_attribute_option (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  attribute_id UUID NOT NULL REFERENCES item_attribute(id) ON DELETE CASCADE,
-  key TEXT NOT NULL,                              -- canonical (e.g., 'HANDGUN')
-  label TEXT NOT NULL,                            -- human label
-  print_code TEXT,                                -- exact code printed on ticket
-  legacy_code TEXT,                               -- alt/import code
-  color_id UUID REFERENCES color(id) ON DELETE SET NULL, -- optional swatch binding
-  sort_order INT NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE (attribute_id, key)
-);
-CREATE INDEX IF NOT EXISTS idx_attr_option_attr ON item_attribute_option(attribute_id);
-
-CREATE TABLE IF NOT EXISTS item_attribute_applicability (
-  attribute_id UUID NOT NULL REFERENCES item_attribute(id) ON DELETE CASCADE,
-  category_id  UUID NOT NULL REFERENCES inventory_category(id) ON DELETE CASCADE,
-  PRIMARY KEY (attribute_id, category_id)
-);
+-- Removed duplicate item_attribute tables (consolidated on item_attribute_type/value)

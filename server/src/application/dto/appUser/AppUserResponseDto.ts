@@ -1,0 +1,22 @@
+export type AppUserResponseDto = {
+  id: string;
+  username: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  streetAddress: string | null;
+  suiteNumber: string | null;
+  city: string | null;
+  stateUs: string | null;
+  zipCode: string | null;
+  phoneNumber: string | null;
+  ssNumber: string | null;
+  birthDate: string | null;
+  startingDate: string;
+  terminatedDate: string | null;
+  isActive: boolean;
+  roleId: number;
+  roleName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

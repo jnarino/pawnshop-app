@@ -1,0 +1,42 @@
+INSERT INTO app_user (
+  username,
+  password_hash,
+  first_name,
+  middle_name,
+  last_name,
+  street_address,
+  suite_number,
+  city,
+  state_us,
+  zip_code,
+  phone_number,
+  ss_number,
+  birth_date,
+  starting_date,
+  terminated_date,
+  is_active,
+  role_id
+) VALUES (
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17
+)
+RETURNING
+  id,
+  username,
+  password_hash,
+  first_name,
+  middle_name,
+  last_name,
+  street_address,
+  suite_number,
+  city,
+  state_us,
+  zip_code,
+  phone_number,
+  ss_number,
+  birth_date,
+  starting_date,
+  terminated_date,
+  is_active,
+  role_id,
+  created_at,
+  updated_at;

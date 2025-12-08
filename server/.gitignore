@@ -1,45 +1,55 @@
+# Angular specific
+/dist/
+/out-tsc/
+/tmp/
+/coverage/
+/e2e/test-output/
+/.angular/
+.angular/
+
+# Node modules and dependency files
+node_modules/
+/package-lock.json
+/yarn.lock
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Web Tool Uploads
+migration/web-tool/uploads/*
+!migration/web-tool/uploads/.gitkeep
+
+
+# Angular CLI and build artefacts
+/.angular-cli.json
+/.ng/
+
+# TypeScript cache
+*.tsbuildinfo
+
 # Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-# Dependencies
-node_modules
+# Auto-generated database files and migration artifacts
+migration/backup-to-sql-server/data/
+migration/sql-server-to-postgresql/*.json
+migration/sql-server-to-postgresql/.env
+migration/sql-server-to-postgresql/*.log
+migration/backup-to-sql-server/backup/*.dat
+migration/backup-to-sql-server/backup/POLICE.EXP
+migration/backup-to-sql-server/backup/*.zip
 
-# Build output
-dist
-/dist
-build
-*.tsbuildinfo
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS
-Thumbs.db
-
-# Test coverage
-coverage
-.nyc_output
-
-# Temporary files
-*.tmp
-*.temp
-.cache
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
