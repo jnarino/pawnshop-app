@@ -12,11 +12,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     refreshMenu: () => {
         ipcRenderer.send('refresh-menu');
     },
-    printLabels: (items: Array<{ 
-        inventoryNumber: string; 
-        description: string; 
-        amount: string 
+    printLabels: (items: Array<{
+        inventoryNumber: string;
+        description: string;
+        amount: string
     }>) => ipcRenderer.invoke('print-labels', items),
-    
+
     printDocument: (html: string) => ipcRenderer.invoke('print-document', html),
+    getApiConfig: () => ipcRenderer.invoke('get-api-config'),
 });

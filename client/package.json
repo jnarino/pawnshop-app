@@ -51,6 +51,15 @@
     "asarUnpack": [
       "dist-electron/**/*",
       "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/config.json",
+        "to": "config.json",
+        "filter": [
+          "**/*"
+        ]
+      }
     ]
   },
   "description": "Premium Pawnshop Management Client",
