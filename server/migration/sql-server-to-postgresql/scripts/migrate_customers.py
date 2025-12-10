@@ -57,6 +57,14 @@ def migrate_customers():
             race_text = text_map.get(str(row['CUS_RACEFK']))
             id_type_text = text_map.get(str(row['CUS_IDTYP1']))
             
+            # Address & Phone
+            street_address = (row['CUS_ADD1'] or '').strip()
+            suite_number = (row['CUS_ADD2'] or '').strip()
+            
+            ac1 = (row['CUS_AC1'] or '').strip()
+            phone_body = (row['CUS_PHONE1'] or '').strip()
+            phone_number = f"{ac1}{phone_body}"
+            
             # Prepare row
             batch_data.append((
                 new_id,
@@ -65,12 +73,12 @@ def migrate_customers():
                 first_name,
                 (row['CUS_MNAME'] or '').strip(),
                 last_name,
-                (row['CUS_ADD1'] or '').strip(),
-                (row['CUS_ADD2'] or '').strip(),
+                street_address,
+                suite_number,
                 (row['CUS_CITY'] or '').strip(),
                 (row['CUS_STATE'] or '').strip(),
                 (row['CUS_ZIP'] or '').strip(),
-                (row['CUS_PHONE1'] or '').strip(),
+                phone_number,
                 (row['CUS_HEIGHT'] or '').strip(),
                 str(row['CUS_WEIGHT']) if row['CUS_WEIGHT'] else None,
                 hair_color_text,
