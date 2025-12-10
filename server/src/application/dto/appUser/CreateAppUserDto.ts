@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const createAppUserSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
+  username: z.string().min(1).max(50),
+  password: z.string().min(1).max(100),
   firstName: z.string().min(1).max(100),
   middleName: z.string().max(100).optional().nullable(),
   lastName: z.string().min(1).max(100),

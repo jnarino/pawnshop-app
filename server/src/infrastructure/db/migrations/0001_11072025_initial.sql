@@ -173,6 +173,7 @@ CREATE TABLE IF NOT EXISTS inventory_category (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS trg_inventory_category_updated ON inventory_category;
 CREATE TRIGGER trg_inventory_category_updated
 BEFORE UPDATE ON inventory_category
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -188,6 +189,7 @@ CREATE TABLE IF NOT EXISTS inventory_subcategory (
   CONSTRAINT inventory_subcategory_unique_code UNIQUE (inventory_category_id, code)
 );
 
+DROP TRIGGER IF EXISTS trg_inventory_subcategory_updated ON inventory_subcategory;
 CREATE TRIGGER trg_inventory_subcategory_updated
 BEFORE UPDATE ON inventory_subcategory
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -203,6 +205,7 @@ CREATE TABLE IF NOT EXISTS inventory_brand (
   CONSTRAINT inventory_brand_unique_code UNIQUE (inventory_category_id, code)
 );
 
+DROP TRIGGER IF EXISTS trg_inventory_brand_updated ON inventory_brand;
 CREATE TRIGGER trg_inventory_brand_updated
 BEFORE UPDATE ON inventory_brand
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
@@ -220,6 +223,7 @@ CREATE TABLE IF NOT EXISTS inventory_status (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 DROP TRIGGER IF EXISTS trg_inventory_status_updated ON inventory_status;
 CREATE TRIGGER trg_inventory_status_updated
 BEFORE UPDATE ON inventory_status
