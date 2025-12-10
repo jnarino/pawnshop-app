@@ -18,6 +18,13 @@ def migrate_transactions():
         print("⚠️ customer_map.json not found. Transactions might have missing customers.")
         customer_map = {}
 
+    # Load User Map
+    try:
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        user_map = {}
+
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
         mssql_cursor = mssql_conn.cursor(as_dict=True)
@@ -54,7 +61,8 @@ def migrate_transactions():
                 AMOUNT, 
                 TENDERTYP1, TENDERAMT1, 
                 TENDERTYP2, TENDERAMT2,
-                TENDCHANGE
+                TENDCHANGE,
+                Usr_FK
             FROM dbo.Acct
             WHERE DATEin > '1980-01-01'
             ORDER BY DATEin
@@ -95,10 +103,16 @@ def migrate_transactions():
                 # Customer link
                 customer_pk = str(row['CUS_FK'])
                 customer_id = customer_map.get(customer_pk)
+
+                # Clerk link
+                clerk_id = user_map.get(str(row['Usr_FK']))
                 
                 # Legacy PK linkage
                 legacy_acct_pk = row['Acct_PK']
                 legacy_ticketnum = str(row['TICKETNUM']).strip() if row['TICKETNUM'] else None
+
+                created_at = occurred_at
+                updated_at = occurred_at
 
                 batch_tx.append((
                     tx_id,
@@ -109,7 +123,10 @@ def migrate_transactions():
                     change,
                     note,
                     legacy_acct_pk,
-                    legacy_ticketnum
+                    legacy_ticketnum,
+                    clerk_id,
+                    created_at,
+                    updated_at
                 ))
                 
                 # Tenders
@@ -175,7 +192,7 @@ def _flush_batches(cursor, txs, tenders, payments):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, customer_id, type_id, occurred_at, amount, tender_change, note, legacy_acct_pk, legacy_ticketnum
+                id, customer_id, type_id, occurred_at, amount, tender_change, note, legacy_acct_pk, legacy_ticketnum, clerk_user_id, created_at, updated_at
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     if tenders:

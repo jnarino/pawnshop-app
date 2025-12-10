@@ -407,7 +407,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT pawn_ticket_finance_charge_min
-    CHECK (finance_charge IS NULL OR finance_charge >= 3.00),
+    CHECK (finance_charge IS NULL OR finance_charge >= 0.00),
 
   CONSTRAINT pawn_ticket_amount_consistency CHECK (
     (transaction_type = 'PAWN'
