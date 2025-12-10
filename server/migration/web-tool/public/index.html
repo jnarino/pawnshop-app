@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pawnshop Installer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .step-active {
+            border-color: #3b82f6;
+            background: #1e293b;
+        }
+
+        .step-completed {
+            border-color: #22c55e;
+            opacity: 0.7;
+        }
+
+        .log-box {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col items-center justify-center p-8">
+
+    <div class="w-full max-w-4xl bg-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col h-full max-h-[800px]">
+
+        <!-- Header -->
+        <div class="bg-slate-900 p-6 border-b border-slate-700 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                    Pawnshop Installer</h1>
+                <p class="text-slate-400 text-sm">Setup Wizard v1.0</p>
+            </div>
+            <div id="status-badge"
+                class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Ready to Install
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar / Steps -->
+            <div class="w-1/3 bg-slate-800/50 border-r border-slate-700 p-6 space-y-4 overflow-y-auto custom-scrollbar">
+                <div id="step-1" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">1. Prerequisites</h3>
+                    <p class="text-xs text-slate-400">Check Node.js, Python, Docker</p>
+                </div>
+                <div id="step-2" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">2. Environment</h3>
+                    <p class="text-xs text-slate-400">Select Dev or Prod</p>
+                </div>
+                <div id="step-3" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">3. Setup Type</h3>
+                    <p class="text-xs text-slate-400">Migrate or Fresh Install</p>
+                </div>
+                <div id="step-4" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">4. Docker Setup</h3>
+                    <p class="text-xs text-slate-400">Create Backend Containers</p>
+                </div>
+                <div id="step-5" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">5. Admin User</h3>
+                    <p class="text-xs text-slate-400">Create Setup Account</p>
+                </div>
+                <div id="step-6" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">6. Installation</h3>
+                    <p class="text-xs text-slate-400">Build Backend API</p>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 flex flex-col bg-slate-900/50 relative">
+
+                <!-- Main View -->
+                <div id="main-content" class="flex-1 p-8 overflow-y-auto">
+                    <!-- Dynamic Content Loaded Here -->
+                    <div id="view-intro" class="text-center space-y-6 pt-10">
+                        <div class="text-6xl">🚀</div>
+                        <h2 class="text-3xl font-bold">Welcome to Setup</h2>
+                        <p class="text-slate-400">This wizard will guide you through the installation process.</p>
+                        <button onclick="startInstaller()"
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105">
+                            Start Installation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Logs Terminal (Bottom) -->
+                <div class="h-48 bg-black border-t border-slate-700 flex flex-col">
+                    <div class="px-4 py-1 bg-slate-800 text-xs text-slate-400 flex justify-between">
+                        <span>Terminal Output</span>
+                        <button onclick="clearLogs()" class="hover:text-white">Clear</button>
+                    </div>
+                    <div id="logs" class="log-box flex-1 overflow-y-auto p-4 space-y-1 text-slate-300">
+                        <div class="text-slate-500 italic">Waiting for logs...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const logsEl = document.getElementById('logs');
+        const contentEl = document.getElementById('main-content');
+
+        // Global State
+        let selectedEnvironment = 'prod'; // 'dev' or 'prod'
+        let selectedSetupType = null;
+        let currentState = 0;
+
+        // Logger
+        socket.on('log', ({ message, type }) => {
+            const div = document.createElement('div');
+            div.textContent = `> ${message}`;
+            if (type === 'error') div.className = 'text-red-400';
+            if (type === 'success') div.className = 'text-green-400';
+            if (type === 'step') div.className = 'text-blue-400 font-bold mt-2';
+
+            logsEl.appendChild(div);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        });
+
+        function clearLogs() { logsEl.innerHTML = ''; }
+
+        async function startInstaller() {
+            // Step 1: Dependencies
+            setActiveStep(1);
+            setView('Checking Dependencies...', '<div class="animate-pulse flex justify-center"><div class="h-8 w-8 bg-blue-500 rounded-full"></div></div>');
+
+            try {
+                const res = await fetch('/api/dependencies');
+                const deps = await res.json();
+
+                // Installation guides
+                const installGuides = {
+                    node: {
+                        mac: 'Install via Homebrew: <code>brew install node</code> or download from <a href="https://nodejs.org" target="_blank" class="text-blue-400 underline">nodejs.org</a>',
+                        windows: 'Download installer from <a href="https://nodejs.org" target="_blank" class="text-blue-400 underline">nodejs.org</a>'
+                    },
+                    python: {
+                        mac: 'Python 3 is pre-installed on macOS. If needed: <code>brew install python3</code>',
+                        windows: 'Download from <a href="https://www.python.org/downloads/" target="_blank" class="text-blue-400 underline">python.org</a>'
+                    },
+                    docker: {
+                        mac: 'Download Docker Desktop from <a href="https://www.docker.com/products/docker-desktop" target="_blank" class="text-blue-400 underline">docker.com</a>',
+                        windows: 'Download Docker Desktop from <a href="https://www.docker.com/products/docker-desktop" target="_blank" class="text-blue-400 underline">docker.com</a>'
+                    },
+                    dockerCompose: {
+                        mac: 'Included with Docker Desktop',
+                        windows: 'Included with Docker Desktop'
+                    }
+                };
+
+                const platform = navigator.platform.toLowerCase().includes('mac') ? 'mac' : 'windows';
+
+                // Render results
+                let html = '<h2 class="text-xl font-bold mb-4">System Checks</h2><div class="space-y-3">';
+                for (const [key, val] of Object.entries(deps)) {
+                    // Logic for visual status
+                    const isOk = val.installed;
+                    const icon = isOk ? '✅' : '❌';
+                    const color = isOk ? 'text-green-400' : 'text-red-400';
+
+                    html += `<div class="p-3 bg-slate-800 rounded ${color}">
+                        <div class="flex items-center justify-between">
+                            <span class="capitalize font-mono">${key}</span>
+                            <span>${val.version || 'Missing'} ${icon}</span>
+                        </div>`;
+
+                    // Show installation guide if missing
+                    if (!val.installed) {
+                        const guide = installGuides[key]?.[platform] || 'Please install manually';
+                        html += `<div class="mt-2 pt-2 border-t border-slate-700 text-xs text-slate-300">
+                            <strong class="text-blue-400">📦 How to install:</strong><br>
+                            <div class="mt-1 pl-4">${guide}</div>
+                        </div>`;
+                    }
+
+                    html += `</div>`;
+                }
+                // Next Button
+                html += `<div class="mt-6 flex justify-end">
+                    <button onclick="showEnvironmentSelection()" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Continue →</button>
+                </div>`;
+
+                setViewHtml(html);
+
+            } catch (e) {
+                logError(e.message);
+            }
+        }
+
+        function showEnvironmentSelection() {
+            setActiveStep(2);
+            let html = `<h2 class="text-xl font-bold mb-4">Select Environment</h2>
+            <p class="mb-6 text-slate-400">Choose the environment for this installation:</p>
+            
+            <div class="space-y-4">
+                <!-- PROD -->
+                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-blue-500 transition-all cursor-pointer" onclick="selectEnvironment('prod')">
+                    <div class="flex items-start">
+                        <div class="text-4xl mr-4">🏭</div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg mb-2">Production (Default)</h3>
+                            <p class="text-sm text-slate-400">Standard deployment configuration.</p>
+                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
+                                <li>• Postgres Port: 54330</li>
+                                <li>• SQL Server Port: 14330</li>
+                                <li>• API Port: 3000</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEV -->
+                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-yellow-500 transition-all cursor-pointer" onclick="selectEnvironment('dev')">
+                    <div class="flex items-start">
+                        <div class="text-4xl mr-4">🛠️</div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg mb-2">Development</h3>
+                            <p class="text-sm text-slate-400">Isolated environment for testing/dev.</p>
+                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
+                                <li>• Postgres Port: 54331</li>
+                                <li>• SQL Server Port: 14331</li>
+                                <li>• API Port: 3001</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            setViewHtml(html);
+        }
+
+        function selectEnvironment(env) {
+            selectedEnvironment = env;
+            console.log('Selected Env:', env);
+            showSetupChoice();
+        }
+
+        async function showDockerSetup() {
+            setActiveStep(4);
+            setView('Checking Docker Containers...', '<div class="animate-pulse flex justify-center"><div class="h-8 w-8 bg-blue-500 rounded-full"></div></div>');
+
+            try {
+                const res = await fetch('/api/containers');
+                const containers = await res.json();
+
+                // Render container status
+                let html = '<h2 class="text-xl font-bold mb-4">Docker Container Setup</h2>';
+                html += '<p class="text-slate-400 mb-6">Production containers for SQL Server and PostgreSQL:</p>';
+                html += '<div class="space-y-3">';
+
+                // SQL Server
+                const sqlStatus = containers[selectedEnvironment].sqlserver;
+                const sqlIcon = sqlStatus === 'running' ? '✅' : sqlStatus === 'stopped' ? '⏸️' : '❌';
+                const sqlColor = sqlStatus === 'running' ? 'text-green-400' : sqlStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
+                html += `<div class="p-4 bg-slate-800 rounded ${sqlColor}">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono">SQL Server (Production)</span>
+                        <span class="capitalize">${sqlStatus} ${sqlIcon}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">Port: 14330</div>
+                </div>`;
+
+                const pgStatus = containers[selectedEnvironment].postgres;
+                const pgIcon = pgStatus === 'running' ? '✅' : pgStatus === 'stopped' ? '⏸️' : '❌';
+                const pgColor = pgStatus === 'running' ? 'text-green-400' : pgStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
+                html += `<div class="p-4 bg-slate-800 rounded ${pgColor}">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono">PostgreSQL (Production)</span>
+                        <span class="capitalize">${pgStatus} ${pgIcon}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">Port: 54330</div>
+                </div>`;
+
+                html += '</div>';
+
+                // Action buttons
+                const needsSetup = sqlStatus === 'missing' || pgStatus === 'missing';
+                const needsStart = sqlStatus === 'stopped' || pgStatus === 'stopped';
+
+                if (needsSetup) {
+                    html += `<div class="mt-6">
+                        <button onclick="setupContainers()" class="w-full px-4 py-3 bg-green-600 rounded hover:bg-green-500 font-bold">
+                            🐳 Create Production Containers
+                        </button>
+                        <p class="text-xs text-slate-400 mt-2 text-center">This will pull Docker images and create containers (may take a few minutes)</p>
+                    </div>`;
+                } else if (needsStart) {
+                    html += `<div class="mt-6">
+                        <button onclick="setupContainers()" class="w-full px-4 py-3 bg-yellow-600 rounded hover:bg-yellow-500 font-bold">
+                            ▶️ Start Stopped Containers
+                        </button>
+                    </div>`;
+                } else {
+                    html += `<div class="mt-6 flex justify-end">
+                        <button onclick="showMigration()" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Continue →</button>
+                    </div>`;
+                }
+
+                setViewHtml(html);
+            } catch (e) {
+                setView('Error', `Failed to check containers: ${e.message}`);
+            }
+        }
+
+        async function setupContainers() {
+            setView('Setting Up Containers...', 'Please wait while Docker images are pulled and containers are created. Check the terminal logs below for progress.');
+
+            try {
+                const res = await fetch('/api/containers/setup', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Refresh the view
+                    showDockerSetup();
+                } else {
+                    alert('Container setup failed. Check logs.');
+                }
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+            }
+        }
+
+        async function showSetupChoice() {
+            setActiveStep(3);
+
+            let html = `<h2 class="text-xl font-bold mb-4">Choose Setup Type</h2>
+            <p class="mb-6 text-slate-400">How would you like to set up your database?</p>
+            
+            <div class="space-y-4">
+                <!-- Option 1: Migrate from Backup -->
+                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-blue-500 transition-all cursor-pointer" onclick="selectSetupType('migrate')">
+                    <div class="flex items-start">
+                        <div class="text-4xl mr-4">📦</div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg mb-2">Migrate from SQL Server Backup</h3>
+                            <p class="text-sm text-slate-400">Restore an existing SQL Server backup and migrate all data to PostgreSQL</p>
+                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
+                                <li>• Requires SQL Server .dat/.bak backup file</li>
+                                <li>• Migrates customers, inventory, pawn tickets, and gun log</li>
+                                <li>• Creates both SQL Server and PostgreSQL containers</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Fresh Install -->
+                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-green-500 transition-all cursor-pointer" onclick="selectSetupType('fresh')">
+                    <div class="flex items-start">
+                        <div class="text-4xl mr-4">🆕</div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg mb-2">Fresh Installation</h3>
+                            <p class="text-sm text-slate-400">Start with an empty database with all tables created</p>
+                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
+                                <li>• No backup file required</li>
+                                <li>• Creates empty database schema</li>
+                                <li>• Only creates PostgreSQL container</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+            setViewHtml(html);
+        }
+
+
+
+        async function selectSetupType(type) {
+            selectedSetupType = type;
+            showDockerSetup(type);
+        }
+
+        async function showDockerSetup(setupType) {
+            setActiveStep(4);
+            setView('Checking Docker Containers...', '<div class="animate-pulse flex justify-center"><div class="h-8 w-8 bg-blue-500 rounded-full"></div></div>');
+
+            try {
+                const res = await fetch('/api/containers');
+                const containers = await res.json();
+
+                // Determine which containers are needed
+                const needsSqlServer = setupType === 'migrate';
+
+                // Render container status
+                const envLabel = selectedEnvironment === 'prod' ? 'Production' : 'Development';
+                let html = `<h2 class="text-xl font-bold mb-4">Docker Container Setup</h2>`;
+                html += `<p class="text-slate-400 mb-6">Setting up containers for ${setupType === 'migrate' ? 'migration' : 'fresh installation'} in <b>${selectedEnvironment.toUpperCase()}</b> environment:</p>`;
+                html += '<div class="space-y-3">';
+
+                // SQL Server (only for migration)
+                if (needsSqlServer) {
+                    const sqlStatus = containers[selectedEnvironment].sqlserver;
+                    const sqlIcon = sqlStatus === 'running' ? '✅' : sqlStatus === 'stopped' ? '⏸️' : '❌';
+                    const sqlColor = sqlStatus === 'running' ? 'text-green-400' : sqlStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
+                    html += `<div class="p-4 bg-slate-800 rounded ${sqlColor}">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono">SQL Server (${envLabel})</span>
+                            <span class="capitalize">${sqlStatus} ${sqlIcon}</span>
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">Port: ${selectedEnvironment === 'prod' ? '14330' : '14331'} • Required for migration</div>
+                    </div>`;
+                }
+
+                // PostgreSQL
+                const pgStatus = containers[selectedEnvironment].postgres;
+                const pgIcon = pgStatus === 'running' ? '✅' : pgStatus === 'stopped' ? '⏸️' : '❌';
+                const pgColor = pgStatus === 'running' ? 'text-green-400' : pgStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
+                html += `<div class="p-4 bg-slate-800 rounded ${pgColor}">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono">PostgreSQL (${envLabel})</span>
+                        <span class="capitalize">${pgStatus} ${pgIcon}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">Port: ${selectedEnvironment === 'prod' ? '54330' : '54331'} • Required</div>
+                </div>`;
+
+                html += '</div>';
+
+                // Action buttons
+                const sqlNeedsSetup = needsSqlServer && (containers[selectedEnvironment].sqlserver === 'missing' || containers[selectedEnvironment].sqlserver === 'stopped');
+                const pgNeedsSetup = containers[selectedEnvironment].postgres === 'missing' || containers[selectedEnvironment].postgres === 'stopped';
+                const needsSetup = sqlNeedsSetup || pgNeedsSetup;
+
+                if (needsSetup) {
+                    html += `<div class="mt-6">
+                        <button onclick="setupContainers('${setupType}')" class="w-full px-4 py-3 bg-green-600 rounded hover:bg-green-500 font-bold">
+                            🐳 Create Required Containers
+                        </button>
+                        <p class="text-xs text-slate-400 mt-2 text-center">This will pull Docker images and create containers (may take a few minutes)</p>
+                    </div>`;
+                } else {
+                    html += `<div class="mt-6 flex gap-3">
+                        <button onclick="showSetupChoice()" class="px-4 py-2 bg-slate-600 rounded hover:bg-slate-500">← Back</button>
+                        <button onclick="continueAfterDocker('${setupType}')" class="flex-1 px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Continue →</button>
+                    </div>`;
+                }
+
+                setViewHtml(html);
+            } catch (e) {
+                setView('Error', `Failed to check containers: ${e.message}`);
+            }
+        }
+
+        async function setupContainers(setupType) {
+            setView('Setting Up Containers...', 'Please wait while Docker images are pulled and containers are created. Check the terminal logs below for progress.');
+
+            try {
+                const res = await fetch('/api/containers/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ env: selectedEnvironment, setupType })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Refresh the view
+                    showDockerSetup(setupType);
+                } else {
+                    alert('Container setup failed. Check logs.');
+                }
+            } catch (e) {
+                alert(`Error: ${e.message} `);
+            }
+        }
+
+        async function continueAfterDocker(setupType) {
+            if (setupType === 'migrate') {
+                showMigrationUpload();
+            } else {
+                runFreshInstall();
+            }
+        }
+
+        async function showMigrationUpload() {
+            let html = `<h2 class="text-xl font-bold mb-4">Database Migration</h2>
+            <p class="mb-4 text-slate-400">Please select your SQL Server backup file (.dat or .zip) to restore:</p>
+            
+            <div class="mb-6 p-6 border-2 border-dashed border-slate-600 rounded-lg text-center hover:border-blue-500 transition-colors bg-slate-800/30">
+                <input type="file" id="backup-input" class="hidden" onchange="updateFileName(this)">
+                <label for="backup-input" class="cursor-pointer flex flex-col items-center justify-center">
+                    <div class="text-4xl mb-2">📁</div>
+                    <span id="file-label" class="text-blue-400 font-bold">Click to select file</span>
+                    <span class="text-xs text-slate-500 mt-1">Supported: .dat, .zip, .bak</span>
+                </label>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="showDockerSetup('migrate')" class="px-4 py-2 bg-slate-600 rounded hover:bg-slate-500">← Back</button>
+                <button onclick="runMigration()" class="flex-1 px-4 py-3 bg-green-600 rounded hover:bg-green-500 font-bold shadow-lg shadow-green-500/20">Start Restore & Migration 🚀</button>
+            </div>`;
+
+            setViewHtml(html);
+        }
+
+        async function runFreshInstall() {
+            setView('Creating Fresh Database...', 'Setting up PostgreSQL with empty schema...<br>Please check the terminal logs below.');
+
+            try {
+                const res = await fetch('/api/fresh-install', {
+                    method: 'POST',
+
+                    body: JSON.stringify({ env: selectedEnvironment })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showAdminConfig();
+                } else {
+                    alert('Fresh install failed. Check logs.');
+                    showDockerSetup('fresh');
+                }
+            } catch (e) {
+                logError(e.message);
+            }
+        }
+
+        function updateFileName(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('file-label').textContent = input.files[0].name;
+            }
+        }
+
+        async function runMigration() {
+            const input = document.getElementById('backup-input');
+            if (!input.files || !input.files[0]) return alert('Please select a backup file first!');
+
+            const file = input.files[0];
+            setView('Migrating...', `Uploading <b>${file.name}</b> and starting migration...<br>Please check the terminal logs below.`);
+
+            const formData = new FormData();
+            formData.append('backupFile', file);
+
+            try {
+                // Determine URL based on env
+                const url = `/api/migrate?env=${selectedEnvironment}`;
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showAdminConfig();
+                } else {
+                    alert('Migration Failed. Check logs.');
+                    // Reload step to try again?
+                    showMigrationUpload();
+                }
+            } catch (e) {
+                logError(e.message);
+            }
+        }
+
+        function showAdminConfig() {
+            setActiveStep(5);
+            setViewHtml(`
+                    <h2 class="text-xl font-bold mb-6">Create Admin User</h2>
+                    <div class="space-y-4 max-w-sm mx-auto">
+                        <div>
+                            <label class="block text-xs mb-1 text-slate-400">Username</label>
+                            <input type="text" id="admin-user" value="admin" class="w-full p-2 bg-slate-900 border border-slate-600 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1 text-slate-400">Password</label>
+                            <input type="password" id="admin-pass" class="w-full p-2 bg-slate-900 border border-slate-600 rounded">
+                        </div>
+                        <button onclick="saveAdmin()" class="w-full mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Create User</button>
+                    </div>
+                    `);
+        }
+
+        async function saveAdmin() {
+            const username = document.getElementById('admin-user').value;
+            const password = document.getElementById('admin-pass').value;
+
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+
+                body: JSON.stringify({ username, password, env: selectedEnvironment })
+            });
+
+            if ((await res.json()).success) {
+                startInstallApp();
+            }
+        }
+
+        async function startInstallApp() {
+            setActiveStep(6);
+            setView('Installing Backend...', 'Building backend API and creating startup scripts...');
+
+            const res = await fetch('/api/install', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ env: selectedEnvironment })
+            });
+            if ((await res.json()).success) {
+                showSuccess();
+            }
+        }
+
+        function showSuccess() {
+            setViewHtml(`
+                <div class="text-center space-y-6 pt-10">
+                    <div class="text-6xl">🎉</div>
+                    <h2 class="text-3xl font-bold text-green-400">Installation Complete!</h2>
+
+                    
+                    <div class="text-left bg-slate-800 p-6 rounded-lg text-sm font-mono space-y-2 border border-slate-700">
+                        <p class="text-slate-400 border-b border-slate-600 pb-2 mb-2">Environment Configuration for Client:</p>
+                        <p><span class="text-blue-400">Environment:</span> <span class="text-white">${selectedEnvironment.toUpperCase()}</span></p>
+                        <p><span class="text-blue-400">API URL:</span> <span class="text-green-300">http://localhost:${selectedEnvironment === 'prod' ? '3000' : '3001'}</span></p>
+                        <p><span class="text-blue-400">DB Port:</span> <span class="text-white">${selectedEnvironment === 'prod' ? '54330' : '54331'}</span></p>
+                    </div>
+
+                    <p class="text-slate-300">To run the client, update your <code>.env</code> or build config with these values.</p>
+                </div>
+            `);
+            document.querySelectorAll('.step').forEach(el => el.classList.add('step-completed'));
+        }
+
+        // Helpers
+        function setView(title, body) {
+            contentEl.innerHTML = `<h2 class="text-xl font-bold mb-4">${title}</h2><div class="text-slate-300">${body}</div>`;
+        }
+        function setViewHtml(html) { contentEl.innerHTML = html; }
+
+        function setActiveStep(n) {
+            document.querySelectorAll('.step').forEach((el, i) => {
+                el.classList.remove('step-active');
+                if (i < n - 1) el.classList.add('step-completed');
+                if (i === n - 1) el.classList.add('step-active');
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+{
+    "name": "pawnshop-installer",
+    "version": "1.0.0",
+    "description": "Setup wizard for Pawnshop Application",
+    "main": "setup.js",
+    "scripts": {
+        "start": "node setup.js"
+    },
+    "dependencies": {
+        "chalk": "^4.1.2",
+        "execa": "^5.1.1",
+        "express": "^5.2.1",
+        "inquirer": "^8.2.5",
+        "multer": "^2.0.2",
+        "open": "^11.0.0",
+        "ora": "^5.4.1",
+        "socket.io": "^4.8.1"
+    }
+}

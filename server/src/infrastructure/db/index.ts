@@ -1,15 +1,24 @@
 import { Pool } from 'pg';
-import { config } from '../../config';
-import { logger } from '../log/logger';
+import fs from 'fs';
+import path from 'path';
+import { env } from '../../config/env';
+import { logger } from '../logger';
 
 export const pool = new Pool({
-    user: config.db.user,
-    host: config.db.host,
-    database: config.db.database,
-    password: config.db.password,
-    port: config.db.port,
+  connectionString: env.databaseUrl
 });
 
-pool.on('error', (err) => {
-    logger.error('db_pool_error', { message: err.message });
-});
+export async function runMigrations(): Promise<void> {
+  const migrationsDir = path.join(__dirname, 'migrations');
+  const files = fs
+    .readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+
+  for (const file of files) {
+    const fullPath = path.join(migrationsDir, file);
+    const sql = fs.readFileSync(fullPath, 'utf8');
+    logger.info('Running migration', file);
+    await pool.query(sql);
+  }
+}

@@ -1,9 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import PawnTicketForm from './components/PawnTicketForm';
 import type { InventoryItemDraft } from './components/InventoryItemModal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
+import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
+import { PrintLabelsModal } from './components/PrintLabelsModal';
 
 interface NewPawnTabProps {
   customer: Customer | null;
@@ -12,7 +14,14 @@ interface NewPawnTabProps {
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
+  const { printTransactionForm, printLabels, buildPrintItems, formError } = usePawnPrint();
   const customerId = customer?.id;
+
+  const [showLabelsModal, setShowLabelsModal] = useState(false);
+  const [pendingPrintData, setPendingPrintData] = useState<{
+    controlNumber: string;
+    items: PrintItem[];
+  } | null>(null);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
@@ -84,11 +93,51 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       }),
     };
 
-    const ticketId = await createTicket(payload);
-    if (onTicketCreated && ticketId) {
-      onTicketCreated(ticketId);
+    const result = await createTicket(payload);
+    
+    if (customer) {
+      const printFormItems: FormDataItem[] = formData.items.map(item => ({
+        type: item.type,
+        brand: item.brand,
+        model: item.model,
+        serial: item.serial,
+        description: item.description,
+        amount: item.amount,
+        quantity: item.quantity,
+        ownerNumber: item.ownerNumber,
+      }));
+
+      await printTransactionForm({
+        ticket: result,
+        customer,
+        items: printFormItems,
+      });
+
+      const printItems = buildPrintItems(result, printFormItems);
+      setPendingPrintData({
+        controlNumber: result.controlNumber,
+        items: printItems,
+      });
+      setShowLabelsModal(true);
     }
-  }, [customerId, createTicket, onTicketCreated]);
+
+    if (onTicketCreated) {
+      onTicketCreated(result.id);
+    }
+  }, [customerId, customer, createTicket, onTicketCreated, printTransactionForm, buildPrintItems]);
+
+  const handlePrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
+    if (pendingPrintData) {
+      await printLabels(pendingPrintData.controlNumber, pendingPrintData.items, labelCounts);
+    }
+    setShowLabelsModal(false);
+    setPendingPrintData(null);
+  }, [pendingPrintData, printLabels]);
+
+  const handleCancelLabels = useCallback(() => {
+    setShowLabelsModal(false);
+    setPendingPrintData(null);
+  }, []);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -108,6 +157,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         </Alert>
       )}
 
+      {formError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription className="flex items-center gap-2">
+            <span className="text-lg">🖨️</span> Print error: {formError}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className={isLoading ? 'opacity-60 pointer-events-none relative' : ''}>
         {isLoading && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-3 rounded-lg shadow-lg font-medium text-gray-700">
@@ -119,6 +176,16 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           disabled={isLoading}
         />
       </div>
+
+      {pendingPrintData && (
+        <PrintLabelsModal
+          open={showLabelsModal}
+          controlNumber={pendingPrintData.controlNumber}
+          items={pendingPrintData.items}
+          onPrint={handlePrintLabels}
+          onCancel={handleCancelLabels}
+        />
+      )}
     </div>
   );
 }

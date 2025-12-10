@@ -1,18 +1,40 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis:7-alpine
+  postgres:
+    image: postgres:15-alpine
+    container_name: pawnshop_postgres_prod
     ports:
-      - "6379:6379"
+      - "54330:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: pawnshop
     volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 5
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: pawnshop_sqlserver_prod
+    ports:
+      - "14330:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_PASSWORD:-YourStrong!Passw0rd}
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${SQLSERVER_PASSWORD:-YourStrong!Passw0rd} -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 volumes:
-  redis-data:
+  postgres-data:
+  sqlserver-data:

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
-import { pawnTicketApi, CreatePawnTicketPayload } from '@/app/core/api/pawnTicketApi';
+import { pawnTicketApi, CreatePawnTicketPayload, PawnTicketCreateResponse } from '@/app/core/api/pawnTicketApi';
 
 interface UseCreatePawnTicketResult {
-  createTicket: (payload: CreatePawnTicketPayload) => Promise<string>;
+  createTicket: (payload: CreatePawnTicketPayload) => Promise<PawnTicketCreateResponse>;
   isLoading: boolean;
   error: string | null;
   success: string | null;
@@ -20,7 +20,7 @@ export function useCreatePawnTicket(): UseCreatePawnTicketResult {
     setIsLoading(false);
   }, []);
 
-  const createTicket = useCallback(async (payload: CreatePawnTicketPayload): Promise<string> => {
+  const createTicket = useCallback(async (payload: CreatePawnTicketPayload): Promise<PawnTicketCreateResponse> => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -29,7 +29,7 @@ export function useCreatePawnTicket(): UseCreatePawnTicketResult {
       const result = await pawnTicketApi.create(payload);
       const successMessage = `Pawn ticket ${result.controlNumber || result.id} created successfully!`;
       setSuccess(successMessage);
-      return result.id;
+      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create pawn ticket';
       setError(errorMessage);
