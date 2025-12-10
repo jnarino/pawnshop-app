@@ -5,7 +5,7 @@ const requestCache = new Map<string, { promise: Promise<any>; timestamp: number 
 const CACHE_DURATION = 1000; // 1 second
 
 // ✅ Base URL configuration with fallback
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 export async function http(
   path: string, 

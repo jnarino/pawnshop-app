@@ -18,9 +18,10 @@ export interface CustomerManagerProps {
   // Callbacks opcionales
   onCustomerSelected?: (id: string) => void;
   onCustomerSaved?: (customer: Customer) => void;
+  onFindByTicket?: () => void;
   
   // Configuración UI
-  showAdditionalInfo?: boolean;
+  workflowMode?: 'pawn' | 'payment';
   showAlertWhenEmpty?: boolean;
   
   // Acciones personalizadas (render prop para acciones customizadas)
@@ -46,7 +47,8 @@ export default function CustomerManager({
   onCustomerChange,
   onCustomerSelected,
   onCustomerSaved,
-  showAdditionalInfo = true,
+  onFindByTicket,
+  workflowMode = 'pawn',
   showAlertWhenEmpty = true,
   renderLeftActions,
   hideDefaultActions = false,
@@ -105,13 +107,13 @@ export default function CustomerManager({
     }
   }, [onCustomerChange, onCustomerSaved]);
 
-  const mode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
-  const displayCustomer = customer || (mode === 'create' ? draftCustomer : null);
+  const editMode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
+  const displayCustomer = customer || (editMode === 'create' ? draftCustomer : null);
 
   return (
     <div className={`h-full w-full flex flex-col ${className}`}>
       <div className="flex-1 overflow-y-auto min-h-0">
-        {showAlertWhenEmpty && mode === 'search' && (
+        {showAlertWhenEmpty && editMode === 'search' && (
           <div className="px-4 pt-1">
             <Alert variant="info">
               <Info className="h-3.5 w-3.5" />
@@ -137,39 +139,37 @@ export default function CustomerManager({
             </AccordionContent>
           </AccordionItem>
 
-          {showAdditionalInfo && (
-            <AccordionItem value="additional-info">
-              <AccordionTrigger 
-                disabled={mode === 'search'}
-                className="px-4 text-base font-semibold"
-              >
-                Additional Information
-              </AccordionTrigger>
-              <AccordionContent className="px-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <EmployerInfoSection 
-                    employerName={displayCustomer?.employerName}
-                    employerAddress={displayCustomer?.employerAddress}
-                    employerCity={displayCustomer?.employerCity}
-                    employerState={displayCustomer?.employerState}
-                    employerZip={displayCustomer?.employerZip}
-                    employerPhoneNumber={displayCustomer?.employerPhoneNumber}
-                    onUpdate={handleUpdate}
-                  />
-                  
-                  <ComplianceSection 
-                    fflNumber={displayCustomer?.fflNumber}
-                    fflExpireDate={displayCustomer?.fflExpireDate}
-                    taxId={displayCustomer?.taxId}
-                    military={displayCustomer?.military}
-                    locked={displayCustomer?.locked}
-                    taxExempt={displayCustomer?.taxExempt}
-                    onUpdate={handleUpdate}
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
+          <AccordionItem value="additional-info">
+            <AccordionTrigger 
+              disabled={pickerState.editingNew || (!customer && !pickerState.editingExisting)}
+              className="px-4 text-base font-semibold"
+            >
+              Additional Information
+            </AccordionTrigger>
+            <AccordionContent className="px-4">
+              <div className="grid grid-cols-2 gap-4">
+                <EmployerInfoSection 
+                  employerName={displayCustomer?.employerName}
+                  employerAddress={displayCustomer?.employerAddress}
+                  employerCity={displayCustomer?.employerCity}
+                  employerState={displayCustomer?.employerState}
+                  employerZip={displayCustomer?.employerZip}
+                  employerPhoneNumber={displayCustomer?.employerPhoneNumber}
+                  onUpdate={handleUpdate}
+                />
+                
+                <ComplianceSection 
+                  fflNumber={displayCustomer?.fflNumber}
+                  fflExpireDate={displayCustomer?.fflExpireDate}
+                  taxId={displayCustomer?.taxId}
+                  military={displayCustomer?.military}
+                  locked={displayCustomer?.locked}
+                  taxExempt={displayCustomer?.taxExempt}
+                  onUpdate={handleUpdate}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
 
@@ -180,16 +180,18 @@ export default function CustomerManager({
           </div>
 
           <div className="flex gap-2 items-center">
-            {mode === 'search' && (
+            {editMode === 'search' && (
               <>
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => pickerRef.current?.handleAddNew()} 
-                  disabled={pickerState.loading}
-                >
-                  Add New
-                </Button>
+                {workflowMode === 'pawn' && (
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={() => pickerRef.current?.handleAddNew()} 
+                    disabled={pickerState.loading}
+                  >
+                    Add New
+                  </Button>
+                )}
                 <Button 
                   type="button" 
                   variant="secondary" 
@@ -197,6 +199,15 @@ export default function CustomerManager({
                 >
                   Scan ID
                 </Button>
+                {workflowMode === 'payment' && onFindByTicket && (
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={onFindByTicket}
+                  >
+                    Find by Ticket
+                  </Button>
+                )}
                 <Separator orientation="vertical" className="h-8" />
                 <Button 
                   type="button" 
@@ -216,7 +227,7 @@ export default function CustomerManager({
                 </Button>
               </>
             )}
-            {mode === 'create' && (
+            {editMode === 'create' && (
               <>
                 <Button 
                   type="submit" 
@@ -235,7 +246,7 @@ export default function CustomerManager({
                 </Button>
               </>
             )}
-            {mode === 'update' && (
+            {editMode === 'update' && (
               <>
                 <Button 
                   type="submit" 
