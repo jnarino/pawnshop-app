@@ -73,11 +73,14 @@ def migrate_users():
                 else:
                     role_id = 3
 
-                # Address concatenation
-                addr1 = (row['USR_ADD1'] or '').strip()
-                addr2 = (row['USR_ADD2'] or '').strip()
-                street_address = f"{addr1} {addr2}".strip()
-                suite_number = (row.get('USR_AC1') or '').strip()
+                # Address mapping
+                street_address = (row['USR_ADD1'] or '').strip()
+                suite_number = (row['USR_ADD2'] or '').strip()
+                
+                # Phone mapping (AC + Number)
+                ac1 = (row.get('USR_AC1') or '').strip()
+                phone_body = (row['USR_PHONE1'] or '').strip()
+                phone_number = f"{ac1}{phone_body}"
 
                 # Prepare row
                 batch_data.append((
@@ -92,7 +95,7 @@ def migrate_users():
                     (row['USR_CITY'] or '').strip(),
                     (row['USR_STATE'] or '').strip(),
                     (row['USR_ZIP'] or '').strip(),
-                    (row['USR_PHONE1'] or '').strip(),
+                    phone_number,
                     (row['USR_SSNUM'] or '').strip(),
                     row['USR_BIRTHDATE'],
                     row['USR_STARTDATE'],

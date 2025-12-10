@@ -72,9 +72,9 @@ def migrate_inventory():
         
         print(f"Loaded {len(pg_brand_map)} Brands and {len(valid_subcats)} Subcategories from PG.")
         
-        # Color Map
+        # Lookup Map (Lookup_C) - Used for Colors, Gun Attributes, etc.
         mssql_cursor.execute("SELECT lc_pk, lc_Descript FROM dbo.Lookup_C")
-        color_map = {row['lc_pk']: row['lc_Descript'].strip() for row in mssql_cursor.fetchall()}
+        lookup_map = {row['lc_pk']: safe_str(row['lc_Descript']) for row in mssql_cursor.fetchall()}
 
         # ==================================
         # 2. Fetch Inventory Items
@@ -97,7 +97,7 @@ def migrate_inventory():
         mssql_cursor.execute("SELECT * FROM Detail_J")
         jewelry_details = {row['Items_FK']: row for row in mssql_cursor.fetchall()}
         
-        mssql_cursor.execute("SELECT * FROM Detail_G")
+        mssql_cursor.execute("SELECT * FROM dbo.Detail_G")
         gun_details = {row['Items_FK']: row for row in mssql_cursor.fetchall()}
         
         mssql_cursor.execute("SELECT * FROM dbo.stones")
@@ -154,6 +154,10 @@ def migrate_inventory():
                 status_char = str(row['STATUS']).strip()
                 status_code = status_char if len(status_char) == 1 else 'I'
                 
+                # Define helper for lookup resolution
+                def resolve_lookup(fk):
+                    return lookup_map.get(fk) if fk else None
+
                 # Details
                 extra_data = {}
                 attributes = {}
@@ -161,28 +165,58 @@ def migrate_inventory():
                 # Jewelry
                 if item_pk in jewelry_details:
                     jd = jewelry_details[item_pk]
-                    extra_data['gender'] = jd.get('Gender')
-                    extra_data['size'] = jd.get('Size')
-                    attributes['metal'] = jd.get('Metal')
-                    attributes['style'] = jd.get('Style')
+                    
+                    gender = resolve_lookup(jd.get('Gender_FK'))
+                    if gender: extra_data['gender'] = gender
+                    
+                    size_len = resolve_lookup(jd.get('Sizelen_FK'))
+                    if size_len: extra_data['size'] = size_len
+                    
+                    metal = resolve_lookup(jd.get('Metal_FK'))
+                    if metal: attributes['metal'] = metal
+                    
+                    style = resolve_lookup(jd.get('Style_FK'))
+                    if style: attributes['style'] = style
+                    
+                    karat = resolve_lookup(jd.get('Karat_FK'))
+                    if karat: attributes['karat'] = karat
+                    
+                    # Weights (direct values)
+                    # Convert Decimal to float for JSON serialization
+                    weight = jd.get('Weight')
+                    if weight is not None:
+                        extra_data['weight'] = float(weight)
                     
                     # Stones
                     sk = jd.get('JDT_PK')
                     if sk and sk in stones_map:
                         extra_data['stones'] = [
-                            {'type': s.get('TYPE'), 'shape': s.get('SHAPE'), 'qty': s.get('QTY')}
+                            {'type': safe_str(s.get('TYPE')), 'shape': safe_str(s.get('SHAPE')), 'qty': s.get('QTY')}
                             for s in stones_map[sk]
                         ]
                 
                 # Guns
                 if item_pk in gun_details:
                     gd = gun_details[item_pk]
-                    attributes['action'] = gd.get('Action')
-                    attributes['caliber'] = gd.get('Caliber')
-                    extra_data['importer'] = gd.get('Importer')
+                    # resolve_lookup is already defined above
+                        
+                    action = resolve_lookup(gd.get('Action_FK'))
+                    if action: attributes['action'] = action
+                    
+                    caliber = resolve_lookup(gd.get('Caliber_FK'))
+                    if caliber: attributes['caliber'] = caliber
+                    
+                    finish = resolve_lookup(gd.get('Finish_FK'))
+                    if finish: attributes['finish'] = finish
+                    
+                    barrel = resolve_lookup(gd.get('Barrel_FK'))
+                    if barrel: attributes['barrel'] = barrel
+                    
+                    importer = resolve_lookup(gd.get('ImporterFK'))
+                    if importer: extra_data['importer'] = importer
                 
                 # Color
-                color_val = color_map.get(row['Color'])
+                color_val = lookup_map.get(row['Color'])
                 
                 # Dates
                 created_at = row['DateItemEntered'] or datetime.now()
