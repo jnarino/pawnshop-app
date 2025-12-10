@@ -46,20 +46,20 @@ def migrate_pawn_tickets():
         """)
         
         tickets = mssql_cursor.fetchall()
-        print(f"Found {len(tickets)} pawn tickets to migrate")
+        # print(f"Found {len(tickets)} pawn tickets to migrate")
         
         # Determine valid items (inventory_items) to link
         # Need to fetch items that have PWN_id
-        print("Fetching Inventory Items for linking...")
+        # print("Fetching Inventory Items for linking...")
         mssql_cursor.execute("SELECT Items_ID, PWN_id, TICKETNUM FROM dbo.items WHERE PWN_id IS NOT NULL")
         pawn_items = mssql_cursor.fetchall()
         
         # Verify which Inventory items actually exist in Postgres
         # (migrate_inventory might have filtered some out by date)
-        print("Fetching valid Inventory IDs from Postgres...")
+        # print("Fetching valid Inventory IDs from Postgres...")
         pg_cursor.execute("SELECT id FROM inventory_item")
         valid_inventory_ids = {str(row[0]) for row in pg_cursor.fetchall()}
-        print(f"Found {len(valid_inventory_ids)} valid inventory items in Postgres")
+        # print(f"Found {len(valid_inventory_ids)} valid inventory items in Postgres")
 
         # Map PWN_id -> List of Items_ID
         pawn_items_map = {}
@@ -78,14 +78,16 @@ def migrate_pawn_tickets():
                 if item_uuid and item_uuid in valid_inventory_ids:
                     pawn_items_map[pid].append(item_uuid)
         
-        print(f"Mapped items for {len(pawn_items_map)} pawn tickets (filtered by valid inventory)")
+        # print(f"Mapped items for {len(pawn_items_map)} pawn tickets (filtered by valid inventory)")
         
         batch_size = 1000
         batch_data = []
         batch_items = []
         errors = 0
         
-        print("Migrating...")
+        errors = 0
+        
+        # print("Migrating...")
         for row in tqdm(tickets):
             try:
                 # Use source UUID if available
