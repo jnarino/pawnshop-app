@@ -13,9 +13,9 @@ if (window.location.protocol === 'file:') {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     let url = input;
     if (typeof url === 'string' && url.startsWith('/api')) {
-      url = 'http://localhost:3000' + url;
+      url = 'http://localhost:3001' + url;
     } else if (url instanceof URL && url.pathname.startsWith('/api')) {
-      url = new URL(url.pathname, 'http://localhost:3000');
+      url = new URL(url.pathname, 'http://localhost:3001');
     }
     return originalFetch(url, init);
   };

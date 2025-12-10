@@ -17,7 +17,7 @@ export default function CustomerInfoTab({
       customer={customer}
       onCustomerChange={onCustomerChange}
       onCustomerSelected={onCustomerSelected}
-      showAdditionalInfo={true}
+      workflowMode="pawn"
       showAlertWhenEmpty={true}
       className="h-full"
     />
