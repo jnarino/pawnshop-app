@@ -23,7 +23,7 @@ const initialState: AuthState = {
 
 // Use explicit API base in dev unless you have a Vite proxy set up.
 const API_BASE: string =
-  (import.meta as any)?.env?.VITE_API_URL || 'http://localhost:3000';
+  (import.meta as any)?.env?.VITE_API_URL || 'http://localhost:3001';
 
 /**
  * LOGIN
