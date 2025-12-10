@@ -107,6 +107,11 @@ def migrate_users():
             
             user_map[old_pk] = new_id
             
+            # Map UUID as well if available
+            old_uuid = str(row.get('USR_ID') or '').strip()
+            if old_uuid:
+                user_map[old_uuid] = new_id
+            
             if len(batch_data) >= batch_size:
                 _insert_batch(pg_cursor, batch_data)
                 pg_conn.commit()

@@ -82,7 +82,7 @@ def migrate_inventory():
         print("Fetching items from SQL Server...")
         mssql_cursor.execute("""
            SELECT 
-              i.ITEMS_PK, i.Items_ID, 
+              i.ITEMS_PK, i.Items_ID, i.usr_fk,
               i.LEVEL1_FK, i.LEVEL2_FK, i.LEVEL5_FK,
               i.STATUS, i.MODELNUM, i.SERIALNUM, i.Color, i.Condition,
               i.OnHand, i.AMOUNT, i.RESALEAMT, i.LOWSLPRICE, i.INSREPCOST,
@@ -250,7 +250,7 @@ def migrate_inventory():
                     None, # legacy_category_description
                     safe_str(row['DESCRIPT2']), # legacy_brand_color_description
                     safe_str(row['INVNUM']), # inventory_number
-                    None, # last_updated_user_id
+                    user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
                     created_at
                 ))
