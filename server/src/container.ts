@@ -44,9 +44,10 @@ import { StoreTransactionController } from './interfaces/http/controller/storeTr
 import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
-import { PgInventoryColorRepository } from './infrastructure/persistence/inventory/PgInventoryColorRepository';
-import { InventoryColorController } from './interfaces/http/controller/inventory/InventoryColorController';
-import { GetAllInventoryGenericColorsUseCase } from './application/use-case/inventory/query/GetAllInventoryGenericColorsUseCase';
+import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
+import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
+import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
 
 
 
@@ -59,7 +60,7 @@ export async function createApp() {
   const customerRepo = new PgCustomerRepository(pool);
   const inventoryItemRepo = new PgInventoryItemRepository(pool);
   const inventoryCategoryRepo = new PgInventoryCategoryRepository(pool);
-  const inventoryColorRepo = new PgInventoryColorRepository(pool);
+  const inventoryAttributeRepo = new PgInventoryAttributeRepository(pool);
   const pawnTicketRepo = new PgPawnTicketRepository(pool);
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
@@ -99,8 +100,9 @@ export async function createApp() {
   const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
   const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
 
-  // Inventory Color use-cases
-  const getAllInventoryGenericColorsUseCase = new GetAllInventoryGenericColorsUseCase(inventoryColorRepo);
+  // Inventory Attribute use-cases
+  const getAllInventoryAttributeTypesUseCase = new GetAllInventoryAttributeTypesUseCase(inventoryAttributeRepo);
+  const getInventoryAttributeValuesByTypeUseCase = new GetInventoryAttributeValuesByTypeUseCase(inventoryAttributeRepo);
 
 
   // Pawn Ticket use-cases  
@@ -150,8 +152,9 @@ export async function createApp() {
     getBrandsByCategoryRootUseCase
   );
 
-  const inventoryColorController = new InventoryColorController(
-    getAllInventoryGenericColorsUseCase
+  const inventoryAttributeController = new InventoryAttributeController(
+    getAllInventoryAttributeTypesUseCase,
+    getInventoryAttributeValuesByTypeUseCase
   );
 
   const pawnTicketController = new PawnTicketController(
@@ -172,7 +175,7 @@ export async function createApp() {
     customerController,
     inventoryItemController,
     inventoryCategoryController,
-    inventoryColorController,
+    inventoryAttributeController,
     pawnTicketController,
     storeTransactionController,
     jwtSecret: env.jwtSecret
