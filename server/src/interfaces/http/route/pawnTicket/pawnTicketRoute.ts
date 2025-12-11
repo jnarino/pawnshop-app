@@ -10,16 +10,127 @@ export function createPawnTicketRouter(
     const router = Router();
     const auth = authenticate(jwtSecret);
 
-    // Create pawn ticket + items atomically
+    /**
+     * @openapi
+     * /api/pawn-ticket:
+     *   post:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Create pawn ticket with items
+     *     description: Create a new pawn ticket along with associated inventory items atomically
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/PawnTicket'
+     *     responses:
+     *       201:
+     *         description: Pawn ticket created successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/PawnTicket'
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
     router.post('/', auth, controller.create);
 
-    // Lookup by control number
+    /**
+     * @openapi
+     * /api/pawn-ticket/control/{controlNumber}:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List tickets by control number
+     *     description: Retrieve pawn tickets by control number
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: controlNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Control number
+     *     responses:
+     *       200:
+     *         description: List of pawn tickets
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/PawnTicket'
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/control/:controlNumber', auth, controller.listByControlNumber);
 
-    // List all tickets by customer
+    /**
+     * @openapi
+     * /api/pawn-ticket/customer/{customerId}:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List all tickets by customer
+     *     description: Retrieve all pawn tickets for a specific customer
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: customerId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID
+     *     responses:
+     *       200:
+     *         description: List of customer pawn tickets
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/PawnTicket'
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/customer/:customerId', auth, controller.listByCustomer);
 
-    // List ACTIVE tickets by customer
+    /**
+     * @openapi
+     * /api/pawn-ticket/customer/{customerId}/active:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List active tickets by customer
+     *     description: Retrieve only active pawn tickets for a specific customer
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: customerId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID
+     *     responses:
+     *       200:
+     *         description: List of active customer pawn tickets
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/PawnTicket'
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/customer/:customerId/active', auth, controller.listActiveByCustomer);
 
     return router;

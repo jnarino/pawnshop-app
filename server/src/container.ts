@@ -29,13 +29,10 @@ import { GetInventoryItemByIdUseCase } from './application/use-case/inventory/qu
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
-import { CreateInventoryCategoryUseCase } from './application/use-case/inventory/command/CreateInventoryCategoryUseCase';
-import { GetInventoryCategoryTreeUseCase } from './application/use-case/inventory/query/GetInventoryCategoryTreeUseCase';
 import { InventoryCategoryController } from './interfaces/http/controller/inventory/InventoryCategoryController';
 import { PgPawnTicketRepository } from './infrastructure/persistence/pawnTicket/PgPawnTicketRepository';
 import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWork';
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
-import { CreatePawnTicketUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
@@ -44,6 +41,9 @@ import { PgStoreTransactionRepository } from './infrastructure/persistence/store
 import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
 import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
+import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
+import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
+import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
 
 
 
@@ -90,9 +90,11 @@ export async function createApp() {
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
 
-  // Inventory Category use-cases
-  const createInventoryCategoryUseCase = new CreateInventoryCategoryUseCase(inventoryCategoryRepo);
-  const getInventoryCategoryTreeUseCase = new GetInventoryCategoryTreeUseCase(inventoryCategoryRepo);
+  // Inventory Category use-cases 
+  const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
+  const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
+  const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
+
 
   // Pawn Ticket use-cases  
   const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork);
@@ -136,8 +138,9 @@ export async function createApp() {
   );
 
   const inventoryCategoryController = new InventoryCategoryController(
-    createInventoryCategoryUseCase,
-    getInventoryCategoryTreeUseCase
+    getRootCategoriesUseCase,
+    getSubcategoriesByCategoryUseCase,
+    getBrandsByCategoryRootUseCase
   );
 
   const pawnTicketController = new PawnTicketController(
