@@ -15,6 +15,8 @@ import { InventoryItemController } from './controller/inventory/InventoryItemCon
 import { createInventoryItemRouter } from './route/inventory/inventoryItemRoutes';
 import { createInventoryCategoryRouter } from './route/inventory/inventoryCategoryRoutes';
 import { InventoryCategoryController } from './controller/inventory/InventoryCategoryController';
+import { createInventoryColorRouter } from './route/inventory/inventoryColorRoute';
+import { InventoryColorController } from './controller/inventory/InventoryColorController';
 import { PawnTicketController } from './controller/pawnTicket/PawnTicketController';
 import { createPawnTicketRouter } from './route/pawnTicket/pawnTicketRoute';
 import { StoreTransactionController } from './controller/storeTransaction/StoreTransactionController';
@@ -28,6 +30,7 @@ export function createExpressApp(
     customerController: CustomerController;
     inventoryItemController: InventoryItemController;
     inventoryCategoryController: InventoryCategoryController;
+    inventoryColorController: InventoryColorController;
     pawnTicketController: PawnTicketController;
     storeTransactionController: StoreTransactionController;
   }
@@ -44,6 +47,7 @@ export function createExpressApp(
   app.use('/api/customer', createCustomerRouter(deps.customerController, deps.jwtSecret));
   app.use('/api/inventory-items', createInventoryItemRouter(deps.inventoryItemController, deps.jwtSecret));
   app.use('/api/category', createInventoryCategoryRouter(deps.inventoryCategoryController, deps.jwtSecret));
+  app.use('/api/inventory/colors', createInventoryColorRouter(deps.inventoryColorController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketRouter(deps.pawnTicketController, deps.jwtSecret));
   app.use('/api/store-transaction', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
 
