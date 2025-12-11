@@ -1,6 +1,11 @@
 export interface InventoryItemDraft {
   id?: string;
   type: string;
+  categoryName?: string;
+  subcategoryId?: string;
+  subcategoryName?: string;
+  brandId?: string;
+  brandName?: string;
   sub1?: string;
   brand?: string;
   model?: string;

@@ -65,9 +65,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         });
 
         return removeNullish({
-          categoryId: item.type,
+          categoryId: item.subcategoryId,
           quantity: Number(item.quantity) || 1,
-          brand: item.brand,
+          brand: item.brandId,
           model: item.model,
           serialNumber: item.serial,
           itemDescription: item.description,
