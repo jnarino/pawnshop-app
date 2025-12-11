@@ -10,11 +10,14 @@ export function createInventoryCategoryRouter(
     const router = Router();
     const auth = authenticate(jwtSecret);
 
-    // List full tree
-    router.get('/tree', auth, controller.getTree);
+    //List root categories
+    router.get('/root', auth, controller.getRootCategories);
 
-    // Create (admin/manager only)
-    router.post('/', auth, requireRole(['admin', 'manager']), controller.create);
+    //List all subcategories by  Category ID    
+    router.get('/:id/subcategories', auth, controller.getSubCategories);
+
+    //Get brands by Category ID
+    router.get('/:id/brands', auth, controller.getBrandsByCategoryRoot);
 
     return router;
 }

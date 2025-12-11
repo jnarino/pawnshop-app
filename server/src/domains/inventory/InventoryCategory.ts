@@ -1,18 +1,13 @@
 export class InventoryCategory {
-  categoryId: string;
-  subcategoryId: string;
-  brand: string;
-  path: string;
+  id: string;
+  name: string;
+
 
   constructor(params: {
-    categoryId: string;
-    subcategoryId: string;
-    brand: string;
-    path: string;
+    readonly id: string;
+    name: string;
   }) {
-    this.categoryId = params.categoryId;
-    this.subcategoryId = params.subcategoryId;
-    this.brand = params.brand;
-    this.path = params.path;
+    this.id = params.id;
+    this.name = params.name;
   }
 }
