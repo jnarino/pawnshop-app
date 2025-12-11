@@ -1,4 +1,4 @@
-import type { InventoryItemDraft } from './components/InventoryItemModal';
+import type { InventoryItemDraft } from '../components/InventoryItemModal';
 
 export interface PawnDraft {
     type: 'PAWN' | 'PURCHASE';

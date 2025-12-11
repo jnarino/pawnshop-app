@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import PawnTicketForm from './components/PawnTicketForm';
-import type { InventoryItemDraft } from './components/InventoryItemModal';
+import { PawnTicketForm, type InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';

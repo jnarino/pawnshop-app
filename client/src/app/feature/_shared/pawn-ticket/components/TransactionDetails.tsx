@@ -18,7 +18,7 @@ interface TransactionDetailsProps {
   onExpirationDateChange: (value: string) => void;
 }
 
-export default function TransactionDetails({
+export function TransactionDetails({
   type,
   periodicRate,
   transactionDate,

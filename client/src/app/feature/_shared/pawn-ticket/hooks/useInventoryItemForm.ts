@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
-import { InventoryItemDraft, DEFAULT_ITEM } from './types';
+import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
 
 interface UseInventoryItemFormProps {

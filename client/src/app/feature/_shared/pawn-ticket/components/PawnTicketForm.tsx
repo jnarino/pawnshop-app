@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
-import InventoryItemModal, { type InventoryItemDraft } from './InventoryItemModal';
-import TransactionDetails from './TransactionDetails';
+import { InventoryItemModal, type InventoryItemDraft } from './InventoryItemModal';
+import { TransactionDetails } from './TransactionDetails';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 
-interface Props {
+interface PawnTicketFormProps {
   onSubmit: (formData: {
     customerId: string;
     type: 'PAWN' | 'PURCHASE';
@@ -26,7 +26,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function PawnTicketForm({ onSubmit, disabled = false }: Props) {
+export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormProps) {
   const [formData, setFormData] = useState({
     customerId: 'temp-customer',
     type: 'PAWN' as 'PAWN' | 'PURCHASE',

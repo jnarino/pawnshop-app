@@ -11,19 +11,19 @@ import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
 import { StonesSection } from './stones';
-import { useInventoryItemForm } from './useInventoryItemForm';
+import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
 import { InventoryItemDraft } from './types';
 
 export type { InventoryItemDraft };
 
-interface Props {
+interface InventoryItemModalProps {
   open: boolean;
   initial?: InventoryItemDraft | null;
   onCancel: () => void;
   onSave: (item: InventoryItemDraft) => void;
 }
 
-export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
+export function InventoryItemModal({ open, initial, onCancel, onSave }: InventoryItemModalProps) {
   const {
     draft,
     error,
