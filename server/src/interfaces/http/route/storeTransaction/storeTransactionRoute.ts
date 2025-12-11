@@ -9,12 +9,78 @@ export function createStoreTransactionRouter(
     const router = Router();
     const auth = authenticate(jwtSecret);
 
-    // List by customer (for customer profile)
-    // GET /api/store-transaction/by-customer/:customerId
+    /**
+     * @openapi
+     * /api/store-transaction/by-customer/{customerId}:
+     *   get:
+     *     tags:
+     *       - Store Transactions
+     *     summary: List transactions by customer
+     *     description: Retrieve all store transactions for a specific customer
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: customerId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID
+     *     responses:
+     *       200:
+     *         description: List of customer transactions
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 description: Store transaction details
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/by-customer/:customerId', auth, controller.listByCustomer);
 
-    // List by date range (for daily reports, etc.)
-    // GET /api/store-transaction/by-date?from=...&to=...
+    /**
+     * @openapi
+     * /api/store-transaction/by-date:
+     *   get:
+     *     tags:
+     *       - Store Transactions
+     *     summary: List transactions by date range
+     *     description: Retrieve store transactions within a date range (for daily reports)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: from
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Start date (YYYY-MM-DD)
+     *       - in: query
+     *         name: to
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: End date (YYYY-MM-DD)
+     *     responses:
+     *       200:
+     *         description: List of transactions in date range
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 description: Store transaction details
+     *       400:
+     *         description: Invalid date parameters
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/by-date', auth, controller.listByDateRange);
 
     return router;
