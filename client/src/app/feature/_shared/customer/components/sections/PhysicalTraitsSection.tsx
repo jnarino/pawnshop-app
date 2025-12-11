@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerRecord } from '../../mappers';
 import { HAIR_COLORS, RACES, EYE_COLORS } from '../../constants/customerConstants';
-import { StateSelect } from '../../../../shared/components/StateSelect';
+import { StateSelect } from '@/app/shared/components/StateSelect';
 
 interface PhysicalTraitsSectionProps {
   readonly sex?: string | null;

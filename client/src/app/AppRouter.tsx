@@ -4,7 +4,7 @@ import HomePage from '@/app/feature/home/HomePage';
 import ReportsPage from '@/app/feature/reports/ReportsPage';
 import { PawnsWorkspace } from '@/app/feature/pawns';
 import PaymentCreatePage from '@/app/feature/payment/PaymentCreatePage';
-import CustomerPage from '@/app/feature/customer/CustomerPage';
+import CustomerPage from '@/app/feature/_shared/customer/CustomerPage';
 import LoginPage from '@/app/feature/auth/LoginPage';
 import Protected from '@/app/shared/components/Protected';
 import Logout from './feature/auth/Logout';

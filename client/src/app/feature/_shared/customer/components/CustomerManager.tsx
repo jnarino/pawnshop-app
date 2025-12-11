@@ -73,9 +73,17 @@ export default function CustomerManager({
   const [draftCustomer, setDraftCustomer] = useState<Customer | null>(null);
   const [accordionValue, setAccordionValue] = useState<string[]>(defaultOpenSections);
 
+  const editMode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
+
   // Keep a ref to customer to avoid recreating handleUpdate on every change
   const customerRef = useRef(customer);
   useEffect(() => { customerRef.current = customer; }, [customer]);
+
+  useEffect(() => {
+    if (editMode === 'search') {
+      setAccordionValue(prev => prev.filter(section => section !== 'additional-info'));
+    }
+  }, [editMode]);
 
   const handleCustomerChange = useCallback((c: Customer | null) => {
     onCustomerChange(c);
@@ -107,7 +115,6 @@ export default function CustomerManager({
     }
   }, [onCustomerChange, onCustomerSaved]);
 
-  const editMode = pickerState.editingNew ? 'create' : (pickerState.editingExisting ? 'update' : 'search');
   const displayCustomer = customer || (editMode === 'create' ? draftCustomer : null);
 
   return (
@@ -141,7 +148,7 @@ export default function CustomerManager({
 
           <AccordionItem value="additional-info">
             <AccordionTrigger 
-              disabled={pickerState.editingNew || (!customer && !pickerState.editingExisting)}
+              disabled={editMode === 'search'}
               className="px-4 text-base font-semibold"
             >
               Additional Information

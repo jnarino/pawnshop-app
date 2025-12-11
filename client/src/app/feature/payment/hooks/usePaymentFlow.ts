@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Customer as CustomerDto } from '../../customer/types';
+import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 
 export type TabKey = 'customer' | 'additional' | 'viewPawn' | 'locatePawns' | 'makePayment';
 

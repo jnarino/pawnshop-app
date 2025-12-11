@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 import { CustomerRecord } from '../../mappers';
 import { ID_TYPES } from '../../constants/customerConstants';
-import { StateSelect } from '../../../../shared/components/StateSelect';
+import { StateSelect } from '@/app/shared/components/StateSelect';
 
 interface GovernmentIdSectionProps {
   readonly idType?: string | null;

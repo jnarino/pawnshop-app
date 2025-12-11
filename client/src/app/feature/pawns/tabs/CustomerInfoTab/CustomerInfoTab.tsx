@@ -1,5 +1,5 @@
-import { CustomerManager } from '@/app/feature/customer';
-import type { Customer } from '@/app/feature/customer';
+import { CustomerManager } from '@/app/feature/_shared/customer';
+import type { Customer } from '@/app/feature/_shared/customer';
 
 interface CustomerInfoTabProps {
   customer: Customer | null;

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { TabKey, SelectedPawnTicket } from '../hooks/usePaymentFlow';
-import type { Customer as CustomerDto } from '../../customer/types';
+import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 import CustomerInfoTab from './CustomerInfoTab';
 import AdditionalInfoTab from './AdditionalInfoTab';
 import ViewPawnTab from './ViewPawnTab';

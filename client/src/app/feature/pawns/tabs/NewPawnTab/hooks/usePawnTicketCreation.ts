@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import { http } from '@/app/core/api/http';
 import type { CreatePawnTicketDto, PawnTicketDto } from '@/app/shared/types/pawnTicket';
-import type { Customer } from '../../CustomerInfoTab/types';
+import type { Customer } from '@/app/feature/_shared/customer/types';
 
 // Re-export Customer type for convenience
-export type { Customer } from '../../CustomerInfoTab/types';
+export type { Customer } from '@/app/feature/_shared/customer/types';
 
 export function usePawnTicketCreation() {
     const [loading, setLoading] = useState(false);

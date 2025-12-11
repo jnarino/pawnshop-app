@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import PawnTicketForm from './components/PawnTicketForm';
 import type { InventoryItemDraft } from './components/InventoryItemModal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Customer } from '@/app/feature/customer';
+import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 
 interface NewPawnTabProps {

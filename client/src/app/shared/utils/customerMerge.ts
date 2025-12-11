@@ -1,4 +1,4 @@
-import { CustomerRecord } from '../../feature/pawns/tabs/CustomerInfoTab/mappers';
+import { CustomerRecord } from '@/app/feature/_shared/customer/mappers';
 import { AamvaData } from '../hooks/useIdScan';
 
 export interface MergeAamvaOptions {
