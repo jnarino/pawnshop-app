@@ -67,7 +67,7 @@ export function createInventoryCategoryRouter(
 
     /**
      * @openapi
-     * /api/categories/{categoryId}/brands:
+     * /api/category/{categoryId}/brands:
      *   get:
      *     tags:
      *       - Inventory Categories
