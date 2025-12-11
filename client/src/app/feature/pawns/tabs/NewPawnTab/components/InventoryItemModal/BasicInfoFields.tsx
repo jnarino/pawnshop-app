@@ -5,15 +5,17 @@ import { DollarInput } from '@/components/ui/dollar-input';
 import { JEWELRY_COLORS } from '@/app/shared/constants/jewelry';
 import { FIREARM_FINISHES } from '@/app/shared/constants/firearms';
 import { InventoryItemDraft } from './types';
+import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface BasicInfoFieldsProps {
   draft: InventoryItemDraft;
   updateField: (field: keyof InventoryItemDraft, value: any) => void;
   isFirearm: boolean;
-  brandOptions?: string[];
+  brands: CategoryOption[];
+  handleBrandChange: (brandId: string) => void;
 }
 
-export function BasicInfoFields({ draft, updateField, isFirearm, brandOptions = [] }: BasicInfoFieldsProps) {
+export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleBrandChange }: BasicInfoFieldsProps) {
   return (
     <>
       {/* Row 1: Value (62%) + Qty (38%) combined */}
@@ -57,31 +59,23 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brandOptions = 
         />
       </div>
 
-      {/* Row 2: Brand */}
-      <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Brand</Label>
-        {brandOptions.length > 0 ? (
-          <Select value={draft.brand || ''} onValueChange={(value) => updateField('brand', value)}>
+      {brands.length > 0 && (
+        <div className="space-y-1 col-span-3">
+          <Label className="text-xs font-semibold">Brand</Label>
+          <Select value={draft.brandId || ''} onValueChange={handleBrandChange}>
             <SelectTrigger className="h-8 text-xs uppercase">
               <SelectValue placeholder="SELECT BRAND..." />
             </SelectTrigger>
             <SelectContent>
-              {brandOptions.map((brand) => (
-                <SelectItem key={brand} value={brand.toUpperCase()} className="text-xs uppercase">
-                  {brand.toUpperCase()}
+              {brands.map((brand) => (
+                <SelectItem key={brand.id} value={brand.id} className="text-xs uppercase">
+                  {brand.name.toUpperCase()}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        ) : (
-          <Input
-            value={draft.brand || ''}
-            onChange={(e) => updateField('brand', e.target.value)}
-            placeholder="BRAND NAME"
-            className="uppercase text-xs h-8"
-          />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Row 2: Model */}
       <div className="space-y-1 col-span-3">

@@ -29,18 +29,20 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     error,
     barcodeMode,
     setBarcodeMode,
+    rootCategories,
+    subcategories,
+    brands,
     isLoading,
-    subtypes,
-    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
-    handleSubtypeChange,
+    handleCategoryChange,
+    handleSubcategoryChange,
+    handleBrandChange,
     handleSubmit,
     handleMetalChange,
-    categories
   } = useInventoryItemForm({ open, initial, onSave });
 
   return (
@@ -55,17 +57,19 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             <CategoryFields
               isLoading={isLoading}
               draft={draft}
-              subtypes={subtypes}
+              rootCategories={rootCategories}
+              subcategories={subcategories}
+              handleCategoryChange={handleCategoryChange}
+              handleSubcategoryChange={handleSubcategoryChange}
               updateField={updateField}
-              handleSubtypeChange={handleSubtypeChange}
-              allCategories={categories}
             />
             
             <BasicInfoFields
               draft={draft}
               updateField={updateField}
               isFirearm={isFirearm}
-              brandOptions={brandOptions}
+              brands={brands}
+              handleBrandChange={handleBrandChange}
             />
 
             {!isJewelry && !isFirearm && <div></div>}
@@ -77,7 +81,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 handleMetalChange={handleMetalChange}
                 karatOptions={karatOptions}
                 isRing={isRing}
-                styleOptions={brandOptions}
+                styleOptions={brands}
               />
             )}
             
