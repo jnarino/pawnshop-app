@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useInventoryCategories } from '@/app/shared/hooks/useInventoryCategories';
+import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft, DEFAULT_ITEM } from './types';
+import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
 
 interface UseInventoryItemFormProps {
   open: boolean;
@@ -15,36 +15,73 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
 
-  const categoriesHook = useInventoryCategories();
-  const allCategories = categoriesHook?.categories || []; // All categories with depth info
-  const buildCategoryTree = categoriesHook?.buildCategoryTree;
-  const isLoading = categoriesHook?.loading || false;
+  const [rootCategories, setRootCategories] = useState<CategoryOption[]>([]);
+  const [subcategories, setSubcategories] = useState<CategoryOption[]>([]);
+  const [brands, setBrands] = useState<CategoryOption[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const selectedCategory = useMemo(() => 
-    allCategories.find(c => c.id === draft.type),
-    [allCategories, draft.type]
-  );
-  
-  // Get subtypes (children of selected category)
-  const subtypes = useMemo(() => {
-    if (!selectedCategory?.id || !buildCategoryTree) return [];
-    return buildCategoryTree(selectedCategory.id).map(c => c.name);
-  }, [selectedCategory, buildCategoryTree]);
+  useEffect(() => {
+    let cancelled = false;
+    
+    const loadRootCategories = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getRootCategories();
+        if (!cancelled) {
+          setRootCategories(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load categories');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-  // Find selected subtype object
-  const selectedSubtype = useMemo(() => 
-    allCategories.find(c => 
-      c.name.toUpperCase() === draft.sub1?.toUpperCase() && 
-      c.parent_id === selectedCategory?.id
-    ),
-    [allCategories, draft.sub1, selectedCategory]
-  );
+    loadRootCategories();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  // Get brand options (children of selected subtype)
-  const brandOptions = useMemo(() => {
-    if (!selectedSubtype?.id || !buildCategoryTree) return [];
-    return buildCategoryTree(selectedSubtype.id).map(c => c.name);
-  }, [selectedSubtype, buildCategoryTree]);
+  useEffect(() => {
+    if (!draft.type) {
+      setSubcategories([]);
+      setBrands([]);
+      return;
+    }
+
+    let cancelled = false;
+    
+    const loadSubcategoriesAndBrands = async () => {
+      try {
+        const [subcategoriesData, brandsData] = await Promise.all([
+          getSubcategories(draft.type),
+          getBrands(draft.type)
+        ]);
+        
+        if (!cancelled) {
+          setSubcategories(subcategoriesData);
+          setBrands(brandsData);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSubcategories([]);
+          setBrands([]);
+        }
+      }
+    };
+
+    loadSubcategoriesAndBrands();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.type]);
 
   // Initialize form data
   useEffect(() => {
@@ -66,18 +103,17 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     }
   }, [open, initial]);
 
-  const categoryName = selectedCategory?.name?.toLowerCase() || '';
+  const selectedRootCategory = rootCategories.find(c => c.id === draft.type);
+  const categoryName = selectedRootCategory?.name?.toLowerCase() || '';
   const isJewelry = categoryName.includes('jewelry');
   const isFirearm = categoryName.includes('firearm');
-  const isRing = isJewelry && (categoryName.includes('ring') || (draft.sub1?.toLowerCase().includes('ring') ?? false));
+  const isRing = isJewelry && (categoryName.includes('ring') || (draft.subcategoryName?.toLowerCase().includes('ring') ?? false));
 
-  // Karat options based on metal
   const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
 
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
-    // Don't uppercase: description, ownerNumber, type, metal, karat (these need exact matching)
     if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber' && field !== 'type' && field !== 'metal' && field !== 'karat') {
       processedValue = value.toUpperCase();
     }
@@ -85,12 +121,46 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 
-  // Subtype selection
-  const handleSubtypeChange = useCallback((subtype: string) => {
-    updateField('sub1', subtype);
-    updateField('brand', ''); // Clear brand
-    updateField('style', ''); // Clear style
-  }, [updateField]);
+  const handleCategoryChange = useCallback((categoryId: string) => {
+    const category = rootCategories.find(c => c.id === categoryId);
+    setDraft(prev => ({
+      ...prev,
+      type: categoryId,
+      categoryName: category?.name || '',
+      subcategoryId: '',
+      subcategoryName: '',
+      brandId: '',
+      brandName: '',
+      sub1: '',
+      brand: ''
+    }));
+    setSubcategories([]);
+    setBrands([]);
+  }, [rootCategories]);
+
+  const handleSubcategoryChange = useCallback((subcategoryId: string) => {
+    const subcategory = subcategories.find(s => s.id === subcategoryId);
+    setDraft(prev => ({
+      ...prev,
+      subcategoryId,
+      subcategoryName: subcategory?.name || '',
+      sub1: subcategory?.name || '',
+      brandId: '',
+      brandName: '',
+      brand: '',
+      style: ''
+    }));
+  }, [subcategories]);
+
+  const handleBrandChange = useCallback((brandId: string) => {
+    const brand = brands.find(b => b.id === brandId);
+    setDraft(prev => ({
+      ...prev,
+      brandId,
+      brandName: brand?.name || '',
+      brand: brand?.name || ''
+    }));
+  }, [brands]);
 
   // Barcode scanning
   useBarcodeScan({
@@ -99,7 +169,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
       updateField('serial', code);
       setBarcodeMode(false);
     },
-    allowRegex: /^[A-Z0-9\-]+$/i
+    allowRegex: /^[A-Z0-9-]+$/i
   });
 
   // Form validation and submission
@@ -155,16 +225,18 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     error,
     barcodeMode,
     setBarcodeMode,
-    categories: allCategories,
+    rootCategories,
+    subcategories,
+    brands,
     isLoading,
-    subtypes,
-    brandOptions,
     isJewelry,
     isFirearm,
     isRing,
     karatOptions,
     updateField,
-    handleSubtypeChange,
+    handleCategoryChange,
+    handleSubcategoryChange,
+    handleBrandChange,
     handleSubmit,
     handleMetalChange,
   };

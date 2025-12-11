@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { JEWELRY_METALS, WEIGHT_UNITS, GENDER_OPTIONS, RING_SIZES } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft } from './types';
+import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface JewelryFieldsProps {
   draft: InventoryItemDraft;
@@ -10,7 +11,7 @@ interface JewelryFieldsProps {
   handleMetalChange: (metal: string) => void;
   karatOptions: readonly string[];
   isRing: boolean;
-  styleOptions?: string[];
+  styleOptions?: CategoryOption[];
 }
 
 export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing, styleOptions = [] }: JewelryFieldsProps) {
@@ -18,27 +19,12 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Style</Label>
-        {styleOptions.length > 0 ? (
-          <Select value={draft.style || ''} onValueChange={(value) => updateField('style', value)}>
-            <SelectTrigger className="h-8 text-xs uppercase">
-              <SelectValue placeholder="SELECT STYLE..." />
-            </SelectTrigger>
-            <SelectContent>
-              {styleOptions.map((style) => (
-                <SelectItem key={style} value={style.toUpperCase()} className="text-xs uppercase">
-                  {style.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            value={draft.style || ''}
-            onChange={(e) => updateField('style', e.target.value)}
-            placeholder="STYLE"
-            className="uppercase text-xs h-8"
-          />
-        )}
+        <Input
+          value={draft.style || ''}
+          onChange={(e) => updateField('style', e.target.value)}
+          placeholder="STYLE"
+          className="uppercase text-xs h-8"
+        />
       </div>
 
       <div className="space-y-1 col-span-3">
