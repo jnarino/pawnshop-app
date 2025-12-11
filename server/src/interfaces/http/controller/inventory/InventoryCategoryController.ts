@@ -15,7 +15,7 @@ export class InventoryCategoryController {
 
     /**
      * Get the tree structure of all categories.
-     * GET /api/inventory/categories/root     
+     * GET /api/category/root     
      * @returns 
      */
     getRootCategories = async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -29,7 +29,7 @@ export class InventoryCategoryController {
 
     /**
      * Get the tree structure of sub-categories under a specific category
-     * GET /api/inventory/categories/:categoryId/subcategories    
+     * GET /api/category/:categoryId/subcategories    
      * @returns 
      */
     getSubCategories = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -44,7 +44,7 @@ export class InventoryCategoryController {
 
     /**
      * Get the brands by root category ID
-     * GET /api/inventory/categories/:categoryId/brands
+     * GET /api/category/:categoryId/brands
      * @returns 
      */
     getBrandsByCategoryRoot = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

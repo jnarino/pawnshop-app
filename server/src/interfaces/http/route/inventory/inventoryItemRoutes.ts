@@ -10,14 +10,193 @@ export function createInventoryItemRouter(
     const router = Router();
     const auth = authenticate(jwtSecret);
 
-    // Read operations
+    /**
+     * @openapi
+     * /api/inventory-items/by-inventory-number/{inventoryNumber}:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Get item by inventory number
+     *     description: Retrieve an inventory item by its inventory number
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: inventoryNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Inventory number
+     *     responses:
+     *       200:
+     *         description: Inventory item details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       404:
+     *         description: Item not found
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/by-inventory-number/:inventoryNumber', auth, controller.getByInventoryNumber);
+
+    /**
+     * @openapi
+     * /api/inventory-items/by-serial-number/{serialNumber}:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Get item by serial number
+     *     description: Retrieve an inventory item by its serial number
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: serialNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Serial number
+     *     responses:
+     *       200:
+     *         description: Inventory item details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       404:
+     *         description: Item not found
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/by-serial-number/:serialNumber', auth, controller.getBySerialNumber);
+
+    /**
+     * @openapi
+     * /api/inventory-items/{id}:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Get item by ID
+     *     description: Retrieve an inventory item by its ID
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Item ID
+     *     responses:
+     *       200:
+     *         description: Inventory item details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       404:
+     *         description: Item not found
+     *       401:
+     *         description: Unauthorized
+     */
     router.get('/:id', auth, controller.getById);
 
-    // Create / Update / Delete
+    /**
+     * @openapi
+     * /api/inventory-items:
+     *   post:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Create inventory item
+     *     description: Create a new inventory item
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/InventoryItem'
+     *     responses:
+     *       201:
+     *         description: Item created successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
     router.post('/', auth, controller.create);
+
+    /**
+     * @openapi
+     * /api/inventory-items/{id}:
+     *   put:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Update inventory item
+     *     description: Update an existing inventory item
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Item ID
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/InventoryItem'
+     *     responses:
+     *       200:
+     *         description: Item updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       404:
+     *         description: Item not found
+     *       401:
+     *         description: Unauthorized
+     */
     router.put('/:id', auth, controller.update);
+
+    /**
+     * @openapi
+     * /api/inventory-items/{id}:
+     *   delete:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Delete inventory item
+     *     description: Delete an inventory item (requires admin or manager role)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Item ID
+     *     responses:
+     *       200:
+     *         description: Item deleted successfully
+     *       404:
+     *         description: Item not found
+     *       401:
+     *         description: Unauthorized
+     *       403:
+     *         description: Forbidden - insufficient permissions
+     */
     router.delete('/:id', auth, requireRole(['admin', 'manager']), controller.remove);
 
     return router;
