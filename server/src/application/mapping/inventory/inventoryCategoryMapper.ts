@@ -6,12 +6,10 @@ export class InventoryCategoryMapper {
     category: InventoryCategory
   ): InventoryCategoryTreeItemResponseDto {
     return {
-      id: category.id,
-      name: category.name,
-      code: category.code,
-      parentId: category.parentId,
-      path: category.path,
-      depth: category.depth
+      categoryId: category.categoryId,
+      subcategoryId: category.subcategoryId,
+      brand: category.brand,
+      path: category.path
     };
   }
 }
