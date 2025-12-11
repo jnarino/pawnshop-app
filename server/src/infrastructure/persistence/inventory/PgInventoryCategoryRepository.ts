@@ -15,12 +15,10 @@ const SQL_GET_ALL_TREE = loadSql(
 
 function mapRowToInventoryCategory(row: any): InventoryCategory {
     return new InventoryCategory({
-        id: row.id,
-        name: row.name,
-        code: row.code,
-        parentId: row.parent_id ?? null,
-        path: row.path ?? null,
-        depth: row.depth
+        categoryId: row.category_id,
+        subcategoryId: row.subcategory_id,
+        brand: row.brand,
+        path: row.path,
     });
 }
 
@@ -30,10 +28,10 @@ export class PgInventoryCategoryRepository
 
     async create(category: InventoryCategory): Promise<InventoryCategory> {
         const result = await this.pool.query(SQL_CREATE, [
-            category.id,
-            category.name,
-            category.code,
-            category.parentId
+            category.categoryId,
+            category.subcategoryId,
+            category.brand,
+            category.path
         ]);
 
         return mapRowToInventoryCategory(result.rows[0]);

@@ -710,6 +710,10 @@ CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_trans   ON gunlog(legacy_tra
 CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_prev    ON gunlog(legacy_prev_gunlogrec);
 CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_next    ON gunlog(legacy_next_gunlogrec);
 
+CREATE INDEX IF NOT EXISTS inv_sub_cat_active ON inventory_subcategory (inventory_category_id) WHERE is_active;
+CREATE INDEX IF NOT EXISTS inv_brand_cat_active ON inventory_brand (inventory_category_id) WHERE is_active;
+CREATE INDEX IF NOT EXISTS inv_cat_name_active ON inventory_category (name) WHERE is_active;
+
 DROP TRIGGER IF EXISTS trg_gunlog_updated ON gunlog;
 CREATE TRIGGER trg_gunlog_updated
 BEFORE UPDATE ON gunlog
@@ -744,6 +748,8 @@ BEGIN
   RETURN next_num;
 END;
 $$ LANGUAGE plpgsql;
+
+
 
 -----------------------
 -- Attribute dictionary (schema only; seeds later)

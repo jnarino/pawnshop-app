@@ -1,26 +1,18 @@
 export class InventoryCategory {
-  readonly id: string;
-
-  name: string;
-  code: string;
-  parentId: string | null;
-  path: string | null;
-  depth: number;
+  categoryId: string;
+  subcategoryId: string;
+  brand: string;
+  path: string;
 
   constructor(params: {
-    id: string;
-    name: string;
-    code: string;
-    parentId?: string | null;
-    path?: string | null;
-    depth: number;
+    categoryId: string;
+    subcategoryId: string;
+    brand: string;
+    path: string;
   }) {
-    this.id = params.id;
-
-    this.name = params.name;
-    this.code = params.code;
-    this.parentId = params.parentId ?? null;
-    this.path = params.path ?? null;
-    this.depth = params.depth;
+    this.categoryId = params.categoryId;
+    this.subcategoryId = params.subcategoryId;
+    this.brand = params.brand;
+    this.path = params.path;
   }
 }

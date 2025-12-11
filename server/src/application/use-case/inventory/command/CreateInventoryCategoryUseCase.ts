@@ -11,19 +11,17 @@ import { InventoryCategoryTreeItemResponseDto } from '../../../dto/inventory/que
 export class CreateInventoryCategoryUseCase {
   constructor(
     private readonly inventoryCategoryRepository: InventoryCategoryRepository
-  ) {}
+  ) { }
 
   async execute(input: unknown): Promise<InventoryCategoryTreeItemResponseDto> {
     const dto: CreateInventoryCategoryRequestDto =
       createInventoryCategoryRequestSchema.parse(input);
 
     const category = new InventoryCategory({
-      id: randomUUID(),
-      name: dto.name,
-      code: dto.code,
-      parentId: dto.parentId ?? null,
-      path: null,
-      depth: 0 // DB will compute the real depth from ltree path
+      categoryId: dto.categoryId,
+      subcategoryId: dto.subcategoryId,
+      brand: dto.brand,
+      path: dto.path
     });
 
     const saved = await this.inventoryCategoryRepository.create(category);
