@@ -44,6 +44,9 @@ import { StoreTransactionController } from './interfaces/http/controller/storeTr
 import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
+import { PgInventoryColorRepository } from './infrastructure/persistence/inventory/PgInventoryColorRepository';
+import { InventoryColorController } from './interfaces/http/controller/inventory/InventoryColorController';
+import { GetAllInventoryGenericColorsUseCase } from './application/use-case/inventory/query/GetAllInventoryGenericColorsUseCase';
 
 
 
@@ -56,6 +59,7 @@ export async function createApp() {
   const customerRepo = new PgCustomerRepository(pool);
   const inventoryItemRepo = new PgInventoryItemRepository(pool);
   const inventoryCategoryRepo = new PgInventoryCategoryRepository(pool);
+  const inventoryColorRepo = new PgInventoryColorRepository(pool);
   const pawnTicketRepo = new PgPawnTicketRepository(pool);
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
@@ -94,6 +98,9 @@ export async function createApp() {
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
   const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
   const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
+
+  // Inventory Color use-cases
+  const getAllInventoryGenericColorsUseCase = new GetAllInventoryGenericColorsUseCase(inventoryColorRepo);
 
 
   // Pawn Ticket use-cases  
@@ -143,6 +150,10 @@ export async function createApp() {
     getBrandsByCategoryRootUseCase
   );
 
+  const inventoryColorController = new InventoryColorController(
+    getAllInventoryGenericColorsUseCase
+  );
+
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
     listPawnTicketsByControlNumberUseCase,
@@ -161,6 +172,7 @@ export async function createApp() {
     customerController,
     inventoryItemController,
     inventoryCategoryController,
+    inventoryColorController,
     pawnTicketController,
     storeTransactionController,
     jwtSecret: env.jwtSecret
