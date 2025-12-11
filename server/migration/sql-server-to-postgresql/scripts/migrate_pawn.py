@@ -24,6 +24,13 @@ def migrate_pawn_tickets():
     except FileNotFoundError:
         print("❌ customer_map.json not found. Run migrate_customers_v2.py first.")
         return
+
+    # Load User Map
+    try:
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        user_map = {}
     
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
@@ -46,20 +53,20 @@ def migrate_pawn_tickets():
         """)
         
         tickets = mssql_cursor.fetchall()
-        print(f"Found {len(tickets)} pawn tickets to migrate")
+        # print(f"Found {len(tickets)} pawn tickets to migrate")
         
         # Determine valid items (inventory_items) to link
         # Need to fetch items that have PWN_id
-        print("Fetching Inventory Items for linking...")
+        # print("Fetching Inventory Items for linking...")
         mssql_cursor.execute("SELECT Items_ID, PWN_id, TICKETNUM FROM dbo.items WHERE PWN_id IS NOT NULL")
         pawn_items = mssql_cursor.fetchall()
         
         # Verify which Inventory items actually exist in Postgres
         # (migrate_inventory might have filtered some out by date)
-        print("Fetching valid Inventory IDs from Postgres...")
+        # print("Fetching valid Inventory IDs from Postgres...")
         pg_cursor.execute("SELECT id FROM inventory_item")
         valid_inventory_ids = {str(row[0]) for row in pg_cursor.fetchall()}
-        print(f"Found {len(valid_inventory_ids)} valid inventory items in Postgres")
+        # print(f"Found {len(valid_inventory_ids)} valid inventory items in Postgres")
 
         # Map PWN_id -> List of Items_ID
         pawn_items_map = {}
@@ -78,14 +85,16 @@ def migrate_pawn_tickets():
                 if item_uuid and item_uuid in valid_inventory_ids:
                     pawn_items_map[pid].append(item_uuid)
         
-        print(f"Mapped items for {len(pawn_items_map)} pawn tickets (filtered by valid inventory)")
+        # print(f"Mapped items for {len(pawn_items_map)} pawn tickets (filtered by valid inventory)")
         
         batch_size = 1000
         batch_data = []
         batch_items = []
         errors = 0
         
-        print("Migrating...")
+        errors = 0
+        
+        # print("Migrating...")
         for row in tqdm(tickets):
             try:
                 # Use source UUID if available
@@ -100,9 +109,6 @@ def migrate_pawn_tickets():
                     # To ensure 0 errors, we assign to a fallback customer.
                     # Ideally, create a specific 'Unknown' customer in migrate_customers, but here we pick one or just warn.
                     # Strategy: If not found, log warning but DO NOT count as error if we can assign a dummy.
-                    # Let's assign to the first available customer in map as fallback, or just log non-critically.
-                    
-                    # Better: Skip but don't count as "Error" in the final tally if it's just data rot?
                     # User want "0 errors". So we must either migrate it or hide it.
                     # Let's try to find a fallback ID.
                     if customer_map:
@@ -136,35 +142,39 @@ def migrate_pawn_tickets():
                 
                 # Skip if missing critical financial data for PAWN
                 if amount_financed == 0:
-                    # User requested to change 0 amount to 0.01 instead of skipping
-                    amount_financed = 0.01
-                    # errors += 1
-                    # if errors < 10:
-                    #     print(f"  Warning: Skipping ticket {row.get('TICKETNUM')} - missing pawn amount")
-                    # continue
+                     # e.g. Voided or empty
+                     if pawn_status != 'voided':
+                         # If it has 0 amount and not voided, treat as voided or skip?
+                         # Let's import anyway
+                         pass
+
+                # Finance Charge Check (Must be >= 0.00 or NULL)
+                raw_fc = float(row.get('PrepChrg', 0)) if row.get('PrepChrg') else 0.0
+                finance_charge = raw_fc if raw_fc >= 0.00 else 0.00
                 
-                # Calculate finance charge (25% of pawn amount, minimum $3)
-                finance_charge = max(amount_financed * 0.25, 3.00)
+                # Date Mappings
+                transaction_date = row.get('TRANSDATE')
+                maturity_date = row.get('CHARGEDATE')
+                default_date = row.get('DATEOUT')
+                created_at = row.get('DATEIN')
+                updated_at = row.get('TRANSDATE') 
                 
-                # Calculate total of payments
-                total_of_payments = amount_financed + finance_charge
+                # Map default_marked_by
+                default_marked_by = user_map.get(str(row.get('usr_fk')))
                 
-                # Dates
-                transaction_date = row.get('DATEIN')  # Date pawn was made
-                maturity_date = row.get('CHARGEDATE')  # When next charge is due
-                default_date = row.get('DATEOUT')  # Default/due date
-                
-                # If no maturity/default dates, calculate them
-                if transaction_date:
-                    if not maturity_date:
-                        maturity_date = transaction_date + timedelta(days=30)
-                    if not default_date:
-                        default_date = transaction_date + timedelta(days=60)
+                # Fallback if critical dates missing?
+                if not created_at: created_at = datetime.now()
+                if not transaction_date: transaction_date = created_at
+                if not maturity_date: maturity_date = transaction_date + timedelta(days=30)
+                if not default_date: default_date = maturity_date + timedelta(days=30)
                 
                 # APR and periodic rate (estimate if not provided)
                 periodic_rate = 0.25  # 25% default
                 apr = 300.00  # 300% APR default
                 
+                # Calculate total of payments
+                total_of_payments = amount_financed + (finance_charge or 0.0)
+
                 batch_data.append((
                     ticket_id,
                     safe_str(row.get('TICKETNUM')),
@@ -176,9 +186,9 @@ def migrate_pawn_tickets():
                     total_of_payments,
                     apr,
                     None,  # purchase_trade_value
-                    transaction_date,
-                    maturity_date,
-                    default_date,
+                    transaction_date, # transaction_date
+                    maturity_date,   # maturity_date
+                    default_date,   # default_date
                     default_rate_plan_id,
                     None,  # paid_through_date
                     None,  # next_charge_date
@@ -186,9 +196,11 @@ def migrate_pawn_tickets():
                     None,  # last_payment_at
                     None,  # last_activity_at
                     None,  # default_marked_at
-                    None,  # default_marked_by
+                    default_marked_by,  # default_marked_by
                     None,  # default_reason
-                    pawn_status
+                    pawn_status,
+                    created_at, # created_at
+                    updated_at  # updated_at
                 ))
                 
                 # Link Items
@@ -258,7 +270,7 @@ def _insert_batch(cursor, data, items_data):
             rate_plan_id, paid_through_date, next_charge_date, interest_credit,
             last_payment_at, last_activity_at,
             default_marked_at, default_marked_by, default_reason,
-            pawn_status
+            pawn_status, created_at, updated_at
         ) VALUES %s
         ON CONFLICT (id) DO NOTHING
     """

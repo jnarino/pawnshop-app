@@ -69,37 +69,70 @@ def migrate_sales():
         
         errors = 0
         
+        # Pre-fetch existing transactions (legacy_ticketnum -> id)
+        # Note: This map could be huge. If too big, process in small chunks or query per PROBABLY SLOW?
+        # Better: Select only ticketnums present in Sales?
+        # For now, let's load all transactions with legacy_ticketnum (from migrate_transactions)
+        print("Fetching existing transactions map...")
+        pg_cursor.execute("SELECT legacy_ticketnum, id FROM store_transaction WHERE legacy_ticketnum IS NOT NULL")
+        tx_map = {str(row[0]).strip(): str(row[1]) for row in pg_cursor.fetchall()}
+        print(f"Loaded {len(tx_map)} existing transactions")
+
+        batch_size = 1000
+        batch_tx = []
+        batch_items = []
+        batch_tenders = [] 
+        
+        errors = 0
+        
         for row in tqdm(sales_rows):
             try:
                 # IDs
                 # Use Sold_pk (int) for legacy_acct_pk (BigInt)
                 legacy_int_pk = row.get('Sold_pk')
                 # SLD_id is UUID, unused for legacy_acct_pk
+                ticket_num = str(row.get('TICKETNUM')).strip()
                 
-                tx_id = str(uuid.uuid4())
+                # Check if Transaction already migrated (via Acct table)
+                existing_tx_id = tx_map.get(ticket_num)
                 
-                customer_pk = str(row.get('CUS_FK'))
-                customer_id = customer_map.get(customer_pk)
-                if customer_id: customer_id = str(customer_id)
-                
-                # Filter Types? If Status='L', skip (Layaway handled separately)
-                # Double check status if needed, but TRANS filter handles specific types.
-
-                # Map Header
-                batch_tx.append((
-                    tx_id,
-                    legacy_int_pk, # Mapped to legacy_acct_pk (BigInt)
-                    customer_id,
-                    RETAIL_SALE_ID,
-                    row.get('DATEin'), 
-                    row.get('SaleAmt'), 
-                    row.get('TAX'),
-                    safe_str(row.get('NOTE'))
-                ))
+                if existing_tx_id:
+                     tx_id = existing_tx_id
+                     # Do not insert Header or Tender (Accet has correct split)
+                     # ONLY insert Items
+                else:
+                    # Phantom Sale (No Acct record?)
+                    # Create new Header
+                    tx_id = str(uuid.uuid4())
+                    
+                    customer_pk = str(row.get('CUS_FK'))
+                    customer_id = customer_map.get(customer_pk)
+                    if customer_id: customer_id = str(customer_id)
+                    
+                    batch_tx.append((
+                        tx_id,
+                        legacy_int_pk, # Mapped to legacy_acct_pk (BigInt)
+                        customer_id,
+                        RETAIL_SALE_ID,
+                        row.get('DATEin'), 
+                        row.get('SaleAmt'), 
+                        row.get('TAX'),
+                        safe_str(row.get('NOTE')),
+                        ticket_num
+                    ))
+                    
+                    # Map Tender (Assume Cash since Acct missing)
+                    batch_tenders.append((
+                        str(uuid.uuid4()),
+                        tx_id,
+                        1,
+                        CASH_ID,
+                        row.get('SaleAmt') 
+                    ))
                 
                 # Map Items
                 # Use TICKETNUM for lookup
-                lookup_key = str(row.get('TICKETNUM')).strip()
+                lookup_key = ticket_num
                                 
                 if lookup_key in items_map:
                     seq = 1
@@ -116,15 +149,6 @@ def migrate_sales():
                          ))
                          seq += 1
                 
-                # Map Tender
-                batch_tenders.append((
-                    str(uuid.uuid4()),
-                    tx_id,
-                    1,
-                    CASH_ID,
-                    row.get('SaleAmt') # Updated from AMOUNT
-                ))
-
                 if len(batch_tx) >= batch_size:
                     _flush_batches(pg_cursor, batch_tx, batch_items, batch_tenders)
                     pg_conn.commit()
@@ -136,7 +160,7 @@ def migrate_sales():
                 if errors < 10:
                     print(f"❌ Error processing sale {row.get('SLD_id')}: {e}")
         
-        if batch_tx:
+        if batch_tx or batch_items:
             _flush_batches(pg_cursor, batch_tx, batch_items, batch_tenders)
             pg_conn.commit()
             
@@ -154,7 +178,7 @@ def _flush_batches(cursor, txs, items, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note
+                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note, legacy_ticketnum
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     if items:

@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS app_user (
   terminated_date DATE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   role_id SMALLINT NOT NULL REFERENCES role(id),
+  legacy_usr_pk BIGINT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -161,37 +162,54 @@ CREATE INDEX IF NOT EXISTS customer_name_idx ON customer (last_name, first_name)
 CREATE INDEX IF NOT EXISTS customer_dob_idx  ON customer (date_of_birth);
 
 -------------------------------
--- Inventory: hierarchical categories
+-- Inventory: Category / Subcategory / Brand
 -------------------------------
 CREATE TABLE IF NOT EXISTS inventory_category (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  code TEXT NOT NULL,
-  parent_id UUID REFERENCES inventory_category(id) ON DELETE CASCADE,
-  path LTREE,
-  depth INT GENERATED ALWAYS AS (nlevel(path)) STORED,
+  code TEXT NOT NULL UNIQUE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT inventory_category_unique_sibling UNIQUE (parent_id, name),
-  CONSTRAINT inventory_category_code_sibling   UNIQUE (parent_id, code)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 DROP TRIGGER IF EXISTS trg_inventory_category_updated ON inventory_category;
 CREATE TRIGGER trg_inventory_category_updated
 BEFORE UPDATE ON inventory_category
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
-DROP TRIGGER IF EXISTS trg_inventory_category_path_ins ON inventory_category;
-CREATE TRIGGER trg_inventory_category_path_ins
-BEFORE INSERT ON inventory_category
-FOR EACH ROW EXECUTE PROCEDURE inventory_category_set_path();
+CREATE TABLE IF NOT EXISTS inventory_subcategory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inventory_category_id UUID NOT NULL REFERENCES inventory_category(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  code TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT inventory_subcategory_unique_code UNIQUE (inventory_category_id, code)
+);
 
-DROP TRIGGER IF EXISTS trg_inventory_category_path_upd ON inventory_category;
-CREATE TRIGGER trg_inventory_category_path_upd
-BEFORE UPDATE OF parent_id, code ON inventory_category
-FOR EACH ROW EXECUTE PROCEDURE inventory_category_set_path();
+DROP TRIGGER IF EXISTS trg_inventory_subcategory_updated ON inventory_subcategory;
+CREATE TRIGGER trg_inventory_subcategory_updated
+BEFORE UPDATE ON inventory_subcategory
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
-CREATE INDEX IF NOT EXISTS inventory_category_path_gist ON inventory_category USING GIST (path);
-CREATE INDEX IF NOT EXISTS inventory_category_parent_idx ON inventory_category(parent_id);
+CREATE TABLE IF NOT EXISTS inventory_brand (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inventory_category_id UUID NOT NULL REFERENCES inventory_category(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  code TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT inventory_brand_unique_code UNIQUE (inventory_category_id, code)
+);
+
+DROP TRIGGER IF EXISTS trg_inventory_brand_updated ON inventory_brand;
+CREATE TRIGGER trg_inventory_brand_updated
+BEFORE UPDATE ON inventory_brand
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
 
 ------------------------------------
 -- Inventory status (letter codes)
@@ -205,6 +223,7 @@ CREATE TABLE IF NOT EXISTS inventory_status (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 DROP TRIGGER IF EXISTS trg_inventory_status_updated ON inventory_status;
 CREATE TRIGGER trg_inventory_status_updated
 BEFORE UPDATE ON inventory_status
@@ -259,14 +278,15 @@ CREATE INDEX IF NOT EXISTS idx_item_attribute_value_type ON item_attribute_value
 -----------------------------
 CREATE TABLE IF NOT EXISTS inventory_item (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id UUID NOT NULL REFERENCES inventory_category(id) ON DELETE RESTRICT,
+  
+  inventory_subcategory_id UUID NOT NULL REFERENCES inventory_subcategory(id) ON DELETE RESTRICT,
+  inventory_brand_id UUID REFERENCES inventory_brand(id) ON DELETE RESTRICT,
 
   status TEXT NOT NULL DEFAULT 'I' REFERENCES inventory_status(code),
 
-  brand TEXT,
   model TEXT,
   serial_number TEXT,
-  -- color now stored in item attributes JSONB
+  color TEXT,
   item_condition TEXT,
 
   quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -298,9 +318,10 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS inventory_item_category_idx ON inventory_item(category_id);
+CREATE INDEX IF NOT EXISTS inventory_item_subcategory_idx ON inventory_item(inventory_subcategory_id);
+CREATE INDEX IF NOT EXISTS inventory_item_brand_idx ON inventory_item(inventory_brand_id);
 CREATE INDEX IF NOT EXISTS inventory_item_status_idx   ON inventory_item(status);
-CREATE INDEX IF NOT EXISTS inventory_item_brand_model_idx ON inventory_item(brand, model);
+CREATE INDEX IF NOT EXISTS inventory_item_model_idx ON inventory_item(model);
 
 DROP TRIGGER IF EXISTS trg_inventory_item_updated ON inventory_item;
 CREATE TRIGGER trg_inventory_item_updated
@@ -390,7 +411,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT pawn_ticket_finance_charge_min
-    CHECK (finance_charge IS NULL OR finance_charge >= 3.00),
+    CHECK (finance_charge IS NULL OR finance_charge >= 0.00),
 
   CONSTRAINT pawn_ticket_amount_consistency CHECK (
     (transaction_type = 'PAWN'

@@ -77,3 +77,6 @@ client/build/
 # Server build outputs  
 server/dist/
 server/build/
+
+# Migration Artifacts
+*_map.json

@@ -25,6 +25,13 @@ def migrate_gunlog():
     except FileNotFoundError:
         print("❌ customer_map.json not found. Run migrate_customers_v2.py first.")
         return
+
+    # Load User Map
+    try:
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        user_map = {}
     
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
@@ -36,12 +43,22 @@ def migrate_gunlog():
         # Fetch gun log records
         print("Fetching gun log records from SQL Server...")
         mssql_cursor.execute("""
-            SELECT * FROM dbo.gunlog 
+            SELECT 
+                GunLogNum, GUN_id, MANUFACTUR, IMPORTER, MODEL, SERIAL, CALIBER, GUNTYPE, ACTION,
+                BUYDATE, BUYFNAME, BUYMNAME, BUYLNAME, BUYADD1, BuyAdd2, BUYCITY, BUYSTATE, BUYZIP, BUYIDTYPE, BUYIDNUM,
+                SOLDDATE, SOLDFNAME, SOLDMNAME, SOLDLNAME, SOLDADD1, SoldAdd2, SOLDCITY, SOLDSTATE, SOLDZIP, SOLDIDTYPE, SOLDIDNUM,
+                NICSTN, LastUpdatedUSR_ID
+            FROM dbo.gunlog 
             ORDER BY GunLogNum
         """)
         
         records = mssql_cursor.fetchall()
         print(f"Found {len(records)} gun log records to migrate")
+        if records:
+            print(f"Sample Row Keys: {records[0].keys()}")
+        
+        batch_size = 1000
+        batch_data = []
         
         batch_size = 1000
         batch_data = []
@@ -54,21 +71,10 @@ def migrate_gunlog():
                 gunlog_id = str(row['GUN_id']) if row.get('GUN_id') else str(uuid.uuid4())
                 
                 # Map inventory item (if linked)
-                # Note: We don't have an inventory map, but we used source UUIDs for items
-                # However, dbo.gunlog doesn't seem to have ITEMS_PK directly? 
-                # It has INVNUM. We might need to look up item ID by INVNUM if not directly linked.
-                # Wait, the schema analysis showed 'GUN_id' but not 'ITEMS_PK'.
-                # Let's check if INVNUM can be used to find the item.
-                # For now, we'll leave inventory_item_id NULL unless we can link it.
                 inventory_item_id = None
                 
                 # Map customers
-                # Acquisition customer (from whom the gun was acquired)
-                # dbo.gunlog doesn't seem to have CUS_FK for acquisition?
-                # It has BUYFNAME etc.
                 acquisition_customer_id = None
-                
-                # Disposition customer (to whom the gun was sold)
                 disposition_customer_id = None
                 
                 # Construct address strings
@@ -82,6 +88,9 @@ def migrate_gunlog():
                 acq_name = f"{safe_str(row.get('BUYFNAME')) or ''} {safe_str(row.get('BUYMNAME')) or ''} {safe_str(row.get('BUYLNAME')) or ''}".strip()
                 disp_name = f"{safe_str(row.get('SOLDFNAME')) or ''} {safe_str(row.get('SOLDMNAME')) or ''} {safe_str(row.get('SOLDLNAME')) or ''}".strip()
                 
+                # User Map
+                last_updated_by = user_map.get(str(row.get('LastUpdatedUSR_ID')))
+
                 batch_data.append((
                     gunlog_id,
                     int(row.get('GunLogNum', 0)),
@@ -116,8 +125,8 @@ def migrate_gunlog():
                     safe_str(row.get('SOLDIDTYPE')),
                     safe_str(row.get('SOLDIDNUM')),
                     
-                    safe_str(row.get('NICSTN')) # NICS/Notes? Put in notes or separate column if exists?
-                    # The schema has specific columns. Let's match insert statement.
+                    safe_str(row.get('NICSTN')), # NICS/Notes?
+                    last_updated_by # last_updated_user_id
                 ))
                 
                 if len(batch_data) >= batch_size:
@@ -166,7 +175,7 @@ def _insert_batch(cursor, data):
             manufacturer, importer, model, serial_number, caliber_gauge, firearm_type, firearm_action,
             acquisition_date, acquisition_customer_id, acq_name_full, acq_addr1, acq_city, acq_state, acq_zip, acq_id_type, acq_id_number,
             disposition_date, disposition_customer_id, disp_name_full, disp_addr1, disp_city, disp_state, disp_zip, disp_id_type, disp_id_number,
-            notes
+            notes, last_updated_user_id
         ) VALUES %s
         ON CONFLICT (id) DO NOTHING
     """
