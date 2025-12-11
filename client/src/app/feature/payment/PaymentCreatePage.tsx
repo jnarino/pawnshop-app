@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import type { Customer as CustomerDto } from '../customer/types';
-import { CustomerManager } from '../customer';
-import { FindByTicketModal } from '../customer/components/FindByTicketModal';
+import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
+import { CustomerManager } from '@/app/feature/_shared/customer';
+import { FindByTicketModal } from '@/app/feature/_shared/customer/components/FindByTicketModal';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';

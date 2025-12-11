@@ -5,7 +5,7 @@ import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/P
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
-import type { Customer } from '@/app/feature/customer';
+import type { Customer } from '@/app/feature/_shared/customer';
 import './pawns.css';
 
 function PawnsWorkspaceContent() {

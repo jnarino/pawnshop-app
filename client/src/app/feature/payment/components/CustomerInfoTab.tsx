@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Customer as CustomerDto } from '../../customer/types';
-import CustomerPicker from '../../customer/components/CustomerPicker';
+import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
+import CustomerPicker from '@/app/feature/_shared/customer/components/CustomerPicker';
 
 interface Props {
   customer: CustomerDto | null;

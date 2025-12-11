@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { Customer } from '../../types';
-import { StateSelect } from '../../../../shared/components/StateSelect';
+import { StateSelect } from '@/app/shared/components/StateSelect';
 
 interface EmployerInfoSectionProps {
   readonly employerName?: string | null;

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
-import type { Customer } from '@/app/feature/customer/types';
-import { apiToRecordLoose } from '@/app/feature/customer/mappers';
+import type { Customer } from '@/app/feature/_shared/customer/types';
+import { apiToRecordLoose } from '@/app/feature/_shared/customer/mappers';
 
 interface UseFindByTicketResult {
   loading: boolean;

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { CustomerRecord } from '../../mappers';
-import { StateSelect } from '../../../../shared/components/StateSelect';
+import { StateSelect } from '@/app/shared/components/StateSelect';
 
 interface AddressSectionProps {
   readonly streetAddress?: string | null;

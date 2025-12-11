@@ -3,8 +3,8 @@ import { TransactionFormPrinter } from '@/app/core/printing/TransactionFormPrint
 import { LabelPrinter } from '@/app/core/printing/LabelPrinter';
 import type { TransactionPrintData } from '@/app/core/printing/TransactionFormPrinter';
 import type { LabelPrintData } from '@/app/core/printing/LabelPrinter';
-import type { PawnTicketCreateResponse } from '@/app/core/api/pawnTicketApi';
-import type { Customer } from '@/app/feature/customer';
+import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import type { Customer } from '@/app/feature/_shared/customer';
 
 export interface PrintItem {
   id: string;
@@ -26,7 +26,7 @@ export interface FormDataItem {
 }
 
 interface PrintFormParams {
-  ticket: PawnTicketCreateResponse;
+  ticket: TicketByControlNumber;
   customer: Customer;
   items: FormDataItem[];
 }
@@ -38,7 +38,7 @@ interface UsePawnPrintResult {
     items: PrintItem[],
     labelCounts: Record<string, number>
   ) => Promise<boolean>;
-  buildPrintItems: (ticket: PawnTicketCreateResponse, items: FormDataItem[]) => PrintItem[];
+  buildPrintItems: (ticket: TicketByControlNumber, items: FormDataItem[]) => PrintItem[];
   isFormPrinting: boolean;
   isLabelsPrinting: boolean;
   formError: string | null;
@@ -66,7 +66,7 @@ export function usePawnPrint(): UsePawnPrintResult {
   const [labelsError, setLabelsError] = useState<string | null>(null);
 
   const buildPrintItems = useCallback((
-    ticket: PawnTicketCreateResponse,
+    ticket: TicketByControlNumber,
     items: FormDataItem[]
   ): PrintItem[] => {
     return items.map((item, index) => ({

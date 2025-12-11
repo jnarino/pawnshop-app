@@ -1,5 +1,37 @@
 import { http } from './http';
 
+export interface PawnTicketItem {
+  id: string;
+  categoryId: string;
+  status: string;
+  quantity: number;
+  priceAmount: number;
+  resale: number;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  itemDescription?: string;
+  minResale?: number;
+  itemReplace?: number;
+  ownerMark?: string;
+  colorId?: string;
+  itemCondition?: string;
+}
+
+export interface CustomerActivePawnTicket {
+  id: string;
+  controlNumber: string;
+  transactionType: 'PAWN' | 'PURCHASE';
+  transactionDate: string;
+  maturityDate: string;
+  defaultDate: string;
+  pawnStatus: string;
+  amountFinanced?: number;
+  totalOfPayments?: number;
+  purchaseTradeValue?: number;
+  items: PawnTicketItem[];
+}
+
 export interface PawnData {
   customerId: string;
   transactionType: 'PAWN' | 'PURCHASE';
@@ -34,7 +66,12 @@ export interface CreatePawnTicketPayload {
   items: Partial<PawnItem>[];
 }
 
-export interface PawnTicketCreateResponse {
+export interface PawnTicketResponse {
+  id: string;
+  controlNumber: string;
+}
+
+export interface TicketByControlNumber {
   id: string;
   controlNumber: string;
   transactionType: 'PAWN' | 'PURCHASE';
@@ -49,10 +86,27 @@ export interface PawnTicketCreateResponse {
 }
 
 export const pawnTicketApi = {
-  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketCreateResponse> => {
+  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
     return http('/api/pawn-ticket', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  findByControlNumber: async (controlNumber: string): Promise<TicketByControlNumber[]> => {
+    return http(`/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`);
+  },
+
+  getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}/active`);
+  },
+
+  searchByControlNumber: async (
+    customerId: string,
+    controlNumber: string
+  ): Promise<CustomerActivePawnTicket[]> => {
+    return http(
+      `/api/pawn-ticket/customer/${customerId}/active?controlNumber=${encodeURIComponent(controlNumber)}`
+    );
   },
 };
