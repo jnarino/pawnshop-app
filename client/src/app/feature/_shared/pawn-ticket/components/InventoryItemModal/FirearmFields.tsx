@@ -5,8 +5,8 @@ import { FIREARM_CALIBERS, FIREARM_ACTIONS } from '@/app/shared/constants/firear
 import { InventoryItemDraft } from './types';
 
 interface FirearmFieldsProps {
-  draft: InventoryItemDraft;
-  updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly draft: InventoryItemDraft;
+  readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
 }
 
 export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {

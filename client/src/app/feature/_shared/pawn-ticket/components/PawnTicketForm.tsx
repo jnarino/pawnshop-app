@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { InventoryItemModal, type InventoryItemDraft } from './InventoryItemModal';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 
 interface PawnTicketFormProps {
-  onSubmit: (formData: {
+  readonly onSubmit: (formData: {
     customerId: string;
     type: 'PAWN' | 'PURCHASE';
     amountFinanced?: number;
@@ -23,7 +23,7 @@ interface PawnTicketFormProps {
     expirationDate?: string;
     items: InventoryItemDraft[];
   }) => Promise<void>;
-  disabled?: boolean;
+  readonly disabled?: boolean;
 }
 
 export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormProps) {
@@ -40,19 +40,6 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
 
-  const categoryNameCache = useMemo(() => {
-    const cache = new Map<string, string>();
-    formData.items.forEach(item => {
-      if (item.type && !cache.has(item.type)) {
-        cache.set(item.type, item.type);
-      }
-    });
-    return cache;
-  }, [formData.items]);
-
-  const getCategoryName = useCallback((id: string) => {
-    return categoryNameCache.get(id) || id;
-  }, [categoryNameCache]);
 
   const totalValue = formData.items.reduce((sum, item) => {
     const value = Number(item.amount) || 0;

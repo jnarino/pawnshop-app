@@ -8,11 +8,11 @@ import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface BasicInfoFieldsProps {
-  draft: InventoryItemDraft;
-  updateField: (field: keyof InventoryItemDraft, value: any) => void;
-  isFirearm: boolean;
-  brands: CategoryOption[];
-  handleBrandChange: (brandId: string) => void;
+  readonly draft: InventoryItemDraft;
+  readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly isFirearm: boolean;
+  readonly brands: CategoryOption[];
+  readonly handleBrandChange: (brandId: string) => void;
 }
 
 export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleBrandChange }: BasicInfoFieldsProps) {

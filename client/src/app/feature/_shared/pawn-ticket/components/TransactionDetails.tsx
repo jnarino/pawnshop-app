@@ -5,17 +5,17 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface TransactionDetailsProps {
-  type: 'PAWN' | 'PURCHASE';
-  periodicRate: string;
-  transactionDate: string;
-  maturityDate: string;
-  expirationDate: string;
-  totalValue: number;
-  onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
-  onPeriodicRateChange: (value: string) => void;
-  onTransactionDateChange: (value: string) => void;
-  onMaturityDateChange: (value: string) => void;
-  onExpirationDateChange: (value: string) => void;
+  readonly type: 'PAWN' | 'PURCHASE';
+  readonly periodicRate: string;
+  readonly transactionDate: string;
+  readonly maturityDate: string;
+  readonly expirationDate: string;
+  readonly totalValue: number;
+  readonly onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
+  readonly onPeriodicRateChange: (value: string) => void;
+  readonly onTransactionDateChange: (value: string) => void;
+  readonly onMaturityDateChange: (value: string) => void;
+  readonly onExpirationDateChange: (value: string) => void;
 }
 
 export function TransactionDetails({

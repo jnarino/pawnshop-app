@@ -72,6 +72,9 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
         if (!cancelled) {
           setSubcategories([]);
           setBrands([]);
+          if (err instanceof Error) {
+            console.error('Failed to load subcategories and brands:', err.message);
+          }
         }
       }
     };

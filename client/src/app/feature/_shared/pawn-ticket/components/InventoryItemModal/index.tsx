@@ -12,15 +12,15 @@ import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
 import { StonesSection } from './stones';
 import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
-import { InventoryItemDraft } from './types';
+import type { InventoryItemDraft } from './types';
 
-export type { InventoryItemDraft };
+export type { InventoryItemDraft } from './types';
 
 interface InventoryItemModalProps {
-  open: boolean;
-  initial?: InventoryItemDraft | null;
-  onCancel: () => void;
-  onSave: (item: InventoryItemDraft) => void;
+  readonly open: boolean;
+  readonly initial?: InventoryItemDraft | null;
+  readonly onCancel: () => void;
+  readonly onSave: (item: InventoryItemDraft) => void;
 }
 
 export function InventoryItemModal({ open, initial, onCancel, onSave }: InventoryItemModalProps) {
@@ -130,7 +130,7 @@ export function InventoryItemModal({ open, initial, onCancel, onSave }: Inventor
               </Button>
               {barcodeMode && (
                 <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
-                  <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />
+                  <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />{' '}
                   Scanner active - scan barcode now
                 </span>
               )}

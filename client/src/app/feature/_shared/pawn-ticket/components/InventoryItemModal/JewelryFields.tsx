@@ -6,12 +6,12 @@ import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface JewelryFieldsProps {
-  draft: InventoryItemDraft;
-  updateField: (field: keyof InventoryItemDraft, value: any) => void;
-  handleMetalChange: (metal: string) => void;
-  karatOptions: readonly string[];
-  isRing: boolean;
-  styleOptions?: CategoryOption[];
+  readonly draft: InventoryItemDraft;
+  readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly handleMetalChange: (metal: string) => void;
+  readonly karatOptions: readonly string[];
+  readonly isRing: boolean;
+  readonly styleOptions?: CategoryOption[];
 }
 
 export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing, styleOptions = [] }: JewelryFieldsProps) {

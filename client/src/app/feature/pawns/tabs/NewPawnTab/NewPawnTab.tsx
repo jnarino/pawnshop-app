@@ -5,8 +5,8 @@ import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 
 interface NewPawnTabProps {
-  customer: Customer | null;
-  onTicketCreated?: (ticketId: string) => void;
+  readonly customer: Customer | null;
+  readonly onTicketCreated?: (ticketId: string) => void;
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {

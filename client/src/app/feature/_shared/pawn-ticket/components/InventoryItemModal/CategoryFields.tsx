@@ -5,13 +5,13 @@ import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface CategoryFieldsProps {
-  draft: InventoryItemDraft;
-  rootCategories: CategoryOption[];
-  subcategories: CategoryOption[];
-  isLoading: boolean;
-  handleCategoryChange: (categoryId: string) => void;
-  handleSubcategoryChange: (subcategoryId: string) => void;
-  updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly draft: InventoryItemDraft;
+  readonly rootCategories: CategoryOption[];
+  readonly subcategories: CategoryOption[];
+  readonly isLoading: boolean;
+  readonly handleCategoryChange: (categoryId: string) => void;
+  readonly handleSubcategoryChange: (subcategoryId: string) => void;
+  readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
 }
 
 export function CategoryFields({

@@ -13,15 +13,15 @@ interface PrintItem {
   quantity?: number;
 }
 
-interface Props {
-  open: boolean;
-  controlNumber: string;
-  items: PrintItem[];
-  onPrint: (labelCounts: Record<string, number>) => void;
-  onCancel: () => void;
+interface PrintLabelsModalProps {
+  readonly open: boolean;
+  readonly controlNumber: string;
+  readonly items: PrintItem[];
+  readonly onPrint: (labelCounts: Record<string, number>) => void;
+  readonly onCancel: () => void;
 }
 
-export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel }: Props) {
+export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel }: PrintLabelsModalProps) {
   // Initialize label counts - default 1 label per item
   const [labelCounts, setLabelCounts] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -87,7 +87,7 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
                         min="0"
                         max="99"
                         value={labelCounts[item.id] || 1}
-                        onChange={(e) => updateLabelCount(item.id, parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateLabelCount(item.id, Number.parseInt(e.target.value) || 0)}
                         className="w-20 h-8 text-center"
                       />
                     </TableCell>
