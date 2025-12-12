@@ -1,13 +1,12 @@
 import { useCallback } from 'react';
-import PawnTicketForm from './components/PawnTicketForm';
-import type { InventoryItemDraft } from './components/InventoryItemModal';
+import { PawnTicketForm, type InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 
 interface NewPawnTabProps {
-  customer: Customer | null;
-  onTicketCreated?: (ticketId: string) => void;
+  readonly customer: Customer | null;
+  readonly onTicketCreated?: (ticketId: string) => void;
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {

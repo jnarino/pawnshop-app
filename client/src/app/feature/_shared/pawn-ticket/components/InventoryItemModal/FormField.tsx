@@ -3,18 +3,18 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface FormFieldProps {
-  label: string;
-  required?: boolean;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: 'text' | 'number';
-  className?: string;
-  options?: readonly string[];
-  step?: string;
-  min?: string;
-  max?: string;
-  datalist?: readonly string[];
+  readonly label: string;
+  readonly required?: boolean;
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+  readonly placeholder?: string;
+  readonly type?: 'text' | 'number';
+  readonly className?: string;
+  readonly options?: readonly string[];
+  readonly step?: string;
+  readonly min?: string;
+  readonly max?: string;
+  readonly datalist?: readonly string[];
 }
 
 export function FormField({

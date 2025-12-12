@@ -17,6 +17,8 @@ import {
 import { Loader2, AlertCircle, Search, X } from 'lucide-react';
 import { useCustomerPawnTickets } from '../hooks/useCustomerPawnTickets';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
+import visibilityIcon from '@/assets/icons/visibility.svg';
+import moneyBagIcon from '@/assets/icons/money_bag.svg';
 
 interface Props {
     customerId: string;
@@ -31,9 +33,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
         loading,
         error,
         selectedTicket,
-        selectedTicketId,
         filterText,
-        selectTicket,
         setFilterText,
         applyFilter,
         clearFilter,
@@ -46,12 +46,6 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
     const handleClear = useCallback(() => {
         clearFilter();
     }, [clearFilter]);
-
-    const handleSelect = useCallback(() => {
-        if (selectedTicket) {
-            onPawnSelected(selectedTicket);
-        }
-    }, [selectedTicket, onPawnSelected]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -74,7 +68,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
     const formatMoney = (amount?: number | string) => {
         if (!amount) return '$0.00';
         const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-        return isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
+        return Number.isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
     };
 
     const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -153,19 +147,12 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                 <TableHead>Date In</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredTickets.map((ticket) => (
-                                <TableRow
-                                    key={ticket.id}
-                                    onClick={() => selectTicket(ticket.id)}
-                                    className={`cursor-pointer ${
-                                        selectedTicketId === ticket.id
-                                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                            : 'hover:bg-muted/50'
-                                    }`}
-                                >
+                                <TableRow key={ticket.id}>
                                     <TableCell>{customerId?.slice(-5) || '—'}</TableCell>
                                     <TableCell className="font-medium">
                                         {ticket.controlNumber || 'N/A'}
@@ -181,11 +168,38 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                             {ticket.pawnStatus.replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center justify-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onViewPawn(ticket);
+                                                }}
+                                                className="cursor-pointer hover:opacity-70"
+                                                title="View pawn ticket"
+                                            >
+                                                <img src={visibilityIcon} alt="View" className="w-6 h-6" style={{ filter: 'brightness(0) saturate(100%)' }} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onPawnSelected(ticket);
+                                                }}
+                                                disabled={ticket.pawnStatus !== 'active'}
+                                                className="cursor-pointer hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="Make payment"
+                                            >
+                                                <img src={moneyBagIcon} alt="Payment" className="w-6 h-6" style={{ filter: 'brightness(0) saturate(100%)' }} />
+                                            </button>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                             {filteredTickets.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                         No pawn tickets found
                                     </TableCell>
                                 </TableRow>
@@ -203,8 +217,8 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                     <ScrollArea className="h-20 rounded-md border p-3">
                         {selectedTicket && selectedTicket.items && selectedTicket.items.length > 0 ? (
                             <div className="space-y-1 text-sm">
-                                {selectedTicket.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between">
+                                {selectedTicket.items.map((item) => (
+                                    <div key={item.id} className="flex justify-between">
                                         <span>{item.itemDescription || 'No description'}</span>
                                         <span className="text-muted-foreground">
                                             {formatMoney(item.priceAmount)} • {(item.status || 'IN PAWN').toUpperCase()}
@@ -220,15 +234,6 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                     </ScrollArea>
                 </CardContent>
             </Card>
-
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleSelect}
-                    disabled={!selectedTicket || selectedTicket.pawnStatus !== 'active'}
-                >
-                    Select
-                </Button>
-            </div>
         </div>
     );
 }

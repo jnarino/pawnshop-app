@@ -5,26 +5,28 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface TransactionDetailsProps {
-  type: 'PAWN' | 'PURCHASE';
-  periodicRate: string;
-  transactionDate: string;
-  maturityDate: string;
-  expirationDate: string;
-  totalValue: number;
-  onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
-  onPeriodicRateChange: (value: string) => void;
-  onTransactionDateChange: (value: string) => void;
-  onMaturityDateChange: (value: string) => void;
-  onExpirationDateChange: (value: string) => void;
+  readonly type: 'PAWN' | 'PURCHASE';
+  readonly periodicRate: string;
+  readonly transactionDate: string;
+  readonly maturityDate: string;
+  readonly expirationDate: string;
+  readonly totalValue: number;
+  readonly disabled?: boolean;
+  readonly onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
+  readonly onPeriodicRateChange: (value: string) => void;
+  readonly onTransactionDateChange: (value: string) => void;
+  readonly onMaturityDateChange: (value: string) => void;
+  readonly onExpirationDateChange: (value: string) => void;
 }
 
-export default function TransactionDetails({
+export function TransactionDetails({
   type,
   periodicRate,
   transactionDate,
   maturityDate,
   expirationDate,
   totalValue,
+  disabled = false,
   onTypeChange,
   onPeriodicRateChange,
   onTransactionDateChange,
@@ -44,13 +46,14 @@ export default function TransactionDetails({
             value={type}
             onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
             className="flex gap-4"
+            disabled={disabled}
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PAWN" id="r-pawn" />
+              <RadioGroupItem value="PAWN" id="r-pawn" disabled={disabled} />
               <Label htmlFor="r-pawn">Pawn (Loan)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PURCHASE" id="r-buy" />
+              <RadioGroupItem value="PURCHASE" id="r-buy" disabled={disabled} />
               <Label htmlFor="r-buy">Buy</Label>
             </div>
           </RadioGroup>
@@ -72,6 +75,7 @@ export default function TransactionDetails({
                 step="0.01"
                 value={periodicRate}
                 onChange={(e) => onPeriodicRateChange(e.target.value)}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -79,6 +83,7 @@ export default function TransactionDetails({
               <DatePicker
                 value={transactionDate}
                 onChange={(date) => onTransactionDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -86,6 +91,7 @@ export default function TransactionDetails({
               <DatePicker
                 value={maturityDate}
                 onChange={(date) => onMaturityDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -93,6 +99,7 @@ export default function TransactionDetails({
               <DatePicker
                 value={expirationDate}
                 onChange={(date) => onExpirationDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
           </div>

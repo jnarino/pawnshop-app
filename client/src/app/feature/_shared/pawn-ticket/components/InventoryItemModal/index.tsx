@@ -11,19 +11,24 @@ import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
 import { StonesSection } from './stones';
-import { useInventoryItemForm } from './useInventoryItemForm';
-import { InventoryItemDraft } from './types';
+import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
+import type { InventoryItemDraft } from './types';
 
-export type { InventoryItemDraft };
+export type { InventoryItemDraft } from './types';
 
-interface Props {
-  open: boolean;
-  initial?: InventoryItemDraft | null;
-  onCancel: () => void;
-  onSave: (item: InventoryItemDraft) => void;
+export type ItemFormMode = 'CREATE' | 'EDIT' | 'VIEW';
+
+interface InventoryItemModalProps {
+  readonly mode?: ItemFormMode;
+  readonly open: boolean;
+  readonly initial?: InventoryItemDraft | null;
+  readonly onCancel: () => void;
+  readonly onSave?: (item: InventoryItemDraft) => void;
 }
 
-export default function InventoryItemModal({ open, initial, onCancel, onSave }: Props) {
+export function InventoryItemModal({ mode = 'CREATE', open, initial, onCancel, onSave }: InventoryItemModalProps) {
+  const isViewMode = mode === 'VIEW';
+  
   const {
     draft,
     error,
@@ -43,13 +48,19 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
     handleBrandChange,
     handleSubmit,
     handleMetalChange,
-  } = useInventoryItemForm({ open, initial, onSave });
+  } = useInventoryItemForm({ open, initial, onSave: onSave || (() => {}) });
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="max-w-4xl w-full max-h-[85vh] overflow-y-auto p-5">
         <DialogHeader>
-          <DialogTitle>{initial ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+          <DialogTitle>
+            {(() => {
+              if (isViewMode) return 'View Item Details';
+              if (initial) return 'Edit Item';
+              return 'Add New Item';
+            })()}
+          </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,6 +73,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               handleCategoryChange={handleCategoryChange}
               handleSubcategoryChange={handleSubcategoryChange}
               updateField={updateField}
+              disabled={isViewMode}
             />
             
             <BasicInfoFields
@@ -70,6 +82,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               isFirearm={isFirearm}
               brands={brands}
               handleBrandChange={handleBrandChange}
+              disabled={isViewMode}
             />
 
             {!isJewelry && !isFirearm && <div></div>}
@@ -82,6 +95,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 karatOptions={karatOptions}
                 isRing={isRing}
                 styleOptions={brands}
+                disabled={isViewMode}
               />
             )}
             
@@ -89,6 +103,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               <FirearmFields
                 draft={draft}
                 updateField={updateField}
+                disabled={isViewMode}
               />
             )}
           </div>
@@ -105,6 +120,7 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
               rows={2}
               placeholder="Brief description (free text)..."
               className="text-xs resize-none"
+              disabled={isViewMode}
             />
           </div>
 
@@ -116,27 +132,50 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
             </Alert>
           )}
 
-          <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
-            <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant={barcodeMode ? "destructive" : "secondary"}
-                size="sm"
-                onClick={() => setBarcodeMode(!barcodeMode)}
-                className="text-xs"
-              >
-                {!barcodeMode && <img src={barcodeReaderIcon} alt="Barcode" className="w-4 h-4 mr-1" />}
-                {barcodeMode ? 'Stop Scanner' : 'Scan Barcode'}
-              </Button>
-              {barcodeMode && (
-                <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
-                  <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />
-                  Scanner active - scan barcode now
-                </span>
-              )}
-            </div>
+          {!isViewMode && (
+            <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant={barcodeMode ? "destructive" : "secondary"}
+                  size="sm"
+                  onClick={() => setBarcodeMode(!barcodeMode)}
+                  className="text-xs"
+                >
+                  {!barcodeMode && <img src={barcodeReaderIcon} alt="Barcode" className="w-4 h-4 mr-1" />}
+                  {barcodeMode ? 'Stop Scanner' : 'Scan Barcode'}
+                </Button>
+                {barcodeMode && (
+                  <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
+                    <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />{' '}
+                    Scanner active - scan barcode now
+                  </span>
+                )}
+              </div>
 
-            <div className="flex gap-3">
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCancel}
+                  className="text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="text-xs"
+                >
+                  <img src={addIcon} alt={initial ? 'Update' : 'Add'} className="w-4 h-4 mr-1 brightness-0 invert" />
+                  {initial ? 'Update Item' : 'Add Item'}
+                </Button>
+              </div>
+            </div>
+          )}
+          {isViewMode && (
+            <div className="flex justify-end pt-4 border-t-2 border-gray-200">
               <Button
                 type="button"
                 variant="outline"
@@ -144,18 +183,10 @@ export default function InventoryItemModal({ open, initial, onCancel, onSave }: 
                 onClick={onCancel}
                 className="text-xs"
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="text-xs"
-              >
-                <img src={addIcon} alt={initial ? 'Update' : 'Add'} className="w-4 h-4 mr-1 brightness-0 invert" />
-                {initial ? 'Update Item' : 'Add Item'}
+                Close
               </Button>
             </div>
-          </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

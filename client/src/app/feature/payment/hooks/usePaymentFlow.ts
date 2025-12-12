@@ -6,9 +6,11 @@ export type TabKey = 'customer' | 'additional' | 'viewPawn' | 'locatePawns' | 'm
 export interface SelectedPawnTicket {
   id: string;
   controlNumber: string;
-  type: 'PAWN' | 'PURCHASE';
+  transactionType: 'PAWN' | 'PURCHASE';
+  transactionDate: string;
   amountFinanced?: number;
   totalOfPayments?: number;
+  purchaseTradeValue?: number;
   maturityDate: string;
   defaultDate: string;
   pawnStatus: string;

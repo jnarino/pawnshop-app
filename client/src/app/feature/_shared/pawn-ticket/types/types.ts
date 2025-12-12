@@ -1,8 +1,10 @@
-import type { InventoryItemDraft } from './components/InventoryItemModal';
+import type { InventoryItemDraft } from '../components/InventoryItemModal';
+
+export type FormMode = 'CREATE' | 'VIEW';
 
 export interface PawnDraft {
     type: 'PAWN' | 'PURCHASE';
-    ratePercent: string;      // UI percent, e.g. "25"
+    ratePercent: string;
     controlNumber: string;
     items: InventoryItemDraft[];
 }

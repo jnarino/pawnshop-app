@@ -8,14 +8,15 @@ import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface BasicInfoFieldsProps {
-  draft: InventoryItemDraft;
-  updateField: (field: keyof InventoryItemDraft, value: any) => void;
-  isFirearm: boolean;
-  brands: CategoryOption[];
-  handleBrandChange: (brandId: string) => void;
+  readonly draft: InventoryItemDraft;
+  readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly isFirearm: boolean;
+  readonly disabled?: boolean;
+  readonly brands: CategoryOption[];
+  readonly handleBrandChange: (brandId: string) => void;
 }
 
-export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleBrandChange }: BasicInfoFieldsProps) {
+export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, brands, handleBrandChange }: BasicInfoFieldsProps) {
   return (
     <>
       {/* Row 1: Value (62%) + Qty (38%) combined */}
@@ -30,6 +31,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
               onChange={(value) => updateField('amount', value)}
               placeholder="10000.00"
               required
+              disabled={disabled}
               className="h-8 text-xs"
             />
           </div>
@@ -42,6 +44,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
               value={draft.quantity || '1'}
               onChange={(e) => updateField('quantity', e.target.value)}
               placeholder="1"
+              disabled={disabled}
               className="h-8 text-xs text-center"
             />
           </div>
@@ -55,6 +58,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
           value={draft.ownerNumber || ''}
           onChange={(e) => updateField('ownerNumber', e.target.value)}
           placeholder="Marks/engravings (free text)"
+          disabled={disabled}
           className="text-xs h-8"
         />
       </div>
@@ -62,7 +66,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
       {brands.length > 0 && (
         <div className="space-y-1 col-span-3">
           <Label className="text-xs font-semibold">Brand</Label>
-          <Select value={draft.brandId || ''} onValueChange={handleBrandChange}>
+          <Select value={draft.brandId || ''} onValueChange={handleBrandChange} disabled={disabled}>
             <SelectTrigger className="h-8 text-xs uppercase">
               <SelectValue placeholder="SELECT BRAND..." />
             </SelectTrigger>
@@ -84,6 +88,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
           value={draft.model || ''}
           onChange={(e) => updateField('model', e.target.value)}
           placeholder="MODEL"
+          disabled={disabled}
           className="uppercase text-xs h-8"
         />
       </div>
@@ -95,6 +100,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
           value={draft.serial || ''}
           onChange={(e) => updateField('serial', e.target.value)}
           placeholder="SERIAL/IMEI"
+          disabled={disabled}
           className="uppercase text-xs h-8"
         />
       </div>
@@ -102,7 +108,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, brands, handleB
       {/* Row 2: Color */}
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'}</Label>
-        <Select value={draft.color || ''} onValueChange={(value) => updateField('color', value)}>
+        <Select value={draft.color || ''} onValueChange={(value) => updateField('color', value)} disabled={disabled}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."} />
           </SelectTrigger>
