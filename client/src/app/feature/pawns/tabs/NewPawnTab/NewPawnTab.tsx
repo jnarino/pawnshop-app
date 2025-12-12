@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import { PawnTicketForm, type InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
+import { PawnTicketForm, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
+import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
@@ -11,7 +12,12 @@ interface NewPawnTabProps {
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
+  const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
   const customerId = customer?.id;
+
+  const handleDraftChange = useCallback((draft: PawnFormDraftState) => {
+    updatePawnDraft(draft);
+  }, [updatePawnDraft]);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
@@ -84,10 +90,13 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
     };
 
     const ticketId = await createTicket(payload);
-    if (onTicketCreated && ticketId) {
-      onTicketCreated(ticketId);
+    if (ticketId) {
+      resetPawnDraft();
+      if (onTicketCreated) {
+        onTicketCreated(ticketId);
+      }
     }
-  }, [customerId, createTicket, onTicketCreated]);
+  }, [customerId, createTicket, onTicketCreated, resetPawnDraft]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -114,6 +123,8 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
+          externalDraft={pawnDraft}
+          onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}
         />
