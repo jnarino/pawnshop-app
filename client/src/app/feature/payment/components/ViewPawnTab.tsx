@@ -2,6 +2,14 @@ import { useState, useCallback } from 'react';
 import { PawnTicketForm } from '@/app/feature/_shared/pawn-ticket';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket/components/InventoryItemModal';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDownIcon } from 'lucide-react';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
@@ -66,8 +74,9 @@ const mockPawnData: {
 };
 
 export function ViewPawnTab({ pawnTicket, onBack, onMakePayment }: ViewPawnTabProps) {
-  const { printTransactionForm, isFormPrinting, formError } = usePawnPrint();
+  const { printTransactionForm, printLabels, isFormPrinting } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrintingLabels, setIsPrintingLabels] = useState(false);
 
   const handlePrint = useCallback(async () => {
     if (!pawnTicket?.controlNumber) {
@@ -106,6 +115,39 @@ export function ViewPawnTab({ pawnTicket, onBack, onMakePayment }: ViewPawnTabPr
     }
   }, [pawnTicket, printTransactionForm]);
 
+  const handlePrintLabels = useCallback(async () => {
+    if (!pawnTicket?.controlNumber) {
+      console.error('No control number available');
+      return;
+    }
+
+    setIsPrintingLabels(true);
+    try {
+      const labelCounts: Record<string, number> = {};
+      mockPawnData.items.forEach(item => {
+        if (item.id) {
+          labelCounts[item.id] = 1;
+        }
+      });
+
+      await printLabels(
+        pawnTicket.controlNumber,
+        mockPawnData.items.map(item => ({
+          id: item.id || '',
+          inventoryNumber: item.ownerNumber || '',
+          description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
+          amount: item.amount || '0',
+          quantity: Number(item.quantity) || 1
+        })),
+        labelCounts
+      );
+    } catch (error) {
+      console.error('Print labels failed:', error);
+    } finally {
+      setIsPrintingLabels(false);
+    }
+  }, [pawnTicket, printLabels]);
+
   const handlePayHistory = () => {
     console.log('Pay History clicked');
   };
@@ -121,16 +163,30 @@ export function ViewPawnTab({ pawnTicket, onBack, onMakePayment }: ViewPawnTabPr
         initialData={mockPawnData}
       />
       <div className="flex justify-center gap-4 mt-6">
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={handlePrint}
-          disabled={isPrinting || isFormPrinting}
-          className="px-8 flex items-center gap-2"
-        >
-          <img src={printerIcon} alt="Print" className="w-5 h-5" />
-          {isPrinting || isFormPrinting ? 'Printing...' : 'Print'}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="secondary"
+              size="lg"
+              disabled={isPrinting || isFormPrinting || isPrintingLabels}
+              className="px-8 flex items-center gap-2"
+            >
+              <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
+              {isPrinting || isFormPrinting || isPrintingLabels ? 'Printing...' : 'Print'}
+              <ChevronDownIcon className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={handlePrint} disabled={isPrinting || isFormPrinting}>
+                Print Ticket
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePrintLabels} disabled={isPrintingLabels}>
+                Print Labels
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           variant="secondary"
           size="lg"
