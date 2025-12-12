@@ -39,6 +39,20 @@ def migrate_pawn_tickets():
         pg_conn = psycopg2.connect(**POSTGRES_CONFIG)
         pg_cursor = pg_conn.cursor()
         
+        # Load Status Map (status, transaction_type) -> id
+        print("Fetching Pawn Ticket Status Map...")
+        pg_cursor.execute("SELECT status, transaction_type, id FROM pawn_ticket_status")
+        # Map: (status_name, transaction_type) -> uuid
+        status_id_map = {}
+        for row in pg_cursor.fetchall():
+            s_name, s_type, s_id = row
+            status_id_map[(s_name, s_type)] = str(s_id)
+            
+        # Load Username Map (Username -> ID) for "Pulled by" parsing
+        print("Fetching App Users for Username Map...")
+        pg_cursor.execute("SELECT id, username FROM app_user")
+        username_map = {row[1].lower().strip(): str(row[0]) for row in pg_cursor.fetchall()}
+        
         # Get default rate plan
         pg_cursor.execute("SELECT id FROM rate_plan LIMIT 1")
         default_rate_plan = pg_cursor.fetchone()
@@ -120,30 +134,52 @@ def migrate_pawn_tickets():
                          continue
                 
                 # Status mapping
-                status_map = {
-                    'U': 'active',      # Unredeemed
-                    'I': 'active',      # Active
-                    'A': 'active',      # Active
-                    '0': 'active',
-                    '1': 'active',
-                    'D': 'defaulted',   # Defaulted
-                    'R': 'redeemed',    # Redeemed
-                    'V': 'voided',      # Voided
-                    'P': 'police hold', # Police Hold
-                    'C': 'confiscation' # Confiscation
-                }
-                pawn_status = status_map.get(safe_str(row.get('STATUS')), 'active')
+                status_char = safe_str(row.get('STATUS'))
+                # User wants to preserve the LETTER code in the status column.
+                # So we just use status_char as the "status_name" for lookup.
                 
-                # Transaction type
-                transaction_type = 'PAWN'  # Default to PAWN
+                # Transaction type mapping
+                trans_char = safe_str(row.get('TRANS'))
+                if trans_char == 'B':
+                    transaction_type = 'PURCHASE'
+                else:
+                    transaction_type = 'PAWN'
                 
+                # Resolve status_id
+                # Key: (status_char, transaction_type)
+                status_id = status_id_map.get((status_char, transaction_type))
+                
+                # Fallback Logic if direct match fails:
+                if not status_id:
+                     # Try to map common legacy variations to our seeded codes:
+                     # e.g. if '0' is missing but 'U' exists, or vice versa
+                     fallback_map = {
+                         '0': 'U', '1': 'U', 
+                         'A': 'U', # Maybe A is Active?
+                         'I': 'B' if transaction_type == 'PURCHASE' else 'U' 
+                     }
+                     mapped_char = fallback_map.get(status_char)
+                     if mapped_char:
+                         status_id = status_id_map.get((mapped_char, transaction_type))
+                     
+                if not status_id:
+                     # If still not found, try 'U' (Active) for PAWN or 'B' (Active) for PURCHASE
+                     fallback_char = 'B' if transaction_type == 'PURCHASE' else 'U'
+                     status_id = status_id_map.get((fallback_char, transaction_type))
+                     
+                if not status_id:
+                     print(f"Error: No status ID found for {status_char} / {transaction_type}")
+                     # Do not error out, let it fail constraint if completely invalid?
+                     # Or pick ANY active one?
+                     pass
+
                 # Financial fields - use PawnAMT not AMOUNT
                 amount_financed = float(row.get('PawnAMT', 0)) if row.get('PawnAMT') else 0.0
                 
                 # Skip if missing critical financial data for PAWN
                 if amount_financed == 0:
                      # e.g. Voided or empty
-                     if pawn_status != 'voided':
+                     if status_char != 'V':
                          # If it has 0 amount and not voided, treat as voided or skip?
                          # Let's import anyway
                          pass
@@ -159,8 +195,28 @@ def migrate_pawn_tickets():
                 created_at = row.get('DATEIN')
                 updated_at = row.get('TRANSDATE') 
                 
+                # Map created_by (from usr_fk)
+                created_by = user_map.get(str(row.get('usr_fk')))
+
                 # Map default_marked_by
-                default_marked_by = user_map.get(str(row.get('usr_fk')))
+                default_marked_by = None
+                
+                comment = safe_str(row.get('COMMENT')) or "" 
+                # Parse "Pulled by XXX"
+                if "Pulled by" in comment:
+                     try:
+                         parts = comment.split("Pulled by")
+                         if len(parts) > 1:
+                             # Taking the part after "Pulled by "
+                             potential_username = parts[1].strip().split(' ')[0].strip().lower()
+                             potential_username = potential_username.rstrip('.')
+                             if potential_username:
+                                 default_marked_by = username_map.get(potential_username)
+                     except:
+                         pass
+                
+                # If still None, maybe fallback to previous usr_fk logic OR leave null?
+                # User specifically asked for this logic. I will leave null if not found.
                 
                 # Fallback if critical dates missing?
                 if not created_at: created_at = datetime.now()
@@ -174,6 +230,16 @@ def migrate_pawn_tickets():
                 
                 # Calculate total of payments
                 total_of_payments = amount_financed + (finance_charge or 0.0)
+                
+                purchase_trade_value = None
+                
+                if transaction_type == 'PURCHASE':
+                    purchase_trade_value = amount_financed
+                    amount_financed = None
+                    finance_charge = None
+                    periodic_rate = None
+                    apr = None
+                    total_of_payments = None
 
                 batch_data.append((
                     ticket_id,
@@ -185,7 +251,7 @@ def migrate_pawn_tickets():
                     periodic_rate,
                     total_of_payments,
                     apr,
-                    None,  # purchase_trade_value
+                    purchase_trade_value,  # purchase_trade_value
                     transaction_date, # transaction_date
                     maturity_date,   # maturity_date
                     default_date,   # default_date
@@ -198,7 +264,8 @@ def migrate_pawn_tickets():
                     None,  # default_marked_at
                     default_marked_by,  # default_marked_by
                     None,  # default_reason
-                    pawn_status,
+                    status_id,  # status_id (NEW)
+                    created_by, # created_by (mapped from usr_pk)
                     created_at, # created_at
                     updated_at  # updated_at
                 ))
@@ -270,7 +337,7 @@ def _insert_batch(cursor, data, items_data):
             rate_plan_id, paid_through_date, next_charge_date, interest_credit,
             last_payment_at, last_activity_at,
             default_marked_at, default_marked_by, default_reason,
-            pawn_status, created_at, updated_at
+            status_id, created_by, created_at, updated_at
         ) VALUES %s
         ON CONFLICT (id) DO NOTHING
     """
