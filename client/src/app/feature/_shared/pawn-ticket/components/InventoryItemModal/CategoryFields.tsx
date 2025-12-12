@@ -9,6 +9,7 @@ interface CategoryFieldsProps {
   readonly rootCategories: CategoryOption[];
   readonly subcategories: CategoryOption[];
   readonly isLoading: boolean;
+  readonly disabled?: boolean;
   readonly handleCategoryChange: (categoryId: string) => void;
   readonly handleSubcategoryChange: (subcategoryId: string) => void;
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
@@ -19,6 +20,7 @@ export function CategoryFields({
   rootCategories,
   subcategories,
   isLoading,
+  disabled = false,
   handleCategoryChange,
   handleSubcategoryChange,
   updateField
@@ -32,7 +34,7 @@ export function CategoryFields({
         <Select 
           value={draft.type} 
           onValueChange={handleCategoryChange}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
         >
           <SelectTrigger className="h-8 text-xs uppercase">
             <SelectValue placeholder={isLoading ? "LOADING..." : "SELECT CATEGORY..."} />
@@ -58,6 +60,7 @@ export function CategoryFields({
           <Select 
             value={draft.subcategoryId || ''} 
             onValueChange={handleSubcategoryChange}
+            disabled={disabled}
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="SELECT TYPE..." />
@@ -76,7 +79,7 @@ export function CategoryFields({
             onChange={(e) => updateField('subcategoryName', e.target.value.toUpperCase())}
             placeholder="ENTER TYPE"
             className="uppercase text-xs h-8"
-            disabled={!draft.type}
+            disabled={!draft.type || disabled}
           />
         )}
       </div>

@@ -11,10 +11,11 @@ interface JewelryFieldsProps {
   readonly handleMetalChange: (metal: string) => void;
   readonly karatOptions: readonly string[];
   readonly isRing: boolean;
+  readonly disabled?: boolean;
   readonly styleOptions?: CategoryOption[];
 }
 
-export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing, styleOptions = [] }: JewelryFieldsProps) {
+export function JewelryFields({ draft, updateField, handleMetalChange, karatOptions, isRing, disabled = false, styleOptions = [] }: JewelryFieldsProps) {
   return (
     <>
       <div className="space-y-1 col-span-3">
@@ -23,6 +24,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
           value={draft.style || ''}
           onChange={(e) => updateField('style', e.target.value)}
           placeholder="STYLE"
+          disabled={disabled}
           className="uppercase text-xs h-8"
         />
       </div>
@@ -35,6 +37,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
           value={draft.metal?.toLowerCase() || ''} 
           onValueChange={handleMetalChange}
           required
+          disabled={disabled}
         >
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT METAL..." />
@@ -54,7 +57,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
           Karat <span className="text-red-600">*</span>
         </Label>
         {karatOptions.length > 0 ? (
-          <Select value={draft.karat || ''} onValueChange={(value) => updateField('karat', value)} required>
+          <Select value={draft.karat || ''} onValueChange={(value) => updateField('karat', value)} required disabled={disabled}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="SELECT KARAT..." />
             </SelectTrigger>
@@ -72,6 +75,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             onChange={(e) => updateField('karat', e.target.value)}
             placeholder="14K, .925"
             required
+            disabled={disabled}
             className="uppercase text-xs h-8"
           />
         )}
@@ -79,7 +83,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Gender</Label>
-        <Select value={draft.gender?.toUpperCase() || ''} onValueChange={(value) => updateField('gender', value)}>
+        <Select value={draft.gender?.toUpperCase() || ''} onValueChange={(value) => updateField('gender', value)} disabled={disabled}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT..." />
           </SelectTrigger>
@@ -96,7 +100,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Size/Length</Label>
         {isRing ? (
-          <Select value={draft.sizeLength || ''} onValueChange={(value) => updateField('sizeLength', value)}>
+          <Select value={draft.sizeLength || ''} onValueChange={(value) => updateField('sizeLength', value)} disabled={disabled}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="RING SIZE..." />
             </SelectTrigger>
@@ -116,6 +120,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
             value={draft.sizeLength || ''}
             onChange={(e) => updateField('sizeLength', e.target.value)}
             placeholder="0"
+            disabled={disabled}
             className="text-xs h-8"
           />
         )}
@@ -134,6 +139,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
           onChange={(e) => updateField('weight', e.target.value)}
           placeholder="5.25"
           required
+          disabled={disabled}
           className="h-8 text-xs"
         />
       </div>
@@ -143,6 +149,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, karatOpti
         <Select 
           value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
           onValueChange={(value) => updateField('weightUnit', value)}
+          disabled={disabled}
         >
           <SelectTrigger className="h-8 text-xs w-[69%]">
             <SelectValue />

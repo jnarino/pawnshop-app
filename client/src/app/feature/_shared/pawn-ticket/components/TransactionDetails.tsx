@@ -11,6 +11,7 @@ interface TransactionDetailsProps {
   readonly maturityDate: string;
   readonly expirationDate: string;
   readonly totalValue: number;
+  readonly disabled?: boolean;
   readonly onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
   readonly onPeriodicRateChange: (value: string) => void;
   readonly onTransactionDateChange: (value: string) => void;
@@ -25,6 +26,7 @@ export function TransactionDetails({
   maturityDate,
   expirationDate,
   totalValue,
+  disabled = false,
   onTypeChange,
   onPeriodicRateChange,
   onTransactionDateChange,
@@ -44,13 +46,14 @@ export function TransactionDetails({
             value={type}
             onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
             className="flex gap-4"
+            disabled={disabled}
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PAWN" id="r-pawn" />
+              <RadioGroupItem value="PAWN" id="r-pawn" disabled={disabled} />
               <Label htmlFor="r-pawn">Pawn (Loan)</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PURCHASE" id="r-buy" />
+              <RadioGroupItem value="PURCHASE" id="r-buy" disabled={disabled} />
               <Label htmlFor="r-buy">Buy</Label>
             </div>
           </RadioGroup>
@@ -72,6 +75,7 @@ export function TransactionDetails({
                 step="0.01"
                 value={periodicRate}
                 onChange={(e) => onPeriodicRateChange(e.target.value)}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -79,6 +83,7 @@ export function TransactionDetails({
               <DatePicker
                 value={transactionDate}
                 onChange={(date) => onTransactionDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -86,6 +91,7 @@ export function TransactionDetails({
               <DatePicker
                 value={maturityDate}
                 onChange={(date) => onMaturityDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
             <div className="space-y-2">
@@ -93,6 +99,7 @@ export function TransactionDetails({
               <DatePicker
                 value={expirationDate}
                 onChange={(date) => onExpirationDateChange(date || '')}
+                disabled={disabled}
               />
             </div>
           </div>

@@ -6,13 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
+import type { FormMode } from '../types/types';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
+import visibilityIcon from '@/assets/icons/visibility.svg';
 
 interface PawnTicketFormProps {
-  readonly onSubmit: (formData: {
+  readonly mode?: FormMode;
+  readonly initialData?: {
+    readonly customerId?: string;
+    readonly type?: 'PAWN' | 'PURCHASE';
+    readonly periodicRate?: string;
+    readonly transactionDate?: string;
+    readonly maturityDate?: string;
+    readonly expirationDate?: string;
+    readonly items?: InventoryItemDraft[];
+  };
+  readonly onSubmit?: (formData: {
     customerId: string;
     type: 'PAWN' | 'PURCHASE';
     amountFinanced?: number;
@@ -26,15 +38,17 @@ interface PawnTicketFormProps {
   readonly disabled?: boolean;
 }
 
-export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormProps) {
+export function PawnTicketForm({ mode = 'CREATE', initialData, onSubmit, disabled = false }: PawnTicketFormProps) {
+  const isViewMode = mode === 'VIEW';
+  
   const [formData, setFormData] = useState({
-    customerId: 'temp-customer',
-    type: 'PAWN' as 'PAWN' | 'PURCHASE',
-    periodicRate: '25',
-    transactionDate: format(new Date(), 'yyyy-MM-dd'),
-    maturityDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
-    expirationDate: format(addDays(new Date(), 60), 'yyyy-MM-dd'),
-    items: [] as InventoryItemDraft[]
+    customerId: initialData?.customerId || 'temp-customer',
+    type: initialData?.type || 'PAWN',
+    periodicRate: initialData?.periodicRate || '25',
+    transactionDate: initialData?.transactionDate || format(new Date(), 'yyyy-MM-dd'),
+    maturityDate: initialData?.maturityDate || format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    expirationDate: initialData?.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
+    items: initialData?.items || []
   });
 
   const [showItemModal, setShowItemModal] = useState(false);
@@ -49,6 +63,10 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isViewMode || !onSubmit) {
+      return;
+    }
 
     if (formData.items.length === 0) {
       alert('Please add at least one item');
@@ -68,7 +86,7 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
     };
 
     await onSubmit(submitData);
-  }, [formData, totalValue, onSubmit]);
+  }, [formData, totalValue, onSubmit, isViewMode]);
 
   const handleSaveItem = useCallback((item: InventoryItemDraft) => {
     if (editingItem) {
@@ -92,6 +110,11 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
     setShowItemModal(true);
   }, []);
 
+  const handleViewItem = useCallback((item: InventoryItemDraft) => {
+    setEditingItem(item);
+    setShowItemModal(true);
+  }, []);
+
   const handleRemoveItem = useCallback((itemId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -109,13 +132,22 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
           maturityDate={formData.maturityDate}
           expirationDate={formData.expirationDate}
           totalValue={totalValue}
+          disabled={isViewMode}
           onTypeChange={(value) => {
-            setFormData(prev => ({ ...prev, type: value }));
+            if (!isViewMode) setFormData(prev => ({ ...prev, type: value }));
           }}
-          onPeriodicRateChange={(value) => setFormData(prev => ({ ...prev, periodicRate: value }))}
-          onTransactionDateChange={(value) => setFormData(prev => ({ ...prev, transactionDate: value }))}
-          onMaturityDateChange={(value) => setFormData(prev => ({ ...prev, maturityDate: value }))}
-          onExpirationDateChange={(value) => setFormData(prev => ({ ...prev, expirationDate: value }))}
+          onPeriodicRateChange={(value) => {
+            if (!isViewMode) setFormData(prev => ({ ...prev, periodicRate: value }));
+          }}
+          onTransactionDateChange={(value) => {
+            if (!isViewMode) setFormData(prev => ({ ...prev, transactionDate: value }));
+          }}
+          onMaturityDateChange={(value) => {
+            if (!isViewMode) setFormData(prev => ({ ...prev, maturityDate: value }));
+          }}
+          onExpirationDateChange={(value) => {
+            if (!isViewMode) setFormData(prev => ({ ...prev, expirationDate: value }));
+          }}
         />
 
         {/* Items Section */}
@@ -124,14 +156,16 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <img src={packageIcon} alt="Items" className="w-5 h-5" /> Items <Badge variant="secondary">{formData.items.length}</Badge>
             </CardTitle>
-            <Button
-              type="button"
-              onClick={() => setShowItemModal(true)}
-              disabled={disabled}
-              size="sm"
-            >
-              <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item
-            </Button>
+            {!isViewMode && (
+              <Button
+                type="button"
+                onClick={() => setShowItemModal(true)}
+                disabled={disabled}
+                size="sm"
+              >
+                <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item
+              </Button>
+            )}
           </CardHeader>
 
           <CardContent className="p-0">
@@ -163,22 +197,39 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
                         <div className="text-sm">${Number(item.amount || 0).toFixed(2)}</div>
                         <div className="font-semibold">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</div>
                         <div className="flex gap-3 justify-center items-center">
-                          <button
-                            type="button"
-                            onClick={() => handleEditItem(item)}
-                            disabled={disabled}
-                            className="cursor-pointer hover:opacity-70 disabled:opacity-30"
-                          >
-                            <img src={editIcon} alt="Edit" className="w-5 h-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(item.id!)}
-                            disabled={disabled}
-                            className="cursor-pointer hover:opacity-70 disabled:opacity-30"
-                          >
-                            <img src={deleteIcon} alt="Delete" className="w-5 h-5" />
-                          </button>
+                          {isViewMode ? (
+                            <button
+                              type="button"
+                              onClick={() => handleViewItem(item)}
+                              className="cursor-pointer hover:opacity-70"
+                            >
+                              <img 
+                                src={visibilityIcon} 
+                                alt="View" 
+                                className="w-5 h-5"
+                                style={{ filter: 'brightness(0) saturate(100%)' }}
+                              />
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleEditItem(item)}
+                                disabled={disabled}
+                                className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                              >
+                                <img src={editIcon} alt="Edit" className="w-5 h-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(item.id!)}
+                                disabled={disabled}
+                                className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                              >
+                                <img src={deleteIcon} alt="Delete" className="w-5 h-5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -189,20 +240,26 @@ export function PawnTicketForm({ onSubmit, disabled = false }: PawnTicketFormPro
           </CardContent>
         </Card>
 
-        <div className="flex justify-center mt-6">
-          <Button
-            type="submit"
-            disabled={disabled || formData.items.length === 0}
-            size="lg"
-            className="px-8"
-          >
-            {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
-          </Button>
-        </div>
+        {!isViewMode && (
+          <div className="flex justify-center mt-6">
+            <Button
+              type="submit"
+              disabled={disabled || formData.items.length === 0}
+              size="lg"
+              className="px-8"
+            >
+              {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
+            </Button>
+          </div>
+        )}
       </form>
 
-      {/* ✅ Horizontal Modal */}
       <InventoryItemModal
+        mode={(() => {
+          if (isViewMode) return 'VIEW';
+          if (editingItem) return 'EDIT';
+          return 'CREATE';
+        })()}
         open={showItemModal}
         initial={editingItem}
         onCancel={() => {

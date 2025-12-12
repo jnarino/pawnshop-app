@@ -7,14 +7,15 @@ import { InventoryItemDraft } from './types';
 interface FirearmFieldsProps {
   readonly draft: InventoryItemDraft;
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
+  readonly disabled?: boolean;
 }
 
-export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
+export function FirearmFields({ draft, updateField, disabled = false }: FirearmFieldsProps) {
   return (
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Caliber</Label>
-        <Select value={draft.caliber?.toUpperCase() || ''} onValueChange={(value) => updateField('caliber', value)}>
+        <Select value={draft.caliber?.toUpperCase() || ''} onValueChange={(value) => updateField('caliber', value)} disabled={disabled}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT CALIBER..." />
           </SelectTrigger>
@@ -30,7 +31,7 @@ export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Action</Label>
-        <Select value={draft.action?.toUpperCase() || ''} onValueChange={(value) => updateField('action', value)}>
+        <Select value={draft.action?.toUpperCase() || ''} onValueChange={(value) => updateField('action', value)} disabled={disabled}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="SELECT ACTION..." />
           </SelectTrigger>
@@ -50,6 +51,7 @@ export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
           value={draft.barrelLength || ''}
           onChange={(e) => updateField('barrelLength', e.target.value)}
           placeholder="16 INCHES"
+          disabled={disabled}
           className="uppercase text-xs h-8"
         />
       </div>
@@ -60,6 +62,7 @@ export function FirearmFields({ draft, updateField }: FirearmFieldsProps) {
           value={draft.capacity || ''}
           onChange={(e) => updateField('capacity', e.target.value)}
           placeholder="15 ROUNDS"
+          disabled={disabled}
           className="uppercase text-xs h-8"
         />
       </div>

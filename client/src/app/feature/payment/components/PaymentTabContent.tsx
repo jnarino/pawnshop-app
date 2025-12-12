@@ -1,9 +1,10 @@
 import React from 'react';
 import type { TabKey, SelectedPawnTicket } from '../hooks/usePaymentFlow';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
+import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 import CustomerInfoTab from './CustomerInfoTab';
 import AdditionalInfoTab from './AdditionalInfoTab';
-import ViewPawnTab from './ViewPawnTab';
+import { ViewPawnTab } from './ViewPawnTab';
 import LocatePawnsTab from './LocatePawnsTab';
 import MakePaymentTab from './MakePaymentTab';
 
@@ -15,8 +16,8 @@ interface Props {
     onCustomerChange: (customer: CustomerDto | null) => void;
     onCustomerSelected: (id: string) => void;
     onTabChange: (tab: TabKey) => void;
-    onPawnSelected: (pawn: SelectedPawnTicket) => void;
-    onViewPawn: (pawn: SelectedPawnTicket) => void;
+    onPawnSelected: (pawn: CustomerActivePawnTicket) => void;
+    onViewPawn: (pawn: CustomerActivePawnTicket) => void;
     onPaymentComplete: () => void;
 }
 

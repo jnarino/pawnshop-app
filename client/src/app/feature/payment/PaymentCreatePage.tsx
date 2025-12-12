@@ -7,7 +7,7 @@ import { FindByTicketModal } from '@/app/feature/_shared/customer/components/Fin
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
-import ViewPawnTab from './components/ViewPawnTab';
+import { ViewPawnTab } from './components/ViewPawnTab';
 import MakePaymentTab from './components/MakePaymentTab';
 import { useFindByTicket } from './hooks/useFindByTicket';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
