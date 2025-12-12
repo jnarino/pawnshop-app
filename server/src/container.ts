@@ -44,6 +44,10 @@ import { StoreTransactionController } from './interfaces/http/controller/storeTr
 import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
+import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
+import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
+import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
 
 
 
@@ -56,6 +60,7 @@ export async function createApp() {
   const customerRepo = new PgCustomerRepository(pool);
   const inventoryItemRepo = new PgInventoryItemRepository(pool);
   const inventoryCategoryRepo = new PgInventoryCategoryRepository(pool);
+  const inventoryAttributeRepo = new PgInventoryAttributeRepository(pool);
   const pawnTicketRepo = new PgPawnTicketRepository(pool);
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
@@ -94,6 +99,10 @@ export async function createApp() {
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
   const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
   const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
+
+  // Inventory Attribute use-cases
+  const getAllInventoryAttributeTypesUseCase = new GetAllInventoryAttributeTypesUseCase(inventoryAttributeRepo);
+  const getInventoryAttributeValuesByTypeUseCase = new GetInventoryAttributeValuesByTypeUseCase(inventoryAttributeRepo);
 
 
   // Pawn Ticket use-cases  
@@ -143,6 +152,11 @@ export async function createApp() {
     getBrandsByCategoryRootUseCase
   );
 
+  const inventoryAttributeController = new InventoryAttributeController(
+    getAllInventoryAttributeTypesUseCase,
+    getInventoryAttributeValuesByTypeUseCase
+  );
+
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
     listPawnTicketsByControlNumberUseCase,
@@ -161,6 +175,7 @@ export async function createApp() {
     customerController,
     inventoryItemController,
     inventoryCategoryController,
+    inventoryAttributeController,
     pawnTicketController,
     storeTransactionController,
     jwtSecret: env.jwtSecret
