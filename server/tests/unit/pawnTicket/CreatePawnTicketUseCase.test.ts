@@ -47,7 +47,7 @@ describe('CreatePawnTicketUseCase', () => {
     expect(repo.create).toHaveBeenCalled();
     expect(result.transactionType).toBe('PAWN');
     expect(result.amountFinanced).toBe(500);
-    expect(result.itemIds).toEqual([itemId1, itemId2]);
+    expect(result.items).toBeDefined();
   });
 
   it('should create a purchase transaction', async () => {

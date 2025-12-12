@@ -1,3 +1,5 @@
+import { InventoryItem } from '../inventory/InventoryItem';
+
 export type PawnTransactionType = 'PAWN' | 'PURCHASE';
 
 export type PawnStatus =
@@ -53,6 +55,11 @@ export class PawnTicket {
   itemIds: string[];
 
   /**
+   * Full inventory item objects (populated when querying)
+   */
+  items?: InventoryItem[];
+
+  /**
    * Tender information for the transaction
    */
   tenders: TenderInfo[];
@@ -85,6 +92,7 @@ export class PawnTicket {
     pawnStatus: PawnStatus;
 
     itemIds: string[];
+    items?: InventoryItem[];
     tenders: TenderInfo[];
     note?: string;
   }) {
@@ -111,6 +119,7 @@ export class PawnTicket {
     this.pawnStatus = params.pawnStatus;
 
     this.itemIds = params.itemIds;
+    this.items = params.items;
     this.tenders = params.tenders;
     this.note = params.note;
   }

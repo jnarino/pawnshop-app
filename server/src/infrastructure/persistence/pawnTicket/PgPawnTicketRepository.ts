@@ -2,6 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
 import { PawnTicketRepository } from '../../../domains/pawnTicket/PawnTicketRepository';
 import { PawnTicket } from '../../../domains/pawnTicket/PawnTicket';
+import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
 
 type DbClient = Pool | PoolClient;
@@ -25,6 +26,36 @@ const SQL_LIST_ACTIVE_BY_CUSTOMER = loadSql(
     'queries',
     'pawnTicket/pawn_ticket_list_active_by_customer'
 );
+
+function mapJsonbToInventoryItem(itemData: any): InventoryItem {
+    return new InventoryItem({
+        id: itemData.id,
+        inventorySubcategoryId: itemData.inventory_subcategory_id,
+        status: itemData.status,
+        quantity: itemData.quantity,
+        brand: itemData.brand,
+        model: itemData.model,
+        serialNumber: itemData.serial_number,
+        colorId: itemData.color_id,
+        itemCondition: itemData.item_condition,
+        ownerMark: itemData.owner_mark,
+        itemDescription: itemData.item_description,
+        priceAmount: itemData.price_amount !== null ? Number(itemData.price_amount) : null,
+        resale: itemData.resale !== null ? Number(itemData.resale) : null,
+        minResale: itemData.min_resale !== null ? Number(itemData.min_resale) : null,
+        itemReplace: itemData.item_replace !== null ? Number(itemData.item_replace) : null,
+        extra: itemData.extra || {},
+        attributes: itemData.attributes || {},
+        legacyInventoryNumber: itemData.legacy_inventory_number,
+        legacyItemGuid: itemData.legacy_item_guid,
+        legacyCategoryDescription: itemData.legacy_category_description,
+        legacyBrandColorDescription: itemData.legacy_brand_color_description,
+        inventoryNumber: itemData.inventory_number,
+        lastUpdatedUserId: itemData.last_updated_user_id,
+        createdAt: new Date(itemData.created_at),
+        updatedAt: new Date(itemData.updated_at)
+    });
+}
 
 function mapRowToPawnTicket(row: any): PawnTicket {
     return new PawnTicket({
@@ -53,6 +84,9 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         defaultDate: row.default_date,
         pawnStatus: row.pawn_status,
         itemIds: Array.isArray(row.item_ids) ? row.item_ids : [],
+        items: row.items_data ? 
+            (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) : 
+            undefined,
         tenders: row.tenders || [],
         note: row.note
     });

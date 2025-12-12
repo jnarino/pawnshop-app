@@ -1,3 +1,5 @@
+import { InventoryItemResponseDto } from '../../inventory/InventoryItemResponseDto';
+
 export type PawnTransactionTypeDto = 'PAWN' | 'PURCHASE';
 
 export type PawnStatusDto =
@@ -35,7 +37,7 @@ export interface PawnTicketResponseDto {
 
   pawnStatus: PawnStatusDto;
 
-  itemIds: string[];
+  items: InventoryItemResponseDto[];
   tenders: TenderInfoDto[];
   note?: string;
 }

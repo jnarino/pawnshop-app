@@ -1,5 +1,6 @@
 import { PawnTicket } from '../../../domains/pawnTicket/PawnTicket';
 import { PawnTicketResponseDto } from '../../dto/pawnTicket/query/PawnTicketResponseDto';
+import { toInventoryItemResponseDto } from '../inventory/inventoryItemMappers';
 
 export class PawnTicketMapper {
   static toResponseDto(ticket: PawnTicket): PawnTicketResponseDto {
@@ -20,7 +21,7 @@ export class PawnTicketMapper {
       maturityDate: ticket.maturityDate.toISOString(),
       defaultDate: ticket.defaultDate.toISOString(),
       pawnStatus: ticket.pawnStatus,
-      itemIds: ticket.itemIds,
+      items: ticket.items ? ticket.items.map(toInventoryItemResponseDto) : [],
       tenders: ticket.tenders,
       note: ticket.note
     };
