@@ -13,6 +13,15 @@ import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 
+export interface PawnFormDraftState {
+  type: 'PAWN' | 'PURCHASE';
+  periodicRate: string;
+  transactionDate: string;
+  maturityDate: string;
+  expirationDate: string;
+  items: InventoryItemDraft[];
+}
+
 interface PawnTicketFormProps {
   readonly mode?: FormMode;
   readonly initialData?: {
@@ -24,6 +33,8 @@ interface PawnTicketFormProps {
     readonly expirationDate?: string;
     readonly items?: InventoryItemDraft[];
   };
+  readonly externalDraft?: PawnFormDraftState;
+  readonly onDraftChange?: (draft: PawnFormDraftState) => void;
   readonly onSubmit?: (formData: {
     customerId: string;
     type: 'PAWN' | 'PURCHASE';
@@ -38,18 +49,40 @@ interface PawnTicketFormProps {
   readonly disabled?: boolean;
 }
 
-export function PawnTicketForm({ mode = 'CREATE', initialData, onSubmit, disabled = false }: PawnTicketFormProps) {
+export function PawnTicketForm({ 
+  mode = 'CREATE', 
+  initialData, 
+  externalDraft,
+  onDraftChange,
+  onSubmit, 
+  disabled = false 
+}: PawnTicketFormProps) {
   const isViewMode = mode === 'VIEW';
+  const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
   
-  const [formData, setFormData] = useState({
+  const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
-    type: initialData?.type || 'PAWN',
+    type: initialData?.type || 'PAWN' as const,
     periodicRate: initialData?.periodicRate || '25',
     transactionDate: initialData?.transactionDate || format(new Date(), 'yyyy-MM-dd'),
     maturityDate: initialData?.maturityDate || format(addDays(new Date(), 30), 'yyyy-MM-dd'),
     expirationDate: initialData?.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
-    items: initialData?.items || []
+    items: initialData?.items || [] as InventoryItemDraft[]
   });
+
+  const formData = isControlled ? {
+    customerId: initialData?.customerId || 'temp-customer',
+    ...externalDraft
+  } : localFormData;
+
+  const updateFormData = useCallback((updates: Partial<typeof localFormData>) => {
+    if (isControlled && onDraftChange) {
+      const { customerId, ...draftUpdates } = updates;
+      onDraftChange({ ...externalDraft, ...draftUpdates });
+    } else {
+      setLocalFormData(prev => ({ ...prev, ...updates }));
+    }
+  }, [isControlled, onDraftChange, externalDraft]);
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
@@ -90,20 +123,18 @@ export function PawnTicketForm({ mode = 'CREATE', initialData, onSubmit, disable
 
   const handleSaveItem = useCallback((item: InventoryItemDraft) => {
     if (editingItem) {
-      setFormData(prev => ({
-        ...prev,
-        items: prev.items.map(i => i.id === item.id ? item : i)
-      }));
+      updateFormData({
+        items: formData.items.map(i => i.id === item.id ? item : i)
+      });
     } else {
-      setFormData(prev => ({
-        ...prev,
-        items: [...prev.items, item]
-      }));
+      updateFormData({
+        items: [...formData.items, item]
+      });
     }
 
     setShowItemModal(false);
     setEditingItem(null);
-  }, [editingItem]);
+  }, [editingItem, formData.items, updateFormData]);
 
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
     setEditingItem(item);
@@ -116,11 +147,10 @@ export function PawnTicketForm({ mode = 'CREATE', initialData, onSubmit, disable
   }, []);
 
   const handleRemoveItem = useCallback((itemId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.filter(i => i.id !== itemId)
-    }));
-  }, []);
+    updateFormData({
+      items: formData.items.filter(i => i.id !== itemId)
+    });
+  }, [formData.items, updateFormData]);
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
@@ -134,19 +164,19 @@ export function PawnTicketForm({ mode = 'CREATE', initialData, onSubmit, disable
           totalValue={totalValue}
           disabled={isViewMode}
           onTypeChange={(value) => {
-            if (!isViewMode) setFormData(prev => ({ ...prev, type: value }));
+            if (!isViewMode) updateFormData({ type: value });
           }}
           onPeriodicRateChange={(value) => {
-            if (!isViewMode) setFormData(prev => ({ ...prev, periodicRate: value }));
+            if (!isViewMode) updateFormData({ periodicRate: value });
           }}
           onTransactionDateChange={(value) => {
-            if (!isViewMode) setFormData(prev => ({ ...prev, transactionDate: value }));
+            if (!isViewMode) updateFormData({ transactionDate: value });
           }}
           onMaturityDateChange={(value) => {
-            if (!isViewMode) setFormData(prev => ({ ...prev, maturityDate: value }));
+            if (!isViewMode) updateFormData({ maturityDate: value });
           }}
           onExpirationDateChange={(value) => {
-            if (!isViewMode) setFormData(prev => ({ ...prev, expirationDate: value }));
+            if (!isViewMode) updateFormData({ expirationDate: value });
           }}
         />
 

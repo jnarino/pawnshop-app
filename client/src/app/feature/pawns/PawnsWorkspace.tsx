@@ -1,25 +1,20 @@
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
-import type { Customer } from '@/app/feature/_shared/customer';
 import './pawns.css';
 
 function PawnsWorkspaceContent() {
-  const { activeTab, setActiveTab, openCancelModal } = usePawnWorkflow();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-
-  const customerId = customer?.id || null;
-
-  const canNavigateToTab = (tab: TabKey) => {
-    // Customer tab is always accessible
-    if (tab === 'customer') return true;
-    // Other tabs require a customer to be selected
-    return !!customerId;
-  };
+  const { 
+    activeTab, 
+    setActiveTab, 
+    openCancelModal, 
+    customer, 
+    setCustomer,
+    canNavigateToTab 
+  } = usePawnWorkflow();
 
   const handleTabChange = (tab: string) => {
     const tabKey = tab as TabKey;
@@ -54,31 +49,31 @@ function PawnsWorkspaceContent() {
           </Button>
         </div>
 
-        <TabsContent value="customer" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">
           <CustomerInfoTab 
             customer={customer}
             onCustomerChange={setCustomer}
-            onCustomerSelected={(id: string) => setActiveTab('newPawn')}
+            onCustomerSelected={() => setActiveTab('newPawn')}
           />
         </TabsContent>
 
-        <TabsContent value="newPawn" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
           <NewPawnTab 
             customer={customer}
           />
         </TabsContent>
 
-        <TabsContent value="previousItems" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="previousItems" keepMounted className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Previous Items - Coming Soon
           </div>
         </TabsContent>
 
-        <TabsContent value="customerPerformance" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
           <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
-        <TabsContent value="history" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="history" keepMounted className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             History - Coming Soon
           </div>
