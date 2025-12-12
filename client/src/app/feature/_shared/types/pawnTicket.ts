@@ -2,9 +2,11 @@ export interface PawnTicketItem {
   id: string;
   categoryId?: string;
   inventorySubcategoryId?: string;
+  inventoryCategory?: { id: string; name: string };
+  inventorySubcategory?: { id: string; name: string };
   status: string;
   quantity: number;
-  brand?: string;
+  brand?: string | { id: string; name: string };
   model?: string;
   serialNumber?: string;
   colorId?: string;

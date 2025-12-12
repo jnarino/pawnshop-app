@@ -17,11 +17,18 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     return new Date(dateStr).toISOString().split('T')[0];
   };
 
+  const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
+    if (!brand) return '';
+    if (typeof brand === 'object' && brand.name) return brand.name;
+    if (typeof brand === 'string') return brand;
+    return '';
+  };
+
   const transformedItems: InventoryItemDraft[] = (pawnTicket.items || []).map((item) => ({
     id: item.id,
     type: item.legacyCategoryDescription || 'Item',
     categoryName: item.legacyCategoryDescription || '',
-    brandName: item.brand || '',
+    brandName: getBrandName(item.brand),
     model: item.model || '',
     serial: item.serialNumber || '',
     color: item.colorId || '',
