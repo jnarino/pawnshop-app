@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createInventoryItemRequestSchema = z.object({
-  categoryId: z.string().min(1, 'categoryId is required'),
+  inventorySubcategoryId: z.string().uuid('inventorySubcategoryId must be a valid UUID'),
 
   // Optional – default in DB is 'I'
   status: z.string().min(1).optional(),

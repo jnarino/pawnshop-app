@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const updateInventoryItemRequestSchema = z.object({
   id: z.string().min(1, 'id is required'),
 
-  categoryId: z.string().optional(),
+  inventorySubcategoryId: z.string().uuid().optional(),
   status: z.string().optional(),
   quantity: z
     .number({ invalid_type_error: 'quantity must be a number' })

@@ -2,13 +2,24 @@ import { z } from 'zod';
 
 export const pawnTransactionTypeSchema = z.enum(['PAWN', 'PURCHASE']);
 
+export const tenderSchema = z.object({
+  tenderTypeId: z.number().int().positive(), // References tender_type.id
+  amount: z.number().nonnegative()
+});
+
 export const createPawnTicketRequestSchema = z
   .object({
     customerId: z.string().uuid(),
     transactionType: pawnTransactionTypeSchema,
+    clerkUserId: z.string().uuid(), // User creating the ticket
 
     // For PAWN
     amountFinanced: z.number().nonnegative().nullable().optional(),
+    financeCharge: z.number().nonnegative().nullable().optional(),
+    periodicRate: z.number().nonnegative().nullable().optional(),
+    totalOfPayments: z.number().nonnegative().nullable().optional(),
+    apr: z.number().nonnegative().nullable().optional(),
+    ratePlanId: z.string().uuid().nullable().optional(),
 
     // For PURCHASE
     purchaseTradeValue: z.number().nonnegative().nullable().optional(),
@@ -19,7 +30,13 @@ export const createPawnTicketRequestSchema = z
     defaultDate: z.string().min(1),
 
     // At least one item
-    itemIds: z.array(z.string().uuid()).min(1)
+    itemIds: z.array(z.string().uuid()).min(1),
+
+    // Tender information (how customer received/paid money)
+    tenders: z.array(tenderSchema).min(1),
+
+    // Note for the transaction
+    note: z.string().optional()
   })
   .superRefine((val, ctx) => {
     if (val.transactionType === 'PAWN') {

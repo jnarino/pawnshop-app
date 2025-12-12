@@ -22,8 +22,8 @@ export class UpdateInventoryItemUseCase {
             throw new NotFoundError('Inventory item not found');
         }
 
-        if (dto.categoryId !== undefined) {
-            existing.categoryId = dto.categoryId;
+        if (dto.inventorySubcategoryId !== undefined) {
+            existing.inventorySubcategoryId = dto.inventorySubcategoryId;
         }
         if (dto.status !== undefined) {
             existing.status = dto.status;

@@ -32,8 +32,18 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         controlNumber: row.control_number,
         transactionType: row.transaction_type,
         customerId: row.customer_id,
+        clerkUserId: row.clerk_user_id || '',
         amountFinanced:
             row.amount_financed !== null ? Number(row.amount_financed) : null,
+        financeCharge:
+            row.finance_charge !== null ? Number(row.finance_charge) : null,
+        periodicRate:
+            row.periodic_rate !== null ? Number(row.periodic_rate) : null,
+        totalOfPayments:
+            row.total_of_payments !== null ? Number(row.total_of_payments) : null,
+        apr:
+            row.apr !== null ? Number(row.apr) : null,
+        ratePlanId: row.rate_plan_id || null,
         purchaseTradeValue:
             row.purchase_trade_value !== null
                 ? Number(row.purchase_trade_value)
@@ -42,7 +52,9 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         maturityDate: row.maturity_date,
         defaultDate: row.default_date,
         pawnStatus: row.pawn_status,
-        itemIds: Array.isArray(row.item_ids) ? row.item_ids : []
+        itemIds: Array.isArray(row.item_ids) ? row.item_ids : [],
+        tenders: row.tenders || [],
+        note: row.note
     });
 }
 
@@ -50,16 +62,27 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
     constructor(private readonly db: DbClient) { }
 
     async create(ticket: PawnTicket): Promise<PawnTicket> {
+        // Convert tenders array to JSONB format
+        const tendersJson = JSON.stringify(ticket.tenders);
+
         const result = await this.db.query(SQL_CREATE, [
-            ticket.id,
-            ticket.transactionType,
-            ticket.customerId,
-            ticket.amountFinanced,
-            ticket.purchaseTradeValue,
-            ticket.transactionDate,
-            ticket.maturityDate,
-            ticket.defaultDate,
-            ticket.itemIds
+            ticket.id,                  // $1
+            ticket.transactionType,     // $2
+            ticket.customerId,          // $3
+            ticket.clerkUserId,         // $4
+            ticket.amountFinanced,      // $5
+            ticket.financeCharge,       // $6
+            ticket.periodicRate,        // $7
+            ticket.totalOfPayments,     // $8
+            ticket.apr,                 // $9
+            ticket.ratePlanId,          // $10
+            ticket.purchaseTradeValue,  // $11
+            ticket.transactionDate,     // $12
+            ticket.maturityDate,        // $13
+            ticket.defaultDate,         // $14
+            ticket.itemIds,             // $15
+            tendersJson,                // $16
+            ticket.note                 // $17
         ]);
 
         const row = result.rows[0];

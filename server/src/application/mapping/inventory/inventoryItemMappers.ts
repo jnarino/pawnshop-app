@@ -8,7 +8,7 @@ export function toInventoryItemResponseDto(
   return {
     id: item.id,
 
-    categoryId: item.categoryId,
+    inventorySubcategoryId: item.inventorySubcategoryId,
     status: item.status,
     quantity: item.quantity,
 

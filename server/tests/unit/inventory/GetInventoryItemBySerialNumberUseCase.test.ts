@@ -27,7 +27,7 @@ describe('GetInventoryItemBySerialNumberUseCase', () => {
     const repo = new MockInventoryItemRepository();
     const item = new InventoryItem({
       id: '123',
-      categoryId: 'cat-123',
+      inventorySubcategoryId: 'cat-123',
       status: 'I',
       quantity: 1,
       serialNumber: 'ABC123456',

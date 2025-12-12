@@ -1,7 +1,7 @@
 INSERT INTO
     inventory_item (
         id,
-        category_id,
+        inventory_subcategory_id,
         status,
         brand,
         model,

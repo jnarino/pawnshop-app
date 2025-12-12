@@ -1,6 +1,6 @@
 UPDATE inventory_item
 SET
-  category_id                 = $2,
+  inventory_subcategory_id    = $2,
   status                      = $3,
   brand                       = $4,
   model                       = $5,

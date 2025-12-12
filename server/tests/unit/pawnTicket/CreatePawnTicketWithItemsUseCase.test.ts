@@ -51,15 +51,17 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
     const result = await useCase.execute({
       pawn: {
         transactionType: 'PAWN',
-        customerId: 'cust-123',
+        customerId: '11111111-1111-1111-1111-111111111111',
+        clerkUserId: '22222222-2222-2222-2222-222222222222',
         amountFinanced: 500,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
-        defaultDate: defaultDate.toISOString()
+        defaultDate: defaultDate.toISOString(),
+        tenders: [{ tenderTypeId: 1, amount: 500 }]
       },
       items: [
         {
-          categoryId: 'cat-1',
+          inventorySubcategoryId: '33333333-3333-3333-3333-333333333333',
           status: 'I',
           quantity: 1,
           brand: 'Apple',
@@ -87,18 +89,20 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
     const result = await useCase.execute({
       pawn: {
         transactionType: 'PAWN',
-        customerId: 'cust-123',
+        customerId: '11111111-1111-1111-1111-111111111111',
+        clerkUserId: '22222222-2222-2222-2222-222222222222',
         amountFinanced: 500,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
-        defaultDate: defaultDate.toISOString()
+        defaultDate: defaultDate.toISOString(),
+        tenders: [{ tenderTypeId: 1, amount: 500 }]
       },
-      itemIds: ['existing-item-1', 'existing-item-2']
+      itemIds: ['44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555']
     });
 
     expect(result.transactionType).toBe('PAWN');
-    expect(result.itemIds).toContain('existing-item-1');
-    expect(result.itemIds).toContain('existing-item-2');
+    expect(result.itemIds).toContain('44444444-4444-4444-4444-444444444444');
+    expect(result.itemIds).toContain('55555555-5555-5555-5555-555555555555');
   });
 
   it('should throw error if no items are provided', async () => {
@@ -115,13 +119,15 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
       useCase.execute({
         pawn: {
           transactionType: 'PAWN',
-          customerId: 'cust-123',
+          customerId: '11111111-1111-1111-1111-111111111111',
+          clerkUserId: '22222222-2222-2222-2222-222222222222',
           amountFinanced: 500,
           transactionDate: today.toISOString(),
           maturityDate: maturity.toISOString(),
-          defaultDate: defaultDate.toISOString()
+          defaultDate: defaultDate.toISOString(),
+          tenders: [{ tenderTypeId: 1, amount: 500 }]
         }
       })
-    ).rejects.toThrow('Pawn ticket must have at least one linked item');
+    ).rejects.toThrow('At least one new item or existing itemId must be provided');
   });
 });

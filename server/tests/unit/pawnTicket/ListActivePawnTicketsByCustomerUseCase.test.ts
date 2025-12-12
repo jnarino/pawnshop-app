@@ -10,30 +10,44 @@ class MockPawnTicketRepository implements PawnTicketRepository {
 }
 
 describe('ListActivePawnTicketsByCustomerUseCase', () => {
+  const customerId = '550e8400-e29b-41d4-a716-446655440030';
+  const userId = '550e8400-e29b-41d4-a716-446655440031';
+  const ratePlanId = '550e8400-e29b-41d4-a716-446655440032';
+  const itemId = '550e8400-e29b-41d4-a716-446655440033';
+  const ticketId = '550e8400-e29b-41d4-a716-446655440034';
+  const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+
   it('should return only active tickets for a customer', async () => {
     const repo = new MockPawnTicketRepository();
     const activeTickets = [
       new PawnTicket({
-        id: '1',
+        id: ticketId,
         controlNumber: 'CTL-001',
         transactionType: 'PAWN',
-        customerId: 'cust-123',
+        customerId: customerId,
+        clerkUserId: userId,
         amountFinanced: 500,
+        financeCharge: 50,
+        periodicRate: 0.25,
+        totalOfPayments: 550,
+        apr: 25,
+        ratePlanId: ratePlanId,
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),
         defaultDate: new Date(),
         pawnStatus: 'active',
-        itemIds: ['item-1']
+        itemIds: [itemId],
+        tenders: [{ tenderTypeId: 1, amount: 500 }]
       })
     ];
     repo.listActiveByCustomer.mockResolvedValue(activeTickets);
 
     const useCase = new ListActivePawnTicketsByCustomerUseCase(repo);
 
-    const result = await useCase.execute({ customerId: 'cust-123' });
+    const result = await useCase.execute({ customerId: customerId });
 
-    expect(repo.listActiveByCustomer).toHaveBeenCalledWith('cust-123');
+    expect(repo.listActiveByCustomer).toHaveBeenCalledWith(customerId);
     expect(result).toHaveLength(1);
     expect(result[0].pawnStatus).toBe('active');
   });
@@ -44,7 +58,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
 
     const useCase = new ListActivePawnTicketsByCustomerUseCase(repo);
 
-    const result = await useCase.execute({ customerId: 'cust-456' });
+    const result = await useCase.execute({ customerId: nonExistentId });
 
     expect(result).toHaveLength(0);
   });

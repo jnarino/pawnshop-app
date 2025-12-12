@@ -13,6 +13,15 @@ class MockPawnTicketRepository implements PawnTicketRepository {
 }
 
 describe('CreatePawnTicketUseCase', () => {
+  const customerId1 = '550e8400-e29b-41d4-a716-446655440050';
+  const customerId2 = '550e8400-e29b-41d4-a716-446655440051';
+  const customerId3 = '550e8400-e29b-41d4-a716-446655440052';
+  const clerkUserId = '550e8400-e29b-41d4-a716-446655440053';
+  const itemId1 = '550e8400-e29b-41d4-a716-446655440054';
+  const itemId2 = '550e8400-e29b-41d4-a716-446655440055';
+  const itemId3 = '550e8400-e29b-41d4-a716-446655440056';
+  const itemId4 = '550e8400-e29b-41d4-a716-446655440057';
+
   it('should create a pawn transaction', async () => {
     const repo = new MockPawnTicketRepository();
     const useCase = new CreatePawnTicketUseCase(repo);
@@ -25,18 +34,20 @@ describe('CreatePawnTicketUseCase', () => {
 
     const result = await useCase.execute({
       transactionType: 'PAWN',
-      customerId: 'cust-123',
+      customerId: customerId1,
+      clerkUserId: clerkUserId,
       amountFinanced: 500,
       transactionDate: today.toISOString(),
       maturityDate: maturity.toISOString(),
       defaultDate: defaultDate.toISOString(),
-      itemIds: ['item-1', 'item-2']
+      itemIds: [itemId1, itemId2],
+      tenders: [{ tenderTypeId: 1, amount: 500 }]
     });
 
     expect(repo.create).toHaveBeenCalled();
     expect(result.transactionType).toBe('PAWN');
     expect(result.amountFinanced).toBe(500);
-    expect(result.itemIds).toEqual(['item-1', 'item-2']);
+    expect(result.itemIds).toEqual([itemId1, itemId2]);
   });
 
   it('should create a purchase transaction', async () => {
@@ -51,12 +62,14 @@ describe('CreatePawnTicketUseCase', () => {
 
     const result = await useCase.execute({
       transactionType: 'PURCHASE',
-      customerId: 'cust-456',
+      customerId: customerId2,
+      clerkUserId: clerkUserId,
       purchaseTradeValue: 300,
       transactionDate: today.toISOString(),
       maturityDate: maturity.toISOString(),
       defaultDate: defaultDate.toISOString(),
-      itemIds: ['item-3']
+      itemIds: [itemId3],
+      tenders: [{ tenderTypeId: 1, amount: 300 }]
     });
 
     expect(repo.create).toHaveBeenCalled();
@@ -76,12 +89,14 @@ describe('CreatePawnTicketUseCase', () => {
 
     const result = await useCase.execute({
       transactionType: 'PAWN',
-      customerId: 'cust-789',
+      customerId: customerId3,
+      clerkUserId: clerkUserId,
       amountFinanced: 1000,
       transactionDate: today.toISOString(),
       maturityDate: maturity.toISOString(),
       defaultDate: defaultDate.toISOString(),
-      itemIds: ['item-4']
+      itemIds: [itemId4],
+      tenders: [{ tenderTypeId: 1, amount: 1000 }]
     });
 
     expect(result.pawnStatus).toBe('active');

@@ -1,7 +1,7 @@
 export type InventoryItemResponseDto = {
   id: string;
 
-  categoryId: string;
+  inventorySubcategoryId: string;
   status: string;
   quantity: number;
 

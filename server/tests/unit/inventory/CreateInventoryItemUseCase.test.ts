@@ -12,18 +12,20 @@ class MockInventoryItemRepository implements InventoryItemRepository {
 }
 
 describe('CreateInventoryItemUseCase', () => {
+  const validSubcategoryId = '550e8400-e29b-41d4-a716-446655440000';
+
   it('should create an inventory item with required fields', async () => {
     const repo = new MockInventoryItemRepository();
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
       status: 'I',
       quantity: 1
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.categoryId).toBe('cat-123');
+    expect(result.inventorySubcategoryId).toBe(validSubcategoryId);
     expect(result.status).toBe('I');
     expect(result.quantity).toBe(1);
   });
@@ -33,7 +35,7 @@ describe('CreateInventoryItemUseCase', () => {
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
       status: 'I',
       quantity: 1,
       brand: 'Apple',
@@ -55,7 +57,7 @@ describe('CreateInventoryItemUseCase', () => {
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
       status: 'I',
       quantity: 1,
       extra: { custom: 'value' },

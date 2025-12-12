@@ -18,13 +18,20 @@ describe('ListPawnTicketsByControlNumberUseCase', () => {
         controlNumber: 'CTL-001',
         transactionType: 'PAWN',
         customerId: 'cust-123',
+        clerkUserId: 'user-1',
         amountFinanced: 500,
+        financeCharge: 50,
+        periodicRate: 0.25,
+        totalOfPayments: 550,
+        apr: 25,
+        ratePlanId: 'rate-1',
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),
         defaultDate: new Date(),
         pawnStatus: 'active',
-        itemIds: ['item-1']
+        itemIds: ['item-1'],
+        tenders: [{ tenderTypeId: 1, amount: 500 }]
       })
     ];
     repo.listByControlNumber.mockResolvedValue(tickets);

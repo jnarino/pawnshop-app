@@ -19,7 +19,7 @@ function mapRowToInventoryItem(row: any): InventoryItem {
     return new InventoryItem({
         id: row.id,
 
-        categoryId: row.category_id,
+        inventorySubcategoryId: row.inventory_subcategory_id,
         status: row.status,
         quantity: row.quantity,
 
@@ -58,7 +58,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
     async create(item: InventoryItem): Promise<InventoryItem> {
         const result = await this.db.query(SQL_CREATE, [
             item.id,
-            item.categoryId,
+            item.inventorySubcategoryId,
             item.status,
             item.brand,
             item.model,
@@ -90,7 +90,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
     async update(item: InventoryItem): Promise<InventoryItem> {
         const result = await this.db.query(SQL_UPDATE, [
             item.id,
-            item.categoryId,
+            item.inventorySubcategoryId,
             item.status,
             item.brand,
             item.model,

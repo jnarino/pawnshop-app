@@ -8,13 +8,25 @@ export type PawnStatusDto =
   | 'confiscation'
   | 'voided';
 
+export interface TenderInfoDto {
+  tenderTypeId: number;
+  amount: number;
+}
+
 export interface PawnTicketResponseDto {
   id: string;
   controlNumber: string;
   transactionType: PawnTransactionTypeDto;
   customerId: string;
+  clerkUserId: string;
 
   amountFinanced: number | null;
+  financeCharge: number | null;
+  periodicRate: number | null;
+  totalOfPayments: number | null;
+  apr: number | null;
+  ratePlanId: string | null;
+
   purchaseTradeValue: number | null;
 
   transactionDate: string;
@@ -24,4 +36,6 @@ export interface PawnTicketResponseDto {
   pawnStatus: PawnStatusDto;
 
   itemIds: string[];
+  tenders: TenderInfoDto[];
+  note?: string;
 }

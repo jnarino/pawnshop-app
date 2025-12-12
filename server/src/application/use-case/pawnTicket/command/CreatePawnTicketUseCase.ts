@@ -31,9 +31,21 @@ export class CreatePawnTicketUseCase {
 
       transactionType: dto.transactionType,
       customerId: dto.customerId,
+      clerkUserId: dto.clerkUserId,
 
       amountFinanced:
         dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
+      financeCharge:
+        dto.transactionType === 'PAWN' ? (dto.financeCharge ?? null) : null,
+      periodicRate:
+        dto.transactionType === 'PAWN' ? (dto.periodicRate ?? null) : null,
+      totalOfPayments:
+        dto.transactionType === 'PAWN' ? (dto.totalOfPayments ?? null) : null,
+      apr:
+        dto.transactionType === 'PAWN' ? (dto.apr ?? null) : null,
+      ratePlanId:
+        dto.transactionType === 'PAWN' ? (dto.ratePlanId ?? null) : null,
+
       purchaseTradeValue:
         dto.transactionType === 'PURCHASE' ? dto.purchaseTradeValue! : null,
 
@@ -42,7 +54,9 @@ export class CreatePawnTicketUseCase {
       defaultDate,
 
       pawnStatus: 'active',
-      itemIds: dto.itemIds
+      itemIds: dto.itemIds,
+      tenders: dto.tenders,
+      note: dto.note
     });
 
     const saved = await this.pawnTicketRepository.create(ticket);
