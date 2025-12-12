@@ -20,10 +20,23 @@ SELECT
     jsonb_agg(
       jsonb_build_object(
         'id', ii.id,
-        'inventory_subcategory_id', ii.inventory_subcategory_id,
+        'inventory_subcategory', jsonb_build_object(
+          'id', isc.id,
+          'name', isc.name
+        ),
+        'inventory_category', jsonb_build_object(
+          'id', ic.id,
+          'name', ic.name
+        ),
         'status', ii.status,
         'quantity', ii.quantity,
-        'brand', ii.inventory_brand_id,
+        'brand', CASE 
+          WHEN ib.id IS NOT NULL THEN jsonb_build_object(
+            'id', ib.id,
+            'name', ib.name
+          )
+          ELSE NULL
+        END,
         'model', ii.model,
         'serial_number', ii.serial_number,
         'color_id', ii.color,
@@ -53,6 +66,12 @@ LEFT JOIN pawn_ticket_item pti
   ON pti.pawn_ticket_id = pt.id
 LEFT JOIN inventory_item ii
   ON ii.id = pti.inventory_item_id
+LEFT JOIN inventory_subcategory isc
+  ON isc.id = ii.inventory_subcategory_id
+LEFT JOIN inventory_category ic
+  ON ic.id = isc.inventory_category_id
+LEFT JOIN inventory_brand ib
+  ON ib.id = ii.inventory_brand_id
 WHERE pt.customer_id = $1
   AND pt.pawn_status = 'active'
 GROUP BY

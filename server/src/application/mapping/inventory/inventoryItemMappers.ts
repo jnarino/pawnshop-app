@@ -5,14 +5,23 @@ import { InventoryItemResponseDto } from '../../dto/inventory/InventoryItemRespo
 export function toInventoryItemResponseDto(
   item: InventoryItem
 ): InventoryItemResponseDto {
+  const enrichedData = (item as any)._enrichedData;
+  
   return {
     id: item.id,
 
-    inventorySubcategoryId: item.inventorySubcategoryId,
+    inventorySubcategory: enrichedData?.inventorySubcategory || {
+      id: item.inventorySubcategoryId,
+      name: ''
+    },
+    inventoryCategory: enrichedData?.inventoryCategory || {
+      id: '',
+      name: ''
+    },
     status: item.status,
     quantity: item.quantity,
 
-    brand: item.brand,
+    brand: enrichedData?.brand || (item.brand ? { id: item.brand, name: '' } : null),
     model: item.model,
     serialNumber: item.serialNumber,
     colorId: item.colorId,

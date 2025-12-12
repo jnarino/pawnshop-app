@@ -28,12 +28,12 @@ const SQL_LIST_ACTIVE_BY_CUSTOMER = loadSql(
 );
 
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
-    return new InventoryItem({
+    const item = new InventoryItem({
         id: itemData.id,
-        inventorySubcategoryId: itemData.inventory_subcategory_id,
+        inventorySubcategoryId: itemData.inventory_subcategory?.id || '',
         status: itemData.status,
         quantity: itemData.quantity,
-        brand: itemData.brand,
+        brand: itemData.brand?.id || null,
         model: itemData.model,
         serialNumber: itemData.serial_number,
         colorId: itemData.color_id,
@@ -55,6 +55,15 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         createdAt: new Date(itemData.created_at),
         updatedAt: new Date(itemData.updated_at)
     });
+    
+    // Attach the enriched lookup data for the mapper to use
+    (item as any)._enrichedData = {
+        inventorySubcategory: itemData.inventory_subcategory,
+        inventoryCategory: itemData.inventory_category,
+        brand: itemData.brand
+    };
+    
+    return item;
 }
 
 function mapRowToPawnTicket(row: any): PawnTicket {

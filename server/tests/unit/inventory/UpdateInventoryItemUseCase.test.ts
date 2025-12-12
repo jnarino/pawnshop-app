@@ -55,7 +55,7 @@ describe('UpdateInventoryItemUseCase', () => {
 
     expect(repo.findById).toHaveBeenCalledWith(itemId);
     expect(repo.update).toHaveBeenCalled();
-    expect(result.inventorySubcategoryId).toBe(newSubcategoryId);
+    expect(result.inventorySubcategory.id).toBe(newSubcategoryId);
   });
 
   it('should preserve fields not included in update', async () => {

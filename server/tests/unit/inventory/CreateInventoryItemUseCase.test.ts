@@ -25,7 +25,7 @@ describe('CreateInventoryItemUseCase', () => {
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.inventorySubcategoryId).toBe(validSubcategoryId);
+    expect(result.inventorySubcategory.id).toBe(validSubcategoryId);
     expect(result.status).toBe('I');
     expect(result.quantity).toBe(1);
   });
@@ -47,7 +47,7 @@ describe('CreateInventoryItemUseCase', () => {
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.brand).toBe('Apple');
+    expect(result.brand?.id).toBe('Apple');
     expect(result.model).toBe('iPhone 13');
     expect(result.serialNumber).toBe('ABC123456');
   });

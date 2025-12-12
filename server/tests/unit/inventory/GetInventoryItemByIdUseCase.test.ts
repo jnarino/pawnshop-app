@@ -42,7 +42,7 @@ describe('GetInventoryItemByIdUseCase', () => {
     const result = await useCase.execute({ id: '123' });
 
     expect(repo.findById).toHaveBeenCalledWith('123');
-    expect(result.brand).toBe('Apple');
+    expect(result.brand?.id).toBe('Apple');
     expect(result.model).toBe('iPhone');
   });
 });

@@ -44,6 +44,6 @@ describe('GetInventoryItemBySerialNumberUseCase', () => {
     expect(repo.findBySerialNumber).toHaveBeenCalledWith('ABC123456');
     expect(result).toBeDefined();
     expect(result!.serialNumber).toBe('ABC123456');
-    expect(result!.brand).toBe('Samsung');
+    expect(result!.brand?.id).toBe('Samsung');
   });
 });
