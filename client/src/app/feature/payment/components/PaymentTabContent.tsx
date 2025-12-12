@@ -56,9 +56,10 @@ export default function PaymentTabContent({
             );
 
         case 'viewPawn':
-            return selectedPawn && customerId ? (
+            return selectedPawn && customer ? (
                 <ViewPawnTab
                     pawnTicket={selectedPawn}
+                    customer={customer}
                     onBack={() => onTabChange('locatePawns')}
                     onMakePayment={() => onTabChange('makePayment')}
                 />

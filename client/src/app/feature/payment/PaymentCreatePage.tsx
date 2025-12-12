@@ -110,9 +110,10 @@ export default function PaymentCreatePage() {
         </TabsContent>
 
         <TabsContent value="viewPawn" className="flex-1 min-h-0 pt-4">
-          {selectedPawn && (
+          {selectedPawn && customer && (
             <ViewPawnTab
               pawnTicket={selectedPawn}
+              customer={customer}
               onBack={() => setActiveTab('locatePawns')}
               onMakePayment={() => setActiveTab('makePayment')}
             />

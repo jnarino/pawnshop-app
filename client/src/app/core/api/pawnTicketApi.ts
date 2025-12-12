@@ -1,34 +1,8 @@
 import { http } from './http';
+import type { PawnTicketData, PawnTicketItem } from '@/app/feature/_shared/types/pawnTicket';
 
-export interface PawnTicketItem {
-  id: string;
-  categoryId: string;
-  status: string;
-  quantity: number;
-  priceAmount: number;
-  resale: number;
-  brand?: string;
-  model?: string;
-  serialNumber?: string;
-  itemDescription?: string;
-  minResale?: number;
-  itemReplace?: number;
-  ownerMark?: string;
-  colorId?: string;
-  itemCondition?: string;
-}
-
-export interface CustomerActivePawnTicket {
-  id: string;
-  controlNumber: string;
-  transactionType: 'PAWN' | 'PURCHASE';
-  transactionDate: string;
-  maturityDate: string;
-  defaultDate: string;
-  pawnStatus: string;
-  amountFinanced?: number;
+export interface CustomerActivePawnTicket extends PawnTicketData {
   totalOfPayments?: number;
-  purchaseTradeValue?: number;
   items: PawnTicketItem[];
 }
 
