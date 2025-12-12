@@ -376,6 +376,47 @@ VALUES ('FL 30/30 @25%', 30, 30, 0.2500, 5.00)
 ON CONFLICT (name) DO NOTHING;
 
 -------------------------
+-- Pawn ticket status
+-------------------------
+CREATE TABLE IF NOT EXISTS pawn_ticket_status (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  status TEXT NOT NULL,
+  description TEXT,
+  transaction_type TEXT NOT NULL REFERENCES pawn_transaction_type(code),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(status, transaction_type)
+);
+
+DROP TRIGGER IF EXISTS trg_pawn_ticket_status_updated ON pawn_ticket_status;
+CREATE TRIGGER trg_pawn_ticket_status_updated
+BEFORE UPDATE ON pawn_ticket_status
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+-- Seed Statuses
+-- Seed Statuses
+INSERT INTO pawn_ticket_status (status, description, transaction_type, is_active) VALUES
+  -- PAWN statuses
+  ('0', 'Active', 'PAWN', true),
+  ('1', 'Active', 'PAWN', true),
+  ('U', 'Active', 'PAWN', true),
+  ('R', 'Redeemed', 'PAWN', false),
+  ('D', 'Defaulted', 'PAWN', false),
+  ('H', 'Police Hold', 'PAWN', true),
+  ('C', 'Confiscation', 'PAWN', false),
+  ('V', 'Voided', 'PAWN', false),
+  ('P', 'Pawn', 'PAWN', true), 
+  
+  -- PURCHASE statuses
+  ('B', 'Active', 'PURCHASE', true),
+  ('I', 'Active', 'PURCHASE', true),
+  ('V', 'Voided', 'PURCHASE', false),
+  ('H', 'Police Hold', 'PURCHASE', true),
+  ('C', 'Confiscation', 'PURCHASE', false)
+ON CONFLICT (status, transaction_type) DO NOTHING;
+
+-------------------------
 -- Pawn tickets
 -------------------------
 CREATE TABLE IF NOT EXISTS pawn_ticket (
@@ -406,7 +447,8 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   default_marked_by UUID REFERENCES app_user(id) ON DELETE SET NULL,
   default_reason TEXT,
 
-  pawn_status TEXT NOT NULL DEFAULT 'active',
+  status_id UUID NOT NULL REFERENCES pawn_ticket_status(id),
+  created_by UUID REFERENCES app_user(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -423,16 +465,12 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
       AND purchase_trade_value IS NOT NULL
       AND amount_financed IS NULL AND finance_charge IS NULL
       AND periodic_rate IS NULL AND total_of_payments IS NULL AND apr IS NULL)
-  ),
-
-  CONSTRAINT pawn_ticket_pawn_status_check CHECK (
-    pawn_status IN ('active','redeemed','defaulted','police hold','confiscation','voided')
   )
 );
 CREATE INDEX IF NOT EXISTS pawn_ticket_customer_idx     ON pawn_ticket(customer_id);
 CREATE INDEX IF NOT EXISTS pawn_ticket_type_idx         ON pawn_ticket(transaction_type);
 CREATE INDEX IF NOT EXISTS pawn_ticket_transaction_idx  ON pawn_ticket(transaction_date);
-CREATE INDEX IF NOT EXISTS idx_pawn_ticket_pawn_status  ON pawn_ticket(pawn_status);
+CREATE INDEX IF NOT EXISTS idx_pawn_ticket_status_id    ON pawn_ticket(status_id);
 CREATE INDEX IF NOT EXISTS idx_pawn_ticket_last_payment ON pawn_ticket(last_payment_at);
 CREATE INDEX IF NOT EXISTS idx_pawn_ticket_control_num  ON pawn_ticket(control_number);
 

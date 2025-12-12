@@ -4,6 +4,7 @@ from psycopg2.extras import execute_values
 import json
 import uuid
 import os
+from datetime import datetime
 from tqdm import tqdm
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 
@@ -72,6 +73,37 @@ def migrate_inventory():
         
         print(f"Loaded {len(pg_brand_map)} Brands and {len(valid_subcats)} Subcategories from PG.")
         
+        # Ensure Uncategorized Category exists
+        uncat_cat_id = str(uuid.uuid4())
+        uncategorized_sub_id = str(uuid.uuid4())
+        
+        pg_cursor.execute("SELECT id FROM inventory_category WHERE name = 'Uncategorized'")
+        res = pg_cursor.fetchone()
+        if res:
+             uncat_cat_id = res[0]
+        else:
+             pg_cursor.execute(
+                 "INSERT INTO inventory_category (id, name, code, is_active) VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                 (uncat_cat_id, 'Uncategorized', 'UNC', True)
+             )
+             pg_conn.commit()
+             print("Created 'Uncategorized' Category.")
+             
+        # Ensure Uncategorized Subcategory exists
+        pg_cursor.execute("SELECT id FROM inventory_subcategory WHERE name = 'Uncategorized'")
+        res = pg_cursor.fetchone()
+        if res:
+            uncategorized_sub_id = res[0]
+        else:
+            pg_cursor.execute(
+                "INSERT INTO inventory_subcategory (id, inventory_category_id, name, code, is_active) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                (uncategorized_sub_id, uncat_cat_id, 'Uncategorized', 'UNC', True)
+            )
+            pg_conn.commit()
+            print("Created 'Uncategorized' Subcategory.")
+            
+        valid_subcats.add(str(uncategorized_sub_id))
+        
         # Lookup Map (Lookup_C) - Used for Colors, Gun Attributes, etc.
         mssql_cursor.execute("SELECT lc_pk, lc_Descript FROM dbo.Lookup_C")
         lookup_map = {row['lc_pk']: safe_str(row['lc_Descript']) for row in mssql_cursor.fetchall()}
@@ -89,7 +121,7 @@ def migrate_inventory():
               i.DateItemEntered, i.INVNUM, 
               i.DESCRIPT, i.DESCRIPT2, i.BIN
            FROM dbo.items i
-           WHERE i.DateItemEntered > '1980-01-01'
+           WHERE (i.DateItemEntered >= '1900-01-01' OR i.DateItemEntered IS NULL)
         """)
         items = mssql_cursor.fetchall()
         
@@ -122,15 +154,12 @@ def migrate_inventory():
                 # Items must have L2 -> Subcategory
                 l2_fk = row['LEVEL2_FK']
                 if not l2_fk:
-                    # Skip or Fallback?
-                    # If item has no Subcategory, it's invalid in new schema
-                    # errors += 1
-                    continue
-                    
-                subcat_uuid = l2_map.get(l2_fk)
-                if not subcat_uuid or subcat_uuid not in valid_subcats:
-                    # errors += 1
-                    continue
+                    # Fallback to Uncategorized
+                    subcat_uuid = uncategorized_sub_id
+                else:
+                    subcat_uuid = l2_map.get(l2_fk)
+                    if not subcat_uuid or subcat_uuid not in valid_subcats:
+                        subcat_uuid = uncategorized_sub_id
                 
                 # 2. Resolve Brand (Optional)
                 brand_uuid = None
@@ -234,7 +263,7 @@ def migrate_inventory():
                     safe_str(row['SERIALNUM']),
                     color_val,
                     safe_str(row['Condition']),
-                    row['OnHand'] or 1,
+                    max(1, int(float(row['OnHand'] or 0))), # Enforce quantity > 0
                     row['AMOUNT'],
                     row['RESALEAMT'],
                     row['LOWSLPRICE'],
@@ -261,6 +290,7 @@ def migrate_inventory():
                     batch_data = []
                     
             except Exception as e:
+                pg_conn.rollback()
                 errors += 1
                 # Silent fail for individual items
                 if errors < 10: # Keep original behavior of printing first few errors
