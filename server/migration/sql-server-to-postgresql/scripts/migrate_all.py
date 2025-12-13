@@ -72,6 +72,16 @@ def run_migration():
     print("\n🔫 PHASE 5: Gun Log")
     migrate_gunlog()
     
+    # Phase 6: Police Holds
+    print("\n👮 PHASE 6: Police Holds")
+    from migrate_holds import migrate_holds
+    migrate_holds()
+    
+    # Phase 6.5: Hold Items Inventory
+    print("\n🔗 PHASE 6.5: Hold Items Inventory (Link)")
+    from migrate_hold_items import migrate_hold_items
+    migrate_hold_items()
+    
     end_total = time.time()
     duration = end_total - start_total
     print("\n=================================")

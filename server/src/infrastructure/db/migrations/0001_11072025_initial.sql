@@ -793,3 +793,45 @@ $$ LANGUAGE plpgsql;
 -- Attribute dictionary (schema only; seeds later)
 -----------------------
 -- Removed duplicate item_attribute tables (consolidated on item_attribute_type/value)
+
+-------------------------
+-- Police Hold Items
+-------------------------
+CREATE TABLE IF NOT EXISTS hold_item (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  control_number TEXT, -- Matches LookupKey
+  customer_id UUID REFERENCES customer(id) ON DELETE SET NULL, -- Matches emp_fk
+  hold_date DATE, -- date
+  agency TEXT, -- agency
+  case_number TEXT, -- casenum
+  date_out DATE, -- dateout
+  is_hold BOOLEAN, -- ishold
+  is_inventory BOOLEAN, -- isinv
+  item_list TEXT, -- itemlist
+  comment TEXT, -- comment
+  agent_last_name TEXT, -- agentln
+  agent_first_name TEXT, -- agentfn
+  agent_middle_initial TEXT, -- agentmi
+  badge_number TEXT, -- badge
+  phone_area_code TEXT, -- ac1
+  phone_number TEXT, -- phone1
+  phone_extension TEXT, -- ext1
+  jurisdiction TEXT, -- jurisdict
+  legacy_hcn_id UUID, -- HCN_id
+  updated_by UUID REFERENCES app_user(id) ON DELETE SET NULL, -- LastUpdatedUSR_ID
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS trg_hold_item_updated ON hold_item;
+CREATE TRIGGER trg_hold_item_updated
+BEFORE UPDATE ON hold_item
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TABLE IF NOT EXISTS hold_item_inventory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hold_item_id UUID NOT NULL REFERENCES hold_item(id) ON DELETE CASCADE,
+  inventory_item_id UUID NOT NULL REFERENCES inventory_item(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(hold_item_id, inventory_item_id)
+);
