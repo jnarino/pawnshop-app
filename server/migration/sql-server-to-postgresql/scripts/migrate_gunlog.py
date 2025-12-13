@@ -40,25 +40,28 @@ def migrate_gunlog():
         pg_conn = psycopg2.connect(**POSTGRES_CONFIG)
         pg_cursor = pg_conn.cursor()
         
-        # Fetch gun log records
+        # Fetch gun log records with direct inventory link
         print("Fetching gun log records from SQL Server...")
         mssql_cursor.execute("""
             SELECT 
-                GunLogNum, GUN_id, MANUFACTUR, IMPORTER, MODEL, SERIAL, CALIBER, GUNTYPE, ACTION,
-                BUYDATE, BUYFNAME, BUYMNAME, BUYLNAME, BUYADD1, BuyAdd2, BUYCITY, BUYSTATE, BUYZIP, BUYIDTYPE, BUYIDNUM,
-                SOLDDATE, SOLDFNAME, SOLDMNAME, SOLDLNAME, SOLDADD1, SoldAdd2, SOLDCITY, SOLDSTATE, SOLDZIP, SOLDIDTYPE, SOLDIDNUM,
-                NICSTN, LastUpdatedUSR_ID
-            FROM dbo.gunlog 
-            ORDER BY GunLogNum
+                l.GunLogNum, l.GUN_id, l.MANUFACTUR, l.IMPORTER, l.MODEL, l.SERIAL, l.CALIBER, l.GUNTYPE, l.ACTION,
+                l.BUYDATE, l.BUYFNAME, l.BUYMNAME, l.BUYLNAME, l.BUYADD1, l.BuyAdd2, l.BUYCITY, l.BUYSTATE, l.BUYZIP, l.BUYIDTYPE, l.BUYIDNUM,
+                l.SOLDDATE, l.SOLDFNAME, l.SOLDMNAME, l.SOLDLNAME, l.SOLDADD1, l.SoldAdd2, l.SOLDCITY, l.SOLDSTATE, l.SOLDZIP, l.SOLDIDTYPE, l.SOLDIDNUM,
+                l.NICSTN, l.LastUpdatedUSR_ID,
+                (SELECT TOP 1 i.Items_ID 
+                 FROM dbo.guntrans t 
+                 JOIN dbo.items i ON t.items_pk = i.Items_PK 
+                 WHERE t.invnum = l.INVNUM 
+                 AND i.Items_ID IS NOT NULL
+                ) as inventory_item_uuid
+            FROM dbo.gunlog l
+            ORDER BY l.GunLogNum
         """)
         
         records = mssql_cursor.fetchall()
         print(f"Found {len(records)} gun log records to migrate")
         if records:
             print(f"Sample Row Keys: {records[0].keys()}")
-        
-        batch_size = 1000
-        batch_data = []
         
         batch_size = 1000
         batch_data = []
@@ -70,8 +73,8 @@ def migrate_gunlog():
                 # Use source UUID if available
                 gunlog_id = str(row['GUN_id']) if row.get('GUN_id') else str(uuid.uuid4())
                 
-                # Map inventory item (if linked)
-                inventory_item_id = None
+                # Link to Inventory Item (Direct from SQL Server Join)
+                inventory_item_id = str(row['inventory_item_uuid']) if row.get('inventory_item_uuid') else None
                 
                 # Map customers
                 acquisition_customer_id = None
