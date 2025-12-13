@@ -35,6 +35,7 @@ export interface PawnTicketData {
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
+  createdDate: string
   pawnStatus: string;
   itemIds: string[];
   items: PawnTicketItem[];

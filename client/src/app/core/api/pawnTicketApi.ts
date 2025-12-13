@@ -14,6 +14,7 @@ export interface PawnData {
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
+  createdDate: string;
 }
 
 export interface PawnItem {
