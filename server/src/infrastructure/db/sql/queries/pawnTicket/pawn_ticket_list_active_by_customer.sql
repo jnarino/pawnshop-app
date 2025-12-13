@@ -14,7 +14,8 @@ SELECT
   pt.transaction_date,
   pt.maturity_date,
   pt.default_date,
-  pt.pawn_status,
+  pt.created_at,
+  pts.status AS pawn_status,
   -- Aggregate inventory items as JSONB array
   COALESCE(
     jsonb_agg(
@@ -62,6 +63,8 @@ SELECT
     '[]'::jsonb
   ) AS items_data
 FROM pawn_ticket pt
+LEFT JOIN pawn_ticket_status pts
+  ON pts.id = pt.status_id
 LEFT JOIN pawn_ticket_item pti
   ON pti.pawn_ticket_id = pt.id
 LEFT JOIN inventory_item ii
@@ -73,7 +76,7 @@ LEFT JOIN inventory_category ic
 LEFT JOIN inventory_brand ib
   ON ib.id = ii.inventory_brand_id
 WHERE pt.customer_id = $1
-  AND pt.pawn_status = 'active'
+  AND pts.is_active = true
 GROUP BY
   pt.id,
   pt.control_number,
@@ -90,5 +93,6 @@ GROUP BY
   pt.transaction_date,
   pt.maturity_date,
   pt.default_date,
-  pt.pawn_status
+  pt.created_at,
+  pts.status
 ORDER BY pt.transaction_date DESC;

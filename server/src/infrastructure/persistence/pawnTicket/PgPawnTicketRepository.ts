@@ -55,14 +55,14 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         createdAt: new Date(itemData.created_at),
         updatedAt: new Date(itemData.updated_at)
     });
-    
+
     // Attach the enriched lookup data for the mapper to use
     (item as any)._enrichedData = {
         inventorySubcategory: itemData.inventory_subcategory,
         inventoryCategory: itemData.inventory_category,
         brand: itemData.brand
     };
-    
+
     return item;
 }
 
@@ -92,12 +92,12 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         maturityDate: row.maturity_date,
         defaultDate: row.default_date,
         pawnStatus: row.pawn_status,
+        createdDate: row.created_at,
         itemIds: Array.isArray(row.item_ids) ? row.item_ids : [],
-        items: row.items_data ? 
-            (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) : 
+        items: row.items_data ?
+            (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) :
             undefined,
-        tenders: row.tenders || [],
-        note: row.note
+        tenders: row.tenders || []
     });
 }
 

@@ -34,6 +34,7 @@ export interface PawnTicketResponseDto {
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
+  createdDate: string;
 
   pawnStatus: PawnStatusDto;
 

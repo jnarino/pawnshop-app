@@ -38,6 +38,7 @@ describe('FindPawnTicketsByCustomerUseCase', () => {
         transactionDate: new Date(),
         maturityDate: new Date(),
         defaultDate: new Date(),
+        createdDate: new Date(),
         pawnStatus: 'active',
         itemIds: [itemId1],
         tenders: [{ tenderTypeId: 1, amount: 500 }]
@@ -58,6 +59,7 @@ describe('FindPawnTicketsByCustomerUseCase', () => {
         transactionDate: new Date(),
         maturityDate: new Date(),
         defaultDate: new Date(),
+        createdDate: new Date(),
         pawnStatus: 'defaulted',
         itemIds: [itemId2],
         tenders: [{ tenderTypeId: 1, amount: 300 }]

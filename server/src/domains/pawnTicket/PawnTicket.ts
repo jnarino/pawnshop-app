@@ -45,6 +45,7 @@ export class PawnTicket {
   transactionDate: Date;
   maturityDate: Date;
   defaultDate: Date;
+  createdDate: Date;
 
   pawnStatus: PawnStatus;
 
@@ -88,6 +89,7 @@ export class PawnTicket {
     transactionDate: Date;
     maturityDate: Date;
     defaultDate: Date;
+    createdDate: Date;
 
     pawnStatus: PawnStatus;
 
@@ -115,6 +117,7 @@ export class PawnTicket {
     this.transactionDate = params.transactionDate;
     this.maturityDate = params.maturityDate;
     this.defaultDate = params.defaultDate;
+    this.createdDate = params.createdDate;
 
     this.pawnStatus = params.pawnStatus;
 

@@ -52,6 +52,7 @@ export class CreatePawnTicketUseCase {
       transactionDate,
       maturityDate,
       defaultDate,
+      createdDate: new Date(),
 
       pawnStatus: 'active',
       itemIds: dto.itemIds,
