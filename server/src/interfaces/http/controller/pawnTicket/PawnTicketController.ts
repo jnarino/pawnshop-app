@@ -5,13 +5,15 @@ import { CreatePawnTicketWithItemsUseCase } from '../../../../application/use-ca
 import { ListPawnTicketsByControlNumberUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { ListPawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
+import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 
 export class PawnTicketController {
     constructor(
         private readonly createPawnTicketWithItemsUseCase: CreatePawnTicketWithItemsUseCase,
         private readonly listByControlNumberUseCase: ListPawnTicketsByControlNumberUseCase,
         private readonly listByCustomerUseCase: ListPawnTicketsByCustomerUseCase,
-        private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase
+        private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
+        private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase
     ) { }
 
     /**
@@ -83,6 +85,24 @@ export class PawnTicketController {
         try {
             const customerId = req.params.customerId;
             const result = await this.listActiveByCustomerUseCase.execute({ customerId });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get all payments for a pawn ticket.
+     * GET /api/pawn-ticket/:pawnTicketId/payments
+     */
+    getPayments = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const pawnTicketId = req.params.pawnTicketId;
+            const result = await this.getPawnTicketPaymentsUseCase.execute({ pawnTicketId });
             return res.json(result);
         } catch (err) {
             return next(err);
