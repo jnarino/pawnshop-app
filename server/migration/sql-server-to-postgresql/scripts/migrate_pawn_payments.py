@@ -10,13 +10,20 @@ from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 def migrate_pawn_payments():
     print("🚀 Starting Pawn Payments Migration (from 'pawn' table)...")
     
-    # Load Customer Map? Not strictly needed if we link to Ticket which has Customer.
-    # But Store Transaction needs Customer ID.
+    # Load Customer Map
     try:
         with open('customer_map.json', 'r') as f:
             customer_map = json.load(f)
     except:
         customer_map = {}
+
+    # Load User Map
+    try:
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        print("⚠️ user_map.json not found, clerk_user_id will be NULL")
+        user_map = {}
 
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
@@ -43,8 +50,9 @@ def migrate_pawn_payments():
         print("Fetching Pawn Payments (pawn table where PAIDAMT > 0)...")
         # Source from pawn table
         # We need ticket (PWN_id), Customer (CUS_FK), Amount (PAIDAMT), Date (PdDate or DATEOUT)
+        # Added LastUpdatedUSR_ID for clerk mapping
         query = """
-            SELECT PWN_id, CUS_FK, PAIDAMT, PawnAMT, PdDate, DATEOUT, TICKETNUM 
+            SELECT PWN_id, CUS_FK, PAIDAMT, PawnAMT, PdDate, DATEOUT, TICKETNUM, LastUpdatedUSR_ID, usr_fk
             FROM dbo.pawn 
             WHERE PAIDAMT > 0 AND DATEIN > '1980-01-01'
         """
@@ -100,10 +108,24 @@ def migrate_pawn_payments():
                 customer_id = customer_map.get(customer_pk)
                 # If no customer, store_transaction.customer_id can be NULL
                 
+                # Clerk / User Mapping
+                clerk_id = None
+                legacy_user_uuid = str(row.get('LastUpdatedUSR_ID')) if row.get('LastUpdatedUSR_ID') else None
+                legacy_user_int = str(row.get('usr_fk')) if row.get('usr_fk') else None
+                
+                # Try UUID map first (user_map has both)
+                if legacy_user_uuid:
+                    clerk_id = user_map.get(legacy_user_uuid)
+                
+                # Fallback to int map
+                if not clerk_id and legacy_user_int:
+                    clerk_id = user_map.get(legacy_user_int)
+
                 # 2. Store Transaction (Header)
                 batch_tx.append((
                     tx_id,
                     customer_id,
+                    clerk_id, # clerk_user_id
                     REDEMPTION_ID,
                     payment_date,
                     amount, 
@@ -120,6 +142,7 @@ def migrate_pawn_payments():
                     interest_paid,
                     principal_paid,
                     0, # Fees (included in principal/interest for now or separate if we had data)
+                    clerk_id, # clerk_user_id
                     None # Note
                 ))
                 
@@ -173,7 +196,7 @@ def _flush_batches(cursor, txs, payments, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, customer_id, type_id, occurred_at, amount, tax_sales, note
+                id, customer_id, clerk_user_id, type_id, occurred_at, amount, tax_sales, note
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     
@@ -194,7 +217,7 @@ def _flush_batches(cursor, txs, payments, tenders):
          execute_values(cursor, """
             INSERT INTO pawn_ticket_payment (
                 id, pawn_ticket_id, store_transaction_id, payment_date, 
-                interest_paid, principal_paid, fees_paid, note
+                interest_paid, principal_paid, fees_paid, clerk_user_id, note
             ) VALUES %s ON CONFLICT DO NOTHING
         """, payments)
         
