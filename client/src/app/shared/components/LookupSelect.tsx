@@ -4,7 +4,7 @@ import type { LookupTypeName } from '@/app/shared/types/lookup';
 
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
-  readonly value: string;
+  readonly value: string | undefined;
   readonly onChange: (value: string) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
@@ -33,7 +33,7 @@ export function LookupSelect({
   }
 
   return (
-    <Select value={value} onValueChange={onChange} required={required} disabled={disabled}>
+    <Select value={value ?? ''} onValueChange={onChange} required={required} disabled={disabled}>
       <SelectTrigger className={`h-8 text-xs ${className}`}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

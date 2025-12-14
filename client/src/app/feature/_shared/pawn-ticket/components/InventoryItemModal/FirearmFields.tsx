@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FIREARM_CALIBERS, FIREARM_ACTIONS } from '@/app/shared/constants/firearms';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
 import { InventoryItemDraft } from './types';
 
 interface FirearmFieldsProps {
@@ -15,34 +15,24 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Caliber</Label>
-        <Select value={draft.caliber?.toUpperCase() || ''} onValueChange={(value) => updateField('caliber', value)} disabled={disabled}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="SELECT CALIBER..." />
-          </SelectTrigger>
-          <SelectContent>
-            {FIREARM_CALIBERS.map(caliber => (
-              <SelectItem key={caliber} value={caliber.toUpperCase()} className="text-xs">
-                {caliber}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LookupSelect
+          typeName={LookupTypeName.CALIBER}
+          value={draft.caliber?.toUpperCase() || ''}
+          onChange={(value) => updateField('caliber', value)}
+          placeholder="SELECT CALIBER..."
+          disabled={disabled}
+        />
       </div>
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Action</Label>
-        <Select value={draft.action?.toUpperCase() || ''} onValueChange={(value) => updateField('action', value)} disabled={disabled}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="SELECT ACTION..." />
-          </SelectTrigger>
-          <SelectContent>
-            {FIREARM_ACTIONS.map(action => (
-              <SelectItem key={action} value={action.toUpperCase()} className="text-xs">
-                {action}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LookupSelect
+          typeName={LookupTypeName.ACTION}
+          value={draft.action?.toUpperCase() || ''}
+          onChange={(value) => updateField('action', value)}
+          placeholder="SELECT ACTION..."
+          disabled={disabled}
+        />
       </div>
 
       <div className="space-y-1 col-span-3">
