@@ -16,7 +16,7 @@ export const createCustomerRequestSchema = z.object({
 
   phoneNumber: z.string().optional().nullable(),
   cellPhone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email().optional().or(z.literal("")).nullable(),
 
   height: z.string().optional().nullable(),
   weight: z.string().optional().nullable(),
