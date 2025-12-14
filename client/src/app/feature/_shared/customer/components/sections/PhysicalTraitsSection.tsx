@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerRecord } from '../../mappers';
-import { HAIR_COLORS, RACES, EYE_COLORS } from '../../constants/customerConstants';
 import { StateSelect } from '@/app/shared/components/StateSelect';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
 
 interface PhysicalTraitsSectionProps {
   readonly sex?: string | null;
@@ -70,37 +71,34 @@ export const PhysicalTraitsSection = memo(function PhysicalTraitsSection({
         </Field>
         <Field>
           <FieldLabel>Hair Color</FieldLabel>
-          <Select value={hairColor || undefined} onValueChange={(value) => update('hairColor', value)} disabled={!editing}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select color" />
-            </SelectTrigger>
-            <SelectContent>
-              {HAIR_COLORS.map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.HAIR}
+            value={hairColor || ''}
+            onChange={(value) => update('hairColor', value)}
+            placeholder="Select color"
+            disabled={!editing}
+          />
         </Field>
         <Field>
           <FieldLabel>Eye Color</FieldLabel>
-          <Select value={eyeColor || undefined} onValueChange={(value) => update('eyeColor', value)} disabled={!editing}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select color" />
-            </SelectTrigger>
-            <SelectContent>
-              {EYE_COLORS.map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.EYES}
+            value={eyeColor || ''}
+            onChange={(value) => update('eyeColor', value)}
+            placeholder="Select color"
+            disabled={!editing}
+          />
         </Field>
 
         <Field>
           <FieldLabel>Race</FieldLabel>
-          <Select value={race || undefined} onValueChange={(value) => update('race', value)} disabled={!editing}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select race" />
-            </SelectTrigger>
-            <SelectContent>
-              {RACES.map(race => <SelectItem key={race} value={race}>{race}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.RACE}
+            value={race || ''}
+            onChange={(value) => update('race', value)}
+            placeholder="Select race"
+            disabled={!editing}
+          />
         </Field>
         <Field>
           <FieldLabel>Birth City</FieldLabel>
