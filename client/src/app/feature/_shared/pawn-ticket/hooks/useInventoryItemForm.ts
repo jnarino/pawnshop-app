@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
-import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
 
@@ -112,8 +111,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const isFirearm = categoryName.includes('firearm');
   const isRing = isJewelry && (categoryName.includes('ring') || (draft.subcategoryName?.toLowerCase().includes('ring') ?? false));
 
-  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
-
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
@@ -205,22 +202,8 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
 
   // Auto-fill karat when metal changes
   const handleMetalChange = useCallback((metal: string) => {
-    if (!metal) {
-      updateField('metal', '');
-      updateField('karat', '');
-      return;
-    }
-
-    const metalKey = metal as keyof typeof KARAT_OPTIONS_BY_METAL;
-    const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
-    
-    updateField('metal', metal.toUpperCase());
-    
-    if (karatOptions.length > 0) {
-      updateField('karat', karatOptions[0]);
-    } else {
-      updateField('karat', '');
-    }
+    updateField('metal', metal ? metal.toUpperCase() : '');
+    updateField('karat', '');
   }, [updateField]);
 
   return {
@@ -235,7 +218,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     isJewelry,
     isFirearm,
     isRing,
-    karatOptions,
     updateField,
     handleCategoryChange,
     handleSubcategoryChange,

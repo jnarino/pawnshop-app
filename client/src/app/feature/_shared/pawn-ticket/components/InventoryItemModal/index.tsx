@@ -41,7 +41,6 @@ export function InventoryItemModal({ mode = 'CREATE', open, initial, onCancel, o
     isJewelry,
     isFirearm,
     isRing,
-    karatOptions,
     updateField,
     handleCategoryChange,
     handleSubcategoryChange,
@@ -92,7 +91,6 @@ export function InventoryItemModal({ mode = 'CREATE', open, initial, onCancel, o
                 draft={draft}
                 updateField={updateField}
                 handleMetalChange={handleMetalChange}
-                karatOptions={karatOptions}
                 isRing={isRing}
                 styleOptions={brands}
                 disabled={isViewMode}
