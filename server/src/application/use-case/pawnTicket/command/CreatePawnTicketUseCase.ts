@@ -8,6 +8,15 @@ import {
 import { PawnTicketMapper } from '../../../mapping/pawnTicket/pawnTicketMapper';
 import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketResponseDto';
 
+/**
+ * INTERNAL USE ONLY
+ * 
+ * This use case is called internally by CreatePawnTicketWithItemsUseCase within a transaction.
+ * It should NEVER be exposed directly via a controller or route.
+ * 
+ * Business Rule: All pawn tickets MUST have at least one item.
+ * This validation is enforced by CreatePawnTicketWithItemsUseCase before calling this use case.
+ */
 export class CreatePawnTicketUseCase {
   constructor(
     private readonly pawnTicketRepository: PawnTicketRepository

@@ -22,11 +22,9 @@ export class PawnTicketController {
      *
      * Body:
      * {
-     *   "pawn": { ...pawn fields, without itemIds },
-     *   "items": [ { ...inventory item create DTO } ],   // optional
-     *   "itemIds": [ "existing-item-uuid" ]              // optional
+     *   "pawn": { ...pawn fields },
+     *   "items": [ { ...inventory item create DTO } ]  // required, min 1 item
      * }
-     * At least one of items[] or itemIds[] is required.
      */
     create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {

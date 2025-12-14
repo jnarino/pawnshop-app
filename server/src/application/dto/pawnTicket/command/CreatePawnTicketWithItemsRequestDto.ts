@@ -21,11 +21,8 @@ export const createPawnTicketWithItemsRequestSchema = z
   .object({
     pawn: pawnCoreSchema,
 
-    // Items that will be CREATED inside the pawn transaction (REQUIRED)
-    items: z.array(createInventoryItemRequestSchema).min(1),
-
-    // Items that ALREADY exist in inventory and will just be linked (optional)
-    itemIds: z.array(z.string().uuid()).optional(),
+    // Items that will be CREATED inside the pawn transaction (required, min 1)
+    items: z.array(createInventoryItemRequestSchema).min(1, 'At least one item must be provided'),
   });
 
 export type CreatePawnTicketWithItemsRequestDto = z.infer<
