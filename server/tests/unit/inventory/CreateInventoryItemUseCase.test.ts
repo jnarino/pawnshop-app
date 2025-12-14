@@ -13,6 +13,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
 
 describe('CreateInventoryItemUseCase', () => {
   const validSubcategoryId = '550e8400-e29b-41d4-a716-446655440000';
+  const validBrandId = '550e8400-e29b-41d4-a716-446655440001';
 
   it('should create an inventory item with required fields', async () => {
     const repo = new MockInventoryItemRepository();
@@ -20,6 +21,8 @@ describe('CreateInventoryItemUseCase', () => {
 
     const result = await useCase.execute({
       inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 100,
       status: 'I',
       quantity: 1
     });
@@ -38,7 +41,7 @@ describe('CreateInventoryItemUseCase', () => {
       inventorySubcategoryId: validSubcategoryId,
       status: 'I',
       quantity: 1,
-      brand: 'Apple',
+      brand: validBrandId,
       model: 'iPhone 13',
       serialNumber: 'ABC123456',
       itemDescription: 'Mint condition',
@@ -47,7 +50,7 @@ describe('CreateInventoryItemUseCase', () => {
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.brand?.id).toBe('Apple');
+    expect(result.brand?.id).toBe(validBrandId);
     expect(result.model).toBe('iPhone 13');
     expect(result.serialNumber).toBe('ABC123456');
   });
@@ -58,6 +61,8 @@ describe('CreateInventoryItemUseCase', () => {
 
     const result = await useCase.execute({
       inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 200,
       status: 'I',
       quantity: 1,
       extra: { custom: 'value' },

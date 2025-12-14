@@ -21,21 +21,12 @@ export const createPawnTicketWithItemsRequestSchema = z
   .object({
     pawn: pawnCoreSchema,
 
-    // Items that will be CREATED inside the pawn transaction
-    items: z.array(createInventoryItemRequestSchema).optional(),
+    // Items that will be CREATED inside the pawn transaction (REQUIRED)
+    items: z.array(createInventoryItemRequestSchema).min(1),
 
-    // Items that ALREADY exist in inventory and will just be linked
+    // Items that ALREADY exist in inventory and will just be linked (optional)
     itemIds: z.array(z.string().uuid()).optional(),
-  })
-  .refine(
-    (value) =>
-      (Array.isArray(value.items) && value.items.length > 0) ||
-      (Array.isArray(value.itemIds) && value.itemIds.length > 0),
-    {
-      message: 'At least one new item or existing itemId must be provided',
-      path: ['items'],
-    }
-  );
+  });
 
 export type CreatePawnTicketWithItemsRequestDto = z.infer<
   typeof createPawnTicketWithItemsRequestSchema

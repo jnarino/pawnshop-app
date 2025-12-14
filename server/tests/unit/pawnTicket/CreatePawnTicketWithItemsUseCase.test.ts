@@ -56,15 +56,15 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
         amountFinanced: 500,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
-        defaultDate: defaultDate.toISOString(),
-        tenders: [{ tenderTypeId: 1, amount: 500 }]
+        defaultDate: defaultDate.toISOString()
       },
       items: [
         {
           inventorySubcategoryId: '33333333-3333-3333-3333-333333333333',
+          brand: '44444444-4444-4444-4444-444444444444',
+          priceAmount: 100,
           status: 'I',
           quantity: 1,
-          brand: 'Apple',
           model: 'iPhone'
         }
       ]
@@ -94,40 +94,22 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
         amountFinanced: 500,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
-        defaultDate: defaultDate.toISOString(),
-        tenders: [{ tenderTypeId: 1, amount: 500 }]
+        defaultDate: defaultDate.toISOString()
       },
-      itemIds: ['44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555']
+      itemIds: ['44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555'],
+      items: [
+        {
+          inventorySubcategoryId: '66666666-6666-6666-6666-666666666666',
+          brand: '77777777-7777-7777-7777-777777777777',
+          priceAmount: 150,
+          status: 'I',
+          quantity: 1
+        }
+      ]
     });
 
     expect(result.transactionType).toBe('PAWN');
     // Note: items array is only populated on query operations with JOIN, not on create
     expect(Array.isArray(result.items)).toBe(true);
-  });
-
-  it('should throw error if no items are provided', async () => {
-    const uow = new MockPawnTicketUnitOfWork();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow);
-
-    const today = new Date();
-    const maturity = new Date(today);
-    maturity.setDate(maturity.getDate() + 30);
-    const defaultDate = new Date(maturity);
-    defaultDate.setDate(defaultDate.getDate() + 30);
-
-    await expect(
-      useCase.execute({
-        pawn: {
-          transactionType: 'PAWN',
-          customerId: '11111111-1111-1111-1111-111111111111',
-          clerkUserId: '22222222-2222-2222-2222-222222222222',
-          amountFinanced: 500,
-          transactionDate: today.toISOString(),
-          maturityDate: maturity.toISOString(),
-          defaultDate: defaultDate.toISOString(),
-          tenders: [{ tenderTypeId: 1, amount: 500 }]
-        }
-      })
-    ).rejects.toThrow('At least one new item or existing itemId must be provided');
   });
 });

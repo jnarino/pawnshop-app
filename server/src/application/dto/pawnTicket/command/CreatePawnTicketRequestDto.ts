@@ -4,7 +4,7 @@ export const pawnTransactionTypeSchema = z.enum(['PAWN', 'PURCHASE']);
 
 export const tenderSchema = z.object({
   tenderTypeId: z.number().int().positive(), // References tender_type.id
-  amount: z.number().nonnegative()
+  amount: z.number() // Can be negative for cash out to customer, positive for cash in
 });
 
 export const createPawnTicketRequestSchema = z
@@ -32,8 +32,8 @@ export const createPawnTicketRequestSchema = z
     // At least one item
     itemIds: z.array(z.string().uuid()).min(1),
 
-    // Tender information (how customer received/paid money)
-    tenders: z.array(tenderSchema).min(1),
+    // Tender information (optional, will be auto-generated if not provided)
+    tenders: z.array(tenderSchema).optional(),
 
     // Note for the transaction
     note: z.string().optional()

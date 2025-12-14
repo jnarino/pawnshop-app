@@ -48,10 +48,18 @@ export class CreatePawnTicketWithItemsUseCase {
                     throw new Error('Pawn ticket must have at least one linked item');
                 }
 
-                // 2) Now call the existing pawn-ticket creation use-case
+                // 2) Auto-generate tenders: always cash (tender type 1) with negative amountFinanced
+                const amountFinanced = Number(pawn.amountFinanced) || 0;
+                const tenders = [{
+                    tenderTypeId: 1, // Cash
+                    amount: -Math.abs(amountFinanced) // Always negative (cash out to customer)
+                }];
+
+                // 3) Now call the existing pawn-ticket creation use-case
                 const pawnInput = {
                     ...pawn,
                     itemIds: allItemIds,
+                    tenders
                 };
 
                 const pawnTicket = await createPawnTicketUseCase.execute(pawnInput);

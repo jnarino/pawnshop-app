@@ -56,7 +56,7 @@ export class CreatePawnTicketUseCase {
 
       pawnStatus: 'active',
       itemIds: dto.itemIds,
-      tenders: dto.tenders,
+      tenders: dto.tenders || [],
       note: dto.note
     });
 
