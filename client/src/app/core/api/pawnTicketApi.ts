@@ -18,7 +18,7 @@ export interface PawnData {
 }
 
 export interface PawnItem {
-  categoryId: string;
+  inventorySubcategoryId: string;
   status: string;
   quantity: number;
   priceAmount: number;

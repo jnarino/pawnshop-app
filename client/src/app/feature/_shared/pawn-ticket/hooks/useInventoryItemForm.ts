@@ -114,7 +114,9 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
-    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber' && field !== 'type' && field !== 'metal' && field !== 'karat') {
+    // Don't uppercase IDs, description, or fields that store lookup IDs
+    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action'];
+    if (typeof value === 'string' && !noUppercaseFields.includes(field)) {
       processedValue = value.toUpperCase();
     }
     
@@ -202,7 +204,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
 
   // Auto-fill karat when metal changes
   const handleMetalChange = useCallback((metal: string) => {
-    updateField('metal', metal ? metal.toUpperCase() : '');
+    updateField('metal', metal || '');
     updateField('karat', '');
   }, [updateField]);
 

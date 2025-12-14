@@ -39,7 +39,7 @@ export function LookupSelect({
       </SelectTrigger>
       <SelectContent>
         {options.map(opt => (
-          <SelectItem key={opt.id} value={opt.value} className="text-xs">
+          <SelectItem key={opt.id} value={opt.id} className="text-xs">
             {opt.value}
           </SelectItem>
         ))}
