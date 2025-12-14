@@ -2,7 +2,7 @@ UPDATE inventory_item
 SET
   inventory_subcategory_id    = $2,
   status                      = $3,
-  brand                       = $4,
+  inventory_brand_id          = $4,
   model                       = $5,
   serial_number               = $6,
   color_id                    = $7,

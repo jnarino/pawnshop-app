@@ -23,7 +23,7 @@ function mapRowToInventoryItem(row: any): InventoryItem {
         status: row.status,
         quantity: row.quantity,
 
-        brand: row.brand,
+        brand: row.inventory_brand_id,
         model: row.model,
         serialNumber: row.serial_number,
         colorId: row.color_id,

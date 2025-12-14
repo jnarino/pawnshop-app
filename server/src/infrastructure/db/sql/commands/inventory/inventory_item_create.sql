@@ -3,7 +3,7 @@ INSERT INTO
         id,
         inventory_subcategory_id,
         status,
-        brand,
+        inventory_brand_id,
         model,
         serial_number,
         color_id,
