@@ -161,7 +161,9 @@ def migrate_transactions():
                             0, # Interest
                             amount, # Principal (Assume all principal for now, or total)
                             0,
-                            f"Legacy Acct Link: {ticket_num}"
+                            clerk_id, # clerk_user_id
+                            f"Legacy Acct Link: {ticket_num}",
+                            occurred_at # created_at = payment_date
                         ))
 
                 if len(batch_tx) >= batch_size:
@@ -204,7 +206,7 @@ def _flush_batches(cursor, txs, tenders, payments):
     if payments:
         execute_values(cursor, """
             INSERT INTO pawn_ticket_payment (
-                id, pawn_ticket_id, store_transaction_id, payment_date, interest_paid, principal_paid, fees_paid, note
+                id, pawn_ticket_id, store_transaction_id, payment_date, interest_paid, principal_paid, fees_paid, clerk_user_id, note, created_at
             ) VALUES %s ON CONFLICT DO NOTHING
         """, payments)
 

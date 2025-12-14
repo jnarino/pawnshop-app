@@ -398,9 +398,7 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 -- Seed Statuses
 INSERT INTO pawn_ticket_status (status, description, transaction_type, is_active) VALUES
   -- PAWN statuses
-  ('0', 'Active', 'PAWN', true),
-  ('1', 'Active', 'PAWN', true),
-  ('U', 'Active', 'PAWN', true),
+  ('U', 'Redeem', 'PAWN', true),
   ('R', 'Redeemed', 'PAWN', false),
   ('D', 'Defaulted', 'PAWN', false),
   ('H', 'Police Hold', 'PAWN', true),
@@ -409,8 +407,8 @@ INSERT INTO pawn_ticket_status (status, description, transaction_type, is_active
   ('P', 'Pawn', 'PAWN', true), 
   
   -- PURCHASE statuses
-  ('B', 'Active', 'PURCHASE', true),
-  ('I', 'Active', 'PURCHASE', true),
+  ('B', 'Buy', 'PURCHASE', true),
+  ('I', 'Inventory', 'PURCHASE', true),
   ('V', 'Voided', 'PURCHASE', false),
   ('H', 'Police Hold', 'PURCHASE', true),
   ('C', 'Confiscation', 'PURCHASE', false)

@@ -154,7 +154,6 @@ def migrate_pawn_tickets():
                      # Try to map common legacy variations to our seeded codes:
                      # e.g. if '0' is missing but 'U' exists, or vice versa
                      fallback_map = {
-                         '0': 'U', '1': 'U', 
                          'A': 'U', # Maybe A is Active?
                          'I': 'B' if transaction_type == 'PURCHASE' else 'U' 
                      }
