@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/app/core/redux/store';
 import { fetchAttributeTypes } from '@/app/core/redux/lookupSlice';
+import { isAuthenticated } from '@/app/core/auth/authService';
 
 /**
  * Initializes item_attribute_types on app startup.
@@ -14,7 +15,8 @@ export function LookupInitializer({ children }: { readonly children: React.React
   const typesLoading = useSelector((state: RootState) => state.lookup.typesLoading);
 
   useEffect(() => {
-    if (!typesLoaded && !typesLoading) {
+    // Only fetch lookups if user is authenticated
+    if (!typesLoaded && !typesLoading && isAuthenticated()) {
       dispatch(fetchAttributeTypes());
     }
   }, [dispatch, typesLoaded, typesLoading]);
