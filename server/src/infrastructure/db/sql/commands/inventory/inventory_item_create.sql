@@ -6,7 +6,7 @@ INSERT INTO
         inventory_brand_id,
         model,
         serial_number,
-        color_id,
+        color,
         item_condition,
         quantity,
         price_amount,

@@ -26,7 +26,7 @@ function mapRowToInventoryItem(row: any): InventoryItem {
         brand: row.inventory_brand_id,
         model: row.model,
         serialNumber: row.serial_number,
-        colorId: row.color_id,
+        colorId: row.color,
         itemCondition: row.item_condition,
         ownerMark: row.owner_mark,
         itemDescription: row.item_description,

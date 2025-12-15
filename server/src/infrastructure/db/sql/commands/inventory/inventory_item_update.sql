@@ -5,7 +5,7 @@ SET
   inventory_brand_id          = $4,
   model                       = $5,
   serial_number               = $6,
-  color_id                    = $7,
+  color                       = $7,
   item_condition              = $8,
   quantity                    = $9,
   price_amount                = $10,
