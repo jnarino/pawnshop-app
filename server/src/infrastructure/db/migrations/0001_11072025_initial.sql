@@ -424,6 +424,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   customer_id UUID NOT NULL REFERENCES customer(id) ON DELETE RESTRICT,
 
   amount_financed NUMERIC(12,2),
+  original_pawn_amount NUMERIC(12,2),
   finance_charge NUMERIC(12,2),
   periodic_rate NUMERIC(6,4),
   total_of_payments NUMERIC(12,2),
@@ -455,8 +456,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
 
   CONSTRAINT pawn_ticket_amount_consistency CHECK (
     (transaction_type = 'PAWN'
-      AND amount_financed IS NOT NULL AND finance_charge IS NOT NULL
-      AND periodic_rate IS NOT NULL AND total_of_payments IS NOT NULL AND apr IS NOT NULL
+      AND amount_financed IS NOT NULL AND periodic_rate IS NOT NULL
       AND purchase_trade_value IS NULL)
     OR
     (transaction_type = 'PURCHASE'

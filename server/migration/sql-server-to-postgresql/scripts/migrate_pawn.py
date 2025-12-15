@@ -4,6 +4,7 @@ from psycopg2.extras import execute_values
 import json
 import uuid
 import os
+import re
 from tqdm import tqdm
 from datetime import datetime, timedelta
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
@@ -174,6 +175,7 @@ def migrate_pawn_tickets():
 
                 # Financial fields - use PawnAMT not AMOUNT
                 amount_financed = float(row.get('PawnAMT', 0)) if row.get('PawnAMT') else 0.0
+                original_pawn_amount = float(row.get('StartPawnAmt', 0)) if row.get('StartPawnAmt') else None
                 
                 # Skip if missing critical financial data for PAWN
                 if amount_financed == 0:
@@ -223,18 +225,30 @@ def migrate_pawn_tickets():
                 if not maturity_date: maturity_date = transaction_date + timedelta(days=30)
                 if not default_date: default_date = maturity_date + timedelta(days=30)
                 
-                # APR and periodic rate (estimate if not provided)
-                periodic_rate = 0.25  # 25% default
-                apr = 300.00  # 300% APR default
+                # Extract periodic_rate and calculate APR from rateTable
+                rate_table_value = safe_str(row.get('RateTable'))
+                periodic_rate = None
+                apr = None
                 
-                # Calculate total of payments
-                total_of_payments = amount_financed + (finance_charge or 0.0)
+                if rate_table_value:
+                    # Extract percentage from strings like "FLAT 25%"
+                    match = re.search(r'FLAT\s+(\d+(?:\.\d+)?)%', rate_table_value, re.IGNORECASE)
+                    if match:
+                        percentage = float(match.group(1))
+                        periodic_rate = percentage / 100  # e.g., 25 -> 0.25
+                        # APR = (periodic_rate / 30) * 365 * 100
+                        apr = (periodic_rate / 30) * 365 * 100
+                
+                               
+                # Map total_of_payments from PAIDAMT
+                total_of_payments = float(row.get('PAIDAMT', 0)) if row.get('PAIDAMT') else None
                 
                 purchase_trade_value = None
                 
                 if transaction_type == 'PURCHASE':
                     purchase_trade_value = amount_financed
                     amount_financed = None
+                    original_pawn_amount = None
                     finance_charge = None
                     periodic_rate = None
                     apr = None
@@ -246,6 +260,7 @@ def migrate_pawn_tickets():
                     transaction_type,
                     customer_id,
                     amount_financed,
+                    original_pawn_amount,
                     finance_charge,
                     periodic_rate,
                     total_of_payments,
@@ -330,7 +345,7 @@ def _insert_batch(cursor, data, items_data):
     sql = """
         INSERT INTO pawn_ticket (
             id, control_number, transaction_type, customer_id,
-            amount_financed, finance_charge, periodic_rate, total_of_payments, apr,
+            amount_financed, original_pawn_amount, finance_charge, periodic_rate, total_of_payments, apr,
             purchase_trade_value,
             transaction_date, maturity_date, default_date,
             rate_plan_id, paid_through_date, next_charge_date, interest_credit,

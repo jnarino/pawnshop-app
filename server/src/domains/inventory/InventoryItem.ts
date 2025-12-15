@@ -16,7 +16,7 @@ export class InventoryItem {
   readonly id: string;
 
   // Required
-  categoryId: string;
+  inventorySubcategoryId: string;
   status: InventoryStatusCode;
   quantity: number;
 
@@ -55,7 +55,7 @@ export class InventoryItem {
   constructor(params: {
     id: string;
 
-    categoryId: string;
+    inventorySubcategoryId: string;
     status: InventoryStatusCode;
     quantity: number;
 
@@ -88,7 +88,7 @@ export class InventoryItem {
   }) {
     this.id = params.id;
 
-    this.categoryId = params.categoryId;
+    this.inventorySubcategoryId = params.inventorySubcategoryId;
     this.status = params.status;
     this.quantity = params.quantity;
 

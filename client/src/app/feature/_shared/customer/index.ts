@@ -1,6 +1,6 @@
 // Main component
 export { default as CustomerManager } from './components/CustomerManager';
-export type { CustomerManagerProps, CustomerPickerRef } from './components/CustomerManager';
+export type { CustomerManagerProps } from './components/CustomerManager';
 
 // Individual components (for advanced use cases)
 export { default as CustomerPicker } from './components/CustomerPicker';
@@ -24,9 +24,6 @@ export { CustomerDTOSchema, toCustomer, toCustomers } from './types';
 // Mappers
 export type { CustomerRecord } from './mappers';
 export { dtoToRecord, recordToDto, apiToRecordLoose } from './mappers';
-
-// Constants
-export * from './constants/customerConstants';
 
 // Hooks (for advanced customization)
 export { useCustomerForm } from './hooks/useCustomerForm';

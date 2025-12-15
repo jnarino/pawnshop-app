@@ -27,7 +27,7 @@ describe('GetInventoryItemByIdUseCase', () => {
     const repo = new MockInventoryItemRepository();
     const item = new InventoryItem({
       id: '123',
-      categoryId: 'cat-123',
+      inventorySubcategoryId: 'cat-123',
       status: 'I',
       quantity: 1,
       brand: 'Apple',
@@ -42,7 +42,7 @@ describe('GetInventoryItemByIdUseCase', () => {
     const result = await useCase.execute({ id: '123' });
 
     expect(repo.findById).toHaveBeenCalledWith('123');
-    expect(result.brand).toBe('Apple');
+    expect(result.brand?.id).toBe('Apple');
     expect(result.model).toBe('iPhone');
   });
 });

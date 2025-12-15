@@ -1,18 +1,11 @@
 import { useState } from 'react';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
+import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
 
 export type TabKey = 'customer' | 'additional' | 'viewPawn' | 'locatePawns' | 'makePayment';
 
-export interface SelectedPawnTicket {
-  id: string;
-  controlNumber: string;
-  type: 'PAWN' | 'PURCHASE';
-  amountFinanced?: number;
+export interface SelectedPawnTicket extends PawnTicketData {
   totalOfPayments?: number;
-  maturityDate: string;
-  defaultDate: string;
-  pawnStatus: string;
-  items: any[];
   payments?: any[];
 }
 

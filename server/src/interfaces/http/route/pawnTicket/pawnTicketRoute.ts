@@ -133,5 +133,47 @@ export function createPawnTicketRouter(
      */
     router.get('/customer/:customerId/active', auth, controller.listActiveByCustomer);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/{pawnTicketId}/payments:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Get all payments for a pawn ticket
+     *     description: Retrieve all payment records for a specific pawn ticket
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: pawnTicketId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Pawn ticket ID
+     *     responses:
+     *       200:
+     *         description: List of payments for the pawn ticket
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   pawnTicketId:
+     *                     type: string
+     *                   paymentDate:
+     *                     type: string
+     *                     format: date-time
+     *                   principalPaid:
+     *                     type: number
+     *                   clerkUserId:
+     *                     type: string
+     *                     nullable: true
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/:pawnTicketId/payments', auth, controller.getPayments);
+
     return router;
 }

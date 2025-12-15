@@ -14,20 +14,23 @@ class MockCustomerRepository implements CustomerRepository {
 }
 
 describe('GetCustomerByIdUseCase', () => {
+  const customerId = '550e8400-e29b-41d4-a716-446655440001';
+  const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+
   it('should throw NotFoundError if customer does not exist', async () => {
     const repo = new MockCustomerRepository();
     repo.findById.mockResolvedValue(null);
     const useCase = new GetCustomerByIdUseCase(repo);
 
     await expect(
-      useCase.execute({ id: '999' })
+      useCase.execute({ id: nonExistentId })
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('should return customer when found', async () => {
     const repo = new MockCustomerRepository();
     const customer = new Customer({
-      id: '123',
+      id: customerId,
       firstName: 'John',
       lastName: 'Doe',
       phoneNumber: '555-1234',
@@ -38,9 +41,9 @@ describe('GetCustomerByIdUseCase', () => {
 
     const useCase = new GetCustomerByIdUseCase(repo);
 
-    const result = await useCase.execute({ id: '123' });
+    const result = await useCase.execute({ id: customerId });
 
-    expect(repo.findById).toHaveBeenCalledWith('123');
+    expect(repo.findById).toHaveBeenCalledWith(customerId);
     expect(result.firstName).toBe('John');
     expect(result.lastName).toBe('Doe');
   });

@@ -73,8 +73,8 @@ export interface Customer {
   phoneNumber?: string | null;
   height?: string | null;
   weight?: string | null;
-  hairColor?: string | null;
-  eyeColor?: string | null;
+  hairColor?: string | null;  // Contains the UUID (hairColorId from server)
+  eyeColor?: string | null;   // Contains the UUID (eyeColorId from server)
   race?: string | null;
   sex?: string | null;
   marks?: string | null;

@@ -18,13 +18,6 @@ export class CreatePawnTicketWithItemsUseCase {
 
         const pawn = parsed.pawn;
         const items = parsed.items;
-        const itemIdsFromPayload = parsed.itemIds;
-
-        // Start with any existing item IDs that came in the payload
-        const allItemIds: string[] = [];
-        if (Array.isArray(itemIdsFromPayload)) {
-            allItemIds.push(...itemIdsFromPayload);
-        }
 
         // Everything below happens inside ONE DB transaction
         return this.pawnTicketUnitOfWork.runInTransaction(
@@ -36,22 +29,25 @@ export class CreatePawnTicketWithItemsUseCase {
                     pawnTicketRepository
                 );
 
-                // 1) Create new inventory items (if any) and add their IDs
-                if (Array.isArray(items) && items.length > 0) {
-                    for (const itemDto of items) {
-                        const createdItem = await createInventoryItemUseCase.execute(itemDto);
-                        allItemIds.push(createdItem.id);
-                    }
+                // 1) Create new inventory items and collect their IDs
+                const allItemIds: string[] = [];
+                for (const itemDto of items) {
+                    const createdItem = await createInventoryItemUseCase.execute(itemDto);
+                    allItemIds.push(createdItem.id);
                 }
 
-                if (allItemIds.length === 0) {
-                    throw new Error('Pawn ticket must have at least one linked item');
-                }
+                // 2) Auto-generate tenders: always cash (tender type 1) with negative amountFinanced
+                const amountFinanced = Number(pawn.amountFinanced) || 0;
+                const tenders = [{
+                    tenderTypeId: 1, // Cash
+                    amount: -Math.abs(amountFinanced) // Always negative (cash out to customer)
+                }];
 
-                // 2) Now call the existing pawn-ticket creation use-case
+                // 3) Now call the existing pawn-ticket creation use-case
                 const pawnInput = {
                     ...pawn,
                     itemIds: allItemIds,
+                    tenders
                 };
 
                 const pawnTicket = await createPawnTicketUseCase.execute(pawnInput);

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createInventoryItemRequestSchema = z.object({
-  categoryId: z.string().min(1, 'categoryId is required'),
+  inventorySubcategoryId: z.string().uuid('inventorySubcategoryId must be a valid UUID'),
 
   // Optional – default in DB is 'I'
   status: z.string().min(1).optional(),
@@ -12,7 +12,7 @@ export const createInventoryItemRequestSchema = z.object({
     .positive('quantity must be > 0')
     .optional(),
 
-  brand: z.string().optional(),
+  brand: z.string().uuid('brand must be a valid UUID'),
   model: z.string().optional(),
   serialNumber: z.string().optional(),
   colorId: z.string().optional(),
@@ -20,7 +20,7 @@ export const createInventoryItemRequestSchema = z.object({
   ownerMark: z.string().optional(),
   itemDescription: z.string().optional(),
 
-  priceAmount: z.number().nonnegative().optional(),
+  priceAmount: z.number().nonnegative('priceAmount must be >= 0'),
   resale: z.number().nonnegative().optional(),
   minResale: z.number().nonnegative().optional(),
   itemReplace: z.number().nonnegative().optional(),

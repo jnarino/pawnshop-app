@@ -1,17 +1,28 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
+import type { Customer } from '@/app/feature/_shared/customer';
+import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 
 export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'customerPerformance' | 'history';
 
+export interface PawnDraftState {
+  type: 'PAWN' | 'PURCHASE';
+  periodicRate: string;
+  transactionDate: string;
+  maturityDate: string;
+  expirationDate: string;
+  items: InventoryItemDraft[];
+}
+
 interface PawnWorkflowState {
-  // Current tab
   activeTab: TabKey;
-  
-  // Cancel modal state
+  customer: Customer | null;
+  setCustomer: (customer: Customer | null) => void;
+  pawnDraft: PawnDraftState;
+  updatePawnDraft: (updates: Partial<PawnDraftState>) => void;
+  resetPawnDraft: () => void;
   cancelModalOpen: boolean;
-  
-  // Actions
   setActiveTab: (tab: TabKey) => void;
   canNavigateToTab: (tab: TabKey) => boolean;
   openCancelModal: () => void;
@@ -21,42 +32,76 @@ interface PawnWorkflowState {
 
 const PawnWorkflowContext = createContext<PawnWorkflowState | null>(null);
 
+function createInitialDraft(): PawnDraftState {
+  const today = new Date();
+  const maturityDate = new Date(today);
+  maturityDate.setDate(maturityDate.getDate() + 30);
+  const expirationDate = new Date(today);
+  expirationDate.setDate(expirationDate.getDate() + 60);
+  
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  
+  return {
+    type: 'PAWN',
+    periodicRate: '25',
+    transactionDate: formatDate(today),
+    maturityDate: formatDate(maturityDate),
+    expirationDate: formatDate(expirationDate),
+    items: []
+  };
+}
+
 export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
   
   const navigate = useNavigate();
 
-  const canNavigateToTab = (tab: TabKey) => {
-    // All tabs are accessible now
-    return true;
-  };
+  const canNavigateToTab = useCallback((tab: TabKey) => {
+    if (tab === 'customer') return true;
+    return !!customer?.id;
+  }, [customer?.id]);
 
-  const openCancelModal = () => {
+  const updatePawnDraft = useCallback((updates: Partial<PawnDraftState>) => {
+    setPawnDraft(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const resetPawnDraft = useCallback(() => {
+    setPawnDraft(createInitialDraft());
+  }, []);
+
+  const openCancelModal = useCallback(() => {
     setCancelModalOpen(true);
-  };
+  }, []);
 
-  const closeCancelModal = () => {
+  const closeCancelModal = useCallback(() => {
     setCancelModalOpen(false);
-  };
+  }, []);
 
-  const confirmCancelTransaction = () => {
-    // Reset workflow state
+  const confirmCancelTransaction = useCallback(() => {
     setActiveTab('customer');
+    setCustomer(null);
+    setPawnDraft(createInitialDraft());
     setCancelModalOpen(false);
-    // Navigate back to home
     navigate('/', { replace: true });
-  };
+  }, [navigate]);
 
   const value = useMemo(() => ({
     activeTab,
+    customer,
+    setCustomer,
+    pawnDraft,
+    updatePawnDraft,
+    resetPawnDraft,
     cancelModalOpen,
     setActiveTab,
     canNavigateToTab,
     openCancelModal,
     closeCancelModal,
     confirmCancelTransaction
-  }), [activeTab, cancelModalOpen]);
+  }), [activeTab, customer, pawnDraft, cancelModalOpen, updatePawnDraft, resetPawnDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>
