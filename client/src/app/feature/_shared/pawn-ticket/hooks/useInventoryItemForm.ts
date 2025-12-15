@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
-import { KARAT_OPTIONS_BY_METAL } from '@/app/shared/constants/jewelry';
 import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
 
@@ -112,12 +111,12 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const isFirearm = categoryName.includes('firearm');
   const isRing = isJewelry && (categoryName.includes('ring') || (draft.subcategoryName?.toLowerCase().includes('ring') ?? false));
 
-  const karatOptions = draft.metal && KARAT_OPTIONS_BY_METAL[draft.metal.toLowerCase() as keyof typeof KARAT_OPTIONS_BY_METAL] || [];
-
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
     
-    if (typeof value === 'string' && field !== 'description' && field !== 'ownerNumber' && field !== 'type' && field !== 'metal' && field !== 'karat') {
+    // Don't uppercase IDs, description, or fields that store lookup IDs
+    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action'];
+    if (typeof value === 'string' && !noUppercaseFields.includes(field)) {
       processedValue = value.toUpperCase();
     }
     
@@ -205,22 +204,8 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
 
   // Auto-fill karat when metal changes
   const handleMetalChange = useCallback((metal: string) => {
-    if (!metal) {
-      updateField('metal', '');
-      updateField('karat', '');
-      return;
-    }
-
-    const metalKey = metal as keyof typeof KARAT_OPTIONS_BY_METAL;
-    const karatOptions = KARAT_OPTIONS_BY_METAL[metalKey] || [];
-    
-    updateField('metal', metal.toUpperCase());
-    
-    if (karatOptions.length > 0) {
-      updateField('karat', karatOptions[0]);
-    } else {
-      updateField('karat', '');
-    }
+    updateField('metal', metal || '');
+    updateField('karat', '');
   }, [updateField]);
 
   return {
@@ -235,7 +220,6 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     isJewelry,
     isFirearm,
     isRing,
-    karatOptions,
     updateField,
     handleCategoryChange,
     handleSubcategoryChange,

@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { CustomerRecord } from '../../mappers';
-import { ID_TYPES } from '../../constants/customerConstants';
 import { StateSelect } from '@/app/shared/components/StateSelect';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
 
 interface GovernmentIdSectionProps {
   readonly idType?: string | null;
@@ -41,14 +41,13 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
         <div className="flex gap-2 items-end">
           <Field className="flex-1">
             <FieldLabel>ID Type</FieldLabel>
-            <Select value={idType || undefined} onValueChange={(value) => update('idType', value)} disabled={!editing}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select ID type" />
-              </SelectTrigger>
-              <SelectContent>
-                {ID_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <LookupSelect
+              typeName={LookupTypeName.ID_TYPE}
+              value={idType || ''}
+              onChange={(value) => update('idType', value)}
+              placeholder="Select ID type"
+              disabled={!editing}
+            />
           </Field>
           <Field className="flex-[0.8]">
             <FieldLabel>ID Number</FieldLabel>

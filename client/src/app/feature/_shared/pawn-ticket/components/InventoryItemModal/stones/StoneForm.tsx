@@ -1,14 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
 import { Stone } from './types';
-
-const STONE_TYPES = ['Diamond', 'Ruby', 'Sapphire', 'Emerald', 'Pearl', 'Amethyst', 'Topaz', 'Opal', 'Onyx', 'Other'];
-const SHAPES = ['Round', 'Princess', 'Cushion', 'Oval', 'Emerald', 'Pear', 'Marquise', 'Radiant', 'Asscher', 'Heart'];
-const COLORS = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Fancy'];
-const CLARITIES = ['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1', 'I2', 'I3'];
 
 interface StoneFormProps {
   initialStone?: Stone | null;
@@ -73,30 +69,22 @@ export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) 
 
         <div className="space-y-1">
           <Label className="text-xs font-semibold">Type *</Label>
-          <Select value={formData.type} onValueChange={(v) => updateField('type', v)}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select type..." />
-            </SelectTrigger>
-            <SelectContent>
-              {STONE_TYPES.map(type => (
-                <SelectItem key={type} value={type} className="text-xs">{type}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.SHAPE}
+            value={formData.type}
+            onChange={(v) => updateField('type', v)}
+            placeholder="Select type..."
+          />
         </div>
 
         <div className="space-y-1">
           <Label className="text-xs font-semibold">Shape</Label>
-          <Select value={formData.shape} onValueChange={(v) => updateField('shape', v)}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select shape..." />
-            </SelectTrigger>
-            <SelectContent>
-              {SHAPES.map(shape => (
-                <SelectItem key={shape} value={shape} className="text-xs">{shape}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.SHAPE}
+            value={formData.shape}
+            onChange={(v) => updateField('shape', v)}
+            placeholder="Select shape..."
+          />
         </div>
 
         <div className="space-y-1">
@@ -113,16 +101,12 @@ export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) 
 
         <div className="space-y-1">
           <Label className="text-xs font-semibold">Color</Label>
-          <Select value={formData.color} onValueChange={(v) => updateField('color', v)}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select color..." />
-            </SelectTrigger>
-            <SelectContent>
-              {COLORS.map(color => (
-                <SelectItem key={color} value={color} className="text-xs">{color}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.COLOR}
+            value={formData.color}
+            onChange={(v) => updateField('color', v)}
+            placeholder="Select color..."
+          />
         </div>
 
         <div className="space-y-1">
@@ -163,16 +147,12 @@ export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) 
 
         <div className="space-y-1 col-span-2">
           <Label className="text-xs font-semibold">Clarity</Label>
-          <Select value={formData.clarity} onValueChange={(v) => updateField('clarity', v)}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select clarity..." />
-            </SelectTrigger>
-            <SelectContent>
-              {CLARITIES.map(clarity => (
-                <SelectItem key={clarity} value={clarity} className="text-xs">{clarity}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LookupSelect
+            typeName={LookupTypeName.CLARITY}
+            value={formData.clarity}
+            onChange={(v) => updateField('clarity', v)}
+            placeholder="Select clarity..."
+          />
         </div>
       </div>
 
