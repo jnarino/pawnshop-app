@@ -37,7 +37,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
         maturityDate: new Date(),
         defaultDate: new Date(),
         createdDate: new Date(),
-        pawnStatus: 'active',
+        pawnStatus: 'P',
         itemIds: [itemId],
         tenders: [{ tenderTypeId: 1, amount: 500 }]
       })
@@ -50,7 +50,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
 
     expect(repo.listActiveByCustomer).toHaveBeenCalledWith(customerId);
     expect(result).toHaveLength(1);
-    expect(result[0].pawnStatus).toBe('active');
+    expect(result[0].pawnStatus).toBe('P');
   });
 
   it('should return empty array when customer has no active tickets', async () => {

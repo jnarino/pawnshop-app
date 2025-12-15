@@ -30,7 +30,7 @@ describe('ListPawnTicketsByControlNumberUseCase', () => {
         maturityDate: new Date(),
         defaultDate: new Date(),
         createdDate: new Date(),
-        pawnStatus: 'active',
+        pawnStatus: 'P',
         itemIds: ['item-1'],
         tenders: [{ tenderTypeId: 1, amount: 500 }]
       })

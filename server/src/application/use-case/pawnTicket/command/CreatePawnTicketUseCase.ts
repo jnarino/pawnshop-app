@@ -30,6 +30,22 @@ export class CreatePawnTicketUseCase {
     const maturityDate = new Date(dto.maturityDate);
     const defaultDate = new Date(dto.defaultDate);
 
+    // Calculate finance values for PAWN transactions
+    let financeCharge: number | null = null;
+    let apr: number | null = null;
+
+    if (dto.transactionType === 'PAWN' && dto.amountFinanced && dto.periodicRate != null) {
+      // Calculate financeCharge from periodicRate
+      // financeCharge = amountFinanced * periodicRate
+      financeCharge = dto.amountFinanced * dto.periodicRate;
+
+      // Calculate APR from periodicRate
+      // APR = periodicRate * (365 / daysToMaturity) * 100
+      // Example: 25% (0.25) over 30 days = 0.25 * (365/30) * 100 = 304.17%
+      const daysToMaturity = Math.max(1, Math.floor((maturityDate.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)));
+      apr = dto.periodicRate * (365 / daysToMaturity) * 100;
+    }
+
     const ticket = new PawnTicket({
       id: randomUUID(),
 
@@ -45,13 +61,13 @@ export class CreatePawnTicketUseCase {
       amountFinanced:
         dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
       financeCharge:
-        dto.transactionType === 'PAWN' ? (dto.financeCharge ?? null) : null,
+        dto.transactionType === 'PAWN' ? financeCharge : null,
       periodicRate:
-        dto.transactionType === 'PAWN' ? (dto.periodicRate ?? null) : null,
+        dto.transactionType === 'PAWN' ? dto.periodicRate! : null,
       totalOfPayments:
         dto.transactionType === 'PAWN' ? (dto.totalOfPayments ?? null) : null,
       apr:
-        dto.transactionType === 'PAWN' ? (dto.apr ?? null) : null,
+        dto.transactionType === 'PAWN' ? apr : null,
       ratePlanId:
         dto.transactionType === 'PAWN' ? (dto.ratePlanId ?? null) : null,
 
@@ -63,7 +79,7 @@ export class CreatePawnTicketUseCase {
       defaultDate,
       createdDate: new Date(),
 
-      pawnStatus: 'active',
+      pawnStatus: dto.transactionType === 'PAWN' ? 'P' : 'B',  // P = Pawn, B = Buy/Purchase
       itemIds: dto.itemIds,
       tenders: dto.tenders || [],
       note: dto.note

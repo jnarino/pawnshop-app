@@ -3,12 +3,13 @@ import { InventoryItemResponseDto } from '../../inventory/InventoryItemResponseD
 export type PawnTransactionTypeDto = 'PAWN' | 'PURCHASE';
 
 export type PawnStatusDto =
-  | 'active'
-  | 'redeemed'
-  | 'defaulted'
-  | 'police hold'
-  | 'confiscation'
-  | 'voided';
+  | 'P'   // Pawn (active pawn)
+  | 'U'   // Redeemed
+  | 'D'   // Defaulted
+  | 'H'   // Police Hold
+  | 'C'   // Confiscation
+  | 'V'   // Voided
+  | 'B';  // Buy (purchase transaction)
 
 export interface TenderInfoDto {
   tenderTypeId: number;

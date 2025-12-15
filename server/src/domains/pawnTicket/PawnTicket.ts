@@ -3,12 +3,13 @@ import { InventoryItem } from '../inventory/InventoryItem';
 export type PawnTransactionType = 'PAWN' | 'PURCHASE';
 
 export type PawnStatus =
-  | 'active'
-  | 'redeemed'
-  | 'defaulted'
-  | 'police hold'
-  | 'confiscation'
-  | 'voided';
+  | 'P'   // Pawn (active pawn)
+  | 'U'   // Redeemed
+  | 'D'   // Defaulted
+  | 'H'   // Police Hold
+  | 'C'   // Confiscation
+  | 'V'   // Voided
+  | 'B';  // Buy (purchase transaction)
 
 export type TenderInfo = {
   tenderTypeId: number;

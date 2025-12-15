@@ -54,10 +54,8 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
         customerId: '11111111-1111-1111-1111-111111111111',
         clerkUserId: '22222222-2222-2222-2222-222222222222',
         amountFinanced: 500,
-        financeCharge: 75,
-        periodicRate: 0.15,
+        periodicRate: 0.15, // 15% - backend will calculate financeCharge = 500 * 0.15 = 75
         totalOfPayments: 575,
-        apr: 180,
         ratePlanId: 'aa111111-1111-1111-1111-111111111111',
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
@@ -77,7 +75,7 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
     expect(result.transactionType).toBe('PAWN');
     expect(result.amountFinanced).toBe(500);
-    expect(result.financeCharge).toBe(75);
+    expect(result.financeCharge).toBe(75); // Calculated by backend
     expect(result.periodicRate).toBe(0.15);
     // Note: items array is only populated on query operations with JOIN, not on create
     expect(Array.isArray(result.items)).toBe(true);

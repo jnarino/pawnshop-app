@@ -24,7 +24,17 @@
 -- $16 = tenders (jsonb array: [{tenderTypeId: number, amount: number}])
 -- $17 = note (text, nullable)
 
-WITH new_ticket AS (
+WITH status_lookup AS (
+  -- Get the appropriate status ID based on transaction type
+  SELECT id FROM pawn_ticket_status
+  WHERE status = CASE 
+    WHEN $2 = 'PAWN' THEN 'P'
+    WHEN $2 = 'PURCHASE' THEN 'B'
+    ELSE 'P'  -- Default to Pawn status
+  END
+  LIMIT 1
+),
+new_ticket AS (
   INSERT INTO pawn_ticket (
     id,
     control_number,
@@ -40,7 +50,8 @@ WITH new_ticket AS (
     transaction_date,
     maturity_date,
     default_date,
-    pawn_status
+    status_id,
+    created_by
   )
   VALUES (
     $1,                         -- id
@@ -57,7 +68,8 @@ WITH new_ticket AS (
     $12,                        -- transaction_date
     $13,                        -- maturity_date
     $14,                        -- default_date
-    'active'
+    (SELECT id FROM status_lookup),  -- status_id from lookup
+    $4                          -- created_by (clerk_user_id)
   )
   RETURNING
     id,
@@ -74,7 +86,9 @@ WITH new_ticket AS (
     transaction_date,
     maturity_date,
     default_date,
-    pawn_status
+    status_id,
+    created_by,
+    created_at
 ),
 insert_items AS (
   INSERT INTO pawn_ticket_item (pawn_ticket_id, inventory_item_id)
@@ -151,19 +165,24 @@ insert_payment AS (
   WHERE $2 = 'PAWN'  -- Only create payment record for PAWN transactions
 )
 SELECT
-  id,
-  control_number,
-  transaction_type,
-  customer_id,
-  amount_financed,
-  finance_charge,
-  periodic_rate,
-  total_of_payments,
-  apr,
-  rate_plan_id,
-  purchase_trade_value,
-  transaction_date,
-  maturity_date,
-  default_date,
-  pawn_status
-FROM new_ticket;
+  nt.id,
+  nt.control_number,
+  nt.transaction_type,
+  nt.customer_id,
+  nt.amount_financed,
+  nt.finance_charge,
+  nt.periodic_rate,
+  nt.total_of_payments,
+  nt.apr,
+  nt.rate_plan_id,
+  nt.purchase_trade_value,
+  nt.transaction_date,
+  nt.maturity_date,
+  nt.default_date,
+  nt.created_at,
+  nt.created_by AS clerk_user_id,
+  pts.status AS pawn_status,
+  COALESCE($15, ARRAY[]::uuid[]) AS item_ids,
+  COALESCE($16, '[]'::jsonb) AS tenders
+FROM new_ticket nt
+LEFT JOIN pawn_ticket_status pts ON pts.id = nt.status_id;

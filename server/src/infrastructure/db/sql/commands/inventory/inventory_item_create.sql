@@ -50,5 +50,6 @@ VALUES (
         $21, -- legacy_brand_color_description
         $22, -- inventory_number
         $23, -- last_updated_user_id
-        $24 -- created_at / updated_at (same as in domain)
+        $24, -- created_at
+        $25  -- updated_at
     ) RETURNING *;

@@ -47,6 +47,13 @@ export const createPawnTicketRequestSchema = z
           path: ['amountFinanced']
         });
       }
+      if (val.periodicRate == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'periodicRate is required for PAWN transactions',
+          path: ['periodicRate']
+        });
+      }
       if (val.purchaseTradeValue != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
