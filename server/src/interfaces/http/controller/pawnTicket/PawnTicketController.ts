@@ -28,7 +28,14 @@ export class PawnTicketController {
      */
     create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
-            const result = await this.createPawnTicketWithItemsUseCase.execute(req.body);
+            const payload = {
+                ...req.body,
+                pawn: {
+                    ...req.body.pawn,
+                    clerkUserId: req.user?.id,
+                },
+            };
+            const result = await this.createPawnTicketWithItemsUseCase.execute(payload);
             return res.status(201).json(result);
         } catch (err) {
             return next(err);

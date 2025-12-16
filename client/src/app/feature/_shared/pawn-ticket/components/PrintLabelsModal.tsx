@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,14 +22,17 @@ interface PrintLabelsModalProps {
 }
 
 export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel }: PrintLabelsModalProps) {
-  // Initialize label counts - default 1 label per item
-  const [labelCounts, setLabelCounts] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    items.forEach(item => {
-      initial[item.id] = 1;
-    });
-    return initial;
-  });
+  const [labelCounts, setLabelCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (open && items.length > 0) {
+      const initial: Record<string, number> = {};
+      items.forEach(item => {
+        initial[item.id] = 1;
+      });
+      setLabelCounts(initial);
+    }
+  }, [open, items]);
 
   const updateLabelCount = (itemId: string, count: number) => {
     setLabelCounts(prev => ({

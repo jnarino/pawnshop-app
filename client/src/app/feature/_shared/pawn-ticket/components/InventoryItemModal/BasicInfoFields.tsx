@@ -65,7 +65,9 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
 
       {brands.length > 0 && (
         <div className="space-y-1 col-span-3">
-          <Label className="text-xs font-semibold">Brand</Label>
+          <Label className="text-xs font-semibold">
+            Brand <span className="text-red-600">*</span>
+          </Label>
           <Select value={draft.brandId || ''} onValueChange={handleBrandChange} disabled={disabled}>
             <SelectTrigger className="h-8 text-xs uppercase">
               <SelectValue placeholder="SELECT BRAND..." />
