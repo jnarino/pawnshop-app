@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { PawnTicketForm, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
+import type { RootState } from '@/app/core/redux/store';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
@@ -14,6 +16,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
   const customerId = customer?.id;
+  const authenticatedUser = useSelector((state: RootState) => state.auth.user);
 
   const handleDraftChange = useCallback((draft: PawnFormDraftState) => {
     updatePawnDraft(draft);
@@ -44,8 +47,10 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
     const pawnData = removeNullish({
       customerId: customerId || formData.customerId,
       transactionType: formData.type,
+      clerkUserId: authenticatedUser?.id ? String(authenticatedUser.id) : undefined,
       amountFinanced: formData.type === 'PAWN' ? formData.amountFinanced : undefined,
       purchaseTradeValue: formData.type === 'PURCHASE' ? formData.purchaseTradeValue : undefined,
+      periodicRate: formData.periodicRate ? formData.periodicRate / 100 : undefined,
       transactionDate: toISOString(formData.transactionDate),
       maturityDate: toISOString(formData.maturityDate),
       defaultDate: toISOString(formData.expirationDate),
@@ -96,7 +101,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         onTicketCreated(ticketId);
       }
     }
-  }, [customerId, createTicket, onTicketCreated, resetPawnDraft]);
+  }, [customerId, createTicket, onTicketCreated, resetPawnDraft, authenticatedUser]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
