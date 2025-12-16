@@ -3,6 +3,7 @@
 // Print settings: Letter 8.5"x11", Scale 100%, Margins None/0, no "Fit to page".
 
 import templateDef from './templates/floridapawn.template.json';
+import JsBarcode from 'jsbarcode';
 
 /** ===== Types (self-contained) ===== */
 export type PrintResult = { success: true } | { success: false; error: string };
@@ -90,6 +91,7 @@ type TemplateField = {
     x: number;
     y: number;
     w?: number;
+    h?: number;     // height in mm (optional)
     size: number;
     uppercase?: boolean;
 };
@@ -131,6 +133,17 @@ const fmtMoney = (v?: string | number) => {
     return Number.isFinite(n) ? `$${n.toFixed(2)}` : '';
 };
 
+const formatPhone = (phone?: string) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+};
+
+// ... inside generateFillInHTML ...
+
 const parseMoney = (value?: string | number) => {
     if (value === undefined || value === null || value === '') return 0;
     const raw = typeof value === 'number' ? value.toString() : value;
@@ -139,9 +152,12 @@ const parseMoney = (value?: string | number) => {
 };
 
 const renderField = (field: TemplateField, value: string) => {
-    const text = field.uppercase ? value.toUpperCase() : value;
+    // If value contains HTML tags (like <img>), render as-is without escaping
+    const content = value.trim().startsWith('<') ? value : escapeHtml(field.uppercase ? value.toUpperCase() : value);
     const width = field.w ? `width:${field.w}mm;` : '';
-    return `<div class="tpl-field" style="left:${field.x}mm;top:${field.y}mm;${width}font-size:${field.size}pt;">${escapeHtml(text)}</div>`;
+    // ensure height is set for barcodes
+    const height = field.h ? `height:${field.h}mm;` : '';
+    return `<div class="tpl-field" style="left:${field.x}mm;top:${field.y}mm;${width}${height}font-size:${field.size}pt;">${content}</div>`;
 };
 
 const renderRepeater = (tpl: TemplateRepeater | undefined, rows: Record<string, string>[]) => {
@@ -177,10 +193,23 @@ const templateBackground = (() => {
 })();
 
 /** ===== Main Printer ===== */
+
 export class TransactionFormPrinter {
+    private generateBarcodeBase64(value: string): string {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, value, {
+            format: 'CODE128',
+            displayValue: false,
+            height: 40,
+            margin: 0,
+        });
+        return canvas.toDataURL('image/png');
+    }
+
     async print(data: TransactionPrintData): Promise<PrintResult> {
         try {
-            const html = this.generateFillInHTML(data);
+            const barcodeDataUrl = data.controlNumber ? this.generateBarcodeBase64(data.controlNumber) : '';
+            const html = this.generateFillInHTML(data, barcodeDataUrl);
             if (window.electronAPI?.printDocument) {
                 const raw = await window.electronAPI.printDocument(html);
                 return raw.success
@@ -216,7 +245,7 @@ export class TransactionFormPrinter {
         };
     }
 
-    private generateFillInHTML(data: TransactionPrintData): string {
+    private generateFillInHTML(data: TransactionPrintData, barcodeDataUrl?: string): string {
         if (!data || !Array.isArray(data.items)) {
             throw new Error('Invalid print data: items array required');
         }
@@ -246,6 +275,7 @@ export class TransactionFormPrinter {
             transactionDate: txnDate.toLocaleDateString(),
             transactionTime: timeStr,
             controlNumber: data.controlNumber ?? '',
+            controlNumberBarcode: barcodeDataUrl ? `<img src="${barcodeDataUrl}" style="height: 100%; max-width: 100%;" />` : '',
             buyCheckbox: data.ticketType === 'PURCHASE' ? 'X' : '',
             pawnCheckbox: data.ticketType === 'PAWN' ? 'X' : '',
             lastName: data.customerLastName ?? '',
@@ -253,7 +283,16 @@ export class TransactionFormPrinter {
             middleName: data.customerMiddle ?? '',
             dob: data.customerBirthdate ?? '',
             sex: data.customerSex ?? '',
-            raceCode: data.customerRace ?? '',
+            raceCode: (() => {
+                const race = (data.customerRace ?? '').toUpperCase();
+                // "W for white B for black I for American Indian A for Asian and H for hispanic"
+                if (race.includes('WHITE')) return 'W';
+                if (race.includes('BLACK')) return 'B';
+                if (race.includes('INDIAN') || race.includes('NATIVE')) return 'I';
+                if (race.includes('ASIAN')) return 'A';
+                if (race.includes('HISPANIC') || race.includes('LATINO')) return 'H';
+                return race.charAt(0); // Fallback to first letter
+            })(),
             addressLine: [data.customerAddress, data.customerCity, data.customerState, data.customerZip].filter(Boolean).join(', '),
             phone: data.customerPhone ?? '',
             employer: data.customerEmployer ?? '',
@@ -267,7 +306,7 @@ export class TransactionFormPrinter {
             amountFinanced: fmtMoney(data.amountFinanced),
             financeCharge: fmtMoney(data.financeCharge),
             redeemPrice: fmtMoney(data.totalOfPayments),
-            annualPercentageRate: data.annualRate?.toString() ?? '',
+            annualPercentageRate: typeof data.annualRate === 'number' ? data.annualRate.toFixed(2) : (data.annualRate?.toString() ?? ''),
             maturityDate: maturityDate ? maturityDate.toLocaleDateString() : '',
             pawnDefaultDate: defaultDate ? defaultDate.toLocaleDateString() : '',
             amountWith2MonthsInterest: twoMonthAmount,
@@ -275,7 +314,10 @@ export class TransactionFormPrinter {
 
         const fieldHtml = TEMPLATE.fields.map(field => renderField(field, fieldValues[field.id] ?? '')).join('');
 
-        const repeaterRows = data.items.map(item => ({
+        // Prepare item chunks
+        const itemRepeater = TEMPLATE.repeaters?.find(r => r.id === 'items');
+        const limit = itemRepeater?.limit ?? 6;
+        const allItems = data.items.map(item => ({
             serial: item.serialNumber ?? item.ownerAppliedNumber ?? '',
             type: item.categoryLabel ?? item.itemType ?? '',
             brand: item.brand ?? '',
@@ -283,11 +325,31 @@ export class TransactionFormPrinter {
             description: item.description ?? '',
             amount: fmtMoney(item.amount),
         }));
-        const repeaterHtml = renderRepeater(TEMPLATE.repeaters?.find(r => r.id === 'items'), repeaterRows);
+
+        const chunks: Record<string, string>[][] = [];
+        if (allItems.length === 0) {
+            chunks.push([]);
+        } else {
+            for (let i = 0; i < allItems.length; i += limit) {
+                chunks.push(allItems.slice(i, i + limit));
+            }
+        }
+
+        const pagesHtml = chunks.map((chunk, pageIndex) => {
+            const repeaterHtml = renderRepeater(itemRepeater, chunk);
+            return `
+             <div class="page">
+               <div class="tpl-layer">
+                 ${fieldHtml}
+                 ${repeaterHtml}
+               </div>
+             </div>
+             `;
+        }).join('');
 
         const adjust = this.resolveAdjust(data.printAdjust);
         const transform = `translate(${adjust.offxIn ?? 0}in, ${adjust.offyIn ?? 0}in) scale(${adjust.scaleX ?? 1}, ${adjust.scaleY ?? 1})`;
-        const debugBg = adjust.debug ? adjust.debugBackgroundUrl ?? templateBackground : templateBackground;
+        // const debugBg = adjust.debug ? adjust.debugBackgroundUrl ?? templateBackground : templateBackground;
 
         return `
 <!DOCTYPE html>
@@ -299,20 +361,20 @@ export class TransactionFormPrinter {
     body {
       margin: 0;
       padding: 0;
-      width: 8.5in;
-      height: 11in;
-      position: relative;
+      background: #f0f0f0;
       font-family: 'Courier New', monospace;
       font-size: 10pt;
     }
-    .template-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 210mm;
-      height: 297mm;
-      z-index: ${adjust.debug ? 0 : -1};
-      opacity: ${adjust.debug ? 0.4 : 1};
+    .page {
+      position: relative;
+      width: 8.5in;
+      height: 11in;
+      background: white;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .page:last-child {
+      page-break-after: auto;
     }
     .tpl-layer {
       position: absolute;
@@ -327,25 +389,19 @@ export class TransactionFormPrinter {
       position: absolute;
       line-height: 1.1;
       white-space: nowrap;
+      color: #000000;
+      font-weight: 700;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    ${adjust.debug ? `
-    .tpl-layer::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(to right, rgba(0,0,255,0.15) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,0,0,0.15) 1px, transparent 1px);
-      background-size: 5mm 5mm;
-      pointer-events: none;
-    }` : ''}
+    @media print {
+       body { background: none; }
+       .page { page-break-after: always; } 
+    }
   </style>
 </head>
 <body>
-  <div class="tpl-layer">
-    ${fieldHtml}
-    ${repeaterHtml}
-  </div>
+  ${pagesHtml}
   <script>window.print();</script>
 </body>
 </html>`;

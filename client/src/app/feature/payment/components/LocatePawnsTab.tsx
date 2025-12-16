@@ -161,11 +161,11 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                         {formatDate(ticket.createdDate)}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {formatMoney(ticket.amountFinanced || ticket.purchaseTradeValue)}
+                                        {formatMoney(ticket.amountFinanced ?? ticket.purchaseTradeValue ?? 0)}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusVariant(ticket.pawnStatus)}>
-                                            {ticket.pawnStatus.replace('_', ' ').toUpperCase()}
+                                            {(ticket.pawnStatus || 'UNKNOWN').replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

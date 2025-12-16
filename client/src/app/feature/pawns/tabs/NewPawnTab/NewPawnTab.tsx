@@ -157,9 +157,16 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         itemIds: formData.items.map((_, idx) => `item-${idx}`),
       };
 
+      const rate = formData.periodicRate ? Number(formData.periodicRate) : 0;
+      const amountFinanced = formData.amountFinanced || 0;
+      const financeCharge = amountFinanced * (rate / 100);
+      const totalOfPayments = amountFinanced + financeCharge;
+      // APR = (Monthly Rate / 30) * 365
+      const annualRate = (rate / 30) * 365;
+
       const formDataItems: FormDataItem[] = formData.items.map(item => ({
-        type: item.subcategoryId || '',
-        brand: item.brandId,
+        type: item.subcategoryName || item.type || '',
+        brand: item.brandName || item.brand || '',
         model: item.model,
         serial: item.serial,
         description: item.description,
@@ -172,6 +179,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         ticket: ticketData,
         customer,
         items: formDataItems,
+        financeCharge,
+        totalOfPayments,
+        annualRate,
       });
 
       const printItems = buildPrintItems(ticketData, formDataItems);
