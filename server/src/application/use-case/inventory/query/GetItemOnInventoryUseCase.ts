@@ -3,9 +3,9 @@ import { NotFoundError } from '../../../common/errors';
 import { InventoryItemResponseDto } from '../../../dto/inventory/InventoryItemResponseDto';
 
 import {
-  GetInventoryItemByNumberRequestDto,
-  getInventoryItemByNumberRequestSchema
-} from '../../../dto/inventory/query/GetInventoryItemByNumberRequestDto';
+  GetInventoryItemByInventoryNumberDto,
+  getInventoryItemByInventoryNumberSchema
+} from '../../../dto/inventory/query/GetInventoryItemByInventoryNumberDto';
 import { toInventoryItemResponseDto } from '../../../mapping/inventory/inventoryItemMappers';
 
 /**
@@ -16,8 +16,8 @@ export class GetItemOnInventoryUseCase {
   constructor(private readonly inventoryRepo: InventoryItemRepository) {}
 
   async execute(input: unknown): Promise<InventoryItemResponseDto> {
-    const { inventoryNumber }: GetInventoryItemByNumberRequestDto =
-      getInventoryItemByNumberRequestSchema.parse(input);
+    const { inventoryNumber }: GetInventoryItemByInventoryNumberDto =
+      getInventoryItemByInventoryNumberSchema.parse(input);
 
     // First check if item exists on inventory
     const itemOnInventory = await this.inventoryRepo.findAvailableByInventoryNumber(inventoryNumber);

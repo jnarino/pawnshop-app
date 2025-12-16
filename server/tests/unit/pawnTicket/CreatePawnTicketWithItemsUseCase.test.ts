@@ -4,6 +4,7 @@ import { InventoryItemRepository } from '../../../src/domains/inventory/Inventor
 import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
 import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
 import { CreatePawnTicketWithItemsUseCase } from '../../../src/application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
+import { PoolClient } from 'pg';
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn(async (t: PawnTicket) => ({
@@ -30,11 +31,15 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
     callback: (repos: {
       pawnTicketRepository: PawnTicketRepository;
       inventoryItemRepository: InventoryItemRepository;
+      dbClient: PoolClient;
     }) => Promise<T>
   ): Promise<T> {
     const pawnTicketRepository = new MockPawnTicketRepository();
     const inventoryItemRepository = new MockInventoryItemRepository();
-    return callback({ pawnTicketRepository, inventoryItemRepository });
+    const mockDbClient = {
+      query: jest.fn().mockResolvedValue({ rows: [{ control_number: '106489' }] })
+    } as any;
+    return callback({ pawnTicketRepository, inventoryItemRepository, dbClient: mockDbClient });
   }
 }
 
