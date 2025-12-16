@@ -15,9 +15,9 @@ def safe_str(value):
     # Convert to string, remove NUL bytes, then strip whitespace
     return str(value).replace('\x00', '').strip() if value else None
 
-def parse_composit3(composit3_str, attr_lookup):
+def parse_composit3_jewelry(composit3_str, attr_lookup):
     """
-    Parse Composit3 field and return dict of attribute IDs
+    Parse Composit3 field for JEWELRY and return dict of attribute IDs
     Format: METAL;METAL;CODE;KARAT;KARAT;KARAT;GENDER;GENDER;CODE;STYLE;STYLE;CODE;SIZE;SIZE;SIZE;WEIGHT UNIT;
     Example: WHITE GOLD;WHITE GOLD;W;14KT;14KT;14KT;WOMAN'S;WOMAN'S;W;ENGAGEMENT RING;ENGAGEMENT RING;X;5 3/4;5 3/4;5 3/4;5.80 GRM;
     """
@@ -77,6 +77,80 @@ def parse_composit3(composit3_str, attr_lookup):
                 weight_unit = weight_match.group(2) or 'GRM'
                 result['weight'] = weight_num
                 result['weightUnit'] = weight_unit
+                
+    except (IndexError, ValueError) as e:
+        # Silently ignore parsing errors for individual items
+        pass
+        
+    return result
+
+def parse_composit3_firearm(composit3_str, attr_lookup):
+    """
+    Parse Composit3 field for FIREARMS and return dict of attribute IDs
+    Format: ACTION;ACTION;CODE;CALIBER;CALIBER;CALIBER;COLOR;COLOR;CODE;BARREL;BARREL;CODE;IMPORTER;IMPORTER;IMPORTER;BARREL_LENGTH;CONDITION;
+    Example: SEMI-AUTO;SEMI-AUTO;SEMI-AUTO;9 MM;9 MM;9 MM;BLACK;BLACK;X;SINGLE BARREL;SINGLE BARREL;1;USA;USA;USA;3.7";USED;
+    """
+    if not composit3_str:
+        return {}
+        
+    parts = composit3_str.split(';')
+    if len(parts) < 15:
+        return {}  # Not enough parts
+        
+    result = {}
+    
+    try:
+        # Action (positions 0-2, use first non-empty)
+        action_val = (parts[0] or parts[1] or parts[2] or '').strip().upper()
+        if action_val and 'ACTION' in attr_lookup:
+            action_id = attr_lookup['ACTION'].get(action_val)
+            if action_id:
+                result['action'] = action_id
+        
+        # Caliber (positions 3-5, use first non-empty)
+        caliber_val = (parts[3] or parts[4] or parts[5] or '').strip().upper()
+        if caliber_val and 'CALIBER' in attr_lookup:
+            caliber_id = attr_lookup['CALIBER'].get(caliber_val)
+            if caliber_id:
+                result['caliber'] = caliber_id
+        
+        # Finish (positions 6-8, use first non-empty)
+        finish_val = (parts[6] or parts[7] or '').strip().upper()
+        if finish_val and 'FINISH' in attr_lookup:
+            finish_id = attr_lookup['FINISH'].get(finish_val)
+            if finish_id:
+                result['finish'] = finish_id
+        
+        # Barrel (positions 9-11, use first non-empty)
+        barrel_val = (parts[9] or parts[10] or '').strip().upper()
+        if barrel_val and 'BARREL' in attr_lookup:
+            barrel_id = attr_lookup['BARREL'].get(barrel_val)
+            if barrel_id:
+                result['barrel'] = barrel_id
+        
+        # Importer (positions 12-14, use first non-empty)
+        importer_val = (parts[12] or parts[13] or parts[14] or '').strip().upper()
+        if importer_val and 'IMPORTER' in attr_lookup:
+            importer_id = attr_lookup['IMPORTER'].get(importer_val)
+            if importer_id:
+                result['importer'] = importer_id
+        
+        # Barrel Length (position 15, format: 3.7")
+        if len(parts) > 15 and parts[15]:
+            barrel_length_str = parts[15].strip()
+            # Extract numeric part
+            import re
+            length_match = re.search(r'([\d.]+)', barrel_length_str)
+            if length_match:
+                result['barrelLength'] = length_match.group(1)
+        
+        # Condition (position 16)
+        if len(parts) > 16 and parts[16]:
+            condition_val = parts[16].strip().upper()
+            if condition_val and 'CONDITION' in attr_lookup:
+                condition_id = attr_lookup['CONDITION'].get(condition_val)
+                if condition_id:
+                    result['condition'] = condition_id
                 
     except (IndexError, ValueError) as e:
         # Silently ignore parsing errors for individual items
@@ -200,6 +274,17 @@ def migrate_inventory():
             if type_name not in attr_lookup:
                 attr_lookup[type_name] = {}
             attr_lookup[type_name][val_text.upper().strip()] = val_id
+        
+        # Build category map to identify firearms
+        pg_cursor.execute("SELECT id, code, name FROM inventory_category")
+        firearm_category_ids = set()
+        for row in pg_cursor.fetchall():
+            cat_id, code, name = str(row[0]), row[1], row[2]
+            # Identify firearm categories by code or name
+            if code and ('GUN' in code.upper() or 'FIREARM' in code.upper()):
+                firearm_category_ids.add(cat_id)
+            elif name and ('GUN' in name.upper() or 'FIREARM' in name.upper()):
+                firearm_category_ids.add(cat_id)
 
         # ==================================
         # 2. Fetch Inventory Items
@@ -289,10 +374,17 @@ def migrate_inventory():
                 extra_data = {}
                 attributes = {}
                 
+                # Determine if item is firearm based on category
+                cat_uuid = l1_map.get(l1_fk) if l1_fk else None
+                is_firearm = cat_uuid in firearm_category_ids if cat_uuid else False
+                
                 # Parse Composit3 field if available
                 composit3_str = safe_str(row.get('Composit3'))
                 if composit3_str:
-                    composit3_attrs = parse_composit3(composit3_str, attr_lookup)
+                    if is_firearm:
+                        composit3_attrs = parse_composit3_firearm(composit3_str, attr_lookup)
+                    else:
+                        composit3_attrs = parse_composit3_jewelry(composit3_str, attr_lookup)
                     attributes.update(composit3_attrs)
                 
                 # Jewelry
@@ -344,6 +436,9 @@ def migrate_inventory():
                     
                     barrel = resolve_lookup(gd.get('Barrel_FK'))
                     if barrel: attributes['barrel'] = barrel
+                    
+                    condition = resolve_lookup(gd.get('Condition_FK'))
+                    if condition: attributes['condition'] = condition
                     
                     importer = resolve_lookup(gd.get('ImporterFK'))
                     if importer: extra_data['importer'] = importer
