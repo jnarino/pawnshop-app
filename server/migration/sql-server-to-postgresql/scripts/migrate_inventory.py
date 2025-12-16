@@ -61,8 +61,8 @@ def parse_composit3_jewelry(composit3_str, attr_lookup):
         
         # Size/Length (positions 12-14, use first non-empty)
         size_val = (parts[12] or parts[13] or parts[14] or '').strip()
-        if size_val and 'SIZE/LENGTH' in attr_lookup:
-            size_id = attr_lookup['SIZE/LENGTH'].get(size_val.upper())
+        if size_val and 'SIZE' in attr_lookup:
+            size_id = attr_lookup['SIZE'].get(size_val.upper())
             if size_id:
                 result['sizeLength'] = size_id
         
@@ -157,6 +157,119 @@ def parse_composit3_firearm(composit3_str, attr_lookup):
         pass
         
     return result
+
+def parse_composit4_stones(composit4_str, attr_lookup):
+    """
+    Parse Composit4 field for stone details and return array of stone objects
+    Format: Each stone has 17 fields: QTY;CARAT;LENGTH;WIDTH;WEIGHT;TYPE;TYPE;TYPE;SHAPE;SHAPE;SHAPE;COLOR;COLOR;COLOR;CLARITY;CLARITY;CLARITY;
+    Example: 1;0.00;0.00;0.00;0.00;TANZANITE;TANZANITE;TANZANITE;SQUARE;SQUARE;SQUARE;;;;;;;38;0.00;0.00;0.00;0.00;DIAMOND;DIAMOND;DIAMOND;;;;;;;;;;
+    """
+    if not composit4_str:
+        return []
+        
+    parts = composit4_str.split(';')
+    stones = []
+    
+    # Each stone entry has 17 fields
+    fields_per_stone = 17
+    i = 0
+    
+    while i + fields_per_stone <= len(parts):
+        try:
+            stone_parts = parts[i:i+fields_per_stone]
+            
+            # Extract values
+            quantity = stone_parts[0].strip()
+            carat = stone_parts[2].strip()
+            length = stone_parts[3].strip()
+            width = stone_parts[4].strip()
+            weight = stone_parts[1].strip()
+            
+            # Type (positions 5-7, use first non-empty)
+            type_val = (stone_parts[5] or stone_parts[6] or stone_parts[7] or '').strip().upper()
+            
+            # Shape (positions 8-10, use first non-empty)
+            shape_val = (stone_parts[8] or stone_parts[9] or stone_parts[10] or '').strip().upper()
+            
+            # Color (positions 11-13, use first non-empty)
+            color_val = (stone_parts[11] or stone_parts[12] or stone_parts[13] or '').strip().upper()
+            
+            # Clarity (positions 14-16, use first non-empty)
+            clarity_val = (stone_parts[14] or stone_parts[15] or stone_parts[16] or '').strip().upper()
+            
+            # Skip empty stone entries (all key fields empty)
+            if not quantity or quantity == '0' or not type_val:
+                i += fields_per_stone
+                continue
+            
+            stone = {}
+            
+            # Quantity (always include)
+            try:
+                stone['quantity'] = int(quantity)
+            except ValueError:
+                stone['quantity'] = 1
+            
+            # Numeric values (add before UUIDs for consistent ordering)
+            if carat and carat != '0.00':
+                try:
+                    stone['carat'] = float(carat)
+                except ValueError:
+                    pass
+            
+            if length and length != '0.00':
+                try:
+                    stone['length'] = float(length)
+                except ValueError:
+                    pass
+            
+            if width and width != '0.00':
+                try:
+                    stone['width'] = float(width)
+                except ValueError:
+                    pass
+            
+            if weight and weight != '0.00':
+                try:
+                    stone['weight'] = float(weight)
+                except ValueError:
+                    pass
+            
+            # Map type to UUID
+            if type_val and 'TYPE' in attr_lookup:
+                type_id = attr_lookup['TYPE'].get(type_val)
+                if type_id:
+                    stone['type'] = type_id
+            
+            # Map shape to UUID
+            if shape_val and 'SHAPE' in attr_lookup:
+                shape_id = attr_lookup['SHAPE'].get(shape_val)
+                if shape_id:
+                    stone['shape'] = shape_id
+            
+            # Map color to UUID
+            if color_val and 'COLOR' in attr_lookup:
+                color_id = attr_lookup['COLOR'].get(color_val)
+                if color_id:
+                    stone['color'] = color_id
+            
+            # Map clarity to UUID
+            if clarity_val and 'CLARITY' in attr_lookup:
+                clarity_id = attr_lookup['CLARITY'].get(clarity_val)
+                if clarity_id:
+                    stone['clarity'] = clarity_id
+            
+            # Only add stone if it has meaningful data
+            if len(stone) > 1:  # More than just quantity
+                stones.append(stone)
+                
+        except (IndexError, ValueError) as e:
+            # Skip malformed stone entries
+            pass
+        
+        i += fields_per_stone
+    
+    return stones
 
 def migrate_inventory():
     print("🚀 Starting Inventory Migration (Split Schema: Subcategory + Brand)...")
@@ -297,7 +410,7 @@ def migrate_inventory():
               i.STATUS, i.MODELNUM, i.SERIALNUM, i.Color, i.Condition,
               i.OnHand, i.AMOUNT, i.RESALEAMT, i.LOWSLPRICE, i.INSREPCOST,
               i.DateItemEntered, i.INVNUM, 
-              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3
+              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3, i.Composit4
            FROM dbo.items i
            WHERE (i.DateItemEntered >= '1900-01-01' OR i.DateItemEntered IS NULL)
         """)
@@ -411,14 +524,13 @@ def migrate_inventory():
                     weight = jd.get('Weight')
                     if weight is not None:
                         extra_data['weight'] = float(weight)
-                    
-                    # Stones
-                    sk = jd.get('JDT_PK')
-                    if sk and sk in stones_map:
-                        extra_data['stones'] = [
-                            {'type': safe_str(s.get('TYPE')), 'shape': safe_str(s.get('SHAPE')), 'qty': s.get('QTY')}
-                            for s in stones_map[sk]
-                        ]
+                
+                # Parse Composit4 field for stones (takes precedence over stones table)
+                composit4_str = safe_str(row.get('Composit4'))
+                if composit4_str:
+                    composit4_stones = parse_composit4_stones(composit4_str, attr_lookup)
+                    if composit4_stones:
+                        extra_data['stones'] = composit4_stones
                 
                 # Guns
                 if item_pk in gun_details:
