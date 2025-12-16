@@ -95,4 +95,4 @@ GROUP BY
   pt.default_date,
   pt.created_at,
   pts.status
-ORDER BY pt.transaction_date DESC;
+ORDER BY pt.created_at DESC;

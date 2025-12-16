@@ -23,7 +23,13 @@ export class CreatePawnTicketWithItemsUseCase {
         return this.pawnTicketUnitOfWork.runInTransaction(
             async ({ inventoryItemRepository, pawnTicketRepository, dbClient }) => {
                 // 1) Get the next control number first (before creating anything)
-                const controlNumberResult = await dbClient.query('SELECT get_next_control_number() AS control_number');
+                // Use appropriate sequence based on transaction type
+                const transactionType = pawn.transactionType || 'PAWN';
+                const controlNumberFunc = transactionType === 'PURCHASE' 
+                    ? 'get_next_purchase_control_number' 
+                    : 'get_next_pawn_control_number';
+                    
+                const controlNumberResult = await dbClient.query(`SELECT ${controlNumberFunc}() AS control_number`);
                 const controlNumber: string = controlNumberResult.rows[0].control_number;
 
                 // 2) Create inventory items with the control number

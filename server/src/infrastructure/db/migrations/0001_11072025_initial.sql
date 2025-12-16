@@ -286,7 +286,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
 
   model TEXT,
   serial_number TEXT,
-  color TEXT,
+  color UUID REFERENCES item_attribute_value(id) ON DELETE SET NULL,
   item_condition TEXT,
 
   quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -315,7 +315,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
 
   last_updated_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS inventory_item_subcategory_idx ON inventory_item(inventory_subcategory_id);
@@ -766,11 +766,16 @@ CREATE TABLE IF NOT EXISTS app_settings (
   updated_by UUID REFERENCES app_user(id) ON DELETE SET NULL
 );
 
+-- Initialize control numbers for pawn tickets
+-- Separate sequences for PAWN and PURCHASE transactions
 INSERT INTO app_settings (key, value, description)
-VALUES ('pawn_ticket_control_number_next', '100001', 'Next control number for pawn tickets')
+VALUES 
+  ('pawn_ticket_control_number_next', '100001', 'Next control number for pawn tickets (PAWN type)'),
+  ('purchase_ticket_control_number_next', '1', 'Next control number for purchase tickets (PURCHASE type)')
 ON CONFLICT (key) DO NOTHING;
 
-CREATE OR REPLACE FUNCTION get_next_control_number()
+-- Function to get next control number for PAWN transactions
+CREATE OR REPLACE FUNCTION get_next_pawn_control_number()
 RETURNS TEXT AS $$
 DECLARE
   next_num TEXT;
@@ -782,6 +787,30 @@ BEGIN
   RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
 
   RETURN next_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get next control number for PURCHASE transactions  
+CREATE OR REPLACE FUNCTION get_next_purchase_control_number()
+RETURNS TEXT AS $$
+DECLARE
+  next_num TEXT;
+BEGIN
+  UPDATE app_settings
+  SET value = (value::INTEGER + 1)::TEXT,
+      updated_at = NOW()
+  WHERE key = 'purchase_ticket_control_number_next'
+  RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
+
+  RETURN next_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Legacy function - defaults to pawn control number for backward compatibility
+CREATE OR REPLACE FUNCTION get_next_control_number()
+RETURNS TEXT AS $$
+BEGIN
+  RETURN get_next_pawn_control_number();
 END;
 $$ LANGUAGE plpgsql;
 

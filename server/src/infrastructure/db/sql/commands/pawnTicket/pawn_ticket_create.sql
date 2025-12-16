@@ -55,7 +55,11 @@ new_ticket AS (
   )
   VALUES (
     $1,                         -- id
-    get_next_control_number(),  -- control_number (auto-generated)
+    CASE 
+      WHEN $2 = 'PAWN' THEN get_next_pawn_control_number()
+      WHEN $2 = 'PURCHASE' THEN get_next_purchase_control_number()
+      ELSE get_next_pawn_control_number()
+    END,                        -- control_number (auto-generated based on transaction type)
     $2,                         -- transaction_type
     $3,                         -- customer_id
     $5,                         -- amount_financed

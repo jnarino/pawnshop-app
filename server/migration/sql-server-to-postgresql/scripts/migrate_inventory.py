@@ -15,6 +15,75 @@ def safe_str(value):
     # Convert to string, remove NUL bytes, then strip whitespace
     return str(value).replace('\x00', '').strip() if value else None
 
+def parse_composit3(composit3_str, attr_lookup):
+    """
+    Parse Composit3 field and return dict of attribute IDs
+    Format: METAL;METAL;CODE;KARAT;KARAT;KARAT;GENDER;GENDER;CODE;STYLE;STYLE;CODE;SIZE;SIZE;SIZE;WEIGHT UNIT;
+    Example: WHITE GOLD;WHITE GOLD;W;14KT;14KT;14KT;WOMAN'S;WOMAN'S;W;ENGAGEMENT RING;ENGAGEMENT RING;X;5 3/4;5 3/4;5 3/4;5.80 GRM;
+    """
+    if not composit3_str:
+        return {}
+        
+    parts = composit3_str.split(';')
+    if len(parts) < 16:
+        return {}  # Not enough parts
+        
+    result = {}
+    
+    try:
+        # Metal (positions 0-2, use first non-empty)
+        metal_val = (parts[0] or parts[1] or '').strip().upper()
+        if metal_val and 'METAL' in attr_lookup:
+            metal_id = attr_lookup['METAL'].get(metal_val)
+            if metal_id:
+                result['metal'] = metal_id
+        
+        # Karat (positions 3-5, use first non-empty)
+        karat_val = (parts[3] or parts[4] or parts[5] or '').strip().upper()
+        if karat_val and 'KARAT' in attr_lookup:
+            karat_id = attr_lookup['KARAT'].get(karat_val)
+            if karat_id:
+                result['karat'] = karat_id
+        
+        # Gender (positions 6-8, use first non-empty)
+        gender_val = (parts[6] or parts[7] or '').strip().upper()
+        if gender_val and 'GENDER' in attr_lookup:
+            gender_id = attr_lookup['GENDER'].get(gender_val)
+            if gender_id:
+                result['gender'] = gender_id
+        
+        # Style (positions 9-11, use first non-empty)
+        style_val = (parts[9] or parts[10] or '').strip().upper()
+        if style_val and 'STYLE' in attr_lookup:
+            style_id = attr_lookup['STYLE'].get(style_val)
+            if style_id:
+                result['style'] = style_id
+        
+        # Size/Length (positions 12-14, use first non-empty)
+        size_val = (parts[12] or parts[13] or parts[14] or '').strip()
+        if size_val and 'SIZE/LENGTH' in attr_lookup:
+            size_id = attr_lookup['SIZE/LENGTH'].get(size_val.upper())
+            if size_id:
+                result['sizeLength'] = size_id
+        
+        # Weight (position 15, format: "5.80 GRM")
+        if len(parts) > 15 and parts[15]:
+            weight_str = parts[15].strip()
+            # Extract numeric part
+            import re
+            weight_match = re.search(r'([\d.]+)\s*(\w+)?', weight_str)
+            if weight_match:
+                weight_num = weight_match.group(1)
+                weight_unit = weight_match.group(2) or 'GRM'
+                result['weight'] = weight_num
+                result['weightUnit'] = weight_unit
+                
+    except (IndexError, ValueError) as e:
+        # Silently ignore parsing errors for individual items
+        pass
+        
+    return result
+
 def migrate_inventory():
     print("🚀 Starting Inventory Migration (Split Schema: Subcategory + Brand)...")
     
@@ -104,9 +173,33 @@ def migrate_inventory():
             
         valid_subcats.add(str(uncategorized_sub_id))
         
-        # Lookup Map (Lookup_C) - Used for Colors, Gun Attributes, etc.
-        mssql_cursor.execute("SELECT lc_pk, lc_Descript FROM dbo.Lookup_C")
-        lookup_map = {row['lc_pk']: safe_str(row['lc_Descript']) for row in mssql_cursor.fetchall()}
+        # Load Lookup Map from migrate_lookup.py output
+        # This contains: values (lc_pk -> {value, id}), types (lb_pk -> name), type_ids (name -> uuid)
+        try:
+            with open('lookup_map.json', 'r') as f:
+                lookup_data = json.load(f)
+                lookup_map = lookup_data.get('values', {})
+                type_map = lookup_data.get('types', {})
+                type_ids = lookup_data.get('type_ids', {})
+        except:
+            print("⚠️ lookup_map.json not found. Color and attribute mapping will be limited.")
+            lookup_map = {}
+            type_map = {}
+            type_ids = {}
+            
+        # Build reverse lookup: attribute_type -> (value_text -> value_id)
+        # This helps find attribute IDs by type name and value text
+        pg_cursor.execute("""
+            SELECT av.id, av.value, at.name as type_name
+            FROM item_attribute_value av
+            JOIN item_attribute_type at ON at.id = av.attribute_type_id
+        """)
+        attr_lookup = {}  # {type_name: {value_text: value_id}}
+        for row in pg_cursor.fetchall():
+            val_id, val_text, type_name = str(row[0]), row[1], row[2]
+            if type_name not in attr_lookup:
+                attr_lookup[type_name] = {}
+            attr_lookup[type_name][val_text.upper().strip()] = val_id
 
         # ==================================
         # 2. Fetch Inventory Items
@@ -119,7 +212,7 @@ def migrate_inventory():
               i.STATUS, i.MODELNUM, i.SERIALNUM, i.Color, i.Condition,
               i.OnHand, i.AMOUNT, i.RESALEAMT, i.LOWSLPRICE, i.INSREPCOST,
               i.DateItemEntered, i.INVNUM, 
-              i.DESCRIPT, i.DESCRIPT2, i.BIN
+              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3
            FROM dbo.items i
            WHERE (i.DateItemEntered >= '1900-01-01' OR i.DateItemEntered IS NULL)
         """)
@@ -185,11 +278,22 @@ def migrate_inventory():
                 
                 # Define helper for lookup resolution
                 def resolve_lookup(fk):
-                    return lookup_map.get(fk) if fk else None
+                    if not fk:
+                        return None
+                    data = lookup_map.get(fk)
+                    if isinstance(data, dict):
+                        return data.get('value')
+                    return data  # Fallback for old format
 
                 # Details
                 extra_data = {}
                 attributes = {}
+                
+                # Parse Composit3 field if available
+                composit3_str = safe_str(row.get('Composit3'))
+                if composit3_str:
+                    composit3_attrs = parse_composit3(composit3_str, attr_lookup)
+                    attributes.update(composit3_attrs)
                 
                 # Jewelry
                 if item_pk in jewelry_details:
@@ -244,8 +348,16 @@ def migrate_inventory():
                     importer = resolve_lookup(gd.get('ImporterFK'))
                     if importer: extra_data['importer'] = importer
                 
-                # Color
-                color_val = lookup_map.get(row['Color'])
+                # Color - Get UUID from item_attribute_value
+                color_uuid = None
+                color_fk = row['Color']
+                if color_fk and str(color_fk) in lookup_map:
+                    color_data = lookup_map[str(color_fk)]
+                    # lookup_map[lc_pk] = {"value": text, "id": uuid}
+                    if isinstance(color_data, dict):
+                        color_uuid = color_data.get('id')
+                    # Fallback for old format (just text)
+                    # else: color_uuid = None
                 
                 # Dates
                 created_at = row['DateItemEntered'] or datetime.now()
@@ -261,7 +373,7 @@ def migrate_inventory():
                     status_code,
                     safe_str(row['MODELNUM']),
                     safe_str(row['SERIALNUM']),
-                    color_val,
+                    color_uuid,
                     safe_str(row['Condition']),
                     max(1, int(float(row['OnHand'] or 0))), # Enforce quantity > 0
                     row['AMOUNT'],
