@@ -184,6 +184,16 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
       return;
     }
 
+    if (!draft.subcategoryId?.trim()) {
+      setError('Subcategory is required');
+      return;
+    }
+
+    if (!draft.brandId?.trim()) {
+      setError('Brand is required');
+      return;
+    }
+
     if (!draft.amount) {
       setError('Value is required');
       return;

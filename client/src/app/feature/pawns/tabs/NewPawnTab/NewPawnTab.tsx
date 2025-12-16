@@ -1,23 +1,72 @@
-import { useCallback } from 'react';
-import { PawnTicketForm, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
+import { useCallback, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { PawnTicketForm, PrintLabelsModal, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
+import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
+import { logout } from '@/app/core/redux/authSlice';
+import type { AppDispatch } from '@/app/core/redux/store';
+import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
+interface PrintState {
+  showLabelModal: boolean;
+  controlNumber: string;
+  printItems: PrintItem[];
+  formDataItems: FormDataItem[];
+  ticketData: TicketByControlNumber | null;
+}
+
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
+  const { printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
   const customerId = customer?.id;
+
+  const [printState, setPrintState] = useState<PrintState>({
+    showLabelModal: false,
+    controlNumber: '',
+    printItems: [],
+    formDataItems: [],
+    ticketData: null,
+  });
 
   const handleDraftChange = useCallback((draft: PawnFormDraftState) => {
     updatePawnDraft(draft);
   }, [updatePawnDraft]);
+
+  const handleLogoutAfterPrint = useCallback(async () => {
+    try {
+      await dispatch(logout());
+      if (globalThis.electronAPI?.authChanged) {
+        globalThis.electronAPI.authChanged(false);
+      }
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  }, [dispatch, navigate]);
+
+  const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
+    await printLabels(printState.controlNumber, printState.printItems, labelCounts);
+    setPrintState(prev => ({ ...prev, showLabelModal: false }));
+    resetPawnDraft();
+    handleLogoutAfterPrint();
+  }, [printState.controlNumber, printState.printItems, printLabels, resetPawnDraft, handleLogoutAfterPrint]);
+
+  const handleLabelCancel = useCallback(() => {
+    setPrintState(prev => ({ ...prev, showLabelModal: false }));
+    resetPawnDraft();
+    handleLogoutAfterPrint();
+  }, [resetPawnDraft, handleLogoutAfterPrint]);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
@@ -46,6 +95,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       transactionType: formData.type,
       amountFinanced: formData.type === 'PAWN' ? formData.amountFinanced : undefined,
       purchaseTradeValue: formData.type === 'PURCHASE' ? formData.purchaseTradeValue : undefined,
+      periodicRate: formData.periodicRate ? formData.periodicRate / 100 : undefined,
       transactionDate: toISOString(formData.transactionDate),
       maturityDate: toISOString(formData.maturityDate),
       defaultDate: toISOString(formData.expirationDate),
@@ -89,14 +139,52 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       }),
     };
 
-    const ticketId = await createTicket(payload);
-    if (ticketId) {
-      resetPawnDraft();
-      if (onTicketCreated) {
-        onTicketCreated(ticketId);
-      }
+    const ticketResponse = await createTicket(payload);
+    if (ticketResponse && customer) {
+      onTicketCreated?.(ticketResponse.id);
+
+      const ticketData: TicketByControlNumber = {
+        id: ticketResponse.id,
+        controlNumber: ticketResponse.controlNumber,
+        transactionType: formData.type,
+        customerId: customerId || formData.customerId,
+        amountFinanced: formData.amountFinanced || null,
+        purchaseTradeValue: formData.purchaseTradeValue || null,
+        transactionDate: toISOString(formData.transactionDate),
+        maturityDate: toISOString(formData.maturityDate),
+        defaultDate: toISOString(formData.expirationDate),
+        pawnStatus: 'P',
+        itemIds: formData.items.map((_, idx) => `item-${idx}`),
+      };
+
+      const formDataItems: FormDataItem[] = formData.items.map(item => ({
+        type: item.subcategoryId || '',
+        brand: item.brandId,
+        model: item.model,
+        serial: item.serial,
+        description: item.description,
+        amount: item.amount,
+        quantity: item.quantity,
+        ownerNumber: item.ownerNumber,
+      }));
+
+      await printTransactionForm({
+        ticket: ticketData,
+        customer,
+        items: formDataItems,
+      });
+
+      const printItems = buildPrintItems(ticketData, formDataItems);
+
+      setPrintState({
+        showLabelModal: true,
+        controlNumber: ticketResponse.controlNumber,
+        printItems,
+        formDataItems,
+        ticketData,
+      });
     }
-  }, [customerId, createTicket, onTicketCreated, resetPawnDraft]);
+  }, [customerId, createTicket, onTicketCreated, customer, printTransactionForm, buildPrintItems]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -129,6 +217,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           disabled={isLoading}
         />
       </div>
+
+      <PrintLabelsModal
+        open={printState.showLabelModal}
+        controlNumber={printState.controlNumber}
+        items={printState.printItems}
+        onPrint={handleLabelPrint}
+        onCancel={handleLabelCancel}
+      />
     </div>
   );
 }

@@ -91,7 +91,7 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         transactionDate: row.transaction_date,
         maturityDate: row.maturity_date,
         defaultDate: row.default_date,
-        pawnStatus: row.pawn_status,
+        pawnStatus: row.status_id,
         createdDate: row.created_at,
         itemIds: Array.isArray(row.item_ids) ? row.item_ids : [],
         items: row.items_data ?

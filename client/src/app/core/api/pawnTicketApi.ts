@@ -9,8 +9,10 @@ export interface CustomerActivePawnTicket extends PawnTicketData {
 export interface PawnData {
   customerId: string;
   transactionType: 'PAWN' | 'PURCHASE';
+  clerkUserId?: string;
   amountFinanced?: number;
   purchaseTradeValue?: number;
+  periodicRate?: number;
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
