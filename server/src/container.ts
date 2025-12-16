@@ -22,10 +22,11 @@ import { AuthController } from './interfaces/http/controller/auth/AuthController
 import { CustomerController } from './interfaces/http/controller/customer/CustomerController';
 import { PgInventoryItemRepository } from './infrastructure/persistence/inventory/PgInventoryItemRepository';
 import { GetInventoryItemBySerialNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
+import { GetItemOnInventoryUseCase } from './application/use-case/inventory/query/GetItemOnInventoryUseCase';
 import { CreateInventoryItemUseCase } from './application/use-case/inventory/command/CreateInventoryItemUseCase';
 import { DeleteInventoryItemUseCase } from './application/use-case/inventory/command/DeleteInventoryItemUseCase';
 import { UpdateInventoryItemUseCase } from './application/use-case/inventory/command/UpdateInventoryItemUseCase';
-import { GetInventoryItemByIdUseCase } from './application/use-case/inventory/query/GetInventoryItemByIdUseCase';
+
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
@@ -94,9 +95,9 @@ export async function createApp() {
   const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo);
   const updateInventoryItemUseCase = new UpdateInventoryItemUseCase(inventoryItemRepo);
   const deleteInventoryItemUseCase = new DeleteInventoryItemUseCase(inventoryItemRepo);
-  const getInventoryItemByIdUseCase = new GetInventoryItemByIdUseCase(inventoryItemRepo);
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
+  const getItemOnInventoryUseCase = new GetItemOnInventoryUseCase(inventoryItemRepo);
 
   // Inventory Category use-cases 
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
@@ -145,9 +146,9 @@ export async function createApp() {
     createInventoryItemUseCase,
     updateInventoryItemUseCase,
     deleteInventoryItemUseCase,
-    getInventoryItemByIdUseCase,
     getInventoryItemByInventoryNumberUseCase,
-    getInventoryItemBySerialNumberUseCase
+    getInventoryItemBySerialNumberUseCase,
+    getItemOnInventoryUseCase
   );
 
   const inventoryCategoryController = new InventoryCategoryController(
