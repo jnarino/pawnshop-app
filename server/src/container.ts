@@ -1,6 +1,7 @@
 import { pool, runMigrations } from './infrastructure/db';
 import { env } from './config/env';
 import { AuthService } from './application/service/AuthService';
+import { ItemAttributeMapper } from './application/service/ItemAttributeMapper';
 import { CreateAppUserUseCase } from './application/use-case/appUser/command/CreateAppUserUseCase';
 import { DeleteAppUserUseCase } from './application/use-case/appUser/command/DeleteAppUserUseCase';
 import { UpdateAppUserUseCase } from './application/use-case/appUser/command/UpdateAppUserUseCase';
@@ -71,6 +72,7 @@ export async function createApp() {
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
+  const itemAttributeMapper = new ItemAttributeMapper(inventoryCategoryRepo);
 
 
   // Auth use-cases
@@ -92,7 +94,7 @@ export async function createApp() {
   const getCustomerByIdUseCase = new GetCustomerByIdUseCase(customerRepo);
 
   // Inventory Item use-cases
-  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo);
+  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo, itemAttributeMapper);
   const updateInventoryItemUseCase = new UpdateInventoryItemUseCase(inventoryItemRepo);
   const deleteInventoryItemUseCase = new DeleteInventoryItemUseCase(inventoryItemRepo);
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
@@ -110,7 +112,7 @@ export async function createApp() {
 
 
   // Pawn Ticket use-cases  
-  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork);
+  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);

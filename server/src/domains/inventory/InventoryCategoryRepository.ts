@@ -22,4 +22,12 @@ export interface InventoryCategoryRepository {
    * @returns A list of brands for the given category.
    */
   getBrandsGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]>;
+
+  /**
+   * Get the parent category for a given subcategory.
+   * 
+   * @param subcategoryId The subcategory ID
+   * @returns The parent category or null if not found
+   */
+  getCategoryBySubcategoryId(subcategoryId: string): Promise<InventoryCategory | null>;
 }

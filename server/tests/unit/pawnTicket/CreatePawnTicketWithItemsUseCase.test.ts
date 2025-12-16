@@ -26,6 +26,15 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   findBySerialNumber = jest.fn();
 }
 
+class MockItemAttributeMapper {
+  mapItemAttributes = jest.fn(async (subcategoryId: string, input: any) => {
+    return {
+      attributes: input.attributes || {},
+      extra: input.extra || {}
+    };
+  });
+}
+
 class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
   async runInTransaction<T>(
     callback: (repos: {
@@ -46,7 +55,8 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
 describe('CreatePawnTicketWithItemsUseCase', () => {
   it('should create PAWN transaction with finance details', async () => {
     const uow = new MockPawnTicketUnitOfWork();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
 
     const today = new Date();
     const maturity = new Date(today);
@@ -89,7 +99,8 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
   it('should create PURCHASE transaction without finance details', async () => {
     const uow = new MockPawnTicketUnitOfWork();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
 
     const today = new Date();
     const maturity = new Date(today);
@@ -128,7 +139,8 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
   it('should throw error when no items are provided', async () => {
     const uow = new MockPawnTicketUnitOfWork();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
 
     const today = new Date();
     const maturity = new Date(today);

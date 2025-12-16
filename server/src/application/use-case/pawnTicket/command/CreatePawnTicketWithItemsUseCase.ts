@@ -6,10 +6,12 @@ import { PawnTicketUnitOfWork } from '../../../common/PawnTicketUnitOfWork';
 import { CreateInventoryItemOnPawnTicketUseCase } from '../../inventory/command/CreateInventoryItemOnPawnTicketUseCase';
 import { CreatePawnTicketUseCase } from './CreatePawnTicketUseCase';
 import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketResponseDto';
+import { ItemAttributeMapper } from '../../../service/ItemAttributeMapper';
 
 export class CreatePawnTicketWithItemsUseCase {
     constructor(
-        private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork
+        private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork,
+        private readonly attributeMapper: ItemAttributeMapper
     ) { }
 
     async execute(input: unknown): Promise<PawnTicketResponseDto> {
@@ -34,7 +36,8 @@ export class CreatePawnTicketWithItemsUseCase {
 
                 // 2) Create inventory items with the control number
                 const createInventoryItemOnPawnUseCase = new CreateInventoryItemOnPawnTicketUseCase(
-                    inventoryItemRepository
+                    inventoryItemRepository,
+                    this.attributeMapper
                 );
                 
                 const allItemIds: string[] = [];
@@ -44,7 +47,8 @@ export class CreatePawnTicketWithItemsUseCase {
                     const createdItem = await createInventoryItemOnPawnUseCase.execute(
                         itemDto, 
                         controlNumber, 
-                        itemIndex
+                        itemIndex,
+                        transactionType
                     );
                     allItemIds.push(createdItem.id);
                 }
