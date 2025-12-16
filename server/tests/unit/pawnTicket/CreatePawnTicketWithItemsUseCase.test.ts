@@ -21,6 +21,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   delete = jest.fn();
   findById = jest.fn();
   findByInventoryNumber = jest.fn();
+  findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
 }
 

@@ -11,6 +11,8 @@ const SQL_DELETE = loadSql('commands', 'inventory/inventory_item_delete');
 const SQL_FIND_BY_ID = loadSql('queries', 'inventory/inventory_item_find_by_id');
 const SQL_FIND_BY_INVENTORY_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_inventory_number');
+const SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER = loadSql(
+    'queries', 'inventory/inventory_item_find_available_by_inventory_number');
 const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_serial_number'
 );
@@ -136,6 +138,16 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         inventoryNumber: string
     ): Promise<InventoryItem | null> {
         const result = await this.db.query(SQL_FIND_BY_INVENTORY_NUMBER, [
+            inventoryNumber
+        ]);
+        if (result.rows.length === 0) return null;
+        return mapRowToInventoryItem(result.rows[0]);
+    }
+
+    async findAvailableByInventoryNumber(
+        inventoryNumber: string
+    ): Promise<InventoryItem | null> {
+        const result = await this.db.query(SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER, [
             inventoryNumber
         ]);
         if (result.rows.length === 0) return null;

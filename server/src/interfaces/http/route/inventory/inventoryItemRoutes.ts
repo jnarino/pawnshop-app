@@ -12,12 +12,43 @@ export function createInventoryItemRouter(
 
     /**
      * @openapi
+     * /api/inventory-items/available/{inventoryNumber}:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Get available item by inventory number
+     *     description: Retrieve an inventory item that is currently available (status = 'I' and created_at not null). Used for pawn transactions to verify item availability.
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: inventoryNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Inventory number
+     *     responses:
+     *       200:
+     *         description: Inventory item details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/InventoryItem'
+     *       404:
+     *         description: Item not available for sale
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/available/:inventoryNumber', auth, controller.getAvailableItemByInventoryNumber);
+
+    /**
+     * @openapi
      * /api/inventory-items/by-inventory-number/{inventoryNumber}:
      *   get:
      *     tags:
      *       - Inventory Items
-     *     summary: Get item by inventory number
-     *     description: Retrieve an inventory item by its inventory number
+     *     summary: Get item by inventory number (any status)
+     *     description: Retrieve an inventory item by its inventory number regardless of status
      *     security:
      *       - bearerAuth: []
      *     parameters:
@@ -39,7 +70,7 @@ export function createInventoryItemRouter(
      *       401:
      *         description: Unauthorized
      */
-    router.get('/by-inventory-number/:inventoryNumber', auth, controller.getByInventoryNumber);
+    router.get('/by-inventory-number/:inventoryNumber', auth, controller.getItemByInventoryNumber);
 
     /**
      * @openapi
@@ -71,37 +102,6 @@ export function createInventoryItemRouter(
      *         description: Unauthorized
      */
     router.get('/by-serial-number/:serialNumber', auth, controller.getBySerialNumber);
-
-    /**
-     * @openapi
-     * /api/inventory-items/{id}:
-     *   get:
-     *     tags:
-     *       - Inventory Items
-     *     summary: Get item by ID
-     *     description: Retrieve an inventory item by its ID
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *         description: Item ID
-     *     responses:
-     *       200:
-     *         description: Inventory item details
-     *         content:
-     *           application/json:
-     *             schema:
-     *               $ref: '#/components/schemas/InventoryItem'
-     *       404:
-     *         description: Item not found
-     *       401:
-     *         description: Unauthorized
-     */
-    router.get('/:id', auth, controller.getById);
 
     /**
      * @openapi
