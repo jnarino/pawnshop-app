@@ -31,6 +31,7 @@ export interface InventoryItemDraft {
   capacity?: string;
   inventoryItem?: any; // Avoiding strict type import for now to prevent cycles if any
   priceEach?: number;
+  inventoryNumber?: string;
   taxExempt?: boolean;
 }
 

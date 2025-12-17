@@ -3,7 +3,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreateSale } from '../hooks/useCreateSale';
 import { useSalesWorkflow } from '../contexts/SalesWorkflowContext';
-import { SaleForm, type InventoryItemDraft, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
+import { SaleForm, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
+import { type InventoryItemDraft } from '../../_shared/sale/components/InventoryItemModal';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
@@ -16,13 +17,15 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const customerId = customer?.id;
 
   const handleDraftChange = useCallback((draft: SaleFormDraftState) => {
-    updatePawnDraft(draft);
+    // Only persist items to the global draft, ignore transient form fields
+    updatePawnDraft({ items: draft.items });
   }, [updatePawnDraft]);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
     items: InventoryItemDraft[];
   }) => {
+    // ... type conversion helpers ...
     const toISOString = (dateStr?: string): string => {
       if (!dateStr) return new Date().toISOString();
       return new Date(dateStr).toISOString();
@@ -39,7 +42,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
     });
 
     const payload = {
-      pawn: pawnData,
+      sale: pawnData,
       items: formData.items.map(item => {
         const attributes = removeNullish({
           sub1: item.sub1,
@@ -76,11 +79,13 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       }),
     };
 
-    const ticketId = await createTicket(payload);
-    if (ticketId) {
+    const ticket = await createTicket(payload);
+    if (ticket) {
+      // Refresh logic or navigation
       resetPawnDraft();
+      // If we need to redirect or show success, we can use ticket.id
       if (onTicketCreated) {
-        onTicketCreated(ticketId);
+        onTicketCreated(ticket.id);
       }
     }
   }, [customerId, createTicket, onTicketCreated, resetPawnDraft]);
@@ -110,7 +115,13 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <SaleForm
-          externalDraft={pawnDraft}
+          externalDraft={{
+            ...pawnDraft,
+            inventoryNumber: '',
+            quantity: 1,
+            description: '',
+            priceEach: 0
+          }}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}

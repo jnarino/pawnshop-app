@@ -52,7 +52,7 @@ function createInitialDraft(): SaleDraftState {
 }
 
 export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [activeTab, setActiveTab] = useState<TabKey>('customer');
+  const [activeTab, setActiveTab] = useState<TabKey>('newSale');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [saleDraft, setSaleDraft] = useState<SaleDraftState>(createInitialDraft);
@@ -60,7 +60,7 @@ export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNo
   const navigate = useNavigate();
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
-    if (tab === 'customer') return true;
+    if (tab === 'customer' || tab === 'newSale') return true;
     return !!customer?.id;
   }, [customer?.id]);
 
@@ -92,9 +92,9 @@ export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNo
     activeTab,
     customer,
     setCustomer,
-    saleDraft,
-    updateSaleDraft,
-    resetSaleDraft,
+    pawnDraft: saleDraft,
+    updatePawnDraft: updateSaleDraft,
+    resetPawnDraft: resetSaleDraft,
     cancelModalOpen,
     setActiveTab,
     canNavigateToTab,

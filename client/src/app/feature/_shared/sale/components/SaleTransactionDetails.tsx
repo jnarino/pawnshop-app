@@ -13,7 +13,7 @@ interface SaleTransactionDetailsProps {
   readonly inventoryItem?: InventoryItem;
   readonly quantity?: number;
   readonly description?: string;
-  readonly priceEach?: number;
+  readonly priceEach?: number | string;
   readonly onSearchInventoryItem: (value: string) => void;
   readonly handleSaveItem: (item: any) => void; // TODO: any
   readonly handleFieldByKey: (key: string, value: any) => void;
@@ -66,7 +66,7 @@ export function SaleTransactionDetails({
                 className="h-full"
                 value={description}
                 onChange={(e) => handleFieldByKey('description', e.target.value)}
-                disabled={disabled || !inventoryItem}
+                disabled={disabled || !!inventoryItem} // Read-only ONLY if item is found
               />
             </div>
           </div>
@@ -77,24 +77,34 @@ export function SaleTransactionDetails({
                 type="number"
                 value={quantity ?? ''}
                 min={1}
-                max={inventoryItem?.quantity || 1}
+                // Only enforce max if we have an inventory item with tracked quantity
+                max={inventoryItem?.quantity ? inventoryItem.quantity : undefined}
                 onChange={(e) => {
                   const val = e.target.valueAsNumber;
                   const max = inventoryItem?.quantity || 0;
-                  if (val <= max) {
+                  // If manual item (no inventoryItem), allow any quantity > 0
+                  // If inventory item, enforce max
+                  if (!inventoryItem || val <= max) {
                     handleFieldByKey('quantity', val);
                   }
                 }}
-                disabled={disabled || !inventoryItem}
+                disabled={disabled} // Always enabled (unless form is disabled)
               />
             </div>
             <div className="gap-2">
-              <Label>Price each</Label><Input
+              <Label>Price each</Label>
+              <Input
                 type="number"
                 step="0.01"
                 value={priceEach ?? ''}
-                onChange={(e) => handleFieldByKey('priceEach', e.target.valueAsNumber)}
-                disabled={disabled || !inventoryItem}
+                onChange={(e) => handleFieldByKey('priceEach', e.target.value)} // Pass string to allow typing decimals
+                onBlur={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    handleFieldByKey('priceEach', val.toFixed(2));
+                  }
+                }}
+                disabled={disabled} // Always enabled
               />
             </div>
           </div>
@@ -141,12 +151,13 @@ export function SaleTransactionDetails({
               type="button"
               onClick={() => handleSaveItem({
                 inventoryItem,
+                inventoryNumber, // Pass the manual number
                 description,
                 quantity,
                 priceEach,
                 taxExempt: false
               })}
-              disabled={disabled || !inventoryItem || !quantity || quantity <= 0}
+              disabled={disabled || !quantity || quantity <= 0} // Allow saving if we have quantity
               size="sm"
             >
               <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item

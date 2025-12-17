@@ -41,7 +41,7 @@ export interface SaleFormDraftState {
   inventoryNumber: string;
   quantity: number;
   description: string;
-  priceEach: number;
+  priceEach: number | string;
   items: InventoryItemDraft[];
 }
 
@@ -53,7 +53,7 @@ interface SaleTicketFormProps {
     readonly inventoryItem?: InventoryItem;
     readonly quantity?: number;
     readonly description?: string;
-    readonly priceEach?: number;
+    readonly priceEach?: number | string;
     readonly items?: InventoryItemDraft[];
   };
   readonly externalDraft?: SaleFormDraftState;
@@ -94,7 +94,7 @@ export function SaleForm({
     inventoryNumber: initialData?.inventoryNumber || '',
     inventoryItem: initialData?.inventoryItem,
     description: initialData?.description || '',
-    priceEach: initialData?.priceEach,
+    priceEach: initialData?.priceEach || '',
     quantity: initialData?.quantity,
     items: initialData?.items || [] as any[] // TODO: any
   });
@@ -145,13 +145,22 @@ export function SaleForm({
   }, [formData, totalValue, onSubmit, isViewMode]);
 
   const handleSaveItem = useCallback((item: any) => { // TODO: any
+    // Ensure numeric values are numbers
+    const processedItem = {
+      ...item,
+      // Generate a temporary ID if no inventory item exists
+      id: item.inventoryItem?.id || item.id || `manual-${Date.now()}`,
+      priceEach: Number(item.priceEach),
+      amount: Number(item.priceEach) // Map priceEach to amount for the backend
+    };
+
     if (editingItem) {
       updateFormData({
-        items: formData.items.map(i => i.inventoryItem.id === item.inventoryItem.id ? item : i)
+        items: formData.items.map(i => i.id === editingItem.id ? processedItem : i)
       });
     } else {
       updateFormData({
-        items: [...formData.items, item],
+        items: [...formData.items, processedItem],
         inventoryNumber: '',
         inventoryItem: undefined,
         description: '',
@@ -166,7 +175,7 @@ export function SaleForm({
 
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
     updateFormData({
-      inventoryNumber: item.inventoryItem.inventoryNumber,
+      inventoryNumber: item.inventoryItem?.inventoryNumber || item.inventoryNumber || '',
       inventoryItem: item.inventoryItem,
       description: item.description,
       quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity),
@@ -244,13 +253,23 @@ export function SaleForm({
   }, [controlNumber, formData.items, printLabels]);
 
   const handleOnSearchInventoryItem = useCallback(async (inventoryItem: string) => {
-    const item = await findAvailableItemByNumber(inventoryItem);
-    updateFormData({
-      inventoryItem: item,
-      description: item.itemDescription || item.description || '',
-      quantity: 1,
-      priceEach: item.resale || 0
-    });
+    try {
+      const item = await findAvailableItemByNumber(inventoryItem);
+      if (item) {
+        updateFormData({
+          inventoryItem: item,
+          description: item.itemDescription || item.description || '',
+          quantity: 1,
+          priceEach: item.resale || 0
+        });
+      }
+    } catch (e) {
+      console.error("Item not found", e);
+      // Optional: Clear inventoryItem if search fails to allow manual entry?
+      // updateFormData({ inventoryItem: undefined });
+      // Actually, if it fails, we assume manual entry. 
+      // We don't want to clear the inventoryNumber they typed.
+    }
   }, [updateFormData, findAvailableItemByNumber]);
 
   const handleQuantityChange = useCallback((quantity: number) => {
@@ -307,9 +326,9 @@ export function SaleForm({
                       </TableHeader>
                       <TableBody>
                         {formData.items.map((item) => (
-                          <TableRow key={item.inventoryItem.id}>
+                          <TableRow key={item.id || item.inventoryItem?.id}>
                             <TableCell>
-                              {item.inventoryItem.inventoryNumber}
+                              {item.inventoryItem?.inventoryNumber || item.inventoryNumber}
                             </TableCell>
                             <TableCell>{item.description || ''}</TableCell>
                             <TableCell>{item.quantity || 1}</TableCell>

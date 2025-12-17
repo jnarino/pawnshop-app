@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
-import { pawnTicketApi, CreatePawnTicketPayload, PawnTicketResponse } from '@/app/core/api/pawnTicketApi';
+import { salesApi, CreateSalePayload, SaleResponse } from '@/app/core/api/salesApi';
 
-interface UseCreatePawnTicketResult {
-  createTicket: (payload: CreatePawnTicketPayload) => Promise<PawnTicketResponse | null>;
+interface UseCreateSaleResult {
+  createTicket: (payload: CreateSalePayload) => Promise<SaleResponse | null>;
   isLoading: boolean;
   error: string | null;
   success: string | null;
   resetState: () => void;
 }
 
-export function useCreateSale(): UseCreatePawnTicketResult {
+export function useCreateSale(): UseCreateSaleResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -20,14 +20,14 @@ export function useCreateSale(): UseCreatePawnTicketResult {
     setIsLoading(false);
   }, []);
 
-  const createTicket = useCallback(async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse | null> => {
+  const createTicket = useCallback(async (payload: CreateSalePayload): Promise<SaleResponse | null> => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await pawnTicketApi.create(payload);
-      const successMessage = `Pawn ticket ${result.controlNumber || result.id} created successfully!`;
+      const result = await salesApi.create(payload);
+      const successMessage = `Sale ${result.ticketNumber || result.id} created successfully!`;
       setSuccess(successMessage);
       return result;
     } catch (err) {
