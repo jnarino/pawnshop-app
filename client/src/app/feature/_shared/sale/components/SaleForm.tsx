@@ -151,7 +151,12 @@ export function SaleForm({
       });
     } else {
       updateFormData({
-        items: [...formData.items, item]
+        items: [...formData.items, item],
+        inventoryNumber: '',
+        inventoryItem: undefined,
+        description: '',
+        priceEach: undefined,
+        quantity: undefined
       });
     }
 
@@ -160,9 +165,15 @@ export function SaleForm({
   }, [editingItem, formData.items, updateFormData]);
 
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
-    setEditingItem(item);
-    setShowItemModal(true);
-  }, []);
+    updateFormData({
+      inventoryNumber: item.inventoryItem.inventoryNumber,
+      inventoryItem: item.inventoryItem,
+      description: item.description,
+      quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity),
+      priceEach: typeof item.priceEach === 'number' ? item.priceEach : Number(item.priceEach),
+      items: formData.items.filter(i => i.id !== item.id)
+    });
+  }, [formData.items, updateFormData]);
 
   const handleViewItem = useCallback((item: InventoryItemDraft) => {
     setEditingItem(item);

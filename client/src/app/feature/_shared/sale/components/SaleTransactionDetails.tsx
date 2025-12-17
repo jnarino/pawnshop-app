@@ -75,7 +75,7 @@ export function SaleTransactionDetails({
               <Label>Quantity</Label>
               <Input
                 type="number"
-                value={quantity}
+                value={quantity ?? ''}
                 min={1}
                 max={inventoryItem?.quantity || 1}
                 onChange={(e) => {
@@ -92,7 +92,7 @@ export function SaleTransactionDetails({
               <Label>Price each</Label><Input
                 type="number"
                 step="0.01"
-                value={priceEach}
+                value={priceEach ?? ''}
                 onChange={(e) => handleFieldByKey('priceEach', e.target.valueAsNumber)}
                 disabled={disabled || !inventoryItem}
               />

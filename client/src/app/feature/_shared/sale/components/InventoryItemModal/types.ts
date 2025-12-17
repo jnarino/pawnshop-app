@@ -29,6 +29,9 @@ export interface InventoryItemDraft {
   action?: string;
   barrelLength?: string;
   capacity?: string;
+  inventoryItem?: any; // Avoiding strict type import for now to prevent cycles if any
+  priceEach?: number;
+  taxExempt?: boolean;
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {
