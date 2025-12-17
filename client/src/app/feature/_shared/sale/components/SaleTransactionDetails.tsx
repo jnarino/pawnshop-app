@@ -56,7 +56,7 @@ export function SaleTransactionDetails({
                   onChange={(e) => handleFieldByKey('inventoryNumber', e.currentTarget.value)}
                 // disabled={disabled}
                 />
-                <Button variant="outline" onClick={() => onSearchInventoryItem('')}>Find</Button>
+                <Button variant="outline" onClick={() => onSearchInventoryItem(inventoryNumber || '')}>Find</Button>
               </div>
             </div>
             <div>
@@ -76,7 +76,15 @@ export function SaleTransactionDetails({
               <Input
                 type="number"
                 value={quantity}
-                onChange={(e) => handleFieldByKey('quantity', e.target.valueAsNumber)}
+                min={1}
+                max={inventoryItem?.quantity || 1}
+                onChange={(e) => {
+                  const val = e.target.valueAsNumber;
+                  const max = inventoryItem?.quantity || 0;
+                  if (val <= max) {
+                    handleFieldByKey('quantity', val);
+                  }
+                }}
                 disabled={disabled || !inventoryItem}
               />
             </div>
@@ -96,7 +104,7 @@ export function SaleTransactionDetails({
               <Input
                 type="number"
                 step="0.01"
-                value={0}
+                value={inventoryItem?.quantity || 0}
                 onChange={() => { }}
                 disabled
               />
@@ -115,9 +123,9 @@ export function SaleTransactionDetails({
               <Input
                 type="number"
                 step="0.01"
-                value={0}
+                value={inventoryItem?.priceAmount || 0}
                 onChange={() => { }}
-                disabled={disabled || !inventoryItem}
+                disabled={true}
               />
             </div>
           </div>

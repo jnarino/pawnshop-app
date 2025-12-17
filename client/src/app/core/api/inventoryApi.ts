@@ -4,11 +4,15 @@ export interface InventoryItem {
   id: string
   inventoryNumber: string
   serialNumber: string
-  description: string
-  categoryId: string
+  description?: string // Keeping for backward compatibility if needed
+  itemDescription?: string
+  categoryId?: string
   status: string
-  cost: number
-  retailPrice: number
+  cost?: number
+  priceAmount?: number // This seems to be the cost from the JSON
+  retailPrice?: number
+  resale?: number
+  quantity?: number
 }
 
 export const inventoryApi = {

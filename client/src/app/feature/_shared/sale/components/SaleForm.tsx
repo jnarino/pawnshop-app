@@ -234,8 +234,13 @@ export function SaleForm({
 
   const handleOnSearchInventoryItem = useCallback(async (inventoryItem: string) => {
     const item = await findAvailableItemByNumber(inventoryItem);
-    updateFormData({ inventoryItem: item });
-  }, [updateFormData]);
+    updateFormData({
+      inventoryItem: item,
+      description: item.itemDescription || item.description || '',
+      quantity: 1,
+      priceEach: item.resale || 0
+    });
+  }, [updateFormData, findAvailableItemByNumber]);
 
   const handleQuantityChange = useCallback((quantity: number) => {
     updateFormData({ quantity });

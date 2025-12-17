@@ -22,8 +22,11 @@ export function useFindAvailableItemByNumber(): UseFindAvailableItemByNumberResu
 
   const findAvailableItemByNumber = useCallback(async (number: string): Promise<InventoryItem> => {
     setIsLoading(true);
-    setError(null);
-    setSuccess(null);
+    if (!number || !number.trim()) {
+      const msg = 'Inventory number is required';
+      setError(msg);
+      return Promise.reject(msg);
+    }
 
     try {
       const result = await inventoryApi.findAvailableItemByNumber(number);
