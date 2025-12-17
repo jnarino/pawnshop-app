@@ -41,7 +41,7 @@ export function TransactionDetails({
       <CardContent className="p-6 grid gap-6">
         {/* Radio Group */}
         <div className="flex flex-col gap-3">
-          <Label>Transaction Type</Label>
+          <Label>Transaction type</Label>
           <RadioGroup
             value={type}
             onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}

@@ -61,27 +61,27 @@ export default function HomePage() {
                 <p className="mb-6 text-gray-700">Choose an action to get started.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <ActionCard 
-                        to="/pawns" 
-                        title="Pawn" 
-                        subtitle="Pawn / Buy" 
+                    <ActionCard
+                        to="/pawns"
+                        title="Pawn"
+                        subtitle="Pawn / Buy"
                         icon={HandshakeIcon}
                     />
-                    <ActionCard 
-                        to="/Payments" 
-                        title="Payments" 
-                        subtitle="Pay Pawn" 
+                    <ActionCard
+                        to="/Payments"
+                        title="Payments"
+                        subtitle="Pay Pawn"
                         icon={MoneyBagIcon}
                     />
-                    <ActionCard 
-                        to="/Sales" 
-                        title="Sales" 
-                        subtitle="Sale" 
+                    <ActionCard
+                        to="/sales"
+                        title="Sales"
+                        subtitle="Sale"
                         icon={SellIcon}
                     />
-                    <ActionCard 
-                        title="Reports" 
-                        subtitle="View Reports" 
+                    <ActionCard
+                        title="Reports"
+                        subtitle="View Reports"
                         icon={ChartReportsIcon}
                         to="/reports"
                     />
