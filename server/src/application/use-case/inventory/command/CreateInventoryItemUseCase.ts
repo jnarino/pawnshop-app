@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { InventoryItem } from '../../../../domains/inventory/InventoryItem';
 import { InventoryItemRepository } from '../../../../domains/inventory/InventoryItemRepository';
 import {
@@ -20,9 +20,9 @@ export class CreateInventoryItemUseCase {
         const now = new Date();
 
         const item = new InventoryItem({
-            id: uuidv4(),
+            id: crypto.randomUUID(),
 
-            categoryId: dto.categoryId,
+            inventorySubcategoryId: dto.inventorySubcategoryId,
             status: dto.status ?? 'I',
             quantity: dto.quantity ?? 1,
 

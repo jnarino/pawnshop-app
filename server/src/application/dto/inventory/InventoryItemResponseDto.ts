@@ -1,11 +1,17 @@
+export type LookupDto = {
+  id: string;
+  name: string;
+};
+
 export type InventoryItemResponseDto = {
   id: string;
 
-  categoryId: string;
+  inventorySubcategory: LookupDto;
+  inventoryCategory: LookupDto;
   status: string;
   quantity: number;
 
-  brand: string | null;
+  brand: LookupDto | null;
   model: string | null;
   serialNumber: string | null;
   colorId: string | null;

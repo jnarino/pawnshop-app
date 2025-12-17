@@ -13,15 +13,19 @@ class MockAppUserRepository implements AppUserRepository {
 }
 
 describe('UpdateAppUserUseCase', () => {
+  const userId = '550e8400-e29b-41d4-a716-446655440005';
+  const actorId = '550e8400-e29b-41d4-a716-446655440006';
+  const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+
   it('should forbid non-admin and non-manager from updating users', async () => {
     const repo = new MockAppUserRepository();
     const useCase = new UpdateAppUserUseCase(repo);
 
-    const actor = { id: '1', username: 'test', role: 'sales_associate' };
+    const actor = { id: actorId, username: 'test', role: 'sales_associate' };
 
     await expect(
       useCase.execute(actor, {
-        id: '123',
+        id: userId,
         username: 'updated',
         firstName: 'Updated',
         lastName: 'User',
@@ -35,11 +39,11 @@ describe('UpdateAppUserUseCase', () => {
     repo.findById.mockResolvedValue(null);
     const useCase = new UpdateAppUserUseCase(repo);
 
-    const actor = { id: '1', username: 'admin', role: 'admin' };
+    const actor = { id: actorId, username: 'admin', role: 'admin' };
 
     await expect(
       useCase.execute(actor, {
-        id: '999',
+        id: nonExistentId,
         username: 'nonexistent',
         firstName: 'Test',
         lastName: 'User',
@@ -51,7 +55,7 @@ describe('UpdateAppUserUseCase', () => {
   it('should allow admin to update user', async () => {
     const repo = new MockAppUserRepository();
     const existingUser = new AppUser({
-      id: '123',
+      id: userId,
       username: 'oldname',
       passwordHash: 'hash',
       firstName: 'Old',
@@ -65,17 +69,17 @@ describe('UpdateAppUserUseCase', () => {
     repo.findById.mockResolvedValue(existingUser);
 
     const useCase = new UpdateAppUserUseCase(repo);
-    const actor = { id: '1', username: 'admin', role: 'admin' };
+    const actor = { id: actorId, username: 'admin', role: 'admin' };
 
     const result = await useCase.execute(actor, {
-      id: '123',
+      id: userId,
       username: 'newname',
       firstName: 'New',
       lastName: 'Name',
       roleId: 2
     });
 
-    expect(repo.findById).toHaveBeenCalledWith('123');
+    expect(repo.findById).toHaveBeenCalledWith(userId);
     expect(repo.update).toHaveBeenCalled();
     expect(result.username).toBe('newname');
   });
@@ -83,7 +87,7 @@ describe('UpdateAppUserUseCase', () => {
   it('should allow manager to update user', async () => {
     const repo = new MockAppUserRepository();
     const existingUser = new AppUser({
-      id: '123',
+      id: userId,
       username: 'oldname',
       passwordHash: 'hash',
       firstName: 'Old',
@@ -97,10 +101,10 @@ describe('UpdateAppUserUseCase', () => {
     repo.findById.mockResolvedValue(existingUser);
 
     const useCase = new UpdateAppUserUseCase(repo);
-    const actor = { id: '1', username: 'manager', role: 'manager' };
+    const actor = { id: actorId, username: 'manager', role: 'manager' };
 
     const result = await useCase.execute(actor, {
-      id: '123',
+      id: userId,
       username: 'updatedname',
       firstName: 'Updated',
       lastName: 'User',

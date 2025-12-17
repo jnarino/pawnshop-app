@@ -376,6 +376,45 @@ VALUES ('FL 30/30 @25%', 30, 30, 0.2500, 5.00)
 ON CONFLICT (name) DO NOTHING;
 
 -------------------------
+-- Pawn ticket status
+-------------------------
+CREATE TABLE IF NOT EXISTS pawn_ticket_status (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  status TEXT NOT NULL,
+  description TEXT,
+  transaction_type TEXT NOT NULL REFERENCES pawn_transaction_type(code),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(status, transaction_type)
+);
+
+DROP TRIGGER IF EXISTS trg_pawn_ticket_status_updated ON pawn_ticket_status;
+CREATE TRIGGER trg_pawn_ticket_status_updated
+BEFORE UPDATE ON pawn_ticket_status
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+-- Seed Statuses
+-- Seed Statuses
+INSERT INTO pawn_ticket_status (status, description, transaction_type, is_active) VALUES
+  -- PAWN statuses
+  ('U', 'Redeem', 'PAWN', true),
+  ('R', 'Redeemed', 'PAWN', false),
+  ('D', 'Defaulted', 'PAWN', false),
+  ('H', 'Police Hold', 'PAWN', true),
+  ('C', 'Confiscation', 'PAWN', false),
+  ('V', 'Voided', 'PAWN', false),
+  ('P', 'Pawn', 'PAWN', true), 
+  
+  -- PURCHASE statuses
+  ('B', 'Buy', 'PURCHASE', true),
+  ('I', 'Inventory', 'PURCHASE', true),
+  ('V', 'Voided', 'PURCHASE', false),
+  ('H', 'Police Hold', 'PURCHASE', true),
+  ('C', 'Confiscation', 'PURCHASE', false)
+ON CONFLICT (status, transaction_type) DO NOTHING;
+
+-------------------------
 -- Pawn tickets
 -------------------------
 CREATE TABLE IF NOT EXISTS pawn_ticket (
@@ -385,6 +424,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   customer_id UUID NOT NULL REFERENCES customer(id) ON DELETE RESTRICT,
 
   amount_financed NUMERIC(12,2),
+  original_pawn_amount NUMERIC(12,2),
   finance_charge NUMERIC(12,2),
   periodic_rate NUMERIC(6,4),
   total_of_payments NUMERIC(12,2),
@@ -406,7 +446,8 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
   default_marked_by UUID REFERENCES app_user(id) ON DELETE SET NULL,
   default_reason TEXT,
 
-  pawn_status TEXT NOT NULL DEFAULT 'active',
+  status_id UUID NOT NULL REFERENCES pawn_ticket_status(id),
+  created_by UUID REFERENCES app_user(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -415,24 +456,19 @@ CREATE TABLE IF NOT EXISTS pawn_ticket (
 
   CONSTRAINT pawn_ticket_amount_consistency CHECK (
     (transaction_type = 'PAWN'
-      AND amount_financed IS NOT NULL AND finance_charge IS NOT NULL
-      AND periodic_rate IS NOT NULL AND total_of_payments IS NOT NULL AND apr IS NOT NULL
+      AND amount_financed IS NOT NULL AND periodic_rate IS NOT NULL
       AND purchase_trade_value IS NULL)
     OR
     (transaction_type = 'PURCHASE'
       AND purchase_trade_value IS NOT NULL
       AND amount_financed IS NULL AND finance_charge IS NULL
       AND periodic_rate IS NULL AND total_of_payments IS NULL AND apr IS NULL)
-  ),
-
-  CONSTRAINT pawn_ticket_pawn_status_check CHECK (
-    pawn_status IN ('active','redeemed','defaulted','police hold','confiscation','voided')
   )
 );
 CREATE INDEX IF NOT EXISTS pawn_ticket_customer_idx     ON pawn_ticket(customer_id);
 CREATE INDEX IF NOT EXISTS pawn_ticket_type_idx         ON pawn_ticket(transaction_type);
 CREATE INDEX IF NOT EXISTS pawn_ticket_transaction_idx  ON pawn_ticket(transaction_date);
-CREATE INDEX IF NOT EXISTS idx_pawn_ticket_pawn_status  ON pawn_ticket(pawn_status);
+CREATE INDEX IF NOT EXISTS idx_pawn_ticket_status_id    ON pawn_ticket(status_id);
 CREATE INDEX IF NOT EXISTS idx_pawn_ticket_last_payment ON pawn_ticket(last_payment_at);
 CREATE INDEX IF NOT EXISTS idx_pawn_ticket_control_num  ON pawn_ticket(control_number);
 
@@ -755,3 +791,45 @@ $$ LANGUAGE plpgsql;
 -- Attribute dictionary (schema only; seeds later)
 -----------------------
 -- Removed duplicate item_attribute tables (consolidated on item_attribute_type/value)
+
+-------------------------
+-- Police Hold Items
+-------------------------
+CREATE TABLE IF NOT EXISTS hold_item (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  control_number TEXT, -- Matches LookupKey
+  customer_id UUID REFERENCES customer(id) ON DELETE SET NULL, -- Matches emp_fk
+  hold_date DATE, -- date
+  agency TEXT, -- agency
+  case_number TEXT, -- casenum
+  date_out DATE, -- dateout
+  is_hold BOOLEAN, -- ishold
+  is_inventory BOOLEAN, -- isinv
+  item_list TEXT, -- itemlist
+  comment TEXT, -- comment
+  agent_last_name TEXT, -- agentln
+  agent_first_name TEXT, -- agentfn
+  agent_middle_initial TEXT, -- agentmi
+  badge_number TEXT, -- badge
+  phone_area_code TEXT, -- ac1
+  phone_number TEXT, -- phone1
+  phone_extension TEXT, -- ext1
+  jurisdiction TEXT, -- jurisdict
+  legacy_hcn_id UUID, -- HCN_id
+  updated_by UUID REFERENCES app_user(id) ON DELETE SET NULL, -- LastUpdatedUSR_ID
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS trg_hold_item_updated ON hold_item;
+CREATE TRIGGER trg_hold_item_updated
+BEFORE UPDATE ON hold_item
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TABLE IF NOT EXISTS hold_item_inventory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hold_item_id UUID NOT NULL REFERENCES hold_item(id) ON DELETE CASCADE,
+  inventory_item_id UUID NOT NULL REFERENCES inventory_item(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(hold_item_id, inventory_item_id)
+);

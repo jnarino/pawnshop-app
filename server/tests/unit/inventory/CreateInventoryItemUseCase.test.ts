@@ -12,18 +12,23 @@ class MockInventoryItemRepository implements InventoryItemRepository {
 }
 
 describe('CreateInventoryItemUseCase', () => {
+  const validSubcategoryId = '550e8400-e29b-41d4-a716-446655440000';
+  const validBrandId = '550e8400-e29b-41d4-a716-446655440001';
+
   it('should create an inventory item with required fields', async () => {
     const repo = new MockInventoryItemRepository();
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 100,
       status: 'I',
       quantity: 1
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.categoryId).toBe('cat-123');
+    expect(result.inventorySubcategory.id).toBe(validSubcategoryId);
     expect(result.status).toBe('I');
     expect(result.quantity).toBe(1);
   });
@@ -33,10 +38,10 @@ describe('CreateInventoryItemUseCase', () => {
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
       status: 'I',
       quantity: 1,
-      brand: 'Apple',
+      brand: validBrandId,
       model: 'iPhone 13',
       serialNumber: 'ABC123456',
       itemDescription: 'Mint condition',
@@ -45,7 +50,7 @@ describe('CreateInventoryItemUseCase', () => {
     });
 
     expect(repo.create).toHaveBeenCalled();
-    expect(result.brand).toBe('Apple');
+    expect(result.brand?.id).toBe(validBrandId);
     expect(result.model).toBe('iPhone 13');
     expect(result.serialNumber).toBe('ABC123456');
   });
@@ -55,7 +60,9 @@ describe('CreateInventoryItemUseCase', () => {
     const useCase = new CreateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      categoryId: 'cat-123',
+      inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 200,
       status: 'I',
       quantity: 1,
       extra: { custom: 'value' },

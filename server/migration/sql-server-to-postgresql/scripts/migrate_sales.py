@@ -70,13 +70,16 @@ def migrate_sales():
         errors = 0
         
         # Pre-fetch existing transactions (legacy_ticketnum -> id)
-        # Note: This map could be huge. If too big, process in small chunks or query per PROBABLY SLOW?
-        # Better: Select only ticketnums present in Sales?
-        # For now, let's load all transactions with legacy_ticketnum (from migrate_transactions)
         print("Fetching existing transactions map...")
         pg_cursor.execute("SELECT legacy_ticketnum, id FROM store_transaction WHERE legacy_ticketnum IS NOT NULL")
         tx_map = {str(row[0]).strip(): str(row[1]) for row in pg_cursor.fetchall()}
         print(f"Loaded {len(tx_map)} existing transactions")
+        
+        # Load Inventory Map (inventory_number -> {id, status})
+        print("Fetching Inventory Map (inventory_number -> {id, status})...")
+        pg_cursor.execute("SELECT inventory_number, id, status FROM inventory_item WHERE inventory_number IS NOT NULL")
+        inv_map = {str(row[0]).strip(): {'id': str(row[1]), 'status': row[2]} for row in pg_cursor.fetchall()}
+        print(f"Loaded {len(inv_map)} inventory items")
 
         batch_size = 1000
         batch_tx = []
@@ -88,9 +91,7 @@ def migrate_sales():
         for row in tqdm(sales_rows):
             try:
                 # IDs
-                # Use Sold_pk (int) for legacy_acct_pk (BigInt)
                 legacy_int_pk = row.get('Sold_pk')
-                # SLD_id is UUID, unused for legacy_acct_pk
                 ticket_num = str(row.get('TICKETNUM')).strip()
                 
                 # Check if Transaction already migrated (via Acct table)
@@ -137,6 +138,18 @@ def migrate_sales():
                 if lookup_key in items_map:
                     seq = 1
                     for item in items_map[lookup_key]:
+                         invnum = str(item.get('INVNUM') or '').strip()
+                         inv_data = inv_map.get(invnum)
+                         inv_uuid = inv_data['id'] if inv_data else None
+                         
+                         # Status from Inventory Item (per user request)
+                         # Fallback to sitems status if inv not found
+                         if inv_data and inv_data.get('status'):
+                             status = inv_data['status']
+                         else:
+                             # Use raw status code, fallback to 'S' if empty
+                             status = str(item.get('Status') or 'S').strip()
+
                          batch_items.append((
                              str(uuid.uuid4()),
                              tx_id,
@@ -145,7 +158,9 @@ def migrate_sales():
                              float(item.get('QTY') or 1),
                              item.get('AMOUNT'), 
                              item.get('COST'),
-                             safe_str(item.get('Items_FK'))
+                             safe_str(item.get('Items_FK')),
+                             inv_uuid,
+                             status
                          ))
                          seq += 1
                 
@@ -184,7 +199,7 @@ def _flush_batches(cursor, txs, items, tenders):
     if items:
          execute_values(cursor, """
             INSERT INTO store_transaction_item (
-                id, store_transaction_id, sequence, description, quantity, line_amount, line_cost, legacy_items_pk
+                id, store_transaction_id, sequence, description, quantity, line_amount, line_cost, legacy_items_pk, inventory_item_id, status
             ) VALUES %s ON CONFLICT DO NOTHING
         """, items)
     if tenders:

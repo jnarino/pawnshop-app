@@ -13,6 +13,12 @@ class MockInventoryItemRepository implements InventoryItemRepository {
 }
 
 describe('UpdateInventoryItemUseCase', () => {
+  const itemId = '550e8400-e29b-41d4-a716-446655440003';
+  const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+  const oldSubcategoryId = '550e8400-e29b-41d4-a716-446655440010';
+  const newSubcategoryId = '550e8400-e29b-41d4-a716-446655440011';
+  const subcategoryId = '550e8400-e29b-41d4-a716-446655440000';
+
   it('should throw NotFoundError if item does not exist', async () => {
     const repo = new MockInventoryItemRepository();
     repo.findById.mockResolvedValue(null);
@@ -20,8 +26,8 @@ describe('UpdateInventoryItemUseCase', () => {
 
     await expect(
       useCase.execute({
-        id: '999',
-        categoryId: 'cat-123'
+        id: nonExistentId,
+        inventorySubcategoryId: subcategoryId
       })
     ).rejects.toBeInstanceOf(NotFoundError);
   });
@@ -29,8 +35,8 @@ describe('UpdateInventoryItemUseCase', () => {
   it('should update existing inventory item', async () => {
     const repo = new MockInventoryItemRepository();
     const existingItem = new InventoryItem({
-      id: '123',
-      categoryId: 'old-cat',
+      id: itemId,
+      inventorySubcategoryId: oldSubcategoryId,
       status: 'I',
       quantity: 1,
       createdAt: new Date(),
@@ -41,22 +47,22 @@ describe('UpdateInventoryItemUseCase', () => {
     const useCase = new UpdateInventoryItemUseCase(repo);
 
     const result = await useCase.execute({
-      id: '123',
-      categoryId: 'new-cat',
+      id: itemId,
+      inventorySubcategoryId: newSubcategoryId,
       brand: 'Updated Brand',
       model: 'New Model'
     });
 
-    expect(repo.findById).toHaveBeenCalledWith('123');
+    expect(repo.findById).toHaveBeenCalledWith(itemId);
     expect(repo.update).toHaveBeenCalled();
-    expect(result.categoryId).toBe('new-cat');
+    expect(result.inventorySubcategory.id).toBe(newSubcategoryId);
   });
 
   it('should preserve fields not included in update', async () => {
     const repo = new MockInventoryItemRepository();
     const existingItem = new InventoryItem({
-      id: '123',
-      categoryId: 'cat-123',
+      id: itemId,
+      inventorySubcategoryId: subcategoryId,
       status: 'I',
       quantity: 5,
       brand: 'Original Brand',
@@ -69,7 +75,7 @@ describe('UpdateInventoryItemUseCase', () => {
     const useCase = new UpdateInventoryItemUseCase(repo);
 
     await useCase.execute({
-      id: '123',
+      id: itemId,
       brand: 'Updated Brand'
     });
 

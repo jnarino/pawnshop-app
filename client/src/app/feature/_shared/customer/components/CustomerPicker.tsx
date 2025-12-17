@@ -14,7 +14,6 @@ import { useCustomerForm } from '../hooks/useCustomerForm';
 import { useCustomerSearch } from '../hooks/useCustomerSearch';
 import { useCustomerSave } from '../hooks/useCustomerSave';
 import { useIdScanHandler } from '../hooks/useIdScanHandler';
-import { EYE_COLORS, HAIR_COLORS, RACES, ID_TYPES } from '../constants/customerConstants';
 
 interface Props {
   value?: CustomerDto | null;
@@ -279,11 +278,6 @@ const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, 
 
         {customerSave.saveError && <div className="error" role="alert">{customerSave.saveError}</div>}
         {customerSave.statusMessage && <div className="cp-status">{customerSave.statusMessage}</div>}
-
-        <datalist id="eyeColors">{EYE_COLORS.map(c => <option key={c} value={c} />)}</datalist>
-        <datalist id="hairColors">{HAIR_COLORS.map(c => <option key={c} value={c} />)}</datalist>
-        <datalist id="races">{RACES.map(c => <option key={c} value={c} />)}</datalist>
-        <datalist id="idTypes">{ID_TYPES.map(c => <option key={c} value={c} />)}</datalist>
       </form>
 
       <SearchResultsModal

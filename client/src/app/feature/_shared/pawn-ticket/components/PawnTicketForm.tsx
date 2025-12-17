@@ -1,17 +1,38 @@
 import { useState, useCallback } from 'react';
 import { InventoryItemModal, type InventoryItemDraft } from './InventoryItemModal';
+import { PrintLabelsModal } from './PrintLabelsModal';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDownIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
 import type { FormMode } from '../types/types';
+import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
 import visibilityIcon from '@/assets/icons/visibility.svg';
+import printerIcon from '@/assets/icons/printer.svg';
+import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
+
+export interface PawnFormDraftState {
+  type: 'PAWN' | 'PURCHASE';
+  periodicRate: string;
+  transactionDate: string;
+  maturityDate: string;
+  expirationDate: string;
+  items: InventoryItemDraft[];
+}
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -35,6 +56,9 @@ interface PawnTicketFormProps {
   };
   readonly externalDraft?: PawnFormDraftState;
   readonly onDraftChange?: (draft: PawnFormDraftState) => void;
+  readonly controlNumber?: string;
+  readonly pawnTicket?: PawnTicketData;
+  readonly customer?: CustomerData;
   readonly onSubmit?: (formData: {
     customerId: string;
     type: 'PAWN' | 'PURCHASE';
@@ -54,11 +78,17 @@ export function PawnTicketForm({
   initialData, 
   externalDraft,
   onDraftChange,
+  controlNumber,
+  pawnTicket,
+  customer,
   onSubmit, 
   disabled = false 
 }: PawnTicketFormProps) {
   const isViewMode = mode === 'VIEW';
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
+  const { printTransactionForm, printLabels } = usePawnPrint();
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showLabelModal, setShowLabelModal] = useState(false);
   
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
@@ -152,6 +182,63 @@ export function PawnTicketForm({
     });
   }, [formData.items, updateFormData]);
 
+  const handlePrintTicket = useCallback(async () => {
+    if (!controlNumber || !customer || !pawnTicket) return;
+    
+    setIsPrinting(true);
+    try {
+      const customerData = {
+        id: customer.id,
+        firstName: customer.firstName,
+        middleName: customer.middleName || '',
+        lastName: customer.lastName,
+        secondLastName: customer.secondLastName || '',
+        idType: customer.idType || '',
+        idNumber: customer.idNumber || '',
+        phoneNumber: customer.phoneNumber || '',
+        address: customer.streetAddress || '',
+        city: customer.city || '',
+        zipCode: customer.zipCode || ''
+      };
+
+      const items = formData.items.map(item => ({
+        type: item.type,
+        brand: item.brandName,
+        model: item.model,
+        serial: item.serial,
+        description: item.description,
+        amount: item.amount,
+        quantity: item.quantity,
+        ownerNumber: item.ownerNumber
+      }));
+
+      await printTransactionForm({ ticket: pawnTicket, customer: customerData, items });
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [controlNumber, customer, pawnTicket, formData.items, printTransactionForm]);
+
+  const handlePrintLabels = useCallback(() => {
+    setShowLabelModal(true);
+  }, []);
+
+  const handleConfirmPrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
+    if (!controlNumber) return;
+    
+    await printLabels(
+      controlNumber,
+      formData.items.map(item => ({
+        id: item.id || '',
+        inventoryNumber: item.ownerNumber || '',
+        description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
+        amount: item.amount || '0',
+        quantity: Number(item.quantity) || 1
+      })),
+      labelCounts
+    );
+    setShowLabelModal(false);
+  }, [controlNumber, formData.items, printLabels]);
+
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -180,7 +267,6 @@ export function PawnTicketForm({
           }}
         />
 
-        {/* Items Section */}
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -206,7 +292,6 @@ export function PawnTicketForm({
                 </div>
               ) : (
                 <div>
-                  {/* Table Header */}
                   <div className="px-5 py-3 bg-slate-100 border-b font-semibold text-sm grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center">
                     <div>Item</div>
                     <div>Quantity</div>
@@ -214,7 +299,6 @@ export function PawnTicketForm({
                     <div>Total</div>
                     <div className="text-center">Actions</div>
                   </div>
-                  {/* Table Body */}
                   <div className="divide-y">
                     {formData.items.map((item) => (
                       <div key={item.id} className="px-5 py-4 grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center hover:bg-slate-50">
@@ -269,6 +353,49 @@ export function PawnTicketForm({
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {isViewMode && controlNumber && (
+          <div className="flex justify-center mt-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={isPrinting}
+                  className="px-8 flex items-center gap-2"
+                >
+                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
+                  {isPrinting ? 'Printing...' : 'Print'}
+                  <ChevronDownIcon className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
+                    {' '}Print Ticket
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrintLabels}>
+                    {' '}Print Labels
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
+        <PrintLabelsModal
+          open={showLabelModal}
+          controlNumber={controlNumber || ''}
+          items={formData.items.map(item => ({
+            id: item.id || '',
+            inventoryNumber: item.ownerNumber || '',
+            description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
+            amount: item.amount || '0',
+            quantity: Number(item.quantity) || 1
+          }))}
+          onPrint={handleConfirmPrintLabels}
+          onCancel={() => setShowLabelModal(false)}
+        />
 
         {!isViewMode && (
           <div className="flex justify-center mt-6">

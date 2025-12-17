@@ -38,7 +38,7 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
 }
 
 describe('CreatePawnTicketWithItemsUseCase', () => {
-  it('should create pawn ticket with new inventory items', async () => {
+  it('should create PAWN transaction with finance details', async () => {
     const uow = new MockPawnTicketUnitOfWork();
     const useCase = new CreatePawnTicketWithItemsUseCase(uow);
 
@@ -51,18 +51,23 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
     const result = await useCase.execute({
       pawn: {
         transactionType: 'PAWN',
-        customerId: 'cust-123',
+        customerId: '11111111-1111-1111-1111-111111111111',
+        clerkUserId: '22222222-2222-2222-2222-222222222222',
         amountFinanced: 500,
+        periodicRate: 0.15, // 15% - backend will calculate financeCharge = 500 * 0.15 = 75
+        totalOfPayments: 575,
+        ratePlanId: 'aa111111-1111-1111-1111-111111111111',
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
         defaultDate: defaultDate.toISOString()
       },
       items: [
         {
-          categoryId: 'cat-1',
+          inventorySubcategoryId: '33333333-3333-3333-3333-333333333333',
+          brand: '44444444-4444-4444-4444-444444444444',
+          priceAmount: 100,
           status: 'I',
           quantity: 1,
-          brand: 'Apple',
           model: 'iPhone'
         }
       ]
@@ -70,11 +75,13 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
     expect(result.transactionType).toBe('PAWN');
     expect(result.amountFinanced).toBe(500);
-    expect(result.itemIds).toBeDefined();
-    expect(result.itemIds.length).toBeGreaterThan(0);
+    expect(result.financeCharge).toBe(75); // Calculated by backend
+    expect(result.periodicRate).toBe(0.15);
+    // Note: items array is only populated on query operations with JOIN, not on create
+    expect(Array.isArray(result.items)).toBe(true);
   });
 
-  it('should create pawn ticket with existing item IDs', async () => {
+  it('should create PURCHASE transaction without finance details', async () => {
     const uow = new MockPawnTicketUnitOfWork();
     const useCase = new CreatePawnTicketWithItemsUseCase(uow);
 
@@ -86,22 +93,34 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
     const result = await useCase.execute({
       pawn: {
-        transactionType: 'PAWN',
-        customerId: 'cust-123',
-        amountFinanced: 500,
+        transactionType: 'PURCHASE',
+        customerId: '11111111-1111-1111-1111-111111111111',
+        clerkUserId: '22222222-2222-2222-2222-222222222222',
+        purchaseTradeValue: 300,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
         defaultDate: defaultDate.toISOString()
       },
-      itemIds: ['existing-item-1', 'existing-item-2']
+      items: [
+        {
+          inventorySubcategoryId: '66666666-6666-6666-6666-666666666666',
+          brand: '77777777-7777-7777-7777-777777777777',
+          priceAmount: 300,
+          status: 'I',
+          quantity: 1,
+          model: 'Gold Ring'
+        }
+      ]
     });
 
-    expect(result.transactionType).toBe('PAWN');
-    expect(result.itemIds).toContain('existing-item-1');
-    expect(result.itemIds).toContain('existing-item-2');
+    expect(result.transactionType).toBe('PURCHASE');
+    expect(result.purchaseTradeValue).toBe(300);
+    expect(result.amountFinanced).toBeNull();
+    // Note: items array is only populated on query operations with JOIN, not on create
+    expect(Array.isArray(result.items)).toBe(true);
   });
 
-  it('should throw error if no items are provided', async () => {
+  it('should throw error when no items are provided', async () => {
     const uow = new MockPawnTicketUnitOfWork();
     const useCase = new CreatePawnTicketWithItemsUseCase(uow);
 
@@ -115,13 +134,15 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
       useCase.execute({
         pawn: {
           transactionType: 'PAWN',
-          customerId: 'cust-123',
+          customerId: '11111111-1111-1111-1111-111111111111',
+          clerkUserId: '22222222-2222-2222-2222-222222222222',
           amountFinanced: 500,
           transactionDate: today.toISOString(),
           maturityDate: maturity.toISOString(),
           defaultDate: defaultDate.toISOString()
-        }
+        },
+        items: [] // Empty array
       })
-    ).rejects.toThrow('Pawn ticket must have at least one linked item');
+    ).rejects.toThrow('At least one item must be provided');
   });
 });

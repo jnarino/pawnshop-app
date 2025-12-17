@@ -2,8 +2,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarInput } from '@/components/ui/dollar-input';
-import { JEWELRY_COLORS } from '@/app/shared/constants/jewelry';
-import { FIREARM_FINISHES } from '@/app/shared/constants/firearms';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
 import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
@@ -108,18 +108,13 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
       {/* Row 2: Color */}
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'}</Label>
-        <Select value={draft.color || ''} onValueChange={(value) => updateField('color', value)} disabled={disabled}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."} />
-          </SelectTrigger>
-          <SelectContent>
-            {(isFirearm ? FIREARM_FINISHES : JEWELRY_COLORS).map(item => (
-              <SelectItem key={item} value={item.toUpperCase()} className="text-xs uppercase">
-                {item.toUpperCase()}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LookupSelect
+          typeName={isFirearm ? LookupTypeName.FINISH : LookupTypeName.COLOR}
+          value={draft.color || ''}
+          onChange={(value) => updateField('color', value)}
+          placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."}
+          disabled={disabled}
+        />
       </div>
     </>
   );

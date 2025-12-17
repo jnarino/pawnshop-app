@@ -158,7 +158,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                         {ticket.controlNumber || 'N/A'}
                                     </TableCell>
                                     <TableCell>
-                                        {formatDate(ticket.transactionDate)}
+                                        {formatDate(ticket.createdDate)}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {formatMoney(ticket.amountFinanced || ticket.purchaseTradeValue)}

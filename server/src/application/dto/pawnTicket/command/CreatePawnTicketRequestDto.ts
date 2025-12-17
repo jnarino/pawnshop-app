@@ -2,13 +2,24 @@ import { z } from 'zod';
 
 export const pawnTransactionTypeSchema = z.enum(['PAWN', 'PURCHASE']);
 
+export const tenderSchema = z.object({
+  tenderTypeId: z.number().int().positive(), // References tender_type.id
+  amount: z.number() // Can be negative for cash out to customer, positive for cash in
+});
+
 export const createPawnTicketRequestSchema = z
   .object({
     customerId: z.string().uuid(),
     transactionType: pawnTransactionTypeSchema,
+    clerkUserId: z.string().uuid(), // User creating the ticket
 
     // For PAWN
     amountFinanced: z.number().nonnegative().nullable().optional(),
+    financeCharge: z.number().nonnegative().nullable().optional(),
+    periodicRate: z.number().nonnegative().nullable().optional(),
+    totalOfPayments: z.number().nonnegative().nullable().optional(),
+    apr: z.number().nonnegative().nullable().optional(),
+    ratePlanId: z.string().uuid().nullable().optional(),
 
     // For PURCHASE
     purchaseTradeValue: z.number().nonnegative().nullable().optional(),
@@ -19,7 +30,13 @@ export const createPawnTicketRequestSchema = z
     defaultDate: z.string().min(1),
 
     // At least one item
-    itemIds: z.array(z.string().uuid()).min(1)
+    itemIds: z.array(z.string().uuid()).min(1),
+
+    // Tender information (optional, will be auto-generated if not provided)
+    tenders: z.array(tenderSchema).optional(),
+
+    // Note for the transaction
+    note: z.string().optional()
   })
   .superRefine((val, ctx) => {
     if (val.transactionType === 'PAWN') {
@@ -28,6 +45,13 @@ export const createPawnTicketRequestSchema = z
           code: z.ZodIssueCode.custom,
           message: 'amountFinanced is required for PAWN transactions',
           path: ['amountFinanced']
+        });
+      }
+      if (val.periodicRate == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'periodicRate is required for PAWN transactions',
+          path: ['periodicRate']
         });
       }
       if (val.purchaseTradeValue != null) {
