@@ -30,12 +30,14 @@ import deleteIcon from '@/assets/icons/delete.svg';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
-import { Label } from '@radix-ui/react-dropdown-menu';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindAvailableItemByNumber';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
 
+
+const TAX_RATE = 0.07;
 
 export interface SaleFormDraftState {
   inventoryNumber: string;
@@ -88,6 +90,7 @@ export function SaleForm({
   const { printTransactionForm, printLabels } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
+  const [eatTax, setEatTax] = useState(false);
 
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
@@ -119,11 +122,15 @@ export function SaleForm({
   const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
 
 
-  const totalValue = formData.items.reduce((sum, item) => {
-    const value = Number(item.amount) || 0;
-    const quantity = Number(item.quantity) || 1;
-    return sum + (value * quantity);
+  // Calculate totals
+  const subtotal = formData.items.reduce((sum, item) => {
+    const price = Number(item.priceEach) || 0;
+    const qty = Number(item.quantity) || 1;
+    return sum + (price * qty);
   }, 0);
+
+  const taxAmount = eatTax ? 0 : subtotal * TAX_RATE;
+  const totalAmount = subtotal + taxAmount;
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +150,7 @@ export function SaleForm({
     };
 
     await onSubmit(submitData);
-  }, [formData, totalValue, onSubmit, isViewMode]);
+  }, [formData, onSubmit, isViewMode]);
 
   const handleSaveItem = useCallback((item: any) => { // TODO: any
     // Ensure numeric values are numbers
@@ -444,9 +451,10 @@ export function SaleForm({
               <Input
                 type="number"
                 step="0.01"
-                value={0}
-                onChange={(e) => { }}
-                disabled={disabled}
+                value={subtotal.toFixed(2)}
+                readOnly
+                disabled={true} // Always disabled/read-only to user
+                className="bg-slate-100"
               />
             </div>
             <div>
@@ -454,9 +462,10 @@ export function SaleForm({
               <Input
                 type="number"
                 step="0.01"
-                value={0}
-                onChange={(e) => { }}
-                disabled={disabled}
+                value={taxAmount.toFixed(2)}
+                readOnly
+                disabled={true}
+                className="bg-slate-100"
               />
             </div>
             <div>
@@ -464,14 +473,20 @@ export function SaleForm({
               <Input
                 type="number"
                 step="0.01"
-                value={0}
-                onChange={(e) => { }}
-                disabled={disabled}
+                value={totalAmount.toFixed(2)}
+                readOnly
+                disabled={true}
+                className="bg-slate-100"
               />
             </div>
-            <div className="flex gap-2">
-              <Checkbox></Checkbox>
-              <Label>Eat tax?</Label>
+            <div className="flex gap-2 items-center pb-2">
+              <Checkbox
+                id="eatTax"
+                checked={eatTax}
+                onCheckedChange={(checked) => setEatTax(checked === true)}
+                disabled={disabled}
+              />
+              <Label htmlFor="eatTax" className="mb-0">Eat tax?</Label>
             </div>
           </div>
         )}
