@@ -1,0 +1,171 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { LookupSelect } from '@/app/shared/components/LookupSelect';
+import { LookupTypeName } from '@/app/shared/types/lookup';
+import { Stone } from './types';
+
+interface StoneFormProps {
+  initialStone?: Stone | null;
+  onSubmit: (stone: Omit<Stone, 'id'>) => void;
+  onCancel: () => void;
+}
+
+const DEFAULT_FORM = {
+  quantity: '1',
+  type: '',
+  shape: '',
+  carat: '',
+  color: '',
+  weight: '',
+  length: '',
+  width: '',
+  clarity: ''
+};
+
+export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) {
+  const [formData, setFormData] = useState(DEFAULT_FORM);
+
+  useEffect(() => {
+    if (initialStone) {
+      setFormData({
+        quantity: initialStone.quantity || '1',
+        type: initialStone.type || '',
+        shape: initialStone.shape || '',
+        carat: initialStone.carat || '',
+        color: initialStone.color || '',
+        weight: initialStone.weight || '',
+        length: initialStone.length || '',
+        width: initialStone.width || '',
+        clarity: initialStone.clarity || ''
+      });
+    }
+  }, [initialStone]);
+
+  const updateField = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (!formData.type) return;
+    onSubmit(formData);
+    setFormData(DEFAULT_FORM);
+  }, [formData, onSubmit]);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Quantity *</Label>
+          <Input
+            type="number"
+            min="1"
+            value={formData.quantity}
+            onChange={(e) => updateField('quantity', e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Type *</Label>
+          <LookupSelect
+            typeName={LookupTypeName.SHAPE}
+            value={formData.type}
+            onChange={(v) => updateField('type', v)}
+            placeholder="Select type..."
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Shape</Label>
+          <LookupSelect
+            typeName={LookupTypeName.SHAPE}
+            value={formData.shape}
+            onChange={(v) => updateField('shape', v)}
+            placeholder="Select shape..."
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Carat</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.carat}
+            onChange={(e) => updateField('carat', e.target.value)}
+            placeholder="0.50"
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Color</Label>
+          <LookupSelect
+            typeName={LookupTypeName.COLOR}
+            value={formData.color}
+            onChange={(v) => updateField('color', v)}
+            placeholder="Select color..."
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Weight</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.weight}
+            onChange={(e) => updateField('weight', e.target.value)}
+            placeholder="0.00"
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Length</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.length}
+            onChange={(e) => updateField('length', e.target.value)}
+            placeholder="0.00"
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold">Width</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.width}
+            onChange={(e) => updateField('width', e.target.value)}
+            placeholder="0.00"
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1 col-span-2">
+          <Label className="text-xs font-semibold">Clarity</Label>
+          <LookupSelect
+            typeName={LookupTypeName.CLARITY}
+            value={formData.clarity}
+            onChange={(v) => updateField('clarity', v)}
+            placeholder="Select clarity..."
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 pt-2">
+        <Button type="button" size="sm" className="w-full text-xs" onClick={handleSubmit}>
+          {initialStone ? 'Update' : 'Add'} Stone
+        </Button>
+        {initialStone && (
+          <Button type="button" variant="outline" size="sm" onClick={onCancel} className="w-full text-xs">
+            Cancel
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
