@@ -1,11 +1,11 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarInput } from '@/components/ui/dollar-input';
 import { LookupSelect } from '@/app/shared/components/LookupSelect';
 import { LookupTypeName } from '@/app/shared/types/lookup';
 import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
+import { BrandSelect } from './BrandSelect';
 
 interface BasicInfoFieldsProps {
   readonly draft: InventoryItemDraft;
@@ -64,23 +64,12 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
       </div>
 
       {brands.length > 0 && (
-        <div className="space-y-1 col-span-3">
-          <Label className="text-xs font-semibold">
-            Brand <span className="text-red-600">*</span>
-          </Label>
-          <Select value={draft.brandId || ''} onValueChange={handleBrandChange} disabled={disabled}>
-            <SelectTrigger className="h-8 text-xs uppercase">
-              <SelectValue placeholder="SELECT BRAND..." />
-            </SelectTrigger>
-            <SelectContent>
-              {brands.map((brand) => (
-                <SelectItem key={brand.id} value={brand.id} className="text-xs uppercase">
-                  {brand.name.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <BrandSelect
+          value={draft.brandId || ''}
+          options={brands}
+          onChange={handleBrandChange}
+          disabled={disabled}
+        />
       )}
 
       {/* Row 2: Model */}
