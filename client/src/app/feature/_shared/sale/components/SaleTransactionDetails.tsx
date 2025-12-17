@@ -157,7 +157,7 @@ export function SaleTransactionDetails({
                 priceEach,
                 taxExempt: false
               })}
-              disabled={disabled || !quantity || quantity <= 0} // Allow saving if we have quantity
+              disabled={disabled || !quantity || quantity <= 0 || !description || priceEach === '' || priceEach === undefined} // Allow saving if we have quantity
               size="sm"
             >
               <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item

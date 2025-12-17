@@ -99,18 +99,19 @@ export function SaleForm({
     items: initialData?.items || [] as any[] // TODO: any
   });
 
-  const formData = isControlled ? {
-    customerId: initialData?.customerId || 'temp-customer',
-    inventoryItem: initialData?.inventoryItem,
-    ...externalDraft
-  } : localFormData;
+  const formData = {
+    ...localFormData,
+    // If controlled, use external items, otherwise local items
+    items: (isControlled && externalDraft?.items) ? externalDraft.items : localFormData.items
+  };
 
   const updateFormData = useCallback((updates: Partial<typeof localFormData>) => {
-    if (isControlled && onDraftChange) {
-      const { customerId, ...draftUpdates } = updates;
-      onDraftChange({ ...externalDraft, ...draftUpdates });
-    } else {
-      setLocalFormData(prev => ({ ...prev, ...updates }));
+    // Always update local state for transient fields (inputs)
+    setLocalFormData(prev => ({ ...prev, ...updates }));
+
+    // If controlled and items are changing, notify parent
+    if (isControlled && onDraftChange && updates.items) {
+      onDraftChange({ ...externalDraft, items: updates.items } as SaleFormDraftState);
     }
   }, [isControlled, onDraftChange, externalDraft]);
 
