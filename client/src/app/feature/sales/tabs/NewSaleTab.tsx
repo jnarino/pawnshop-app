@@ -122,6 +122,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
             description: '',
             priceEach: 0
           }}
+          customer={customer || undefined}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}

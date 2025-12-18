@@ -279,11 +279,6 @@ export function SaleForm({
     }
   }, [updateFormData, findAvailableItemByNumber]);
 
-  const handleQuantityChange = useCallback((quantity: number) => {
-    updateFormData({ quantity });
-  }, [updateFormData]);
-
-
   const handleFieldByKey = useCallback((key: string, value: any) => {
     updateFormData({ [key]: value });
   }, [updateFormData]);
@@ -301,6 +296,7 @@ export function SaleForm({
           handleSaveItem={handleSaveItem}
           handleFieldByKey={handleFieldByKey}
           disabled={isViewMode}
+          customer={customer}
         />
 
         <Card className="border-2">
