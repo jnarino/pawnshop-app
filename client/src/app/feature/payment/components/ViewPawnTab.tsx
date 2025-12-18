@@ -1,14 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { PawnTicketForm } from '@/app/feature/_shared/pawn-ticket';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket/components/InventoryItemModal';
 import { Button } from '@/components/ui/button';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
+import { DueDateCalculatorModal } from './DueDateCalculatorModal';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
   readonly customer?: CustomerData;
   readonly onBack: () => void;
-  readonly onMakePayment: () => void;
 }
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
@@ -61,13 +61,15 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
   };
 }
 
-export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: ViewPawnTabProps) {
+export function ViewPawnTab({ pawnTicket, customer, onBack }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
+  const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
 
   const handlePayHistory = useCallback(() => {
   }, []);
 
   const handleDueDates = useCallback(() => {
+    setIsDueDateModalOpen(true);
   }, []);
 
   return (
@@ -97,6 +99,14 @@ export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: Vie
           Due Dates
         </Button>
       </div>
+
+      <DueDateCalculatorModal
+        open={isDueDateModalOpen}
+        onClose={() => setIsDueDateModalOpen(false)}
+        pawnAmount={pawnTicket.amountFinanced || 0}
+        transactionDate={pawnTicket.transactionDate}
+        periodicRate={pawnTicket.periodicRate || 0}
+      />
     </div>
   );
 }
