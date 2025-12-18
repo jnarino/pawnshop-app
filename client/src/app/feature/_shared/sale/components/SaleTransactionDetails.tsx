@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
+import { Customer } from '../../customer';
 
 interface SaleTransactionDetailsProps {
   readonly disabled?: boolean;
@@ -13,6 +14,7 @@ interface SaleTransactionDetailsProps {
   readonly inventoryItem?: InventoryItem;
   readonly quantity?: number;
   readonly description?: string;
+  readonly customer?: Customer;
   readonly priceEach?: number | string;
   readonly onSearchInventoryItem: (value: string) => void;
   readonly handleSaveItem: (item: any) => void; // TODO: any
@@ -25,6 +27,7 @@ export function SaleTransactionDetails({
   inventoryItem,
   quantity,
   description,
+  customer,
   priceEach,
   onSearchInventoryItem,
   handleSaveItem,
@@ -141,6 +144,7 @@ export function SaleTransactionDetails({
           </div>
         </div>
         <div className="flex flex-col">
+          {customer && <p><b>Customer:</b> {customer?.firstName + ' ' + customer?.lastName}</p>}
           <hr className="my-2" />
           <div className="flex items-center justify-end mt-2 gap-2 items-end">
             <div className="flex gap-2">
