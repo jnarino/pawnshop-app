@@ -13,7 +13,6 @@ import {
 import { ChevronDownIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -312,84 +311,78 @@ export function SaleForm({
           </CardHeader>
 
           <CardContent className="p-0">
-            <ScrollArea className="max-h-[400px]">
-              {formData.items.length === 0 ? (
-                <div className="py-10 text-center text-gray-500">
-                  No items added yet. Click "Add Item" to get started.
-                </div>
-              ) : (
-                <div>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Inventory #</TableHead>
-                          <TableHead className="w-[300px]">Item description</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Price each</TableHead>
-                          <TableHead>Ext. price</TableHead>
-                          <TableHead>Exempt</TableHead>
-                          <TableHead className="text-center">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {formData.items.map((item) => (
-                          <TableRow key={item.id || item.inventoryItem?.id}>
-                            <TableCell>
-                              {item.inventoryItem?.inventoryNumber || item.inventoryNumber}
-                            </TableCell>
-                            <TableCell>{item.description || ''}</TableCell>
-                            <TableCell>{item.quantity || 1}</TableCell>
-                            <TableCell>${Number(item.priceEach || 0).toFixed(2)}</TableCell>
-                            <TableCell className="font-medium">${(Number(item.priceEach || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
-                            <TableCell>
-                              {item.taxExempt ? 'Yes' : 'No'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex gap-2 justify-center items-center">
-                                {isViewMode ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleViewItem(item)}
-                                  >
-                                    <img
-                                      src={visibilityIcon}
-                                      alt="View"
-                                      className="w-4 h-4"
-                                      style={{ filter: 'brightness(0) saturate(100%)' }}
-                                    />
-                                  </Button>
-                                ) : (
-                                  <>
-                                    <Button className='!p-0'
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleEditItem(item)}
-                                      disabled={disabled}
-                                    >
-                                      <img src={editIcon} alt="Edit" className="w-4 h-4" />
-                                    </Button>
-                                    <Button className='!p-0'
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleRemoveItem(item.id!)}
-                                      disabled={disabled}
-                                    >
-                                      <img src={deleteIcon} alt="Delete" className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
-            </ScrollArea>
+            {formData.items.length === 0 ? (
+              <div className="py-10 text-center text-gray-500">
+                No items added yet. Click "Add Item" to get started.
+              </div>
+            ) : (
+              <Table stickyHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead sticky className="bg-white z-20">Inventory #</TableHead>
+                    <TableHead sticky className="w-[300px] bg-white z-20">Item description</TableHead>
+                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
+                    <TableHead sticky className="bg-white z-20">Price each</TableHead>
+                    <TableHead sticky className="bg-white z-20">Ext. price</TableHead>
+                    <TableHead sticky className="bg-white z-20">Exempt</TableHead>
+                    <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.items.map((item) => (
+                    <TableRow key={item.id || item.inventoryItem?.id}>
+                      <TableCell>
+                        {item.inventoryItem?.inventoryNumber || item.inventoryNumber}
+                      </TableCell>
+                      <TableCell>{item.description || ''}</TableCell>
+                      <TableCell>{item.quantity || 1}</TableCell>
+                      <TableCell>${Number(item.priceEach || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">${(Number(item.priceEach || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {item.taxExempt ? 'Yes' : 'No'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex gap-2 justify-center items-center">
+                          {isViewMode ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewItem(item)}
+                            >
+                              <img
+                                src={visibilityIcon}
+                                alt="View"
+                                className="w-4 h-4"
+                                style={{ filter: 'brightness(0) saturate(100%)' }}
+                              />
+                            </Button>
+                          ) : (
+                            <>
+                              <Button className='!p-0'
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditItem(item)}
+                                disabled={disabled}
+                              >
+                                <img src={editIcon} alt="Edit" className="w-4 h-4" />
+                              </Button>
+                              <Button className='!p-0'
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveItem(item.id!)}
+                                disabled={disabled}
+                              >
+                                <img src={deleteIcon} alt="Delete" className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
