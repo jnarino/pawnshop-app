@@ -47,7 +47,7 @@ export function InventoryItemModal({ mode = 'CREATE', open, initial, onCancel, o
     handleBrandChange,
     handleSubmit,
     handleMetalChange,
-  } = useInventoryItemForm({ open, initial, onSave: onSave || (() => {}) });
+  } = useInventoryItemForm({ open, initial, onSave: onSave || (() => {}), mode });
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>

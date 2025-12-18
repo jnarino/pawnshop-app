@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
+import type { ItemFormMode } from '../components/InventoryItemModal';
 
 interface UseInventoryItemFormProps {
   open: boolean;
   initial?: InventoryItemDraft | null;
   onSave: (item: InventoryItemDraft) => void;
+  mode?: ItemFormMode;
 }
 
-export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItemFormProps) {
+export function useInventoryItemForm({ open, initial, onSave, mode = 'CREATE' }: UseInventoryItemFormProps) {
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
@@ -20,6 +22,21 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (mode === 'VIEW') {
+      if (initial) {
+        if (initial.type && initial.categoryName) {
+          setRootCategories([{ id: initial.type, name: initial.categoryName }]);
+        }
+        if (initial.subcategoryId && initial.subcategoryName) {
+          setSubcategories([{ id: initial.subcategoryId, name: initial.subcategoryName }]);
+        }
+        if (initial.brandId && initial.brandName) {
+          setBrands([{ id: initial.brandId, name: initial.brandName }]);
+        }
+      }
+      return;
+    }
+
     let cancelled = false;
     
     const loadRootCategories = async () => {
@@ -45,9 +62,13 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mode, initial]);
 
   useEffect(() => {
+    if (mode === 'VIEW') {
+      return;
+    }
+
     if (!draft.type) {
       setSubcategories([]);
       setBrands([]);
@@ -83,7 +104,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     return () => {
       cancelled = true;
     };
-  }, [draft.type]);
+  }, [draft.type, mode]);
 
   // Initialize form data
   useEffect(() => {
