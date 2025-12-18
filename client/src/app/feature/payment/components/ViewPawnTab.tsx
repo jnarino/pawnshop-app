@@ -4,6 +4,7 @@ import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket/compo
 import { Button } from '@/components/ui/button';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { DueDateCalculatorModal } from './DueDateCalculatorModal';
+import { PaymentHistoryModal } from './PaymentHistoryModal';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
@@ -26,8 +27,11 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
   const transformedItems: InventoryItemDraft[] = (pawnTicket.items || []).map((item) => ({
     id: item.id,
-    type: item.legacyCategoryDescription || 'Item',
-    categoryName: item.legacyCategoryDescription || '',
+    type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
+    categoryName: item.inventoryCategory?.name || item.legacyCategoryDescription || '',
+    subcategoryId: item.inventorySubcategory?.id || '',
+    subcategoryName: item.inventorySubcategory?.name || '',
+    brandId: typeof item.brand === 'object' ? item.brand?.id : '',
     brandName: getBrandName(item.brand),
     model: item.model || '',
     serial: item.serialNumber || '',
@@ -64,8 +68,10 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 export function ViewPawnTab({ pawnTicket, customer, onBack }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
   const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
+  const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
 
   const handlePayHistory = useCallback(() => {
+    setIsPaymentHistoryModalOpen(true);
   }, []);
 
   const handleDueDates = useCallback(() => {
@@ -106,6 +112,12 @@ export function ViewPawnTab({ pawnTicket, customer, onBack }: ViewPawnTabProps) 
         pawnAmount={pawnTicket.amountFinanced || 0}
         transactionDate={pawnTicket.transactionDate}
         periodicRate={pawnTicket.periodicRate || 0}
+      />
+
+      <PaymentHistoryModal
+        open={isPaymentHistoryModalOpen}
+        onClose={() => setIsPaymentHistoryModalOpen(false)}
+        pawnTicketId={pawnTicket.id}
       />
     </div>
   );
