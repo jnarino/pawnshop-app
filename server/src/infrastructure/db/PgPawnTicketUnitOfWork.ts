@@ -12,6 +12,7 @@ export class PgPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
         fn: (deps: {
             inventoryItemRepository: InventoryItemRepository;
             pawnTicketRepository: PawnTicketRepository;
+            dbClient: PoolClient;
         }) => Promise<T>
     ): Promise<T> {
         const client: PoolClient = await this.pool.connect();
@@ -21,7 +22,11 @@ export class PgPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
             const inventoryItemRepository = new PgInventoryItemRepository(client);
             const pawnTicketRepository = new PgPawnTicketRepository(client);
 
-            const result = await fn({ inventoryItemRepository, pawnTicketRepository });
+            const result = await fn({ 
+                inventoryItemRepository, 
+                pawnTicketRepository,
+                dbClient: client 
+            });
 
             await client.query('COMMIT');
             return result;

@@ -1,6 +1,7 @@
 import { pool, runMigrations } from './infrastructure/db';
 import { env } from './config/env';
 import { AuthService } from './application/service/AuthService';
+import { ItemAttributeMapper } from './application/service/ItemAttributeMapper';
 import { CreateAppUserUseCase } from './application/use-case/appUser/command/CreateAppUserUseCase';
 import { DeleteAppUserUseCase } from './application/use-case/appUser/command/DeleteAppUserUseCase';
 import { UpdateAppUserUseCase } from './application/use-case/appUser/command/UpdateAppUserUseCase';
@@ -22,10 +23,11 @@ import { AuthController } from './interfaces/http/controller/auth/AuthController
 import { CustomerController } from './interfaces/http/controller/customer/CustomerController';
 import { PgInventoryItemRepository } from './infrastructure/persistence/inventory/PgInventoryItemRepository';
 import { GetInventoryItemBySerialNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
+import { GetItemOnInventoryUseCase } from './application/use-case/inventory/query/GetItemOnInventoryUseCase';
 import { CreateInventoryItemUseCase } from './application/use-case/inventory/command/CreateInventoryItemUseCase';
 import { DeleteInventoryItemUseCase } from './application/use-case/inventory/command/DeleteInventoryItemUseCase';
 import { UpdateInventoryItemUseCase } from './application/use-case/inventory/command/UpdateInventoryItemUseCase';
-import { GetInventoryItemByIdUseCase } from './application/use-case/inventory/query/GetInventoryItemByIdUseCase';
+
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
@@ -70,6 +72,7 @@ export async function createApp() {
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
+  const itemAttributeMapper = new ItemAttributeMapper(inventoryCategoryRepo);
 
 
   // Auth use-cases
@@ -91,12 +94,12 @@ export async function createApp() {
   const getCustomerByIdUseCase = new GetCustomerByIdUseCase(customerRepo);
 
   // Inventory Item use-cases
-  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo);
+  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo, itemAttributeMapper);
   const updateInventoryItemUseCase = new UpdateInventoryItemUseCase(inventoryItemRepo);
   const deleteInventoryItemUseCase = new DeleteInventoryItemUseCase(inventoryItemRepo);
-  const getInventoryItemByIdUseCase = new GetInventoryItemByIdUseCase(inventoryItemRepo);
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
+  const getItemOnInventoryUseCase = new GetItemOnInventoryUseCase(inventoryItemRepo);
 
   // Inventory Category use-cases 
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
@@ -109,7 +112,7 @@ export async function createApp() {
 
 
   // Pawn Ticket use-cases  
-  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork);
+  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
@@ -145,9 +148,9 @@ export async function createApp() {
     createInventoryItemUseCase,
     updateInventoryItemUseCase,
     deleteInventoryItemUseCase,
-    getInventoryItemByIdUseCase,
     getInventoryItemByInventoryNumberUseCase,
-    getInventoryItemBySerialNumberUseCase
+    getInventoryItemBySerialNumberUseCase,
+    getItemOnInventoryUseCase
   );
 
   const inventoryCategoryController = new InventoryCategoryController(

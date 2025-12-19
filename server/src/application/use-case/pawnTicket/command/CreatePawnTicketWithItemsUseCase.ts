@@ -3,13 +3,15 @@ import {
     CreatePawnTicketWithItemsRequestDto,
 } from '../../../dto/pawnTicket/command/CreatePawnTicketWithItemsRequestDto';
 import { PawnTicketUnitOfWork } from '../../../common/PawnTicketUnitOfWork';
-import { CreateInventoryItemUseCase } from '../../inventory/command/CreateInventoryItemUseCase';
+import { CreateInventoryItemOnPawnTicketUseCase } from '../../inventory/command/CreateInventoryItemOnPawnTicketUseCase';
 import { CreatePawnTicketUseCase } from './CreatePawnTicketUseCase';
 import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketResponseDto';
+import { ItemAttributeMapper } from '../../../service/ItemAttributeMapper';
 
 export class CreatePawnTicketWithItemsUseCase {
     constructor(
-        private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork
+        private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork,
+        private readonly attributeMapper: ItemAttributeMapper
     ) { }
 
     async execute(input: unknown): Promise<PawnTicketResponseDto> {
@@ -21,29 +23,47 @@ export class CreatePawnTicketWithItemsUseCase {
 
         // Everything below happens inside ONE DB transaction
         return this.pawnTicketUnitOfWork.runInTransaction(
-            async ({ inventoryItemRepository, pawnTicketRepository }) => {
-                const createInventoryItemUseCase = new CreateInventoryItemUseCase(
-                    inventoryItemRepository
+            async ({ inventoryItemRepository, pawnTicketRepository, dbClient }) => {
+                // 1) Get the next control number first (before creating anything)
+                // Use appropriate sequence based on transaction type
+                const transactionType = pawn.transactionType || 'PAWN';
+                const controlNumberFunc = transactionType === 'PURCHASE' 
+                    ? 'get_next_purchase_control_number' 
+                    : 'get_next_pawn_control_number';
+                    
+                const controlNumberResult = await dbClient.query(`SELECT ${controlNumberFunc}() AS control_number`);
+                const controlNumber: string = controlNumberResult.rows[0].control_number;
+
+                // 2) Create inventory items with the control number
+                const createInventoryItemOnPawnUseCase = new CreateInventoryItemOnPawnTicketUseCase(
+                    inventoryItemRepository,
+                    this.attributeMapper
                 );
+                
+                const allItemIds: string[] = [];
+                for (let i = 0; i < items.length; i++) {
+                    const itemDto = items[i];
+                    const itemIndex = i + 1; // 1-based index (106489-1, 106489-2, etc.)
+                    const createdItem = await createInventoryItemOnPawnUseCase.execute(
+                        itemDto, 
+                        controlNumber, 
+                        itemIndex,
+                        transactionType
+                    );
+                    allItemIds.push(createdItem.id);
+                }
+
+                // 3) Create pawn ticket with the items
                 const createPawnTicketUseCase = new CreatePawnTicketUseCase(
                     pawnTicketRepository
                 );
 
-                // 1) Create new inventory items and collect their IDs
-                const allItemIds: string[] = [];
-                for (const itemDto of items) {
-                    const createdItem = await createInventoryItemUseCase.execute(itemDto);
-                    allItemIds.push(createdItem.id);
-                }
-
-                // 2) Auto-generate tenders: always cash (tender type 1) with negative amountFinanced
                 const amountFinanced = Number(pawn.amountFinanced) || 0;
                 const tenders = [{
                     tenderTypeId: 1, // Cash
                     amount: -Math.abs(amountFinanced) // Always negative (cash out to customer)
                 }];
 
-                // 3) Now call the existing pawn-ticket creation use-case
                 const pawnInput = {
                     ...pawn,
                     itemIds: allItemIds,

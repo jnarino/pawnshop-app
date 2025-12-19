@@ -55,7 +55,9 @@ export function CategoryFields({
       </div>
 
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Type</Label>
+        <Label className="text-xs font-semibold">
+          Type <span className="text-red-600">*</span>
+        </Label>
         {subcategories.length > 0 ? (
           <Select 
             value={draft.subcategoryId || ''} 

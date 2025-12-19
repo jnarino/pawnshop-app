@@ -1,5 +1,6 @@
 import { InventoryItemRepository } from '../../domains/inventory/InventoryItemRepository';
 import { PawnTicketRepository } from '../../domains/pawnTicket/PawnTicketRepository';
+import { PoolClient } from 'pg';
 
 /**
  * Application-level abstraction: "run these pawn-related operations
@@ -10,6 +11,7 @@ export interface PawnTicketUnitOfWork {
         fn: (deps: {
             inventoryItemRepository: InventoryItemRepository;
             pawnTicketRepository: PawnTicketRepository;
+            dbClient: PoolClient;
         }) => Promise<T>
     ): Promise<T>;
 }

@@ -8,11 +8,10 @@ import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
 import { ViewPawnTab } from './components/ViewPawnTab';
-import MakePaymentTab from './components/MakePaymentTab';
 import { useFindByTicket } from './hooks/useFindByTicket';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 
-type TabKey = 'customer' | 'viewPawn' | 'locatePawns' | 'makePayment';
+type TabKey = 'customer' | 'viewPawn' | 'locatePawns';
 
 export default function PaymentCreatePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
@@ -26,8 +25,8 @@ export default function PaymentCreatePage() {
 
   const canNavigateToTab = (tab: TabKey) => {
     if (tab === 'customer') return true;
-    if (tab === 'locatePawns' || tab === 'viewPawn') return !!customer?.id;
-    if (tab === 'makePayment') return !!selectedPawn;
+    if (tab === 'locatePawns') return !!customer?.id;
+    if (tab === 'viewPawn') return !!selectedPawn;
     return false;
   };
 
@@ -48,7 +47,6 @@ export default function PaymentCreatePage() {
 
   const handlePawnSelected = useCallback((pawn: CustomerActivePawnTicket) => {
     setSelectedPawn(pawn);
-    setActiveTab('makePayment');
   }, []);
 
   const handleFindByTicket = useCallback(async (ticketNumber: string) => {
@@ -64,18 +62,15 @@ export default function PaymentCreatePage() {
     <div className="h-full flex flex-col p-6">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
-          <TabsList className="grid flex-1 grid-cols-4">
+          <TabsList className="grid flex-1 grid-cols-3">
             <TabsTrigger value="customer">
               Locate Customer
             </TabsTrigger>
             <TabsTrigger value="locatePawns" disabled={!canNavigateToTab('locatePawns')}>
-              Locate Pawns
+              Make Payment
             </TabsTrigger>
             <TabsTrigger value="viewPawn" disabled={!canNavigateToTab('viewPawn')}>
               View Pawn
-            </TabsTrigger>
-            <TabsTrigger value="makePayment" disabled={!canNavigateToTab('makePayment')}>
-              Make Payment
             </TabsTrigger>
           </TabsList>
           <Button variant="destructive" onClick={() => setCancelOpen(true)}>
@@ -115,21 +110,6 @@ export default function PaymentCreatePage() {
               pawnTicket={selectedPawn}
               customer={customer}
               onBack={() => setActiveTab('locatePawns')}
-              onMakePayment={() => setActiveTab('makePayment')}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="makePayment" className="flex-1 min-h-0 pt-4">
-          {selectedPawn && customer?.id && (
-            <MakePaymentTab
-              pawnTicket={selectedPawn}
-              customerId={customer.id}
-              onBack={() => setActiveTab('locatePawns')}
-              onPaymentComplete={() => {
-                setSelectedPawn(null);
-                setActiveTab('locatePawns');
-              }}
             />
           )}
         </TabsContent>

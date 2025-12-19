@@ -13,6 +13,12 @@ export interface InventoryItemRepository {
   findByInventoryNumber(inventoryNumber: string): Promise<InventoryItem | null>;
 
   /**
+   * Lookup by inventory number, but only if the item is on inventory (status = 'I').
+   * Used for pawn transactions to ensure item is available.
+   */
+  findAvailableByInventoryNumber(inventoryNumber: string): Promise<InventoryItem | null>;
+
+  /**
    * Lookup by serial number (for firearms, electronics, etc.).
    * DB-side we will enforce uniqueness where appropriate.
    */

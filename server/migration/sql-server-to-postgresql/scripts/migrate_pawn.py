@@ -328,6 +328,50 @@ def migrate_pawn_tickets():
                 errors += len(batch_data)
                 print(f"  Final batch error: {e}")
         
+        # ================================================
+        # Update Control Number Sequences
+        # ================================================
+        print("\n🔢 Updating control number sequences...")
+        
+        # Get max control number for PAWN transactions
+        pg_cursor.execute("""
+            SELECT MAX(CAST(control_number AS INTEGER)) 
+            FROM pawn_ticket 
+            WHERE transaction_type = 'PAWN' 
+              AND control_number ~ '^[0-9]+$'
+        """)
+        max_pawn_result = pg_cursor.fetchone()
+        max_pawn_control = max_pawn_result[0] if max_pawn_result[0] else 0
+        
+        # Get max control number for PURCHASE transactions
+        pg_cursor.execute("""
+            SELECT MAX(CAST(control_number AS INTEGER)) 
+            FROM pawn_ticket 
+            WHERE transaction_type = 'PURCHASE' 
+              AND control_number ~ '^[0-9]+$'
+        """)
+        max_purchase_result = pg_cursor.fetchone()
+        max_purchase_control = max_purchase_result[0] if max_purchase_result[0] else 0
+        
+        # Update app_settings for next control numbers
+        if max_pawn_control > 0:
+            pg_cursor.execute("""
+                UPDATE app_settings 
+                SET value = %s, updated_at = NOW() 
+                WHERE key = 'pawn_ticket_control_number_next'
+            """, (str(max_pawn_control + 1),))
+            print(f"   Set pawn_ticket_control_number_next to {max_pawn_control + 1}")
+        
+        if max_purchase_control > 0:
+            pg_cursor.execute("""
+                UPDATE app_settings 
+                SET value = %s, updated_at = NOW() 
+                WHERE key = 'purchase_ticket_control_number_next'
+            """, (str(max_purchase_control + 1),))
+            print(f"   Set purchase_ticket_control_number_next to {max_purchase_control + 1}")
+        
+        pg_conn.commit()
+        
         print(f"\n✅ Pawn Ticket Migration Completed!")
         print(f"   Migrated: {len(tickets) - errors}")
         print(f"   Errors: {errors}")

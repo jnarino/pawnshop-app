@@ -17,7 +17,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
         <Label className="text-xs font-semibold">Caliber</Label>
         <LookupSelect
           typeName={LookupTypeName.CALIBER}
-          value={draft.caliber?.toUpperCase() || ''}
+          value={draft.caliber || ''}
           onChange={(value) => updateField('caliber', value)}
           placeholder="SELECT CALIBER..."
           disabled={disabled}
@@ -28,7 +28,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
         <Label className="text-xs font-semibold">Action</Label>
         <LookupSelect
           typeName={LookupTypeName.ACTION}
-          value={draft.action?.toUpperCase() || ''}
+          value={draft.action || ''}
           onChange={(value) => updateField('action', value)}
           placeholder="SELECT ACTION..."
           disabled={disabled}

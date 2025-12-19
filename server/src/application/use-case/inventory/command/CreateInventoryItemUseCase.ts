@@ -7,10 +7,12 @@ import {
 } from '../../../dto/inventory/command/CreateInventoryItemRequestDto';
 import { InventoryItemResponseDto } from '../../../dto/inventory/InventoryItemResponseDto';
 import { toInventoryItemResponseDto } from '../../../mapping/inventory/inventoryItemMappers';
+import { ItemAttributeMapper } from '../../../service/ItemAttributeMapper';
 
 export class CreateInventoryItemUseCase {
     constructor(
-        private readonly inventoryItemRepo: InventoryItemRepository
+        private readonly inventoryItemRepo: InventoryItemRepository,
+        private readonly attributeMapper: ItemAttributeMapper
     ) { }
 
     async execute(input: unknown): Promise<InventoryItemResponseDto> {
@@ -18,6 +20,37 @@ export class CreateInventoryItemUseCase {
             createInventoryItemRequestSchema.parse(input);
 
         const now = new Date();
+
+        // Map attributes and extra based on category (jewelry vs firearm)
+        const { attributes, extra } = await this.attributeMapper.mapItemAttributes(
+            dto.inventorySubcategoryId,
+            {
+                // Jewelry attributes
+                metal: dto.attributes?.metal,
+                karat: dto.attributes?.karat,
+                gender: dto.attributes?.gender,
+                style: dto.attributes?.style,
+                sizeLength: dto.attributes?.sizeLength,
+                weight: dto.extra?.weight,
+                weightUnit: dto.extra?.weightUnit,
+                
+                // Firearm attributes
+                action: dto.attributes?.action,
+                caliber: dto.attributes?.caliber,
+                finish: dto.attributes?.finish,
+                barrel: dto.attributes?.barrel,
+                importer: dto.attributes?.importer,
+                barrelLength: dto.extra?.barrelLength,
+                condition: dto.attributes?.condition,
+                
+                // Stones
+                stones: dto.extra?.stones,
+                
+                // Pass through any other fields from dto
+                ...dto.attributes,
+                ...dto.extra
+            }
+        );
 
         const item = new InventoryItem({
             id: crypto.randomUUID(),
@@ -39,8 +72,8 @@ export class CreateInventoryItemUseCase {
             minResale: dto.minResale ?? null,
             itemReplace: dto.itemReplace ?? null,
 
-            extra: dto.extra ?? {},
-            attributes: dto.attributes ?? {},
+            extra,
+            attributes,
 
             legacyInventoryNumber: dto.legacyInventoryNumber ?? null,
             legacyItemGuid: dto.legacyItemGuid ?? null,

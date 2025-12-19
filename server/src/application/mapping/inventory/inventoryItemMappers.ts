@@ -45,7 +45,7 @@ export function toInventoryItemResponseDto(
     inventoryNumber: item.inventoryNumber,
     lastUpdatedUserId: item.lastUpdatedUserId,
 
-    createdAt: item.createdAt.toISOString(),
+    createdAt: item.createdAt ? item.createdAt.toISOString() : null,
     updatedAt: item.updatedAt.toISOString()
   };
 }
