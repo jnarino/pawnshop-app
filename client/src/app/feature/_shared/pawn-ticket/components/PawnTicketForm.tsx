@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { InventoryItemModal, type InventoryItemDraft } from './InventoryItemModal';
+import { InventoryItemModal, type InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { PrintLabelsModal } from './PrintLabelsModal';
 import { TransactionDetails } from './TransactionDetails';
 import { Button } from '@/components/ui/button';

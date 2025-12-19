@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { PawnTicketForm } from '@/app/feature/_shared/pawn-ticket';
-import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket/components/InventoryItemModal';
+import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { Button } from '@/components/ui/button';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 
