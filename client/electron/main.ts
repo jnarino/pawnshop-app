@@ -21,9 +21,18 @@ function buildMenu() {
     { type: 'separator' },
     { role: 'quit' },
   ];
+  const editSub: Electron.MenuItemConstructorOptions[] = [
+    { role: 'undo' },
+    { role: 'redo' },
+    { type: 'separator' },
+    { role: 'cut' },
+    { role: 'copy' },
+    { role: 'paste' },
+    { role: 'selectAll' },
+  ];
   const template: Electron.MenuItemConstructorOptions[] = [
     { label: 'File', submenu: fileSub },
-    // Keep other menus always enabled; route guards in renderer still enforce auth
+    { label: 'Edit', submenu: editSub },
     { label: 'Customer', click: () => mainWindow.webContents.send('navigate', '/customer') },
     { label: 'Pawn', click: () => mainWindow.webContents.send('navigate', '/pawn') },
     { label: 'Reports', click: () => mainWindow.webContents.send('navigate', '/reports') },
