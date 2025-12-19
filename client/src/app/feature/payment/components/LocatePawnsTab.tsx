@@ -145,8 +145,9 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
     };
 
     const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-        const normalizedStatus = status?.toLowerCase().replace('_', ' ');
+        const normalizedStatus = (status || '').toLowerCase().replace('_', ' ');
         switch (normalizedStatus) {
+            case 'p':
             case 'active':
                 return 'default';
             case 'redeemed':
@@ -233,7 +234,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                         </TableHeader>
                         <TableBody>
                             {filteredTickets.map((ticket) => (
-                                <TableRow 
+                                <TableRow
                                     key={ticket.id}
                                     onClick={() => selectTicket(ticket.id)}
                                     className={`cursor-pointer hover:bg-muted/50 ${selectedTicket?.id === ticket.id ? 'bg-muted' : ''}`}
@@ -248,8 +249,8 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                         {formatMoney(ticket.amountFinanced ?? ticket.purchaseTradeValue ?? 0)}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={getStatusVariant(ticket.pawnStatus)}>
-                                            {(ticket.pawnStatus || 'UNKNOWN').replace('_', ' ').toUpperCase()}
+                                        <Badge variant={getStatusVariant(ticket.pawnStatus || (ticket as any).status)}>
+                                            {((ticket.pawnStatus || (ticket as any).status || 'UNKNOWN') === 'P' ? 'PAWN' : (ticket.pawnStatus || (ticket as any).status || 'UNKNOWN')).replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

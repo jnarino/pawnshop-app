@@ -495,21 +495,47 @@ CREATE TABLE IF NOT EXISTS store_transaction_type (
   active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO store_transaction_type (id, code, legacy_code, name, cash_dir) VALUES
-  (1,  'RETAIL_SALE',             'SS',  'Retail sale',               +1),
-  (2,  'LAYAWAY_DEPOSIT',         'SL',  'Layaway deposit',           +1),
-  (3,  'PAWN_PAYMENT',            'PPP', 'Pawn payment',              +1),
-  (4,  'PAWN_REDEMPTION_PAYMENT', 'PPU', 'Pawn redemption payment',   +1),
-  (5,  'PAWN_DISBURSEMENT',       'P',   'Pawn (cash out)',           -1),
-  (6,  'BUY_OUTRIGHT',            'B',   'Buy (cash out)',            -1),
-  (7,  'BUY_REVERSAL',            'BV',  'Voided buy (reverse)',      +1),
-  (8,  'CASH_FROM_BANK',          'MZ',  'Cash from bank/main',       +1),
-  (9,  'CASH_TO_MAIN',            'MO',  'Cash to main',              -1),
-  (10, 'BANK_DEPOSIT',            'MA',  'Bank deposit / to bank',    -1),
-  (11, 'CASH_DRAWER_BALANCING',   'MB',  'Main balancing entry',       0),
-  (12, 'OTHER_NON_CASH',          'T',   'Commission/other (no cash)', 0),
-  (13, 'PAWN_DEFAULTED',          'PD',  'Defaulted (no cash)',        0),
-  (14, 'PAWN_REVERSAL',           'PV',  'Voided pawn (reverse)',     +1)
+INSERT INTO store_transaction_type (id, code, legacy_code, name, cash_dir, active) VALUES
+  -- Unknown/adjustments 
+  (1 , 'ASF', 'ASF', 'ADJUSTMENT (store/fee?)',                 0, TRUE), 
+  (2 , 'ASL', 'ASL', 'ADJUSTMENT (sale/ledger?)',               0, TRUE), 
+
+  -- Buy / Pawn
+  (3, 'B'  , 'B'  , 'BUY (cash out to seller)',               -1, TRUE),
+  (4, 'BV' , 'BV' , 'VOIDED BUY (reverse)',                   +1, TRUE),
+  (5, 'P'  , 'P'  , 'PAWN (loan cash out)',                   -1, TRUE),
+  (6, 'PD' , 'PD' , 'PAWN DEFAULTED (status)',                 0, TRUE),
+  (7, 'PPP', 'PPP', 'PAWN PAYMENT (interest/principal)',      +1, TRUE),
+  (8, 'PPU', 'PPU', 'REDEMPTION PAYMENT',                     +1, TRUE),
+  (9, 'PV' , 'PV' , 'VOIDED PAWN (reverse loan)',             +1, TRUE),
+
+  -- Retail sales
+  (10, 'SS' , 'SS' , 'RETAIL SALE',                            +1, TRUE),
+  (11, 'SSV', 'SSV', 'VOIDED SALE',                            -1, TRUE),
+
+  -- Layaway
+  (12, 'SL' , 'SL' , 'LAYAWAY DEPOSIT',                        +1, TRUE),
+  (13, 'SLD', 'SLD', 'LAYAWAY DEFAULTED (status)',              0, TRUE),
+  (14, 'SLP', 'SLP', 'LAYAWAY PAYMENT',                        +1, TRUE),
+  (15, 'SLU', 'SLU', 'LAYAWAY PICKUP (close)',                  0, TRUE),
+  (16, 'SLV', 'SLV', 'VOIDED LAYAWAY',                         -1, TRUE),
+  (17, 'SLX', 'SLX', 'UNDO LAYAWAY PAYMENT',                   -1, TRUE),
+
+  -- Repairs / Service
+  (18, 'SF' , 'SF' , 'REPAIR DEPOSIT',                         +1, TRUE),
+  (19, 'SFU', 'SFU', 'REPAIR PICKUP (close)',                   0, TRUE),
+  (20, 'SFV', 'SFV', 'VOIDED REPAIR',                          -1, TRUE),
+
+  -- Cash management (drawer vs. main/bank)
+  (21, 'EB' , 'EB' , 'EMPLOYEE BALANCE (admin)',                0, TRUE),
+  (22, 'MA' , 'MA' , 'DEPOSIT FROM MAIN (to drawer)',          +1, TRUE),
+  (23, 'MB' , 'MB' , 'MAIN BALANCE (admin)',                    0, TRUE),
+  (24, 'MI' , 'MI' , 'CASH ADDED - MAIN (safe/bank op)',        0, TRUE),
+  (25, 'MO' , 'MO' , 'CASH OUT - MAIN (from drawer to main)',  -1, TRUE),
+  (26, 'MZ' , 'MZ' , 'WITHDRAWAL FROM BANK (to drawer)',       +1, TRUE),
+
+  -- Other
+  (27, 'T'  , 'T'  , 'COMMISSION / OTHER (no cash)',            0, TRUE)
 ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS tender_type (
@@ -534,7 +560,8 @@ CREATE TABLE IF NOT EXISTS store_transaction (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- legacy keys for traceability
-  legacy_acct_pk BIGINT,
+  legacy_acct_pk TEXT, 
+  legacy_acct_id TEXT, 
   legacy_ticketnum TEXT,
   legacy_cus_fk TEXT,
   legacy_usr_fk TEXT,
@@ -543,19 +570,16 @@ CREATE TABLE IF NOT EXISTS store_transaction (
   clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
 
   type_id SMALLINT NOT NULL REFERENCES store_transaction_type(id),
-  occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(), 
 
   amount NUMERIC(12,2),
-  tax_sales NUMERIC(12,2),
+  tax_sales NUMERIC(12,2), 
   tax_exempt_used        BOOLEAN NOT NULL DEFAULT FALSE,
-  tax_exempt_certificate TEXT,
-  state_tax NUMERIC(12,2),
-  tender_change NUMERIC(12,2),
-
+  state_tax NUMERIC(12,2), 
+  tender_change NUMERIC(12,2), 
+  override_amount NUMERIC(12,2),
   gun_proc_fee NUMERIC(12,2),
-
   note TEXT,
-
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
