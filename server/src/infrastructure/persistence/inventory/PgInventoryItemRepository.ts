@@ -18,7 +18,7 @@ const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
 );
 
 function mapRowToInventoryItem(row: any): InventoryItem {
-    return new InventoryItem({
+    const item = new InventoryItem({
         id: row.id,
 
         inventorySubcategoryId: row.inventory_subcategory_id,
@@ -52,6 +52,21 @@ function mapRowToInventoryItem(row: any): InventoryItem {
         createdAt: row.created_at,
         updatedAt: row.updated_at
     });
+
+    // Attach enriched lookup data for the mapper
+    (item as any)._enrichedData = {
+        inventorySubcategory: {
+            id: row.subcategory_id || row.inventory_subcategory_id,
+            name: row.subcategory_name || ''
+        },
+        inventoryCategory: {
+            id: row.category_id || '',
+            name: row.category_name || ''
+        },
+        brand: row.brand_id ? { id: row.brand_id, name: row.brand_name || '' } : (row.inventory_brand_id ? { id: row.inventory_brand_id, name: '' } : null)
+    };
+
+    return item;
 }
 
 export class PgInventoryItemRepository implements InventoryItemRepository {

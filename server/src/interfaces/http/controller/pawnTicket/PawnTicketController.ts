@@ -6,6 +6,7 @@ import { ListPawnTicketsByControlNumberUseCase } from '../../../../application/u
 import { ListPawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
+import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
 
 export class PawnTicketController {
     constructor(
@@ -13,7 +14,8 @@ export class PawnTicketController {
         private readonly listByControlNumberUseCase: ListPawnTicketsByControlNumberUseCase,
         private readonly listByCustomerUseCase: ListPawnTicketsByCustomerUseCase,
         private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
-        private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase
+        private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
+        private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase
     ) { }
 
     /**
@@ -108,6 +110,24 @@ export class PawnTicketController {
         try {
             const pawnTicketId = req.params.pawnTicketId;
             const result = await this.getPawnTicketPaymentsUseCase.execute({ pawnTicketId });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get current charges, pawn amount, periods behind, and redemption amount for a pawn ticket.
+     * GET /api/pawn-ticket/:controlNumber/current-charges
+     */
+    getCurrentCharges = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const controlNumber = req.params.controlNumber;
+            const result = await this.getPawnTicketCurrentChargesUseCase.execute({ controlNumber });
             return res.json(result);
         } catch (err) {
             return next(err);

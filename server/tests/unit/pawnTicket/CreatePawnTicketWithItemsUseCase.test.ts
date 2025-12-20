@@ -1,10 +1,11 @@
+
+import { PoolClient } from 'pg';
 import { PawnTicketUnitOfWork } from '../../../src/application/common/PawnTicketUnitOfWork';
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
+import { CreatePawnTicketWithItemsUseCase } from '../../../src/application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
+import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
 import { InventoryItemRepository } from '../../../src/domains/inventory/InventoryItemRepository';
 import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
-import { CreatePawnTicketWithItemsUseCase } from '../../../src/application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
-import { PoolClient } from 'pg';
+import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn(async (t: PawnTicket) => ({
@@ -14,6 +15,9 @@ class MockPawnTicketRepository implements PawnTicketRepository {
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
   listActiveByCustomer = jest.fn();
+  async findById(id: string): Promise<PawnTicket | null> {
+    return null;
+  }
 }
 
 class MockInventoryItemRepository implements InventoryItemRepository {

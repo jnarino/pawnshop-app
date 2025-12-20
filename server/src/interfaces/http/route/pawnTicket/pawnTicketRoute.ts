@@ -175,5 +175,36 @@ export function createPawnTicketRouter(
      */
     router.get('/:pawnTicketId/payments', auth, controller.getPayments);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/{controlNumber}/current-charges:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Get current charges, pawn amount, periods behind, and redemption amount for a pawn ticket
+     *     description: Returns the current charges, pawn amount, periods behind, and redemption amount for a given pawn ticket (by control number)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: controlNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Pawn Ticket Control Number
+     *     responses:
+     *       200:
+     *         description: Current charges info
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/PawnTicketCurrentChargesResponseDto'
+     *       404:
+     *         description: Pawn ticket not found
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/:controlNumber/current-charges', auth, controller.getCurrentCharges);
+
     return router;
 }

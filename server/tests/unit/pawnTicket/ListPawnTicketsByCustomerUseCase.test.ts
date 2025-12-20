@@ -1,12 +1,15 @@
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
-import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { ListPawnTicketsByCustomerUseCase } from '../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
+import { ListPawnTicketsByCustomerUseCase } from "../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase";
+import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
+import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
   listActiveByCustomer = jest.fn();
+  async findById(id: string): Promise<PawnTicket | null> {
+    return null;
+  }
 }
 
 describe('ListPawnTicketsByCustomerUseCase', () => {

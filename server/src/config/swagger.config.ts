@@ -58,6 +58,16 @@ const options: swaggerJsdoc.Options = {
                         isActive: { type: 'boolean' },
                     },
                 },
+                PawnTicketCurrentChargesResponseDto: {
+                    type: 'object',
+                    properties: {
+                        pawnTicketId: { type: 'string' },
+                        currentCharges: { type: 'number' },
+                        pawnAmount: { type: 'number' },
+                        periodsBehind: { type: 'number' },
+                        redemptionAmount: { type: 'number' }
+                    },
+                },
                 Customer: {
                     type: 'object',
                     properties: {

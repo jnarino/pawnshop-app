@@ -117,6 +117,7 @@ export async function createApp() {
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
   const getPawnTicketPaymentsUseCase = new GetPawnTicketPaymentsUseCase(pawnTicketPaymentRepo);
+  const getPawnTicketCurrentChargesUseCase = new (require('./application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase').GetPawnTicketCurrentChargesUseCase)(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase);
 
   // Store Transaction use-cases
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
@@ -169,7 +170,8 @@ export async function createApp() {
     listPawnTicketsByControlNumberUseCase,
     listPawnTicketsByCustomerUseCase,
     listActivePawnTicketsByCustomerUseCase,
-    getPawnTicketPaymentsUseCase
+    getPawnTicketPaymentsUseCase,
+    getPawnTicketCurrentChargesUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

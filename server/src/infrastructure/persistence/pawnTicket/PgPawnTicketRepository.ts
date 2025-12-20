@@ -27,6 +27,11 @@ const SQL_LIST_ACTIVE_BY_CUSTOMER = loadSql(
     'pawnTicket/pawn_ticket_list_active_by_customer'
 );
 
+const SQL_FIND_BY_ID = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_find_by_id'
+);
+
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     const item = new InventoryItem({
         id: itemData.id,
@@ -88,11 +93,11 @@ function mapRowToPawnTicket(row: any): PawnTicket {
             row.purchase_trade_value !== null
                 ? Number(row.purchase_trade_value)
                 : null,
-        transactionDate: row.transaction_date,
-        maturityDate: row.maturity_date,
-        defaultDate: row.default_date,
-        pawnStatus: row.status_id,
-        createdDate: row.created_at,
+        transactionDate: row.transaction_date ? new Date(row.transaction_date) : new Date(0),
+        maturityDate: row.maturity_date ? new Date(row.maturity_date) : new Date(0),
+        defaultDate: row.default_date ? new Date(row.default_date) : new Date(0),
+        pawnStatus: row.pawn_status,
+        createdDate: row.created_at ? new Date(row.created_at) : new Date(0),
         itemIds: Array.isArray(row.item_ids) ? row.item_ids : [],
         items: row.items_data ?
             (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) :
@@ -156,5 +161,11 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
             customerId
         ]);
         return result.rows.map(mapRowToPawnTicket);
+    }
+
+    async findById(id: string): Promise<PawnTicket | null> {
+        const result = await this.db.query(SQL_FIND_BY_ID, [id]);
+        if (result.rowCount === 0) return null;
+        return mapRowToPawnTicket(result.rows[0]);
     }
 }
