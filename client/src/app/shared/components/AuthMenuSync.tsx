@@ -10,10 +10,11 @@ import { RootState } from '@/app/core/redux/store';
 export default function AuthMenuSync() {
   const user = useSelector((s: RootState) => s.auth.user);
   useEffect(() => {
-    // @ts-ignore - electronAPI injected by preload when running in Electron
-    if (window.electronAPI?.authChanged) {
-      // send boolean
-      window.electronAPI.authChanged(!!user);
+    const api = window.electronAPI;
+    if (api?.authChanged) {
+      const authed = !!user; // only trust Redux user state to drive menu visibility
+      api.authChanged(authed);
+      api.refreshMenu?.();
     }
   }, [user]);
   return null;

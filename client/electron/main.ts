@@ -20,30 +20,45 @@ let isAuthed = false;
 
 function buildMenu() {
   if (!mainWindow) return;
-  const fileSub: Electron.MenuItemConstructorOptions[] = [
-    { label: 'Log In', click: () => mainWindow.webContents.send('navigate', '/login') },
-    { label: 'Log Out', click: () => mainWindow.webContents.send('navigate', '/logout') },
-    { type: 'separator' },
-    { role: 'quit' },
-  ];
-  const editSub: Electron.MenuItemConstructorOptions[] = [
-    { role: 'undo' },
-    { role: 'redo' },
-    { type: 'separator' },
-    { role: 'cut' },
-    { role: 'copy' },
-    { role: 'paste' },
-    { role: 'selectAll' },
-  ];
+
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'File', submenu: fileSub },
-    { label: 'Edit', submenu: editSub },
-    { label: 'Customer', click: () => mainWindow.webContents.send('navigate', '/customer') },
-    { label: 'Pawn', click: () => mainWindow.webContents.send('navigate', '/pawn') },
-    { label: 'Reports', click: () => mainWindow.webContents.send('navigate', '/reports') },
-    { label: 'About', click: () => dialog.showMessageBox(mainWindow, { type: 'info', title: 'About', message: 'PawnShop App v1.0.0', detail: 'Built with Electron, React & TypeScript' }) },
+    { role: 'appMenu' },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'copy' },
+        { role: 'paste' },
+      ],
+    },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+
+  if (isAuthed) {
+    template.push({
+      label: 'Admin',
+      submenu: [
+        {
+          label: 'Cash Drawers',
+          submenu: [
+            {
+              label: 'Remove / Add cash',
+              click: () => mainWindow?.webContents.send('menu:manage-cash'),
+            },
+          ],
+        },
+      ],
+    });
+
+    template.push({
+      label: 'Inventory',
+      submenu: [
+        {
+          label: 'Maintain',
+          click: () => mainWindow?.webContents.send('menu:inventory-maintain'),
+        },
+      ],
+    });
+  }
+
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
@@ -96,7 +111,7 @@ function createMainWindow() {
     show: false,
     webPreferences: {
       contextIsolation: true,     // security best practice
-      sandbox: true,              // security best practice
+      sandbox: false,             // allow preload ESM (compiled with NodeNext)
       preload: join(__dirname, 'preload.js'),
     },
   })
@@ -203,14 +218,12 @@ app.on('window-all-closed', () => {
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow() })
 
 // Listen for auth status changes from renderer
-// auth-changed retained for potential future dynamic behavior but no longer required
 ipcMain.on('auth-changed', (_evt, authed: boolean) => {
   isAuthed = !!authed;
-  console.log('[Electron] auth-changed received (ignored for static menu). isAuthed=', isAuthed);
+  buildMenu();
 });
 
 // Renderer can explicitly request a menu rebuild (e.g., after hot reload)
 ipcMain.on('refresh-menu', () => {
-  console.log('[Electron] refresh-menu requested. isAuthed=', isAuthed);
   buildMenu();
 });

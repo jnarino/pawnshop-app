@@ -1,5 +1,6 @@
 import AppRouter from './AppRouter';
 import AuthMenuSync from './shared/components/AuthMenuSync';
+import ElectronMenuBridge from './shared/components/ElectronMenuBridge';
 import { LookupInitializer } from './shared/components/LookupInitializer';
 import { Toaster } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
@@ -29,4 +30,16 @@ if (typeof window !== 'undefined') {
   };
 }
 
-export default function App() { return <><AuthMenuSync /><ElectronNavHandler /><LookupInitializer><AppRouter /></LookupInitializer><Toaster position="top-right" /></>; }
+export default function App() {
+  return (
+    <>
+      <AuthMenuSync />
+      <ElectronMenuBridge />
+      <ElectronNavHandler />
+      <LookupInitializer>
+        <AppRouter />
+      </LookupInitializer>
+      <Toaster position="top-right" />
+    </>
+  );
+}
