@@ -84,9 +84,9 @@ def migrate_transactions():
         # print(f"Found {len(rows)} transactions")
         
         batch_size = 1000
+        batch_size = 1000
         batch_tx = []
         batch_tenders = []
-        batch_pawn_payments = []
         
         errors = 0
         
@@ -132,6 +132,16 @@ def migrate_transactions():
                 created_at = occurred_at
                 updated_at = occurred_at
 
+                pawn_ticket_id = None
+                interest_amount = 0
+                principal_amount = 0
+                fees_amount = 0
+
+                if legacy_ticketnum and legacy_type in ['PPP', 'PPU', 'P']:
+                    pawn_ticket_id = ticket_map.get(legacy_ticketnum)
+                    principal_amount = amount 
+
+
                 batch_tx.append((
                     tx_id,
                     legacy_acct_pk,
@@ -150,7 +160,11 @@ def migrate_transactions():
                     override_amount,
                     note,
                     created_at,
-                    updated_at
+                    updated_at,
+                    pawn_ticket_id,
+                    interest_amount,
+                    principal_amount,
+                    fees_amount
                 ))
                 
                 # Tenders
@@ -170,37 +184,19 @@ def migrate_transactions():
                     if tid:
                         batch_tenders.append((str(uuid.uuid4()), tx_id, 2, tid, t2_amt))
                 
-                # Pawn Payment Linkage
-                # If Type is 'PPP' (Pawn Payment) or 'PPU' (Redemption)
-                # And we have a TICKETNUM
-                ticket_num = str(row['TICKETNUM'] or '').strip()
-                if ticket_num and legacy_type in ['PPP', 'PPU', 'P']:
-                    ticket_uuid = ticket_map.get(ticket_num)
-                    if ticket_uuid:
-                        batch_pawn_payments.append((
-                            str(uuid.uuid4()),
-                            ticket_uuid,
-                            tx_id,
-                            occurred_at,
-                            0, # Interest
-                            amount, # Principal (Assume all principal for now, or total)
-                            0,
-                            clerk_id, # clerk_user_id
-                            f"Legacy Acct Link: {ticket_num}",
-                            occurred_at # created_at = payment_date
-                        ))
+
 
                 if len(batch_tx) >= batch_size:
-                    _flush_batches(pg_cursor, batch_tx, batch_tenders, batch_pawn_payments)
+                    _flush_batches(pg_cursor, batch_tx, batch_tenders)
                     pg_conn.commit()
-                    batch_tx, batch_tenders, batch_pawn_payments = [], [], []
+                    batch_tx, batch_tenders = [], []
 
             except Exception as e:
                 errors += 1
                 if errors < 10: print(f"Error row: {e}")
         
         if batch_tx:
-            _flush_batches(pg_cursor, batch_tx, batch_tenders, batch_pawn_payments)
+            _flush_batches(pg_cursor, batch_tx, batch_tenders)
             pg_conn.commit()
             
         print("✅ Transactions Migration Completed!")
@@ -214,13 +210,14 @@ def migrate_transactions():
         if 'mssql_conn' in locals(): mssql_conn.close()
         if 'pg_conn' in locals(): pg_conn.close()
 
-def _flush_batches(cursor, txs, tenders, payments):
+def _flush_batches(cursor, txs, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
                 id, legacy_acct_pk, legacy_acct_id, legacy_ticketnum, legacy_cus_fk, legacy_usr_fk,
                 customer_id, clerk_user_id, type_id, occurred_at, amount, tax_sales, state_tax, 
-                tender_change, override_amount, note, created_at, updated_at
+                tender_change, override_amount, note, created_at, updated_at,
+                pawn_ticket_id, interest_amount, principal_amount, fees_amount
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     if tenders:
@@ -229,12 +226,7 @@ def _flush_batches(cursor, txs, tenders, payments):
                 id, store_transaction_id, sequence, tender_type_id, amount
             ) VALUES %s ON CONFLICT DO NOTHING
         """, tenders)
-    if payments:
-        execute_values(cursor, """
-            INSERT INTO pawn_ticket_payment (
-                id, pawn_ticket_id, store_transaction_id, payment_date, interest_paid, principal_paid, fees_paid, clerk_user_id, note, created_at
-            ) VALUES %s ON CONFLICT DO NOTHING
-        """, payments)
+
 
 if __name__ == "__main__":
     migrate_transactions()

@@ -581,8 +581,13 @@ CREATE TABLE IF NOT EXISTS store_transaction (
   gun_proc_fee NUMERIC(12,2),
   note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  pawn_ticket_id UUID REFERENCES pawn_ticket(id) ON DELETE SET NULL,
+  interest_amount NUMERIC(12,2) DEFAULT 0,
+  principal_amount NUMERIC(12,2) DEFAULT 0,
+  fees_amount NUMERIC(12,2) DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_store_tx_pawn_ticket ON store_transaction(pawn_ticket_id);
 CREATE INDEX IF NOT EXISTS idx_store_tx_time     ON store_transaction(occurred_at);
 CREATE INDEX IF NOT EXISTS idx_store_tx_type_id  ON store_transaction(type_id);
 
@@ -637,23 +642,6 @@ CREATE TABLE IF NOT EXISTS store_transaction_item (
 CREATE INDEX IF NOT EXISTS idx_store_tx_item_tx        ON store_transaction_item(store_transaction_id);
 CREATE INDEX IF NOT EXISTS idx_store_tx_item_inventory ON store_transaction_item(inventory_item_id);
 
------------------------
--- Pawn ticket payments (PPP / PPU linkage)
------------------------
-CREATE TABLE IF NOT EXISTS pawn_ticket_payment (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pawn_ticket_id UUID NOT NULL REFERENCES pawn_ticket(id) ON DELETE CASCADE,
-  store_transaction_id UUID NOT NULL UNIQUE REFERENCES store_transaction(id) ON DELETE CASCADE,
-  payment_date TIMESTAMPTZ NOT NULL DEFAULT now(),
-  interest_paid NUMERIC(12,2) NOT NULL DEFAULT 0,
-  principal_paid NUMERIC(12,2) NOT NULL DEFAULT 0,
-  fees_paid NUMERIC(12,2) NOT NULL DEFAULT 0,
-  clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
-  note TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_pawn_payment_ticket ON pawn_ticket_payment(pawn_ticket_id);
-CREATE INDEX IF NOT EXISTS idx_pawn_payment_date   ON pawn_ticket_payment(payment_date);
 
 -----------------------
 -- Layaway
