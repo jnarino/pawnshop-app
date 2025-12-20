@@ -1,5 +1,3 @@
-import { http } from './http';
-
 export interface ActivePawn {
   id: string;
   controlNumber: string;

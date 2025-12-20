@@ -1,5 +1,3 @@
-import { http } from './http';
-
 export interface PawnHistory {
   id: string;
   controlNumber: string;

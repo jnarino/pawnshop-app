@@ -3,23 +3,8 @@ import AuthMenuSync from './shared/components/AuthMenuSync';
 import { LookupInitializer } from './shared/components/LookupInitializer';
 import { Toaster } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { isAuthenticated, initializeAuth, getAccessToken } from './core/auth/authService';
-
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    initializeAuth();
-    setInitialized(true);
-    if (!isAuthenticated()) navigate('/login');
-  }, [navigate]);
-
-  if (!initialized) return null;
-  if (!isAuthenticated()) return null;
-  return <>{children}</>;
-}
+import { useEffect } from 'react';
+import { getAccessToken } from './core/auth/authService';
 
 function ElectronNavHandler() {
   const navigate = useNavigate();

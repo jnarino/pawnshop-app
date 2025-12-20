@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { http } from '@/app/core/api/http';
 import { CustomerRecord, apiToRecordLoose } from '../mappers';
 

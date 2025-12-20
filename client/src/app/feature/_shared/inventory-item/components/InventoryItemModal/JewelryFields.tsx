@@ -5,7 +5,6 @@ import { WEIGHT_UNITS } from '@/app/shared/constants/jewelry';
 import { LookupSelect } from '@/app/shared/components/LookupSelect';
 import { LookupTypeName } from '@/app/shared/types/lookup';
 import { InventoryItemDraft } from './types';
-import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface JewelryFieldsProps {
   readonly draft: InventoryItemDraft;
@@ -13,10 +12,9 @@ interface JewelryFieldsProps {
   readonly handleMetalChange: (metal: string) => void;
   readonly isRing: boolean;
   readonly disabled?: boolean;
-  readonly styleOptions?: CategoryOption[];
 }
 
-export function JewelryFields({ draft, updateField, handleMetalChange, isRing, disabled = false, styleOptions = [] }: JewelryFieldsProps) {
+export function JewelryFields({ draft, updateField, handleMetalChange, isRing, disabled = false }: JewelryFieldsProps) {
 
   return (
     <>

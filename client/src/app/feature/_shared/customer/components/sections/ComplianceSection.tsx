@@ -59,7 +59,7 @@ export const ComplianceSection = memo(function ComplianceSection({
           <FieldLabel>Customer Credit</FieldLabel>
           <Input 
             value={'0.00'} 
-            onChange={(e) => {/* No customer credit field */}} 
+            onChange={() => {/* No customer credit field */}} 
             placeholder="0.00"
             disabled
           />
