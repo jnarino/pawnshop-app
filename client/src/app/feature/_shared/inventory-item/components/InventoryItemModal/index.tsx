@@ -91,7 +91,6 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
                 updateField={updateField}
                 handleMetalChange={handleMetalChange}
                 isRing={isRing}
-                styleOptions={brands}
                 disabled={isViewMode}
               />
             )}

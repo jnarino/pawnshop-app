@@ -74,6 +74,10 @@ export const pawnTicketApi = {
     return http(`/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`);
   },
 
+  getByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}`);
+  },
+
   getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
     return http(`/api/pawn-ticket/customer/${customerId}/active`);
   },

@@ -9,6 +9,7 @@ declare global {
       refreshMenu?: () => void;
       onManageCash?: (cb: () => void) => () => void;
       onInventoryMaintain?: (cb: () => void) => () => void;
+      onPawnMaintain?: (cb: () => void) => () => void;
       
       // ✅ Printing
       printLabels?: (items: Array<{ 

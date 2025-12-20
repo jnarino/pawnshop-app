@@ -2,7 +2,7 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, screen } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { fork, ChildProcess } from 'child_process'
+import { fork, ChildProcess } from 'node:child_process'
 import { DockerManager } from './docker-manager.js'
 import dotenv from 'dotenv'
 
@@ -34,6 +34,15 @@ function buildMenu() {
 
   if (isAuthed) {
     template.push(
+      {
+        label: 'Pawn',
+        submenu: [
+          {
+            label: 'Maintain',
+            click: () => mainWindow?.webContents.send('menu:pawn-maintain'),
+          },
+        ],
+      },
       {
         label: 'Admin',
         submenu: [

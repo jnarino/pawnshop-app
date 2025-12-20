@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import ManageCashDialog from '@/app/feature/admin/components/ManageCashDialog';
 import { FindByInputModal, InventoryItemModal } from '@/app/feature/_shared/inventory-item';
+import { PawnMaintainModal } from '@/app/feature/_shared/pawn-ticket';
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { getByInventoryNumber } from '@/app/core/api/inventoryItemApi';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
@@ -12,10 +13,11 @@ export default function ElectronMenuBridge() {
   const [findInventoryError, setFindInventoryError] = useState<string | null>(null);
   const [inventoryItem, setInventoryItem] = useState<InventoryItemDraft | null>(null);
   const [inventoryItemModalOpen, setInventoryItemModalOpen] = useState(false);
+  const [pawnMaintainOpen, setPawnMaintainOpen] = useState(false);
 
   // Open cash dialog on menu signal
   useEffect(() => {
-    const api = window.electronAPI;
+    const api = globalThis.electronAPI;
     if (!api?.onManageCash) return;
     const dispose = api.onManageCash(() => setCashDialogOpen(true));
     return () => dispose?.();
@@ -23,12 +25,20 @@ export default function ElectronMenuBridge() {
 
   // Open inventory maintain flow on menu signal
   useEffect(() => {
-    const api = window.electronAPI;
+    const api = globalThis.electronAPI;
     if (!api?.onInventoryMaintain) return;
     const dispose = api.onInventoryMaintain(() => {
       setFindInventoryError(null);
       setFindInventoryOpen(true);
     });
+    return () => dispose?.();
+  }, []);
+
+  // Open pawn maintain flow on menu signal
+  useEffect(() => {
+    const api = globalThis.electronAPI;
+    if (!api?.onPawnMaintain) return;
+    const dispose = api.onPawnMaintain(() => setPawnMaintainOpen(true));
     return () => dispose?.();
   }, []);
 
@@ -72,6 +82,11 @@ export default function ElectronMenuBridge() {
         inputLabel="Inventory Number"
         inputPlaceholder="Enter inventory number..."
         infoMessage="You can type the inventory number manually or use a barcode scanner."
+      />
+
+      <PawnMaintainModal
+        open={pawnMaintainOpen}
+        onClose={() => setPawnMaintainOpen(false)}
       />
 
       <InventoryItemModal

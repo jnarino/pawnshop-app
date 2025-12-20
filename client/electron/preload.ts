@@ -32,4 +32,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('menu:inventory-maintain', handler);
         return () => ipcRenderer.removeListener('menu:inventory-maintain', handler);
     },
+
+    onPawnMaintain: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:pawn-maintain', handler);
+        return () => ipcRenderer.removeListener('menu:pawn-maintain', handler);
+    },
 });
