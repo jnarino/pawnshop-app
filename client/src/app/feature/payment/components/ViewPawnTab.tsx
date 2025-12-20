@@ -9,7 +9,6 @@ import { PaymentHistoryModal } from './PaymentHistoryModal';
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
   readonly customer?: CustomerData;
-  readonly onBack: () => void;
 }
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
@@ -65,7 +64,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
   };
 }
 
-export function ViewPawnTab({ pawnTicket, customer, onBack }: ViewPawnTabProps) {
+export function ViewPawnTab({ pawnTicket, customer }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
   const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
   const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);

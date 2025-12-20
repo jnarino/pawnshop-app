@@ -71,7 +71,7 @@ function formatDateForDisplay(date: Date): string {
 
 function formatInputValue(value: string): string {
   // Remove all non-numeric characters
-  // eslint-disable-next-line prefer-regex-literals
+   
   const digits = value.replace(new RegExp('\\D', 'g'), '');
   
   // Format as mm/dd/yyyy

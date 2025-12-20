@@ -20,8 +20,7 @@ const initialState: AuthState = {
   error: null,
 };
 
-const API_BASE: string =
-  (import.meta as unknown as { env?: { VITE_API_URL?: string } })?.env?.VITE_API_URL || 'http://localhost:3001';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_API_PORT}`;
 
 export const logout = createAsyncThunk<
   void,

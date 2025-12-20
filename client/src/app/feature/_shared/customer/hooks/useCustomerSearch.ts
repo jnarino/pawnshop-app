@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { http } from '@/app/core/api/http';
 import { CustomerRecord, apiToRecordLoose } from '../mappers';
-import { CUSTOMER_SEARCH_LIMIT } from '../constants/customerConfig';
 
 interface SearchParams {
   firstName?: string;
@@ -34,7 +33,7 @@ export function useCustomerSearch() {
       if (lastName) searchParams.append('lastName', lastName);
       if (dateOfBirth) searchParams.append('dateOfBirth', dateOfBirth);
       if (idNumber) searchParams.append('idNumber', idNumber);
-      searchParams.append('limit', CUSTOMER_SEARCH_LIMIT.toString());
+      searchParams.append('limit', import.meta.env.VITE_CUSTOMER_SEARCH_LIMIT);
 
       const payload = await http(`/api/customer?${searchParams.toString()}`);
       const searchResults = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);

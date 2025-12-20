@@ -1,5 +1,4 @@
 import { http } from './http';
-import { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 
 export interface CreateSalePayload {
     sale: {

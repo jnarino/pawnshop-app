@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 import { CustomerManager } from '@/app/feature/_shared/customer';
-import { FindByTicketModal } from '@/app/feature/_shared/customer/components/FindByTicketModal';
+import { FindByInputModal } from '@/app/feature/_shared/inventory-item';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
@@ -125,12 +125,17 @@ export default function PaymentCreatePage() {
         onCancel={() => setCancelOpen(false)}
       />
 
-      <FindByTicketModal
+      <FindByInputModal
         open={findByTicketOpen}
         loading={findingTicket}
         error={findTicketError}
         onClose={() => setFindByTicketOpen(false)}
         onFind={handleFindByTicket}
+        title="Find Customer by Ticket"
+        description="To find a customer by ticket ID, enter the ticket number or scan the ticket."
+        inputLabel="Ticket Number"
+        inputPlaceholder="Enter ticket number..."
+        infoMessage="You can type the ticket number manually or use a barcode scanner to scan the ticket."
       />
     </div>
   );

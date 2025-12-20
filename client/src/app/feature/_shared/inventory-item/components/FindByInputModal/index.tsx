@@ -13,27 +13,47 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, Loader2, AlertCircle } from 'lucide-react';
 
-interface FindByTicketModalProps {
-  open: boolean;
-  loading?: boolean;
-  error?: string | null;
-  onClose: () => void;
-  onFind: (ticketNumber: string) => void;
+interface FindByInputModalProps {
+  readonly open: boolean;
+  readonly loading?: boolean;
+  readonly error?: string | null;
+  readonly onClose: () => void;
+  readonly onFind: (value: string) => void;
+  readonly title: string;
+  readonly description: string;
+  readonly inputLabel: string;
+  readonly inputPlaceholder: string;
+  readonly infoMessage: string;
+  readonly findButtonText?: string;
+  readonly findingButtonText?: string;
 }
 
-export function FindByTicketModal({ open, loading, error, onClose, onFind }: FindByTicketModalProps) {
-  const [ticketNumber, setTicketNumber] = useState('');
+export function FindByInputModal({
+  open,
+  loading,
+  error,
+  onClose,
+  onFind,
+  title,
+  description,
+  inputLabel,
+  inputPlaceholder,
+  infoMessage,
+  findButtonText = 'Find',
+  findingButtonText = 'Finding...',
+}: FindByInputModalProps) {
+  const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (ticketNumber.trim() && !loading) {
-      onFind(ticketNumber.trim());
+    if (inputValue.trim() && !loading) {
+      onFind(inputValue.trim());
     }
-  }, [ticketNumber, loading, onFind]);
+  }, [inputValue, loading, onFind]);
 
   const handleClose = useCallback(() => {
     if (!loading) {
-      setTicketNumber('');
+      setInputValue('');
       onClose();
     }
   }, [loading, onClose]);
@@ -42,19 +62,15 @@ export function FindByTicketModal({ open, loading, error, onClose, onFind }: Fin
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Find Customer by Ticket</DialogTitle>
-          <DialogDescription>
-            To find a customer by ticket ID, enter the ticket number or scan the ticket.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <Alert variant="info">
               <Info className="h-4 w-4" />
-              <AlertDescription>
-                You can type the ticket number manually or use a barcode scanner to scan the ticket.
-              </AlertDescription>
+              <AlertDescription>{infoMessage}</AlertDescription>
             </Alert>
 
             {error && (
@@ -65,13 +81,13 @@ export function FindByTicketModal({ open, loading, error, onClose, onFind }: Fin
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="ticket-number">Ticket Number</Label>
+              <Label htmlFor="search-input">{inputLabel}</Label>
               <Input
-                id="ticket-number"
+                id="search-input"
                 type="text"
-                placeholder="Enter ticket number..."
-                value={ticketNumber}
-                onChange={(e) => setTicketNumber(e.target.value)}
+                placeholder={inputPlaceholder}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 autoFocus
                 disabled={loading}
                 className="text-sm"
@@ -83,14 +99,14 @@ export function FindByTicketModal({ open, loading, error, onClose, onFind }: Fin
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!ticketNumber.trim() || loading}>
+            <Button type="submit" disabled={!inputValue.trim() || loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Finding...
+                  {findingButtonText}
                 </>
               ) : (
-                'Find'
+                findButtonText
               )}
             </Button>
           </DialogFooter>
