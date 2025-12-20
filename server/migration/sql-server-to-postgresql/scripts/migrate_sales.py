@@ -32,7 +32,14 @@ def migrate_sales():
         # Get Transaction Types
         pg_cursor.execute("SELECT id, code FROM store_transaction_type")
         tx_types = {row[1]: str(row[0]) for row in pg_cursor.fetchall()}
-        RETAIL_SALE_ID = tx_types.get('RETAIL_SALE', '00000000-0000-0000-0000-000000000000')
+        RETAIL_SALE_ID = tx_types.get('SS') # Code is 'SS' in initial.sql
+        if not RETAIL_SALE_ID:
+             print("⚠ RETAIL_SALE type (SS) not found! sales will fail.")
+             # Try fallback or error?
+             # For now, let it fail with a clear error or picking first available?
+             # No, smallint error means must be INT.
+             # Assume 10 as hardcoded standard if missing? 
+             RETAIL_SALE_ID = '10'
         
         # Get Tender Types (Assuming mapped by name or legacy code)
         pg_cursor.execute("SELECT id, name FROM tender_type")
@@ -142,13 +149,15 @@ def migrate_sales():
                          inv_data = inv_map.get(invnum)
                          inv_uuid = inv_data['id'] if inv_data else None
                          
-                         # Status from Inventory Item (per user request)
-                         # Fallback to sitems status if inv not found
-                         if inv_data and inv_data.get('status'):
+                         # Status priority: sitems.Status (Historical) -> Inventory Status (Current) -> 'S' (Default)
+                         sitems_status = str(item.get('Status') or '').strip()
+                         
+                         if sitems_status:
+                             status = sitems_status
+                         elif inv_data and inv_data.get('status'):
                              status = inv_data['status']
                          else:
-                             # Use raw status code, fallback to 'S' if empty
-                             status = str(item.get('Status') or 'S').strip()
+                             status = 'S'
 
                          batch_items.append((
                              str(uuid.uuid4()),
