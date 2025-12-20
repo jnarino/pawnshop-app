@@ -12,22 +12,21 @@ import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
 import { StonesSection } from './stones';
 import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
+import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import type { InventoryItemDraft } from './types';
 
 export type { InventoryItemDraft } from './types';
 
-export type ItemFormMode = 'CREATE' | 'EDIT' | 'VIEW';
-
 interface InventoryItemModalProps {
-  readonly mode?: ItemFormMode;
+  readonly mode?: ViewMode;
   readonly open: boolean;
   readonly initial?: InventoryItemDraft | null;
   readonly onCancel: () => void;
   readonly onSave?: (item: InventoryItemDraft) => void;
 }
 
-export function InventoryItemModal({ mode = 'CREATE', open, initial, onCancel, onSave }: InventoryItemModalProps) {
-  const isViewMode = mode === 'VIEW';
+export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave }: InventoryItemModalProps) {
+  const isViewMode = mode === ViewMode.VIEW;
   
   const {
     draft,

@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
-import type { ItemFormMode } from '../components/InventoryItemModal';
+import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 
 interface UseInventoryItemFormProps {
   open: boolean;
   initial?: InventoryItemDraft | null;
   onSave: (item: InventoryItemDraft) => void;
-  mode?: ItemFormMode;
+  mode?: ViewMode;
 }
 
-export function useInventoryItemForm({ open, initial, onSave, mode = 'CREATE' }: UseInventoryItemFormProps) {
+export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CREATE }: UseInventoryItemFormProps) {
   const [draft, setDraft] = useState<InventoryItemDraft>(DEFAULT_ITEM);
   const [error, setError] = useState<string | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
@@ -22,7 +22,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = 'CREATE' }:
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (mode === 'VIEW') {
+    if (mode === ViewMode.VIEW) {
       if (initial) {
         if (initial.type && initial.categoryName) {
           setRootCategories([{ id: initial.type, name: initial.categoryName }]);
@@ -65,7 +65,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = 'CREATE' }:
   }, [mode, initial]);
 
   useEffect(() => {
-    if (mode === 'VIEW') {
+    if (mode === ViewMode.VIEW) {
       return;
     }
 
