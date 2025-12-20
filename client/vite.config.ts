@@ -5,7 +5,8 @@ import svgr from 'vite-plugin-svgr'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiUrl = env.VITE_API_URL || 'http://localhost:3001'
+  const apiUrl = `${env.VITE_API_BASE_URL}:${env.VITE_API_PORT}`
+  const devPort = Number(env.VITE_FRONTEND_PORT!)
 
   return {
     base: './',
@@ -23,7 +24,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
-      port: 5173,
+      port: devPort,
       proxy: {
         '/api': {
           target: apiUrl,

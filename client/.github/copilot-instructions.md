@@ -80,6 +80,28 @@ Follow a strict 3-layer architecture to maintain separation of concerns:
 - **Strict Typing**: Avoid `any`. Define interfaces for component props (`interface Props { ... }`) and API responses.
 - **Enums vs Unions**: Prefer string union types over TypeScript enums for better compatibility and simplicity.
 
+## Environment Variables & Configuration
+- **Centralized Configuration**: All runtime configuration (API URLs, ports, store info, etc.) MUST be defined as VITE environment variables in the `.env` file.
+- **No Hardcoded Values**: Never hardcode URLs, ports, API endpoints, or any configuration that may change between environments.
+- **File Locations**:
+  - Configuration templates: `client/.env.example`
+  - Local development: `client/.env` (not committed to Git)
+  - Environment variables must be prefixed with `VITE_` to be exposed to the client application
+- **Required Variables**:
+  ```env
+  VITE_API_BASE_URL      # Backend API URL
+  VITE_FRONTEND_PORT     # Vite dev server port
+  VITE_STORE_NAME        # Store name for receipts
+  VITE_STORE_ADDRESS1    # Store address line 1
+  VITE_STORE_ADDRESS2    # Store address line 2
+  VITE_STORE_PHONE       # Store phone number
+  ```
+- **Usage Pattern**: Use non-null assertion operator to enforce .env configuration:
+  ```typescript
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
+  ```
+- **CRITICAL**: Before starting development, you MUST copy `.env.example` to `.env` and configure all values. The application will fail if variables are not defined.
+
 ## Coding Conventions
 - **File Naming**: PascalCase for React components (`MyComponent.tsx`), camelCase for hooks and utilities (`useHook.ts`, `apiService.ts`).
 - **Exports**: Use named exports for components and hooks to ensure consistent naming when importing.

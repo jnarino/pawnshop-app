@@ -4,14 +4,19 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { fork, ChildProcess } from 'child_process'
 import { DockerManager } from './docker-manager.js'
-
+import dotenv from 'dotenv'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+dotenv.config({ path: join(__dirname, '../.env') })
+
+const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'http://localhost';
+const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
+
 let mainWindow: BrowserWindow
-let serverProcess: ChildProcess | null = null; // Reference to server process
-let isAuthed = false; // retained for possible future use, no longer required for menu rendering
+let serverProcess: ChildProcess | null = null;
+let isAuthed = false;
 
 function buildMenu() {
   if (!mainWindow) return;
@@ -101,10 +106,10 @@ function createMainWindow() {
     mainWindow.show();
   });
 
-  const isDev = !app.isPackaged   // <-- reliable dev/prod check
+  const isDev = !app.isPackaged
 
   if (isDev) {
-    const url = 'http://localhost:5173/#/login'
+    const url = `${FRONTEND_HOST}:${FRONTEND_PORT}/#/login`
     console.log('[Electron] Loading DEV URL:', url)
     mainWindow.loadURL(url)
     mainWindow.webContents.openDevTools({ mode: 'detach' })

@@ -4,8 +4,8 @@ import { getAccessToken, ensureFreshAccessToken } from '../auth/authService';
 const requestCache = new Map<string, { promise: Promise<any>; timestamp: number }>();
 const CACHE_DURATION = 1000; // 1 second
 
-// ✅ Base URL configuration with fallback
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// ✅ Base URL configuration
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_API_PORT}`;
 
 export async function http(
   path: string, 
@@ -92,7 +92,7 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     
     // ✅ Network connection errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Please check if the server is running on http://localhost:3000');
+      throw new Error(`Cannot connect to server. Please check if the server is running on ${BASE_URL}`);
     }
     
     throw error;
