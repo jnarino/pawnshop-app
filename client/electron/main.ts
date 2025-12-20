@@ -33,30 +33,31 @@ function buildMenu() {
   ];
 
   if (isAuthed) {
-    template.push({
-      label: 'Admin',
-      submenu: [
-        {
-          label: 'Cash Drawers',
-          submenu: [
-            {
-              label: 'Remove / Add cash',
-              click: () => mainWindow?.webContents.send('menu:manage-cash'),
-            },
-          ],
-        },
-      ],
-    });
-
-    template.push({
-      label: 'Inventory',
-      submenu: [
-        {
-          label: 'Maintain',
-          click: () => mainWindow?.webContents.send('menu:inventory-maintain'),
-        },
-      ],
-    });
+    template.push(
+      {
+        label: 'Admin',
+        submenu: [
+          {
+            label: 'Cash Drawers',
+            submenu: [
+              {
+                label: 'Remove / Add cash',
+                click: () => mainWindow?.webContents.send('menu:manage-cash'),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Inventory',
+        submenu: [
+          {
+            label: 'Maintain',
+            click: () => mainWindow?.webContents.send('menu:inventory-maintain'),
+          },
+        ],
+      }
+    );
   }
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
