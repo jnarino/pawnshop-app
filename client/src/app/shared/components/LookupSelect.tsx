@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLookup } from '@/app/shared/hooks/useLookup';
 import type { LookupTypeName } from '@/app/shared/types/lookup';
@@ -17,7 +18,7 @@ interface LookupSelectProps {
  * Values are cached in Redux after the first load, preventing duplicate API calls.
  * Use LookupTypeName enum to specify which lookup type to display (e.g., KARAT, METAL, GENDER).
  */
-export function LookupSelect({
+function LookupSelectComponent({
   typeName,
   value,
   onChange,
@@ -47,3 +48,5 @@ export function LookupSelect({
     </Select>
   );
 }
+
+export const LookupSelect = memo(LookupSelectComponent);

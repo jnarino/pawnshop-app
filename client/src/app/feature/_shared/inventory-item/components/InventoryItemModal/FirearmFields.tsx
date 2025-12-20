@@ -1,23 +1,27 @@
+import { memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LookupSelect } from '@/app/shared/components/LookupSelect';
 import { LookupTypeName } from '@/app/shared/types/lookup';
-import { InventoryItemDraft } from './types';
+import type { InventoryItemDraft } from './types';
 
 interface FirearmFieldsProps {
-  readonly draft: InventoryItemDraft;
+  readonly caliber?: string;
+  readonly action?: string;
+  readonly barrelLength?: string;
+  readonly capacity?: string;
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
   readonly disabled?: boolean;
 }
 
-export function FirearmFields({ draft, updateField, disabled = false }: FirearmFieldsProps) {
+function FirearmFieldsComponent({ caliber, action, barrelLength, capacity, updateField, disabled = false }: FirearmFieldsProps) {
   return (
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Caliber</Label>
         <LookupSelect
           typeName={LookupTypeName.CALIBER}
-          value={draft.caliber || ''}
+          value={caliber || ''}
           onChange={(value) => updateField('caliber', value)}
           placeholder="SELECT CALIBER..."
           disabled={disabled}
@@ -28,7 +32,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
         <Label className="text-xs font-semibold">Action</Label>
         <LookupSelect
           typeName={LookupTypeName.ACTION}
-          value={draft.action || ''}
+          value={action || ''}
           onChange={(value) => updateField('action', value)}
           placeholder="SELECT ACTION..."
           disabled={disabled}
@@ -38,7 +42,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Barrel Length</Label>
         <Input
-          value={draft.barrelLength || ''}
+          value={barrelLength || ''}
           onChange={(e) => updateField('barrelLength', e.target.value)}
           placeholder="16 INCHES"
           disabled={disabled}
@@ -49,7 +53,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Capacity</Label>
         <Input
-          value={draft.capacity || ''}
+          value={capacity || ''}
           onChange={(e) => updateField('capacity', e.target.value)}
           placeholder="15 ROUNDS"
           disabled={disabled}
@@ -59,3 +63,5 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
     </>
   );
 }
+
+export const FirearmFields = memo(FirearmFieldsComponent);

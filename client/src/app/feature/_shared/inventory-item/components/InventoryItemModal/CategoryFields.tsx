@@ -1,11 +1,14 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InventoryItemDraft } from './types';
 import { CategoryOption } from '@/app/core/api/categoryApi';
+import type { InventoryItemDraft } from './types';
+import { memo } from 'react';
 
 interface CategoryFieldsProps {
-  readonly draft: InventoryItemDraft;
+  readonly type: string;
+  readonly subcategoryId?: string;
+  readonly subcategoryName?: string;
   readonly rootCategories: CategoryOption[];
   readonly subcategories: CategoryOption[];
   readonly isLoading: boolean;
@@ -15,8 +18,10 @@ interface CategoryFieldsProps {
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
 }
 
-export function CategoryFields({
-  draft,
+function CategoryFieldsComponent({
+  type,
+  subcategoryId,
+  subcategoryName,
   rootCategories,
   subcategories,
   isLoading,
@@ -32,7 +37,7 @@ export function CategoryFields({
           Category <span className="text-red-600">*</span>
         </Label>
         <Select 
-          value={draft.type} 
+          value={type} 
           onValueChange={handleCategoryChange}
           disabled={isLoading || disabled}
         >
@@ -60,7 +65,7 @@ export function CategoryFields({
         </Label>
         {subcategories.length > 0 ? (
           <Select 
-            value={draft.subcategoryId || ''} 
+            value={subcategoryId || ''} 
             onValueChange={handleSubcategoryChange}
             disabled={disabled}
           >
@@ -77,14 +82,16 @@ export function CategoryFields({
           </Select>
         ) : (
           <Input
-            value={draft.subcategoryName || ''}
+            value={subcategoryName || ''}
             onChange={(e) => updateField('subcategoryName', e.target.value.toUpperCase())}
             placeholder="ENTER TYPE"
             className="uppercase text-xs h-8"
-            disabled={!draft.type || disabled}
+            disabled={!type || disabled}
           />
         )}
       </div>
     </>
   );
 }
+
+export const CategoryFields = memo(CategoryFieldsComponent);

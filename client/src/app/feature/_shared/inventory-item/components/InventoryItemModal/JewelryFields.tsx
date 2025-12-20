@@ -1,27 +1,34 @@
+import { memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WEIGHT_UNITS } from '@/app/shared/constants/jewelry';
 import { LookupSelect } from '@/app/shared/components/LookupSelect';
 import { LookupTypeName } from '@/app/shared/types/lookup';
-import { InventoryItemDraft } from './types';
+import type { InventoryItemDraft } from './types';
 
 interface JewelryFieldsProps {
-  readonly draft: InventoryItemDraft;
+  readonly style?: string;
+  readonly metal?: string;
+  readonly karat?: string;
+  readonly gender?: string;
+  readonly sizeLength?: string;
+  readonly weight?: string;
+  readonly weightUnit?: string;
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
   readonly handleMetalChange: (metal: string) => void;
   readonly isRing: boolean;
   readonly disabled?: boolean;
 }
 
-export function JewelryFields({ draft, updateField, handleMetalChange, isRing, disabled = false }: JewelryFieldsProps) {
+function JewelryFieldsComponent({ style, metal, karat, gender, sizeLength, weight, weightUnit, updateField, handleMetalChange, isRing, disabled = false }: JewelryFieldsProps) {
 
   return (
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Style</Label>
         <Input
-          value={draft.style || ''}
+          value={style || ''}
           onChange={(e) => updateField('style', e.target.value)}
           placeholder="STYLE"
           disabled={disabled}
@@ -35,7 +42,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         </Label>
         <LookupSelect
           typeName={LookupTypeName.METAL}
-          value={draft.metal || ''}
+          value={metal || ''}
           onChange={handleMetalChange}
           placeholder="SELECT METAL..."
           disabled={disabled}
@@ -49,7 +56,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         </Label>
         <LookupSelect
           typeName={LookupTypeName.KARAT}
-          value={draft.karat || ''}
+          value={karat || ''}
           onChange={(value) => updateField('karat', value)}
           placeholder="SELECT KARAT..."
           disabled={disabled}
@@ -61,7 +68,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         <Label className="text-xs font-semibold">Gender</Label>
         <LookupSelect
           typeName={LookupTypeName.GENDER}
-          value={draft.gender || ''}
+          value={gender || ''}
           onChange={(value) => updateField('gender', value)}
           placeholder="SELECT..."
           disabled={disabled}
@@ -73,7 +80,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         {isRing ? (
           <LookupSelect
             typeName={LookupTypeName.SIZE}
-            value={draft.sizeLength || ''}
+            value={sizeLength || ''}
             onChange={(value) => updateField('sizeLength', value)}
             placeholder="RING SIZE..."
             disabled={disabled}
@@ -83,7 +90,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
             type="number"
             step="0.25"
             min="0"
-            value={draft.sizeLength || ''}
+            value={sizeLength || ''}
             onChange={(e) => updateField('sizeLength', e.target.value)}
             placeholder="0"
             disabled={disabled}
@@ -101,7 +108,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
           step="0.01"
           min="0"
           max="999.99"
-          value={draft.weight || ''}
+          value={weight || ''}
           onChange={(e) => updateField('weight', e.target.value)}
           placeholder="5.25"
           required
@@ -113,7 +120,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Unit</Label>
         <Select 
-          value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
+          value={weightUnit?.toUpperCase() || 'GRAMS'} 
           onValueChange={(value) => updateField('weightUnit', value)}
           disabled={disabled}
         >
@@ -132,3 +139,5 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
     </>
   );
 }
+
+export const JewelryFields = memo(JewelryFieldsComponent);

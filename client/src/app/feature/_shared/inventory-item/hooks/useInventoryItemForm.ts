@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
 import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
@@ -126,11 +126,30 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     }
   }, [open, initial]);
 
-  const selectedRootCategory = rootCategories.find(c => c.id === draft.type);
-  const categoryName = selectedRootCategory?.name?.toLowerCase() || '';
-  const isJewelry = categoryName.includes('jewelry');
-  const isFirearm = categoryName.includes('firearm');
-  const isRing = isJewelry && (categoryName.includes('ring') || (draft.subcategoryName?.toLowerCase().includes('ring') ?? false));
+  const selectedRootCategory = useMemo(
+    () => rootCategories.find(c => c.id === draft.type),
+    [rootCategories, draft.type]
+  );
+
+  const categoryName = useMemo(
+    () => selectedRootCategory?.name?.toLowerCase() || '',
+    [selectedRootCategory]
+  );
+
+  const isJewelry = useMemo(
+    () => categoryName.includes('jewelry'),
+    [categoryName]
+  );
+
+  const isFirearm = useMemo(
+    () => categoryName.includes('firearm'),
+    [categoryName]
+  );
+
+  const isRing = useMemo(
+    () => isJewelry && (categoryName.includes('ring') || (draft.subcategoryName?.toLowerCase().includes('ring') ?? false)),
+    [isJewelry, categoryName, draft.subcategoryName]
+  );
 
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;

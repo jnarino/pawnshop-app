@@ -65,7 +65,9 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
           <div className="grid grid-cols-12 gap-3">
             <CategoryFields
               isLoading={isLoading}
-              draft={draft}
+              type={draft.type}
+              subcategoryId={draft.subcategoryId}
+              subcategoryName={draft.subcategoryName}
               rootCategories={rootCategories}
               subcategories={subcategories}
               handleCategoryChange={handleCategoryChange}
@@ -75,7 +77,13 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
             />
             
             <BasicInfoFields
-              draft={draft}
+              amount={draft.amount}
+              quantity={draft.quantity}
+              ownerNumber={draft.ownerNumber}
+              model={draft.model}
+              serial={draft.serial}
+              color={draft.color}
+              brandId={draft.brandId}
               updateField={updateField}
               isFirearm={isFirearm}
               brands={brands}
@@ -87,18 +95,26 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
             
             {isJewelry && (
               <JewelryFields
-                draft={draft}
+                style={draft.style}
+                metal={draft.metal}
+                karat={draft.karat}
+                gender={draft.gender}
+                sizeLength={draft.sizeLength}
+                weight={draft.weight}
+                weightUnit={draft.weightUnit}
                 updateField={updateField}
                 handleMetalChange={handleMetalChange}
                 isRing={isRing}
-                styleOptions={brands}
                 disabled={isViewMode}
               />
             )}
             
             {isFirearm && (
               <FirearmFields
-                draft={draft}
+                caliber={draft.caliber}
+                action={draft.action}
+                barrelLength={draft.barrelLength}
+                capacity={draft.capacity}
                 updateField={updateField}
                 disabled={isViewMode}
               />
