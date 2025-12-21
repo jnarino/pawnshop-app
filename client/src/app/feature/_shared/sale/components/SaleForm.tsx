@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-import { type InventoryItemDraft } from './InventoryItemModal';
-import { PrintLabelsModal } from './PrintLabelsModal';
+import { type InventoryItemDraft } from './InventoryItemModal/types';
 import { SaleTransactionDetails } from './SaleTransactionDetails';
 import { Button } from '@/components/ui/button';
 import {
@@ -410,20 +409,6 @@ export function SaleForm({
             </DropdownMenu>
           </div>
         )}
-
-        <PrintLabelsModal
-          open={showLabelModal}
-          controlNumber={controlNumber || ''}
-          items={formData.items.map(item => ({
-            id: item.id || '',
-            inventoryNumber: item.ownerNumber || '',
-            description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
-            amount: item.amount || '0',
-            quantity: Number(item.quantity) || 1
-          }))}
-          onPrint={handleConfirmPrintLabels}
-          onCancel={() => setShowLabelModal(false)}
-        />
 
         {!isViewMode && (
           <div className="flex justify-end mt-2 gap-2 items-end">
