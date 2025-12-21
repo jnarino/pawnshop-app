@@ -20,7 +20,7 @@ import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketR
 export class CreatePawnTicketUseCase {
   constructor(
     private readonly pawnTicketRepository: PawnTicketRepository
-  ) {}
+  ) { }
 
   async execute(input: unknown): Promise<PawnTicketResponseDto> {
     const dto: CreatePawnTicketRequestDto =
@@ -60,20 +60,14 @@ export class CreatePawnTicketUseCase {
 
       amountFinanced:
         dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
-      financeCharge:
-        dto.transactionType === 'PAWN' ? financeCharge : null,
       periodicRate:
         dto.transactionType === 'PAWN' ? dto.periodicRate! : null,
-      totalOfPayments:
-        dto.transactionType === 'PAWN' ? (dto.totalOfPayments ?? null) : null,
       apr:
         dto.transactionType === 'PAWN' ? apr : null,
-      ratePlanId:
-        dto.transactionType === 'PAWN' ? (dto.ratePlanId ?? null) : null,
-
+      originalPawnAmount:
+        dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
       purchaseTradeValue:
         dto.transactionType === 'PURCHASE' ? dto.purchaseTradeValue! : null,
-
       transactionDate,
       maturityDate,
       defaultDate,

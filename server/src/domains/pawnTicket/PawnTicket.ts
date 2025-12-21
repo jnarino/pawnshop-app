@@ -35,12 +35,9 @@ export class PawnTicket {
    * For PURCHASE transactions: total purchase value.
    */
   amountFinanced: number | null;
-  financeCharge: number | null;
+  originalPawnAmount: number | null;
   periodicRate: number | null;
-  totalOfPayments: number | null;
   apr: number | null;
-  ratePlanId: string | null;
-  
   purchaseTradeValue: number | null;
 
   transactionDate: Date;
@@ -79,12 +76,9 @@ export class PawnTicket {
     clerkUserId: string;
 
     amountFinanced: number | null;
-    financeCharge: number | null;
+    originalPawnAmount: number | null;
     periodicRate: number | null;
-    totalOfPayments: number | null;
     apr: number | null;
-    ratePlanId: string | null;
-
     purchaseTradeValue: number | null;
 
     transactionDate: Date;
@@ -107,12 +101,9 @@ export class PawnTicket {
     this.clerkUserId = params.clerkUserId;
 
     this.amountFinanced = params.amountFinanced;
-    this.financeCharge = params.financeCharge;
+    this.originalPawnAmount = params.originalPawnAmount;
     this.periodicRate = params.periodicRate;
-    this.totalOfPayments = params.totalOfPayments;
     this.apr = params.apr;
-    this.ratePlanId = params.ratePlanId;
-
     this.purchaseTradeValue = params.purchaseTradeValue;
 
     this.transactionDate = params.transactionDate;

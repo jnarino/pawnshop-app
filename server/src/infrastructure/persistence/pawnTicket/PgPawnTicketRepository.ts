@@ -80,15 +80,12 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         clerkUserId: row.clerk_user_id || '',
         amountFinanced:
             row.amount_financed !== null ? Number(row.amount_financed) : null,
-        financeCharge:
-            row.finance_charge !== null ? Number(row.finance_charge) : null,
+        originalPawnAmount:
+            row.original_pawn_amount !== null ? Number(row.amount_financed) : null,
         periodicRate:
             row.periodic_rate !== null ? Number(row.periodic_rate) : null,
-        totalOfPayments:
-            row.total_of_payments !== null ? Number(row.total_of_payments) : null,
         apr:
             row.apr !== null ? Number(row.apr) : null,
-        ratePlanId: row.rate_plan_id || null,
         purchaseTradeValue:
             row.purchase_trade_value !== null
                 ? Number(row.purchase_trade_value)
@@ -119,18 +116,16 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
             ticket.customerId,          // $3
             ticket.clerkUserId,         // $4
             ticket.amountFinanced,      // $5
-            ticket.financeCharge,       // $6
+            ticket.originalPawnAmount,  // $6
             ticket.periodicRate,        // $7
-            ticket.totalOfPayments,     // $8
-            ticket.apr,                 // $9
-            ticket.ratePlanId,          // $10
-            ticket.purchaseTradeValue,  // $11
-            ticket.transactionDate,     // $12
-            ticket.maturityDate,        // $13
-            ticket.defaultDate,         // $14
-            ticket.itemIds,             // $15
-            tendersJson,                // $16
-            ticket.note                 // $17
+            ticket.apr,                 // $8
+            ticket.purchaseTradeValue,  // $9
+            ticket.transactionDate,     // $10
+            ticket.maturityDate,        // $11
+            ticket.defaultDate,         // $12
+            ticket.itemIds,             // $13
+            tendersJson,                // $14
+            ticket.note                 // $15
         ]);
 
         const row = result.rows[0];
