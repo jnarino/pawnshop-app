@@ -213,7 +213,11 @@ app.whenReady().then(async () => {
     return;
   }
 
-  startServer();
+  if (app.isPackaged) {
+    startServer();
+  } else {
+    console.log('[Electron] Dev mode detected. Skipping embedded server start. Ensure backend is running externally.');
+  }
   createMainWindow();
 })
 

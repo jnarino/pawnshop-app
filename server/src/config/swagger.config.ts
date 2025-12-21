@@ -1,7 +1,10 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { env } from './env';
 
-const options: swaggerJsdoc.Options = {
+import fs from 'fs';
+import path from 'path';
+
+export const options: swaggerJsdoc.Options = {
     definition: {
         openapi: '3.0.0',
         info: {
@@ -144,4 +147,20 @@ const options: swaggerJsdoc.Options = {
     ],
 };
 
-export const swaggerSpec = swaggerJsdoc(options);
+// Logic to load static swagger.json if available (for bundled environments)
+let spec;
+const staticPath = path.join(__dirname, 'swagger.json');
+const staticPathCwd = path.join(process.cwd(), 'swagger.json'); // Check CWD too
+
+if (fs.existsSync(staticPath)) {
+    console.log('[Swagger] Loading static spec from:', staticPath);
+    spec = JSON.parse(fs.readFileSync(staticPath, 'utf8'));
+} else if (fs.existsSync(staticPathCwd)) {
+    console.log('[Swagger] Loading static spec from CWD:', staticPathCwd);
+    spec = JSON.parse(fs.readFileSync(staticPathCwd, 'utf8'));
+} else {
+    // Fallback to dynamic generation
+    spec = swaggerJsdoc(options);
+}
+
+export const swaggerSpec = spec;
