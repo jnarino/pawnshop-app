@@ -59,5 +59,17 @@ esbuild.build({
         console.warn('⚠️ .env.production not found at:', envSrc);
     }
 
+    // Copy .env.development for bundled app (Dev mode)
+    const envDevSrc = path.resolve(__dirname, '../../server/.env.development');
+    const envDevDest = path.resolve(__dirname, '../dist-electron/.env.development');
+
+    if (fs.existsSync(envDevSrc)) {
+        console.log('📂 Copying .env.development...');
+        fs.copyFileSync(envDevSrc, envDevDest);
+        console.log('✅ .env.development copied.');
+    } else {
+        console.log('ℹ️ .env.development not found (skipping).');
+    }
+
     console.log('✅ Server bundled to dist-electron/server.cjs');
 }).catch(() => process.exit(1));
