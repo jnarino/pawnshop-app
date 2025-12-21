@@ -9,6 +9,8 @@ import { PaymentHistoryModal } from './PaymentHistoryModal';
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
   readonly customer?: CustomerData;
+  readonly onBack: () => void;
+  readonly onMakePayment: () => void;
 }
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
@@ -64,7 +66,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
   };
 }
 
-export function ViewPawnTab({ pawnTicket, customer }: ViewPawnTabProps) {
+export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
   const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
   const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
@@ -88,6 +90,14 @@ export function ViewPawnTab({ pawnTicket, customer }: ViewPawnTabProps) {
       />
       <div className="flex justify-center gap-4 mt-6">
         <Button
+          variant="outline"
+          size="lg"
+          onClick={onBack}
+          className="px-8"
+        >
+          Back
+        </Button>
+        <Button
           variant="secondary"
           size="lg"
           onClick={handlePayHistory}
@@ -102,6 +112,14 @@ export function ViewPawnTab({ pawnTicket, customer }: ViewPawnTabProps) {
           className="px-8"
         >
           Due Dates
+        </Button>
+        <Button
+          variant="default"
+          size="lg"
+          onClick={onMakePayment}
+          className="px-8"
+        >
+          Make Payment
         </Button>
       </div>
 

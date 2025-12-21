@@ -4,6 +4,9 @@ import type { PawnTicketData, PawnTicketItem } from '@/app/feature/_shared/types
 export interface CustomerActivePawnTicket extends PawnTicketData {
   totalOfPayments?: number;
   items: PawnTicketItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  periodsBehind?: number;
 }
 
 export interface PawnData {
@@ -62,7 +65,19 @@ export interface TicketByControlNumber {
   itemIds: string[];
 }
 
+export interface PawnTicketCharges {
+  pawnTicketId: string;
+  currentCharges: number;
+  pawnAmount: number;
+  periodsBehind: number;
+  redemptionAmount: number;
+}
+
 export const pawnTicketApi = {
+  getCurrentCharges: async (controlNumber: string): Promise<PawnTicketCharges> => {
+    return http(`/api/pawn-ticket/${encodeURIComponent(controlNumber)}/current-charges`);
+  },
+
   create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
     return http('/api/pawn-ticket', {
       method: 'POST',

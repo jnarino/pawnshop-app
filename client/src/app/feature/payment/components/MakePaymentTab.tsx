@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { http } from '@/app/core/api/http';
+import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 import ServiceChargeModal from './ServiceChargeModal';
+import OtherPaymentModal from './OtherPaymentModal';
 import PaymentMethodModal from './PaymentMethodModal';
 
 interface Props {
@@ -20,7 +22,9 @@ interface PawnTicketRow {
   redemption: number;
   otherPayment: boolean;
   selected: boolean;
-  otherPaymentAmount?: number; // ✅ Add this field to track custom amounts
+  otherPaymentAmount?: number;
+  periodsBehind?: number;
+  periodicRate?: number;
 }
 
 export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPaymentComplete }: Props) {
@@ -50,33 +54,48 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
   const loadActiveTickets = async () => {
     try {
       setLoading(true);
-      
+
       // Load all active pawn tickets for this customer
       const response = await http(`/api/pawnTicket?customerId=${customerId}&pawnStatus=active&limit=100`);
-      
-      const ticketRows: PawnTicketRow[] = (response || []).map((ticket: any) => {
+
+      const ticketRows: PawnTicketRow[] = await Promise.all((response || []).map(async (ticket: any) => {
+        let currentCharges = parseFloat(ticket.financeCharge || ticket.finance_charge || '0');
+        let redemption = parseFloat(ticket.totalOfPayments || ticket.total_of_payments || '0');
+        const controlNumber = ticket.controlNumber || ticket.control_number;
         const dateIn = new Date(ticket.transactionDate || ticket.transaction_date);
         const dateOut = new Date(ticket.maturityDate || ticket.maturity_date);
         const pawnAmount = parseFloat(ticket.amountFinanced || ticket.amount_financed || '0');
-        const serviceCharge = parseFloat(ticket.financeCharge || ticket.finance_charge || '0');
-        const redemption = parseFloat(ticket.totalOfPayments || ticket.total_of_payments || '0');
-        
+        const periodicRate = parseFloat(ticket.periodicRate || ticket.periodic_rate || '0');
+        let periodsBehind = 0;
+
+        if (controlNumber) {
+          try {
+            const chargesData = await pawnTicketApi.getCurrentCharges(controlNumber);
+            currentCharges = chargesData.currentCharges;
+            redemption = chargesData.redemptionAmount;
+          } catch (err) {
+            console.error(`Failed to load charges for ticket ${controlNumber}:`, err);
+          }
+        }
+
         return {
           id: ticket.id,
-          controlNumber: ticket.controlNumber || ticket.control_number || 'N/A',
+          controlNumber: controlNumber || 'N/A',
           dateIn: dateIn.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
           dateOut: dateOut.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
           pawnAmount,
-          currentCharges: serviceCharge,
+          currentCharges,
           redemption,
           otherPayment: false, // Default to false
-          selected: ticket.id === pawnTicket?.id // Pre-select if this matches the current ticket
+          selected: ticket.id === pawnTicket?.id, // Pre-select if this matches the current ticket
+          periodsBehind,
+          periodicRate
         };
-      });
-      
+      }));
+
       setTickets(ticketRows);
       updateTotals(ticketRows);
-      
+
     } catch (error) {
       console.error('Failed to load active tickets:', error);
     } finally {
@@ -89,19 +108,19 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
     const selectedTicketsTotal = ticketList
       .filter(t => t.selected)
       .reduce((sum, t) => sum + t.redemption, 0);
-    
+
     const otherPaymentsTotal = ticketList
       .reduce((sum, t) => sum + (t.otherPaymentAmount || 0), 0);
-    
+
     const total = selectedTicketsTotal + otherPaymentsTotal;
-    
+
     setTotalPayment(total.toFixed(2));
     setSelectedCount(ticketList.filter(t => t.selected || (t.otherPaymentAmount && t.otherPaymentAmount > 0)).length);
   };
 
   const toggleTicketSelection = (ticketId: string) => {
-    const updatedTickets = tickets.map(ticket => 
-      ticket.id === ticketId 
+    const updatedTickets = tickets.map(ticket =>
+      ticket.id === ticketId
         ? { ...ticket, selected: !ticket.selected }
         : ticket
     );
@@ -121,7 +140,12 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
   };
 
   const clearAll = () => {
-    const updatedTickets = tickets.map(ticket => ({ ...ticket, selected: false }));
+    const updatedTickets = tickets.map(ticket => ({
+      ...ticket,
+      selected: false,
+      otherPayment: false,
+      otherPaymentAmount: 0
+    }));
     setTickets(updatedTickets);
     updateTotals(updatedTickets);
   };
@@ -134,17 +158,17 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
   // ✅ Update handleServiceChargeComplete to properly update the ticket
   const handleServiceChargeComplete = (amount: number) => {
     setServiceChargeModalOpen(false);
-    
+
     if (selectedTicketForPayment) {
-      const updatedTickets = tickets.map(ticket => 
-        ticket.id === selectedTicketForPayment 
+      const updatedTickets = tickets.map(ticket =>
+        ticket.id === selectedTicketForPayment
           ? { ...ticket, otherPaymentAmount: amount, otherPayment: amount > 0 }
           : ticket
       );
       setTickets(updatedTickets);
       updateTotals(updatedTickets);
     }
-    
+
     setSelectedTicketForPayment(null);
   };
 
@@ -152,7 +176,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
   const handleSave = async () => {
     const selectedTickets = tickets.filter(t => t.selected);
     const otherPaymentTickets = tickets.filter(t => t.otherPaymentAmount && t.otherPaymentAmount > 0);
-    
+
     if (selectedTickets.length === 0 && otherPaymentTickets.length === 0) {
       alert('Please select at least one ticket or enter payment amounts.');
       return;
@@ -160,7 +184,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
 
     // ✅ Use the already calculated totalPayment
     const totalAmount = parseFloat(totalPayment);
-    
+
     if (totalAmount <= 0) {
       alert('Total payment amount must be greater than $0.00');
       return;
@@ -172,13 +196,13 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
   // ✅ Updated handlePaymentMethodComplete to actually create payment records
   const handlePaymentMethodComplete = async (tenders: any[]) => {
     setPaymentMethodModalOpen(false);
-    
+
     try {
       console.log('[Payment] Creating payment transactions...', { tenders, totalPayment });
-      
+
       const selectedTickets = tickets.filter(t => t.selected);
       const otherPaymentTickets = tickets.filter(t => t.otherPaymentAmount && t.otherPaymentAmount > 0);
-      
+
       // ✅ Create payment data structure for API
       const paymentData = {
         customerId,
@@ -222,15 +246,15 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
 
       const totalAmount = parseFloat(totalPayment);
       const ticketCount = selectedTickets.length + otherPaymentTickets.length;
-      
+
       alert(`✅ Payment of $${totalAmount.toFixed(2)} processed successfully!\n\n` +
-            `${ticketCount} ticket(s) updated\n` +
-            `Transaction ID: ${paymentResult.transactionId || 'N/A'}\n\n` +
-            `Receipt would print here.`);
-      
+        `${ticketCount} ticket(s) updated\n` +
+        `Transaction ID: ${paymentResult.transactionId || 'N/A'}\n\n` +
+        `Receipt would print here.`);
+
       // Reset and complete
       onPaymentComplete();
-      
+
     } catch (error) {
       console.error('[Payment] Payment processing failed:', error);
       alert(`❌ Payment processing failed: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease try again.`);
@@ -262,7 +286,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
         alignItems: 'center'
       }}>
         <span>Customer #{customerId?.slice(-5) || '24852'} - {customer?.firstName?.toUpperCase()} {customer?.lastName?.toUpperCase()}</span>
-        <button 
+        <button
           onClick={onBack}
           style={{
             padding: '2px 8px',
@@ -391,7 +415,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
           </thead>
           <tbody>
             {tickets.map((ticket, idx) => (
-              <tr 
+              <tr
                 key={ticket.id}
                 onClick={() => toggleTicketSelection(ticket.id)}
                 style={{
@@ -399,8 +423,8 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
                   cursor: 'pointer'
                 }}
               >
-                <td style={{ 
-                  padding: '4px', 
+                <td style={{
+                  padding: '4px',
                   border: '1px solid #d0d0d0',
                   fontWeight: ticket.selected ? 'bold' : 'normal'
                 }}>
@@ -409,8 +433,8 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
                 <td style={{ padding: '4px', border: '1px solid #d0d0d0' }}>
                   {ticket.dateIn}
                 </td>
-                <td style={{ 
-                  padding: '4px', 
+                <td style={{
+                  padding: '4px',
                   border: '1px solid #d0d0d0',
                   color: new Date(ticket.dateOut) < new Date() ? 'red' : 'black'
                 }}>
@@ -422,30 +446,30 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
                 <td style={{ padding: '4px', border: '1px solid #d0d0d0', textAlign: 'right' }}>
                   {ticket.currentCharges.toFixed(2)}
                 </td>
-                <td style={{ 
-                  padding: '4px', 
-                  border: '1px solid #d0d0d0', 
+                <td style={{
+                  padding: '4px',
+                  border: '1px solid #d0d0d0',
                   textAlign: 'right',
                   fontWeight: 'bold'
                 }}>
                   {ticket.redemption.toFixed(2)}
                 </td>
-                <td style={{ 
-                  padding: '4px', 
-                  border: '1px solid #d0d0d0', 
+                <td style={{
+                  padding: '4px',
+                  border: '1px solid #d0d0d0',
                   textAlign: 'center'
                 }}>
                   {/* ✅ Show amount if set, otherwise show checkbox */}
                   {ticket.otherPaymentAmount && ticket.otherPaymentAmount > 0 ? (
-                    <span style={{ 
-                      color: 'green', 
+                    <span style={{
+                      color: 'green',
                       fontWeight: 'bold',
                       cursor: 'pointer'
                     }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOtherPaymentClick(ticket.id);
-                    }}>
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOtherPaymentClick(ticket.id);
+                      }}>
                       ${ticket.otherPaymentAmount.toFixed(2)}
                     </span>
                   ) : (
@@ -466,10 +490,10 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
             ))}
             {tickets.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ 
-                  padding: '20px', 
-                  textAlign: 'center', 
-                  fontStyle: 'italic' 
+                <td colSpan={7} style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  fontStyle: 'italic'
                 }}>
                   No active pawn tickets found for this customer
                 </td>
@@ -499,46 +523,20 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
         </div>
       </div>
 
-      {/* Service Charge Modal */}
-      <ServiceChargeModal
+      {/* Other Payment Modal */}
+      <OtherPaymentModal
         open={serviceChargeModalOpen}
-        ticketNumber={selectedTicketForPayment ? 
-          tickets.find(t => t.id === selectedTicketForPayment)?.controlNumber || '' : ''}
-        pawnTicket={selectedTicketForPayment ? 
-          // ✅ Map the ticket data properly as shown in previous fix
-          (() => {
-            const ticket = tickets.find(t => t.id === selectedTicketForPayment);
-            if (!ticket) return null;
-            
-            return {
-              id: ticket.id,
-              controlNumber: ticket.controlNumber,
-              transactionDate: ticket.dateIn ? 
-                new Date(`${ticket.dateIn} 00:00:00`).toISOString() : 
-                new Date().toISOString(),
-              transaction_date: ticket.dateIn ? 
-                new Date(`${ticket.dateIn} 00:00:00`).toISOString() : 
-                new Date().toISOString(),
-              maturityDate: ticket.dateOut ? 
-                new Date(`${ticket.dateOut} 23:59:59`).toISOString() : 
-                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              maturity_date: ticket.dateOut ? 
-                new Date(`${ticket.dateOut} 23:59:59`).toISOString() : 
-                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              amountFinanced: ticket.pawnAmount,
-              amount_financed: ticket.pawnAmount,
-              financeCharge: ticket.currentCharges,
-              finance_charge: ticket.currentCharges,
-              totalOfPayments: ticket.redemption,
-              total_of_payments: ticket.redemption,
-              type: 'PAWN',
-              transaction_type: 'PAWN',
-              customerId: customerId,
-              customer_id: customerId,
-              pawnStatus: 'active',
-              pawn_status: 'active'
-            };
-          })() : null}
+        ticket={selectedTicketForPayment ? (() => {
+          const t = tickets.find(ticket => ticket.id === selectedTicketForPayment);
+          if (!t) return null;
+          return {
+            id: t.id,
+            controlNumber: t.controlNumber,
+            pawnAmount: t.pawnAmount,
+            periodicRate: t.periodicRate || 0,
+            periodsBehind: t.periodsBehind || 0
+          };
+        })() : null}
         onCancel={() => {
           setServiceChargeModalOpen(false);
           setSelectedTicketForPayment(null);
