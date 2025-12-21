@@ -3,7 +3,7 @@
 -- 2. pawn_ticket_item (junction table)
 -- 3. store_transaction (for the disbursement)
 -- 4. store_transaction_tender
--- 5. pawn_ticket_payment (initial disbursement record with negative amount)
+-- (pawn_ticket_payment removed)
 --
 -- Parameters:
 -- $1  = pawn_ticket.id (uuid)
@@ -11,26 +11,25 @@
 -- $3  = customer_id (uuid)
 -- $4  = clerk_user_id (uuid)
 -- $5  = amount_financed (numeric, nullable)
--- $6  = finance_charge (numeric, nullable)
+-- $6  = original_pawn_amount (numeric, nullable)
 -- $7  = periodic_rate (numeric, nullable)
--- $8  = total_of_payments (numeric, nullable)
--- $9  = apr (numeric, nullable)
--- $10 = rate_plan_id (uuid, nullable)
--- $11 = purchase_trade_value (numeric, nullable)
--- $12 = transaction_date (timestamptz)
--- $13 = maturity_date (timestamptz)
--- $14 = default_date (timestamptz)
--- $15 = item_ids (uuid[])
--- $16 = tenders (jsonb array: [{tenderTypeId: number, amount: number}])
--- $17 = note (text, nullable)
+-- $8  = apr (numeric, nullable)
+-- $9  = purchase_trade_value (numeric, nullable)
+-- $10 = transaction_date (timestamptz)
+-- $11 = maturity_date (timestamptz)
+-- $12 = default_date (timestamptz)
+-- $13 = item_ids (uuid[])
+-- $14 = tenders (jsonb array: [{tenderTypeId: number, amount: number}])
+-- $15 = note (text, nullable)
+-- $16 = control_number (text)
 
-WITH status_lookup AS (
-  -- Get the appropriate status ID based on transaction type
+WITH
+status_lookup AS (
   SELECT id FROM pawn_ticket_status
   WHERE status = CASE 
     WHEN $2 = 'PAWN' THEN 'P'
     WHEN $2 = 'PURCHASE' THEN 'B'
-    ELSE 'P'  -- Default to Pawn status
+    ELSE 'P'
   END
   LIMIT 1
 ),
@@ -41,11 +40,9 @@ new_ticket AS (
     transaction_type,
     customer_id,
     amount_financed,
-    finance_charge,
+    original_pawn_amount,
     periodic_rate,
-    total_of_payments,
     apr,
-    rate_plan_id,
     purchase_trade_value,
     transaction_date,
     maturity_date,
@@ -54,22 +51,20 @@ new_ticket AS (
     created_by
   )
   VALUES (
-    $1,                         -- id
-    get_next_control_number(),  -- control_number (auto-generated)
-    $2,                         -- transaction_type
-    $3,                         -- customer_id
-    $5,                         -- amount_financed
-    $6,                         -- finance_charge
-    $7,                         -- periodic_rate
-    $8,                         -- total_of_payments
-    $9,                         -- apr
-    $10,                        -- rate_plan_id
-    $11,                        -- purchase_trade_value
-    $12,                        -- transaction_date
-    $13,                        -- maturity_date
-    $14,                        -- default_date
-    (SELECT id FROM status_lookup),  -- status_id from lookup
-    $4                          -- created_by (clerk_user_id)
+    $1,
+    $16, -- control_number passed as param
+    $2,
+    $3,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    (SELECT id FROM status_lookup),
+    $4
   )
   RETURNING
     id,
@@ -77,11 +72,9 @@ new_ticket AS (
     transaction_type,
     customer_id,
     amount_financed,
-    finance_charge,
+    original_pawn_amount,
     periodic_rate,
-    total_of_payments,
     apr,
-    rate_plan_id,
     purchase_trade_value,
     transaction_date,
     maturity_date,
@@ -92,33 +85,38 @@ new_ticket AS (
 ),
 insert_items AS (
   INSERT INTO pawn_ticket_item (pawn_ticket_id, inventory_item_id)
-  SELECT (SELECT id FROM new_ticket), unnest($15::uuid[])
+  SELECT (SELECT id FROM new_ticket), unnest($13::uuid[])
 ),
 new_store_transaction AS (
   INSERT INTO store_transaction (
     id,
+    legacy_ticketnum,
     customer_id,
     clerk_user_id,
     type_id,
+    pawn_ticket_id,
     occurred_at,
     amount,
     note
   )
   SELECT
     gen_random_uuid(),
+    $16,
     $3,  -- customer_id
     $4,  -- clerk_user_id
     CASE 
       WHEN $2 = 'PAWN' THEN 5      -- PAWN_DISBURSEMENT
-      WHEN $2 = 'PURCHASE' THEN 6  -- BUY_OUTRIGHT
+      WHEN $2 = 'PURCHASE' THEN 3  -- BUY_OUTRIGHT
     END,
-    $12, -- transaction_date (occurred_at)
+    nt.id,
+    $10, -- transaction_date (occurred_at)
     -- Negative amount for disbursement
     CASE 
       WHEN $2 = 'PAWN' THEN -($5)         -- negative amount_financed
-      WHEN $2 = 'PURCHASE' THEN -($11)    -- negative purchase_trade_value
+      WHEN $2 = 'PURCHASE' THEN -($9)    -- negative purchase_trade_value
     END,
-    $17  -- note
+    $15  -- note
+  FROM new_ticket nt
   RETURNING id, amount
 ),
 insert_tenders AS (
@@ -134,47 +132,23 @@ insert_tenders AS (
     (SELECT id FROM new_store_transaction),
     ROW_NUMBER() OVER ()::SMALLINT,
     (tender->>'tenderTypeId')::SMALLINT,
-    (tender->>'amount')::NUMERIC(12,2)
-  FROM jsonb_array_elements($16::jsonb) AS tender
-),
-insert_payment AS (
-  INSERT INTO pawn_ticket_payment (
-    id,
-    pawn_ticket_id,
-    store_transaction_id,
-    payment_date,
-    interest_paid,
-    principal_paid,
-    fees_paid,
-    clerk_user_id,
-    note
-  )
-  SELECT
-    gen_random_uuid(),
-    (SELECT id FROM new_ticket),
-    (SELECT id FROM new_store_transaction),
-    $12,  -- transaction_date (payment_date)
-    0,    -- interest_paid (initial disbursement)
     CASE 
-      WHEN $2 = 'PAWN' THEN -($5)         -- negative principal (disbursement)
-      WHEN $2 = 'PURCHASE' THEN -($11)    -- negative purchase value
-    END,
-    0,    -- fees_paid
-    $4,   -- clerk_user_id
-    'Initial disbursement'
-  WHERE $2 = 'PAWN'  -- Only create payment record for PAWN transactions
+      WHEN $2 = 'PAWN' THEN -($5)
+      WHEN $2 = 'PURCHASE' THEN -($9)
+      ELSE (tender->>'amount')::NUMERIC(12,2)
+    END
+  FROM jsonb_array_elements($14::jsonb) AS tender
 )
+
 SELECT
   nt.id,
   nt.control_number,
   nt.transaction_type,
   nt.customer_id,
   nt.amount_financed,
-  nt.finance_charge,
+  nt.original_pawn_amount,
   nt.periodic_rate,
-  nt.total_of_payments,
   nt.apr,
-  nt.rate_plan_id,
   nt.purchase_trade_value,
   nt.transaction_date,
   nt.maturity_date,
@@ -182,7 +156,7 @@ SELECT
   nt.created_at,
   nt.created_by AS clerk_user_id,
   pts.status AS pawn_status,
-  COALESCE($15, ARRAY[]::uuid[]) AS item_ids,
-  COALESCE($16, '[]'::jsonb) AS tenders
+  COALESCE($13, ARRAY[]::uuid[]) AS item_ids,
+  COALESCE($14, '[]'::jsonb) AS tenders
 FROM new_ticket nt
 LEFT JOIN pawn_ticket_status pts ON pts.id = nt.status_id;

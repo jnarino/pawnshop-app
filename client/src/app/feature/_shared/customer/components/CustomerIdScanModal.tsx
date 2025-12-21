@@ -6,7 +6,6 @@ interface Props {
     onClose: () => void;
     onScanned: (data: AamvaData, raw: string) => void;
     inactivityMs?: number;   // gap to auto-finish if no Enter
-    minLength?: number;      // minimum chars to consider a scan
     debug?: boolean;
 }
 
@@ -15,7 +14,6 @@ export const CustomerIdScanModal: React.FC<Props> = ({
     onClose,
     onScanned,
     inactivityMs = 150,
-    minLength = 40,
     debug = false
 }) => {
     const [status, setStatus] = useState<'waiting' | 'parsing' | 'success' | 'error' | 'short' | 'timeout'>('waiting');
@@ -42,45 +40,6 @@ export const CustomerIdScanModal: React.FC<Props> = ({
             }, 10);
         }
     }, [open, reset]);
-
-    const finalize = useCallback((cause: 'enter' | 'timeout') => {
-        const raw = bufferRef.current;
-        // NEW: log raw scan content
-        console.log('[IDScan][raw][cause=' + cause + '][length=' + raw.length + ']', raw);
-        if (debug) console.debug('[IDScan debug raw]', raw);
-
-        if (raw.length < minLength) {
-            setStatus(cause === 'timeout' ? 'timeout' : 'short');
-            setMessage(cause === 'timeout'
-                ? 'Timed out (no Enter). Scan seems incomplete.'
-                : `Input too short (${raw.length} chars) – not a license.`);
-            return;
-        }
-        setStatus('parsing');
-        setMessage('Parsing ID...');
-        const parsed = parseAamva(raw);
-        console.log('***************this is a test!!!!!!!!!!!');
-        console.log('[IDScan][parsed]', parsed);
-        if (parsed) {
-            setStatus('success');
-            setMessage('ID parsed successfully');
-            setTimeout(() => {
-                onScanned(parsed, raw);
-                onClose();
-            }, 250);
-        } else {
-            setStatus('error');
-            setMessage('Could not parse ID data');
-        }
-    }, [minLength, onScanned, onClose, debug]);
-
-    // Inactivity timeout management
-    const scheduleInactivity = useCallback(() => {
-        if (timerRef.current) window.clearTimeout(timerRef.current);
-        timerRef.current = window.setTimeout(() => { // ✅ window.setTimeout returns number
-            if (status === 'waiting') finalize('timeout');
-        }, inactivityMs) as unknown as number;
-    }, [finalize, inactivityMs, status]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newRaw = e.target.value;

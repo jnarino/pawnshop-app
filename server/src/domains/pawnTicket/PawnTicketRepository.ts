@@ -27,4 +27,9 @@ export interface PawnTicketRepository {
    * This is what you'd show on "open pawns" for that customer.
    */
   listActiveByCustomer(customerId: string): Promise<PawnTicket[]>;
+
+  /**
+   * Find a pawn ticket by id.
+   */
+  findById(id: string): Promise<PawnTicket | null>;
 }

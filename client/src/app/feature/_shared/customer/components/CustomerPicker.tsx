@@ -20,7 +20,6 @@ interface Props {
   onChange?: (c: CustomerDto | null) => void;
   onCreateNew?(tempId: string): void;
   onSelected?(id: string): void;
-  onCancelTransaction?(): void;
   onFormChange?: (data: import('../mappers').CustomerRecord) => void;
   onStateChange?(state: {
     editingNew: boolean;
@@ -46,7 +45,7 @@ export interface CustomerPickerRef {
   disableSearch: boolean;
 }
 
-const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onCancelTransaction, onStateChange, onFormChange }, ref) => {
+const CustomerPicker = forwardRef<CustomerPickerRef, Props>(({ value, onChange, onSelected, onCreateNew, onStateChange, onFormChange }, ref) => {
   const [editingNew, setEditingNew] = useState(false);
   const [editingExisting, setEditingExisting] = useState(false);
 

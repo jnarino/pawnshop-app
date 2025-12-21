@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from '@/app/feature/home/HomePage';
 import ReportsPage from '@/app/feature/reports/ReportsPage';
@@ -7,7 +6,8 @@ import PaymentCreatePage from '@/app/feature/payment/PaymentCreatePage';
 import CustomerPage from '@/app/feature/_shared/customer/CustomerPage';
 import LoginPage from '@/app/feature/auth/LoginPage';
 import Protected from '@/app/shared/components/Protected';
-import Logout from './feature/auth/Logout';
+import Logout from '@/app/feature/auth/Logout';
+import SalesWorkspace from '@/app/feature/sales/SalesWorkspace';
 
 export default function AppRouter() {
   return (
@@ -32,7 +32,7 @@ export default function AppRouter() {
       {/* ✅ Add other main menu routes for consistency */}
       <Route path="/pawn-tickets/new" element={<Protected><PawnsWorkspace /></Protected>} />
       <Route path="/Pawn" element={<Protected><PawnsWorkspace /></Protected>} />
-      <Route path="/Sales" element={<Protected><div style={{ padding: '40px', textAlign: 'center' }}>Sales Coming Soon</div></Protected>} />
+      <Route path="/sales" element={<Protected><SalesWorkspace /></Protected>} />
 
       {/* fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

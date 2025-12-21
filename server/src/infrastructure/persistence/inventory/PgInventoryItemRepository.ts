@@ -11,12 +11,14 @@ const SQL_DELETE = loadSql('commands', 'inventory/inventory_item_delete');
 const SQL_FIND_BY_ID = loadSql('queries', 'inventory/inventory_item_find_by_id');
 const SQL_FIND_BY_INVENTORY_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_inventory_number');
+const SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER = loadSql(
+    'queries', 'inventory/inventory_item_find_available_by_inventory_number');
 const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_serial_number'
 );
 
 function mapRowToInventoryItem(row: any): InventoryItem {
-    return new InventoryItem({
+    const item = new InventoryItem({
         id: row.id,
 
         inventorySubcategoryId: row.inventory_subcategory_id,
@@ -50,6 +52,21 @@ function mapRowToInventoryItem(row: any): InventoryItem {
         createdAt: row.created_at,
         updatedAt: row.updated_at
     });
+
+    // Attach enriched lookup data for the mapper
+    (item as any)._enrichedData = {
+        inventorySubcategory: {
+            id: row.subcategory_id || row.inventory_subcategory_id,
+            name: row.subcategory_name || ''
+        },
+        inventoryCategory: {
+            id: row.category_id || '',
+            name: row.category_name || ''
+        },
+        brand: row.brand_id ? { id: row.brand_id, name: row.brand_name || '' } : (row.inventory_brand_id ? { id: row.inventory_brand_id, name: '' } : null)
+    };
+
+    return item;
 }
 
 export class PgInventoryItemRepository implements InventoryItemRepository {
@@ -136,6 +153,16 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         inventoryNumber: string
     ): Promise<InventoryItem | null> {
         const result = await this.db.query(SQL_FIND_BY_INVENTORY_NUMBER, [
+            inventoryNumber
+        ]);
+        if (result.rows.length === 0) return null;
+        return mapRowToInventoryItem(result.rows[0]);
+    }
+
+    async findAvailableByInventoryNumber(
+        inventoryNumber: string
+    ): Promise<InventoryItem | null> {
+        const result = await this.db.query(SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER, [
             inventoryNumber
         ]);
         if (result.rows.length === 0) return null;

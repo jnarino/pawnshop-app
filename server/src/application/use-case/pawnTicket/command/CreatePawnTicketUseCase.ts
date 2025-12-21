@@ -20,7 +20,7 @@ import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketR
 export class CreatePawnTicketUseCase {
   constructor(
     private readonly pawnTicketRepository: PawnTicketRepository
-  ) {}
+  ) { }
 
   async execute(input: unknown): Promise<PawnTicketResponseDto> {
     const dto: CreatePawnTicketRequestDto =
@@ -29,6 +29,7 @@ export class CreatePawnTicketUseCase {
     const transactionDate = new Date(dto.transactionDate);
     const maturityDate = new Date(dto.maturityDate);
     const defaultDate = new Date(dto.defaultDate);
+
 
     // Calculate finance values for PAWN transactions
     let financeCharge: number | null = null;
@@ -52,7 +53,8 @@ export class CreatePawnTicketUseCase {
       // NOTE: infrastructure will typically generate the real control number
       // using get_next_control_number(); this placeholder can be ignored
       // and overwritten by the repository implementation.
-      controlNumber: '',
+      controlNumber: dto.controlNumber || '',
+
 
       transactionType: dto.transactionType,
       customerId: dto.customerId,
@@ -60,20 +62,14 @@ export class CreatePawnTicketUseCase {
 
       amountFinanced:
         dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
-      financeCharge:
-        dto.transactionType === 'PAWN' ? financeCharge : null,
       periodicRate:
         dto.transactionType === 'PAWN' ? dto.periodicRate! : null,
-      totalOfPayments:
-        dto.transactionType === 'PAWN' ? (dto.totalOfPayments ?? null) : null,
       apr:
         dto.transactionType === 'PAWN' ? apr : null,
-      ratePlanId:
-        dto.transactionType === 'PAWN' ? (dto.ratePlanId ?? null) : null,
-
+      originalPawnAmount:
+        dto.transactionType === 'PAWN' ? dto.amountFinanced! : null,
       purchaseTradeValue:
         dto.transactionType === 'PURCHASE' ? dto.purchaseTradeValue! : null,
-
       transactionDate,
       maturityDate,
       defaultDate,
@@ -84,6 +80,10 @@ export class CreatePawnTicketUseCase {
       tenders: dto.tenders || [],
       note: dto.note
     });
+
+    if (!dto.controlNumber || dto.controlNumber.trim() === '') {
+      throw new Error('Control number cannot be created');
+    }
 
     const saved = await this.pawnTicketRepository.create(ticket);
     return PawnTicketMapper.toResponseDto(saved);

@@ -1,12 +1,15 @@
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
-import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { ListPawnTicketsByCustomerUseCase } from '../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
+import { ListPawnTicketsByCustomerUseCase } from "../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase";
+import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
+import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
   listActiveByCustomer = jest.fn();
+  async findById(id: string): Promise<PawnTicket | null> {
+    return null;
+  }
 }
 
 describe('ListPawnTicketsByCustomerUseCase', () => {
@@ -29,11 +32,9 @@ describe('ListPawnTicketsByCustomerUseCase', () => {
         customerId: customerId,
         clerkUserId: userId,
         amountFinanced: 500,
-        financeCharge: 50,
+        originalPawnAmount: 500,
         periodicRate: 0.25,
-        totalOfPayments: 550,
         apr: 25,
-        ratePlanId: ratePlanId,
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),
@@ -50,11 +51,9 @@ describe('ListPawnTicketsByCustomerUseCase', () => {
         customerId: customerId,
         clerkUserId: userId,
         amountFinanced: null,
-        financeCharge: null,
+        originalPawnAmount: null,
         periodicRate: null,
-        totalOfPayments: null,
         apr: null,
-        ratePlanId: null,
         purchaseTradeValue: 300,
         transactionDate: new Date(),
         maturityDate: new Date(),

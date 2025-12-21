@@ -29,6 +29,9 @@ interface PrintFormParams {
   ticket: TicketByControlNumber;
   customer: Customer;
   items: FormDataItem[];
+  financeCharge?: number;
+  totalOfPayments?: number;
+  annualRate?: number;
 }
 
 interface UsePawnPrintResult {
@@ -123,10 +126,13 @@ export function usePawnPrint(): UsePawnPrintResult {
           modelNumber: item.model || undefined,
           description: item.description || '',
           amount: formatMoney(item.amount),
+          itemType: item.type,
         })),
 
         amountFinanced: formatMoney(ticket.amountFinanced),
-        totalOfPayments: formatMoney(ticket.amountFinanced),
+        financeCharge: formatMoney(params.financeCharge),
+        totalOfPayments: formatMoney(params.totalOfPayments),
+        annualRate: params.annualRate,
       };
 
       const printer = new TransactionFormPrinter();

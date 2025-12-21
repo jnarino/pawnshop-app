@@ -1,6 +1,7 @@
 import { InventoryItemRepository } from '../../../src/domains/inventory/InventoryItemRepository';
 import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
 import { CreateInventoryItemUseCase } from '../../../src/application/use-case/inventory/command/CreateInventoryItemUseCase';
+import { ItemAttributeMapper } from '../../../src/application/service/ItemAttributeMapper';
 
 class MockInventoryItemRepository implements InventoryItemRepository {
   create = jest.fn(async (i: InventoryItem) => i);
@@ -8,7 +9,29 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   delete = jest.fn();
   findById = jest.fn();
   findByInventoryNumber = jest.fn();
+  findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
+}
+
+class MockItemAttributeMapper {
+  mapItemAttributes = jest.fn(async (subcategoryId: string, input: any) => {
+    // Pass through all fields to attributes and extra
+    const attributes: any = {};
+    const extra: any = {};
+    
+    // Separate known attribute fields from extra fields
+    const attributeFields = ['metal', 'karat', 'gender', 'style', 'sizeLength', 'action', 'caliber', 'finish', 'barrel', 'importer', 'condition', 'color'];
+    
+    for (const [key, value] of Object.entries(input)) {
+      if (attributeFields.includes(key)) {
+        attributes[key] = value;
+      } else {
+        extra[key] = value;
+      }
+    }
+    
+    return { attributes, extra };
+  });
 }
 
 describe('CreateInventoryItemUseCase', () => {
@@ -17,7 +40,8 @@ describe('CreateInventoryItemUseCase', () => {
 
   it('should create an inventory item with required fields', async () => {
     const repo = new MockInventoryItemRepository();
-    const useCase = new CreateInventoryItemUseCase(repo);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreateInventoryItemUseCase(repo, mapper as any);
 
     const result = await useCase.execute({
       inventorySubcategoryId: validSubcategoryId,
@@ -35,7 +59,8 @@ describe('CreateInventoryItemUseCase', () => {
 
   it('should create an inventory item with all optional fields', async () => {
     const repo = new MockInventoryItemRepository();
-    const useCase = new CreateInventoryItemUseCase(repo);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreateInventoryItemUseCase(repo, mapper as any);
 
     const result = await useCase.execute({
       inventorySubcategoryId: validSubcategoryId,
@@ -57,7 +82,8 @@ describe('CreateInventoryItemUseCase', () => {
 
   it('should handle extra and attributes fields', async () => {
     const repo = new MockInventoryItemRepository();
-    const useCase = new CreateInventoryItemUseCase(repo);
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreateInventoryItemUseCase(repo, mapper as any);
 
     const result = await useCase.execute({
       inventorySubcategoryId: validSubcategoryId,

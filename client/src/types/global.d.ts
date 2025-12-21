@@ -5,6 +5,9 @@ declare global {
       onNavigate?: (cb: (route: string) => void) => () => void;
       authChanged?: (authed: boolean) => void;
       refreshMenu?: () => void;
+      onManageCash?: (cb: () => void) => () => void;
+      onInventoryMaintain?: (cb: () => void) => () => void;
+      onPawnMaintain?: (cb: () => void) => () => void;
       printLabels?: (items: Array<{ 
         inventoryNumber: string; 
         description: string; 
@@ -19,6 +22,9 @@ declare global {
       onNavigate?: (cb: (route: string) => void) => () => void;
       authChanged?: (authed: boolean) => void;
       refreshMenu?: () => void;
+      onManageCash?: (cb: () => void) => () => void;
+      onInventoryMaintain?: (cb: () => void) => () => void;
+      onPawnMaintain?: (cb: () => void) => () => void;
       printLabels?: (items: Array<{ 
         inventoryNumber: string; 
         description: string; 

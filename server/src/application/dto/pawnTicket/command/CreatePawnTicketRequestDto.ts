@@ -14,12 +14,10 @@ export const createPawnTicketRequestSchema = z
     clerkUserId: z.string().uuid(), // User creating the ticket
 
     // For PAWN
-    amountFinanced: z.number().nonnegative().nullable().optional(),
-    financeCharge: z.number().nonnegative().nullable().optional(),
+    amountFinanced: z.number().nullable().optional(),
+    originalPawnAmount: z.number().nonnegative().nullable().optional(),
     periodicRate: z.number().nonnegative().nullable().optional(),
-    totalOfPayments: z.number().nonnegative().nullable().optional(),
     apr: z.number().nonnegative().nullable().optional(),
-    ratePlanId: z.string().uuid().nullable().optional(),
 
     // For PURCHASE
     purchaseTradeValue: z.number().nonnegative().nullable().optional(),
@@ -36,7 +34,8 @@ export const createPawnTicketRequestSchema = z
     tenders: z.array(tenderSchema).optional(),
 
     // Note for the transaction
-    note: z.string().optional()
+    note: z.string().optional(),
+    controlNumber: z.string().optional() // allow controlNumber to be passed
   })
   .superRefine((val, ctx) => {
     if (val.transactionType === 'PAWN') {
@@ -76,6 +75,13 @@ export const createPawnTicketRequestSchema = z
           code: z.ZodIssueCode.custom,
           message: 'amountFinanced must be null for PURCHASE transactions',
           path: ['amountFinanced']
+        });
+      }
+      if (val.originalPawnAmount != null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'originalPawnAmount must be null for PURCHASE transactions',
+          path: ['originalPawnAmount']
         });
       }
     }

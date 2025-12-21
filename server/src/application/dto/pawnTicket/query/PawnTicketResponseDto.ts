@@ -24,12 +24,9 @@ export interface PawnTicketResponseDto {
   clerkUserId: string;
 
   amountFinanced: number | null;
-  financeCharge: number | null;
+  originalPawnAmount: number | null;
   periodicRate: number | null;
-  totalOfPayments: number | null;
   apr: number | null;
-  ratePlanId: string | null;
-
   purchaseTradeValue: number | null;
 
   transactionDate: string;

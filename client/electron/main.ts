@@ -2,34 +2,73 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, screen } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { fork, ChildProcess } from 'child_process'
+import { fork, ChildProcess } from 'node:child_process'
 import { DockerManager } from './docker-manager.js'
-
+import dotenv from 'dotenv'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+dotenv.config({ path: join(__dirname, '../.env') })
+
+const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'http://localhost';
+const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
+
 let mainWindow: BrowserWindow
-let serverProcess: ChildProcess | null = null; // Reference to server process
-let isAuthed = false; // retained for possible future use, no longer required for menu rendering
+let serverProcess: ChildProcess | null = null;
+let isAuthed = false;
 
 function buildMenu() {
   if (!mainWindow) return;
-  const fileSub: Electron.MenuItemConstructorOptions[] = [
-    { label: 'Log In', click: () => mainWindow.webContents.send('navigate', '/login') },
-    { label: 'Log Out', click: () => mainWindow.webContents.send('navigate', '/logout') },
-    { type: 'separator' },
-    { role: 'quit' },
-  ];
+
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: 'File', submenu: fileSub },
-    // Keep other menus always enabled; route guards in renderer still enforce auth
-    { label: 'Customer', click: () => mainWindow.webContents.send('navigate', '/customer') },
-    { label: 'Pawn', click: () => mainWindow.webContents.send('navigate', '/pawn') },
-    { label: 'Reports', click: () => mainWindow.webContents.send('navigate', '/reports') },
-    { label: 'About', click: () => dialog.showMessageBox(mainWindow, { type: 'info', title: 'About', message: 'PawnShop App v1.0.0', detail: 'Built with Electron, React & TypeScript' }) },
+    { role: 'appMenu' },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'copy' },
+        { role: 'paste' },
+      ],
+    },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+
+  if (isAuthed) {
+    template.push(
+      {
+        label: 'Pawn',
+        submenu: [
+          {
+            label: 'Maintain',
+            click: () => mainWindow?.webContents.send('menu:pawn-maintain'),
+          },
+        ],
+      },
+      {
+        label: 'Admin',
+        submenu: [
+          {
+            label: 'Cash Drawers',
+            submenu: [
+              {
+                label: 'Remove / Add cash',
+                click: () => mainWindow?.webContents.send('menu:manage-cash'),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Inventory',
+        submenu: [
+          {
+            label: 'Maintain',
+            click: () => mainWindow?.webContents.send('menu:inventory-maintain'),
+          },
+        ],
+      }
+    );
+  }
+
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
@@ -82,7 +121,7 @@ function createMainWindow() {
     show: false,
     webPreferences: {
       contextIsolation: true,     // security best practice
-      sandbox: true,              // security best practice
+      sandbox: false,             // allow preload ESM (compiled with NodeNext)
       preload: join(__dirname, 'preload.js'),
     },
   })
@@ -92,10 +131,10 @@ function createMainWindow() {
     mainWindow.show();
   });
 
-  const isDev = !app.isPackaged   // <-- reliable dev/prod check
+  const isDev = !app.isPackaged
 
   if (isDev) {
-    const url = 'http://localhost:5173/#/login'
+    const url = `${FRONTEND_HOST}:${FRONTEND_PORT}/#/login`
     console.log('[Electron] Loading DEV URL:', url)
     mainWindow.loadURL(url)
     mainWindow.webContents.openDevTools({ mode: 'detach' })
@@ -189,14 +228,12 @@ app.on('window-all-closed', () => {
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow() })
 
 // Listen for auth status changes from renderer
-// auth-changed retained for potential future dynamic behavior but no longer required
 ipcMain.on('auth-changed', (_evt, authed: boolean) => {
   isAuthed = !!authed;
-  console.log('[Electron] auth-changed received (ignored for static menu). isAuthed=', isAuthed);
+  buildMenu();
 });
 
 // Renderer can explicitly request a menu rebuild (e.g., after hot reload)
 ipcMain.on('refresh-menu', () => {
-  console.log('[Electron] refresh-menu requested. isAuthed=', isAuthed);
   buildMenu();
 });

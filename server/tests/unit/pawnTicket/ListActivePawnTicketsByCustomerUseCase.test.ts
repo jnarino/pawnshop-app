@@ -1,12 +1,15 @@
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
-import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { ListActivePawnTicketsByCustomerUseCase } from '../../../src/application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
+import { ListActivePawnTicketsByCustomerUseCase } from "../../../src/application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase";
+import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
+import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
   listActiveByCustomer = jest.fn();
+  async findById(id: string): Promise<PawnTicket | null> {
+    return null;
+  }
 }
 
 describe('ListActivePawnTicketsByCustomerUseCase', () => {
@@ -27,11 +30,9 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
         customerId: customerId,
         clerkUserId: userId,
         amountFinanced: 500,
-        financeCharge: 50,
+        originalPawnAmount: 500,
         periodicRate: 0.25,
-        totalOfPayments: 550,
         apr: 25,
-        ratePlanId: ratePlanId,
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),
@@ -39,7 +40,9 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
         createdDate: new Date(),
         pawnStatus: 'P',
         itemIds: [itemId],
-        tenders: [{ tenderTypeId: 1, amount: 500 }]
+        tenders: [{ tenderTypeId: 1, amount: 500 }],
+        items: [],
+        note: undefined
       })
     ];
     repo.listActiveByCustomer.mockResolvedValue(activeTickets);
@@ -64,3 +67,4 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
     expect(result).toHaveLength(0);
   });
 });
+

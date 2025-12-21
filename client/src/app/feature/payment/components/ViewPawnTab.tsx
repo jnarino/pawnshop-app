@@ -1,8 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { PawnTicketForm } from '@/app/feature/_shared/pawn-ticket';
-import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket/components/InventoryItemModal';
+import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { Button } from '@/components/ui/button';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
+import { DueDateCalculatorModal } from './DueDateCalculatorModal';
+import { PaymentHistoryModal } from './PaymentHistoryModal';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
@@ -26,8 +28,11 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
   const transformedItems: InventoryItemDraft[] = (pawnTicket.items || []).map((item) => ({
     id: item.id,
-    type: item.legacyCategoryDescription || 'Item',
-    categoryName: item.legacyCategoryDescription || '',
+    type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
+    categoryName: item.inventoryCategory?.name || item.legacyCategoryDescription || '',
+    subcategoryId: item.inventorySubcategory?.id || '',
+    subcategoryName: item.inventorySubcategory?.name || '',
+    brandId: typeof item.brand === 'object' ? item.brand?.id : '',
     brandName: getBrandName(item.brand),
     model: item.model || '',
     serial: item.serialNumber || '',
@@ -63,11 +68,15 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
 export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
+  const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
+  const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
 
   const handlePayHistory = useCallback(() => {
+    setIsPaymentHistoryModalOpen(true);
   }, []);
 
   const handleDueDates = useCallback(() => {
+    setIsDueDateModalOpen(true);
   }, []);
 
   return (
@@ -80,6 +89,14 @@ export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: Vie
         customer={customer}
       />
       <div className="flex justify-center gap-4 mt-6">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onBack}
+          className="px-8"
+        >
+          Back
+        </Button>
         <Button
           variant="secondary"
           size="lg"
@@ -96,7 +113,29 @@ export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: Vie
         >
           Due Dates
         </Button>
+        <Button
+          variant="default"
+          size="lg"
+          onClick={onMakePayment}
+          className="px-8"
+        >
+          Make Payment
+        </Button>
       </div>
+
+      <DueDateCalculatorModal
+        open={isDueDateModalOpen}
+        onClose={() => setIsDueDateModalOpen(false)}
+        pawnAmount={pawnTicket.amountFinanced || 0}
+        transactionDate={pawnTicket.transactionDate}
+        periodicRate={pawnTicket.periodicRate || 0}
+      />
+
+      <PaymentHistoryModal
+        open={isPaymentHistoryModalOpen}
+        onClose={() => setIsPaymentHistoryModalOpen(false)}
+        pawnTicketId={pawnTicket.id}
+      />
     </div>
   );
 }

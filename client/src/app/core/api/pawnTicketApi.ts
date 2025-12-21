@@ -4,13 +4,18 @@ import type { PawnTicketData, PawnTicketItem } from '@/app/feature/_shared/types
 export interface CustomerActivePawnTicket extends PawnTicketData {
   totalOfPayments?: number;
   items: PawnTicketItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  periodsBehind?: number;
 }
 
 export interface PawnData {
   customerId: string;
   transactionType: 'PAWN' | 'PURCHASE';
+  clerkUserId?: string;
   amountFinanced?: number;
   purchaseTradeValue?: number;
+  periodicRate?: number;
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
@@ -60,7 +65,19 @@ export interface TicketByControlNumber {
   itemIds: string[];
 }
 
+export interface PawnTicketCharges {
+  pawnTicketId: string;
+  currentCharges: number;
+  pawnAmount: number;
+  periodsBehind: number;
+  redemptionAmount: number;
+}
+
 export const pawnTicketApi = {
+  getCurrentCharges: async (controlNumber: string): Promise<PawnTicketCharges> => {
+    return http(`/api/pawn-ticket/${encodeURIComponent(controlNumber)}/current-charges`);
+  },
+
   create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
     return http('/api/pawn-ticket', {
       method: 'POST',
@@ -70,6 +87,10 @@ export const pawnTicketApi = {
 
   findByControlNumber: async (controlNumber: string): Promise<TicketByControlNumber[]> => {
     return http(`/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`);
+  },
+
+  getByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}`);
   },
 
   getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {

@@ -49,7 +49,7 @@ export class InventoryItem {
   inventoryNumber: string | null;
   lastUpdatedUserId: string | null;
 
-  createdAt: Date;
+  createdAt: Date | null;
   updatedAt: Date;
 
   constructor(params: {
@@ -83,7 +83,7 @@ export class InventoryItem {
     inventoryNumber?: string | null;
     lastUpdatedUserId?: string | null;
 
-    createdAt: Date;
+    createdAt: Date | null;
     updatedAt: Date;
   }) {
     this.id = params.id;

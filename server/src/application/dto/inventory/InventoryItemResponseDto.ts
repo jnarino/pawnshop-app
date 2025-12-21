@@ -35,6 +35,6 @@ export type InventoryItemResponseDto = {
   inventoryNumber: string | null;
   lastUpdatedUserId: string | null;
 
-  createdAt: string;
+  createdAt: string | null;
   updatedAt: string;
 };

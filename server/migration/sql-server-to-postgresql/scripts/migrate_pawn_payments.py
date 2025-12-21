@@ -62,7 +62,8 @@ def migrate_pawn_payments():
         
         batch_size = 1000
         batch_tx = []
-        batch_payments = []
+        batch_size = 1000
+        batch_tx = []
         batch_tenders = []
         
         errors = 0
@@ -130,21 +131,17 @@ def migrate_pawn_payments():
                     payment_date,
                     amount, 
                     0, # Tax
-                    f"Redemption for Ticket {row.get('TICKETNUM')}"
-                ))
-
-                # 3. Pawn Ticket Payment
-                batch_payments.append((
-                    str(uuid.uuid4()),
+                    amount, 
+                    0,
+                    f"Redemption for Ticket {row.get('TICKETNUM')}",
+                    None,
                     ticket_id,
-                    tx_id,
-                    payment_date,
                     interest_paid,
                     principal_paid,
-                    0, # Fees (included in principal/interest for now or separate if we had data)
-                    clerk_id, # clerk_user_id
-                    None # Note
+                    0
                 ))
+
+
                 
                 # 4. Tender (Cash assumption)
                 batch_tenders.append((
@@ -157,7 +154,7 @@ def migrate_pawn_payments():
 
                 if len(batch_tx) >= batch_size:
                     try:
-                        _flush_batches(pg_cursor, batch_tx, batch_payments, batch_tenders)
+                        _flush_batches(pg_cursor, batch_tx, batch_tenders)
                         pg_conn.commit()
                     except Exception as e:
                         pg_conn.rollback()
@@ -167,7 +164,7 @@ def migrate_pawn_payments():
                         # For now, just drop to avoid stalling.
                         pass
                     finally:
-                        batch_tx, batch_payments, batch_tenders = [], [], []
+                        batch_tx, batch_tenders = [], []
 
             except Exception as e:
                 # Row level error (e.g. data conversion)
@@ -175,7 +172,7 @@ def migrate_pawn_payments():
         
         if batch_tx:
             try:
-                _flush_batches(pg_cursor, batch_tx, batch_payments, batch_tenders)
+                _flush_batches(pg_cursor, batch_tx, batch_tenders)
                 pg_conn.commit()
             except Exception as e:
                 pg_conn.rollback()
@@ -192,34 +189,16 @@ def migrate_pawn_payments():
         if 'mssql_conn' in locals(): mssql_conn.close()
         if 'pg_conn' in locals(): pg_conn.close()
 
-def _flush_batches(cursor, txs, payments, tenders):
+def _flush_batches(cursor, txs, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, customer_id, clerk_user_id, type_id, occurred_at, amount, tax_sales, note
+                id, customer_id, clerk_user_id, type_id, occurred_at, amount, tax_sales, note,
+                pawn_ticket_id, interest_amount, principal_amount, fees_amount
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     
-    if payments:
-        # Note: pawn_ticket_payment references pawn_ticket(id). 
-        # If ticket not found (e.g. filtered out), this insert will fail (referential integrity).
-        # We must handle that.
-        # But we used execute_values. 
-        # To be safe against missing tickets, we could use INSERT IGNORE logic or check existence.
-        # Postgres ON CONFLICT DO NOTHING handles PK conflicts, but not FK errors.
-        # FK errors will abort the transaction.
-        # We should use ON CONFLICT DO NOTHING ? No, FK failure raises error.
-        # We should append "ON CONFLICT DO NOTHING" but that doesn't help FK.
-        # Best approach: Ensure tickets exist OR use a relaxed insert (INSERT ... SELECT verified).
-        # Given volume, maybe just try? 
-        # Actually, let's wrap in try/except or use Safe Insert.
-        # For now, let's assume tickets migrated (since we source from same table/filter).
-         execute_values(cursor, """
-            INSERT INTO pawn_ticket_payment (
-                id, pawn_ticket_id, store_transaction_id, payment_date, 
-                interest_paid, principal_paid, fees_paid, clerk_user_id, note
-            ) VALUES %s ON CONFLICT DO NOTHING
-        """, payments)
+
         
     if tenders:
          execute_values(cursor, """

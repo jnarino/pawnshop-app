@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 import { useNavigate } from 'react-router-dom';
 import PaymentTabsNavigation from './PaymentTabsNavigation';
 import PaymentTabContent from './PaymentTabContent';

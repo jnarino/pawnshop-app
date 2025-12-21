@@ -1,12 +1,13 @@
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
-import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { ListPawnTicketsByControlNumberUseCase } from '../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
+import { ListPawnTicketsByControlNumberUseCase } from "../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase";
+import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
+import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
   listActiveByCustomer = jest.fn();
+  findById = jest.fn(async (id: string) => null);
 }
 
 describe('ListPawnTicketsByControlNumberUseCase', () => {
@@ -20,11 +21,9 @@ describe('ListPawnTicketsByControlNumberUseCase', () => {
         customerId: 'cust-123',
         clerkUserId: 'user-1',
         amountFinanced: 500,
-        financeCharge: 50,
+        originalPawnAmount: 500,
         periodicRate: 0.25,
-        totalOfPayments: 550,
         apr: 25,
-        ratePlanId: 'rate-1',
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),

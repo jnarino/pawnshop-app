@@ -4,41 +4,25 @@ import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { CreateInventoryItemUseCase } from '../../../../application/use-case/inventory/command/CreateInventoryItemUseCase';
 import { UpdateInventoryItemUseCase } from '../../../../application/use-case/inventory/command/UpdateInventoryItemUseCase';
 import { DeleteInventoryItemUseCase } from '../../../../application/use-case/inventory/command/DeleteInventoryItemUseCase';
-import { GetInventoryItemByIdUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemByIdUseCase';
 import { GetInventoryItemByInventoryNumberUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 import { GetInventoryItemBySerialNumberUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
+import { GetItemOnInventoryUseCase } from '../../../../application/use-case/inventory/query/GetItemOnInventoryUseCase';
 
 export class InventoryItemController {
     constructor(
         private readonly createInventoryItemUseCase: CreateInventoryItemUseCase,
         private readonly updateInventoryItemUseCase: UpdateInventoryItemUseCase,
         private readonly deleteInventoryItemUseCase: DeleteInventoryItemUseCase,
-        private readonly getInventoryItemByIdUseCase: GetInventoryItemByIdUseCase,
         private readonly getInventoryItemByInventoryNumberUseCase: GetInventoryItemByInventoryNumberUseCase,
-        private readonly getInventoryItemBySerialNumberUseCase: GetInventoryItemBySerialNumberUseCase
+        private readonly getInventoryItemBySerialNumberUseCase: GetInventoryItemBySerialNumberUseCase,
+        private readonly getItemOnInventoryUseCase: GetItemOnInventoryUseCase
     ) { }
 
     /**
-     * Get full inventory item by ID.
-     * GET /api/inventory-items/:id
-     */
-    getById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const result = await this.getInventoryItemByIdUseCase.execute({ id: req.params.id });
-            if (!result) {
-                return res.status(404).json({ message: 'Inventory item not found' });
-            }
-            return res.json(result);
-        } catch (err) {
-            return next(err);
-        }
-    };
-
-    /**
-     * Get inventory item by store-visible inventory number.
+     * Get inventory item by inventory number (any status).
      * GET /api/inventory-items/by-inventory-number/:inventoryNumber
      */
-    getByInventoryNumber = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    getItemByInventoryNumber = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
             const result = await this.getInventoryItemByInventoryNumberUseCase.execute({
                 inventoryNumber: req.params.inventoryNumber
@@ -67,6 +51,23 @@ export class InventoryItemController {
             if (!result) {
                 return res.status(404).json({ message: 'Inventory item not found' });
             }
+
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get available item by inventory number (status = 'I' and created_at not null).
+     * Used for pawn transactions to verify item availability.
+     * GET /api/inventory-items/available/:inventoryNumber
+     */
+    getAvailableItemByInventoryNumber = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.getItemOnInventoryUseCase.execute({
+                inventoryNumber: req.params.inventoryNumber
+            });
 
             return res.json(result);
         } catch (err) {

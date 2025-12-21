@@ -76,7 +76,7 @@ LEFT JOIN inventory_category ic
 LEFT JOIN inventory_brand ib
   ON ib.id = ii.inventory_brand_id
 WHERE pt.customer_id = $1
-  AND pts.is_active = true
+  AND pts.status = 'P'
 GROUP BY
   pt.id,
   pt.control_number,
@@ -95,4 +95,4 @@ GROUP BY
   pt.default_date,
   pt.created_at,
   pts.status
-ORDER BY pt.transaction_date DESC;
+ORDER BY pt.created_at DESC;

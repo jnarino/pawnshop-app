@@ -35,8 +35,6 @@ export function useIdScanHandler({
   const [idConflictModalOpen, setIdConflictModalOpen] = useState(false);
   const [idConflictData, setIdConflictData] = useState<IdConflictData | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const scanSearchInFlight = useRef(false);
   const lastScanQueryKey = useRef<string | null>(null);
 
   const applyAamva = useCallback(async (d: AamvaData) => {
