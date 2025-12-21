@@ -21,14 +21,15 @@
 -- $13 = item_ids (uuid[])
 -- $14 = tenders (jsonb array: [{tenderTypeId: number, amount: number}])
 -- $15 = note (text, nullable)
+-- $16 = control_number (text)
 
-WITH status_lookup AS (
-  -- Get the appropriate status ID based on transaction type
+WITH
+status_lookup AS (
   SELECT id FROM pawn_ticket_status
   WHERE status = CASE 
     WHEN $2 = 'PAWN' THEN 'P'
     WHEN $2 = 'PURCHASE' THEN 'B'
-    ELSE 'P'  -- Default to Pawn status
+    ELSE 'P'
   END
   LIMIT 1
 ),
@@ -50,24 +51,20 @@ new_ticket AS (
     created_by
   )
   VALUES (
-    $1,                         -- id
-    CASE 
-      WHEN $2 = 'PAWN' THEN get_next_pawn_control_number()
-      WHEN $2 = 'PURCHASE' THEN get_next_purchase_control_number()
-      ELSE get_next_pawn_control_number()
-    END,                        -- control_number (auto-generated based on transaction type)
-    $2,                         -- transaction_type
-    $3,                         -- customer_id
-    $5,                         -- amount_financed
-    $6,                         -- original_pawn_amount
-    $7,                         -- periodic_rate
-    $8,                         -- apr
-    $9,                        -- purchase_trade_value
-    $10,                        -- transaction_date
-    $11,                        -- maturity_date
-    $12,                        -- default_date
-    (SELECT id FROM status_lookup),  -- status_id from lookup
-    $4                          -- created_by (clerk_user_id)
+    $1,
+    $16, -- control_number passed as param
+    $2,
+    $3,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    (SELECT id FROM status_lookup),
+    $4
   )
   RETURNING
     id,
@@ -104,7 +101,7 @@ new_store_transaction AS (
   )
   SELECT
     gen_random_uuid(),
-    nt.control_number,
+    $16,
     $3,  -- customer_id
     $4,  -- clerk_user_id
     CASE 

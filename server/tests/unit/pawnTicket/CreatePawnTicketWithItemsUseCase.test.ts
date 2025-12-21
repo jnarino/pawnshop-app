@@ -2,6 +2,11 @@
 import { PoolClient } from 'pg';
 import { PawnTicketUnitOfWork } from '../../../src/application/common/PawnTicketUnitOfWork';
 import { CreatePawnTicketWithItemsUseCase } from '../../../src/application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
+import { ControlNumberRepository } from '../../../src/domains/controlNumber/ControlNumberRepository';
+class MockControlNumberRepository implements ControlNumberRepository {
+  getNextPawnControlNumber = jest.fn(async () => 'MOCK-PAWN-CN');
+  getNextPurchaseControlNumber = jest.fn(async () => 'MOCK-PURCHASE-CN');
+}
 import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
 import { InventoryItemRepository } from '../../../src/domains/inventory/InventoryItemRepository';
 import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
@@ -56,12 +61,21 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
   }
 }
 
-describe('CreatePawnTicketWithItemsUseCase', () => {
-  it('should create PAWN transaction with finance details', async () => {
-    const uow = new MockPawnTicketUnitOfWork();
-    const mapper = new MockItemAttributeMapper();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
 
+describe('CreatePawnTicketWithItemsUseCase', () => {
+  let uow: MockPawnTicketUnitOfWork;
+  let mapper: MockItemAttributeMapper;
+  let controlNumberRepo: MockControlNumberRepository;
+  let useCase: CreatePawnTicketWithItemsUseCase;
+
+  beforeEach(() => {
+    uow = new MockPawnTicketUnitOfWork();
+    mapper = new MockItemAttributeMapper();
+    controlNumberRepo = new MockControlNumberRepository();
+    useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any, controlNumberRepo);
+  });
+
+  it('should create PAWN transaction with finance details', async () => {
     const today = new Date();
     const maturity = new Date(today);
     maturity.setDate(maturity.getDate() + 30);
@@ -75,7 +89,7 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
         clerkUserId: '22222222-2222-2222-2222-222222222222',
         amountFinanced: 500,
         originalPawnAmount: 500,
-        periodicRate: 0.15, // 15% - backend will calculate financeCharge = 500 * 0.15 = 75
+        periodicRate: 0.15,
         transactionDate: today.toISOString(),
         maturityDate: maturity.toISOString(),
         defaultDate: defaultDate.toISOString()
@@ -94,17 +108,12 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
 
     expect(result.transactionType).toBe('PAWN');
     expect(result.amountFinanced).toBe(500);
-    // expect(result.financeCharge).toBe(75); // Calculated by backend (removed: no longer in model)
     expect(result.periodicRate).toBe(0.15);
-    // Note: items array is only populated on query operations with JOIN, not on create
     expect(Array.isArray(result.items)).toBe(true);
+    expect(controlNumberRepo.getNextPawnControlNumber).toHaveBeenCalled();
   });
 
   it('should create PURCHASE transaction without finance details', async () => {
-    const uow = new MockPawnTicketUnitOfWork();
-    const mapper = new MockItemAttributeMapper();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
-
     const today = new Date();
     const maturity = new Date(today);
     maturity.setDate(maturity.getDate() + 30);
@@ -136,15 +145,11 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
     expect(result.transactionType).toBe('PURCHASE');
     expect(result.purchaseTradeValue).toBe(300);
     expect(result.amountFinanced).toBeNull();
-    // Note: items array is only populated on query operations with JOIN, not on create
     expect(Array.isArray(result.items)).toBe(true);
+    expect(controlNumberRepo.getNextPurchaseControlNumber).toHaveBeenCalled();
   });
 
   it('should throw error when no items are provided', async () => {
-    const uow = new MockPawnTicketUnitOfWork();
-    const mapper = new MockItemAttributeMapper();
-    const useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any);
-
     const today = new Date();
     const maturity = new Date(today);
     maturity.setDate(maturity.getDate() + 30);
@@ -162,7 +167,7 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
           maturityDate: maturity.toISOString(),
           defaultDate: defaultDate.toISOString()
         },
-        items: [] // Empty array
+        items: []
       })
     ).rejects.toThrow('At least one item must be provided');
   });

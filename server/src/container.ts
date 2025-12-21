@@ -52,6 +52,7 @@ import { PgInventoryAttributeRepository } from './infrastructure/persistence/inv
 import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { PgControlNumberRepository } from './infrastructure/persistence/controlNumber/PgControlNumberRepository';
 
 
 
@@ -69,6 +70,7 @@ export async function createApp() {
   const pawnTicketPaymentRepo = new PgPawnTicketPaymentRepository(pool);
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
+  const controlNumberRepository = new PgControlNumberRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
@@ -112,7 +114,7 @@ export async function createApp() {
 
 
   // Pawn Ticket use-cases  
-  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper);
+  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper, controlNumberRepository);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);

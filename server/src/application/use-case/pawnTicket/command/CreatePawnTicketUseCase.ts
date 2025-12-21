@@ -30,6 +30,7 @@ export class CreatePawnTicketUseCase {
     const maturityDate = new Date(dto.maturityDate);
     const defaultDate = new Date(dto.defaultDate);
 
+
     // Calculate finance values for PAWN transactions
     let financeCharge: number | null = null;
     let apr: number | null = null;
@@ -52,7 +53,8 @@ export class CreatePawnTicketUseCase {
       // NOTE: infrastructure will typically generate the real control number
       // using get_next_control_number(); this placeholder can be ignored
       // and overwritten by the repository implementation.
-      controlNumber: '',
+      controlNumber: dto.controlNumber || '',
+
 
       transactionType: dto.transactionType,
       customerId: dto.customerId,
@@ -78,6 +80,10 @@ export class CreatePawnTicketUseCase {
       tenders: dto.tenders || [],
       note: dto.note
     });
+
+    if (!dto.controlNumber || dto.controlNumber.trim() === '') {
+      throw new Error('Control number cannot be created');
+    }
 
     const saved = await this.pawnTicketRepository.create(ticket);
     return PawnTicketMapper.toResponseDto(saved);

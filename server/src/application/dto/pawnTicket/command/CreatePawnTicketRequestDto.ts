@@ -9,32 +9,33 @@ export const tenderSchema = z.object({
 
 export const createPawnTicketRequestSchema = z
   .object({
-  customerId: z.string().uuid(),
-  transactionType: pawnTransactionTypeSchema,
-  clerkUserId: z.string().uuid(), // User creating the ticket
+    customerId: z.string().uuid(),
+    transactionType: pawnTransactionTypeSchema,
+    clerkUserId: z.string().uuid(), // User creating the ticket
 
-  // For PAWN
-  amountFinanced: z.number().nonnegative().nullable().optional(),
-  originalPawnAmount: z.number().nonnegative().nullable().optional(),
-  periodicRate: z.number().nonnegative().nullable().optional(),
-  apr: z.number().nonnegative().nullable().optional(),
+    // For PAWN
+    amountFinanced: z.number().nullable().optional(),
+    originalPawnAmount: z.number().nonnegative().nullable().optional(),
+    periodicRate: z.number().nonnegative().nullable().optional(),
+    apr: z.number().nonnegative().nullable().optional(),
 
-  // For PURCHASE
-  purchaseTradeValue: z.number().nonnegative().nullable().optional(),
+    // For PURCHASE
+    purchaseTradeValue: z.number().nonnegative().nullable().optional(),
 
-  // Dates as strings (expect ISO or 'YYYY-MM-DD' from UI)
-  transactionDate: z.string().min(1),
-  maturityDate: z.string().min(1),
-  defaultDate: z.string().min(1),
+    // Dates as strings (expect ISO or 'YYYY-MM-DD' from UI)
+    transactionDate: z.string().min(1),
+    maturityDate: z.string().min(1),
+    defaultDate: z.string().min(1),
 
-  // At least one item
-  itemIds: z.array(z.string().uuid()).min(1),
+    // At least one item
+    itemIds: z.array(z.string().uuid()).min(1),
 
-  // Tender information (optional, will be auto-generated if not provided)
-  tenders: z.array(tenderSchema).optional(),
+    // Tender information (optional, will be auto-generated if not provided)
+    tenders: z.array(tenderSchema).optional(),
 
-  // Note for the transaction
-  note: z.string().optional()
+    // Note for the transaction
+    note: z.string().optional(),
+    controlNumber: z.string().optional() // allow controlNumber to be passed
   })
   .superRefine((val, ctx) => {
     if (val.transactionType === 'PAWN') {
