@@ -55,6 +55,7 @@ import { PgInventoryAttributeRepository } from './infrastructure/persistence/inv
 import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
 import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
 import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
+import { CreateStoreTransaction } from './application/use-case/storeTransaction/command/CreateStoreTransaction';
 
 
 
@@ -124,8 +125,12 @@ export async function createApp() {
   const getPawnTicketCurrentChargesUseCase = new (require('./application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase').GetPawnTicketCurrentChargesUseCase)(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase);
 
   // Store Transaction use-cases
+  const createStoreTransactionUseCase = new CreateStoreTransaction(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
+
+  // Tender Type use-cases
+  const listTenderTypesUseCase = new (require('./application/use-case/tenderType/query/ListTenderTypes').ListTenderTypes)(new (require('./infrastructure/persistence/tenderType/PgTenderTypeRepository').PgTenderTypeRepository)(pool));
 
   // Controllers
   const authController = new AuthController(
@@ -133,6 +138,8 @@ export async function createApp() {
     refreshTokenUseCase,
     logoutUseCase
   );
+
+  const tenderTypeController = new (require('./interfaces/http/controller/tenderType/TenderTypeController').TenderTypeController)(listTenderTypesUseCase);
 
   const appUserController = new AppUserController(
     listAppUserUseCase,
@@ -188,7 +195,8 @@ export async function createApp() {
 
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
-    listStoreTransactionsByDateRangeUseCase
+    listStoreTransactionsByDateRangeUseCase,
+    createStoreTransactionUseCase
   );
 
   const app = createExpressApp({
@@ -200,6 +208,7 @@ export async function createApp() {
     inventoryAttributeController,
     pawnTicketController,
     storeTransactionController,
+    tenderTypeController,
     jwtSecret: env.jwtSecret
   });
 

@@ -5,7 +5,7 @@ export interface StoreTransactionRepository {
      * Persist a store transaction along with its tenders and items
      * in a single database transaction.
      */
-    create(tx: StoreTransaction): Promise<StoreTransaction>;
+    create(tx: StoreTransaction, tempInventoryUpdates?: { id: string, quantity: number }[]): Promise<StoreTransaction>;
 
     /**
      * Create a payment/redemption store transaction (minimal fields).

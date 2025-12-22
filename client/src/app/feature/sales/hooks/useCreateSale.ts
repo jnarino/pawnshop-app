@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { salesApi, CreateSalePayload, SaleResponse } from '@/app/core/api/salesApi';
+import { getFriendlyErrorMessage } from '@/app/core/utils/errorUtils';
 
 interface UseCreateSaleResult {
   createTicket: (payload: CreateSalePayload) => Promise<SaleResponse | null>;
@@ -31,7 +32,7 @@ export function useCreateSale(): UseCreateSaleResult {
       setSuccess(successMessage);
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create pawn ticket';
+      const errorMessage = getFriendlyErrorMessage(err);
       setError(errorMessage);
       return null;
     } finally {

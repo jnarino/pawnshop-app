@@ -12,7 +12,8 @@ esbuild.build({
     outfile: path.resolve(__dirname, '../dist-electron/server.cjs'),
     external: [
         'argon2',
-        'electron' // In case it's referenced
+        'electron',
+        'swagger-ui-express'
     ],
     loader: { '.ts': 'ts' },
 }).then(() => {
@@ -57,6 +58,46 @@ esbuild.build({
         console.log('✅ .env.production copied.');
     } else {
         console.warn('⚠️ .env.production not found at:', envSrc);
+    }
+
+    // Copy .env.development for bundled app (Dev mode)
+    const envDevSrc = path.resolve(__dirname, '../../server/.env.development');
+    const envDevDest = path.resolve(__dirname, '../dist-electron/.env.development');
+
+    if (fs.existsSync(envDevSrc)) {
+        console.log('📂 Copying .env.development...');
+        fs.copyFileSync(envDevSrc, envDevDest);
+        console.log('✅ .env.development copied.');
+    } else {
+        console.log('ℹ️ .env.development not found (skipping).');
+    }
+
+    // Generate Swagger JSON for bundled app
+    console.log('📄 Generating Swagger JSON...');
+    const { execSync } = require('child_process');
+    try {
+        const genScript = path.resolve(__dirname, '../../server/scripts/generate-swagger.ts');
+        const swaggerDest = path.resolve(__dirname, '../dist-electron/swagger.json');
+
+        // Run ts-node from server directory context
+        const serverDir = path.resolve(__dirname, '../../server');
+        // Command: npx ts-node scripts/generate-swagger.ts > [dest]
+        // process.cwd() is client/scripts or client/
+
+        execSync(`npx ts-node "${genScript}" > "${swaggerDest}"`, {
+            cwd: serverDir,
+            stdio: ['ignore', 'ignore', 'pipe'] // Capture stderr if needed, but we redirect stdout via > in shell? No, execSync returns stdout buffer usually.
+            // Wait, ">" redirection in execSync works if shell: true (default).
+        });
+        // Actually, let's catch stdout and write it manually to be safer cross-platform
+        const swaggerJson = execSync(`npx ts-node "${genScript}"`, { cwd: serverDir }).toString();
+        fs.writeFileSync(swaggerDest, swaggerJson);
+
+        console.log('✅ Swagger JSON generated an copied.');
+    } catch (err) {
+        console.error('❌ Failed to generate Swagger JSON:', err.message);
+        if (err.stderr) console.error(err.stderr.toString());
+        // Don't fail build, just warn?
     }
 
     console.log('✅ Server bundled to dist-electron/server.cjs');

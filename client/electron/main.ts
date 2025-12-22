@@ -88,7 +88,7 @@ function startServer() {
       cwd: serverDir, // Explicitly set CWD so dotenv finds .env.production
       env: {
         ...process.env,
-        NODE_ENV: 'production', // Force production to load .env.production
+        NODE_ENV: app.isPackaged ? 'production' : 'development',
         // Remove hardcoded overrides so .env.production takes precedence
       },
       stdio: ['pipe', 'pipe', 'pipe', 'ipc']
@@ -213,7 +213,11 @@ app.whenReady().then(async () => {
     return;
   }
 
-  startServer();
+  if (app.isPackaged) {
+    startServer();
+  } else {
+    console.log('[Electron] Dev mode detected. Skipping embedded server start. Ensure backend is running externally.');
+  }
   createMainWindow();
 })
 
