@@ -40,19 +40,21 @@ import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/p
 import { GetPawnTicketPaymentsUseCase } from './application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
-import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
-import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
-import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
-import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
-import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
-import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
-import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
-import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
-import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
-import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+
+import { PayPawnTicketUseCase } from './application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
+import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
+import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
+import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
+import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
+import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { PgControlNumberRepository } from './infrastructure/persistence/controlNumber/PgControlNumberRepository';
+import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
+import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
+import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
 
 
 
@@ -167,13 +169,21 @@ export async function createApp() {
     getInventoryAttributeValuesByTypeUseCase
   );
 
+  const payPawnTicketUseCase = new PayPawnTicketUseCase(
+    pawnTicketRepo,
+    inventoryItemRepo,
+    storeTransactionRepo,
+    getPawnTicketCurrentChargesUseCase
+  );
+
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
     listPawnTicketsByControlNumberUseCase,
     listPawnTicketsByCustomerUseCase,
     listActivePawnTicketsByCustomerUseCase,
     getPawnTicketPaymentsUseCase,
-    getPawnTicketCurrentChargesUseCase
+    getPawnTicketCurrentChargesUseCase,
+    payPawnTicketUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

@@ -4,6 +4,7 @@ import { CreateInventoryItemUseCase } from '../../../src/application/use-case/in
 import { ItemAttributeMapper } from '../../../src/application/service/ItemAttributeMapper';
 
 class MockInventoryItemRepository implements InventoryItemRepository {
+  setStatusByPawnTicket = jest.fn();
   create = jest.fn(async (i: InventoryItem) => i);
   update = jest.fn();
   delete = jest.fn();

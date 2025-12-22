@@ -29,7 +29,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
-  const { printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
+  const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
   const customerId = customer?.id;
 
   const [printState, setPrintState] = useState<PrintState>({
@@ -56,10 +56,12 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   }, [dispatch, navigate]);
 
   const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
-    await printLabels(printState.controlNumber, printState.printItems, labelCounts);
-    setPrintState(prev => ({ ...prev, showLabelModal: false }));
-    resetPawnDraft();
-    handleLogoutAfterPrint();
+    const success = await printLabels(printState.controlNumber, printState.printItems, labelCounts);
+    if (success) {
+      setPrintState(prev => ({ ...prev, showLabelModal: false }));
+      resetPawnDraft();
+      handleLogoutAfterPrint();
+    }
   }, [printState.controlNumber, printState.printItems, printLabels, resetPawnDraft, handleLogoutAfterPrint]);
 
   const handleLabelCancel = useCallback(() => {
@@ -206,10 +208,24 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         </Alert>
       )}
 
-      {error && (
+      {(error || formError || labelsError) && (
         <Alert variant="destructive" className="mb-6">
-          <AlertDescription className="flex items-center gap-2">
-            <span className="text-lg">❌</span> {error}
+          <AlertDescription className="flex flex-col gap-2">
+            {error && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">❌</span> {error}
+              </div>
+            )}
+            {formError && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🖨️</span> <strong>Print Error:</strong> {formError}
+              </div>
+            )}
+            {labelsError && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏷️</span> <strong>Label Error:</strong> {labelsError}
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}

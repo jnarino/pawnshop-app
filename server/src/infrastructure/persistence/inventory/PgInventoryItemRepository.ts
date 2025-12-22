@@ -5,6 +5,7 @@ import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
 type DbClient = Pool | PoolClient;
 
+const SQL_SET_STATUS_BY_PAWN_TICKET = loadSql('commands', 'inventory/inventory_item_set_status_by_pawn_ticket');
 const SQL_CREATE = loadSql('commands', 'inventory/inventory_item_create');
 const SQL_UPDATE = loadSql('commands', 'inventory/inventory_item_update');
 const SQL_DELETE = loadSql('commands', 'inventory/inventory_item_delete');
@@ -71,6 +72,9 @@ function mapRowToInventoryItem(row: any): InventoryItem {
 
 export class PgInventoryItemRepository implements InventoryItemRepository {
     constructor(private readonly db: DbClient) { }
+    async setStatusByPawnTicket(pawnTicketId: string, status: string): Promise<void> {
+        await this.db.query(SQL_SET_STATUS_BY_PAWN_TICKET, [pawnTicketId, status]);
+    }
 
     async create(item: InventoryItem): Promise<InventoryItem> {
         const result = await this.db.query(SQL_CREATE, [

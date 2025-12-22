@@ -7,6 +7,7 @@ import { ListPawnTicketsByCustomerUseCase } from '../../../../application/use-ca
 import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
+import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 
 export class PawnTicketController {
     constructor(
@@ -15,8 +16,23 @@ export class PawnTicketController {
         private readonly listByCustomerUseCase: ListPawnTicketsByCustomerUseCase,
         private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
         private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
-        private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase
+        private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
+        private readonly payPawnTicketUseCase: PayPawnTicketUseCase
     ) { }
+
+    /**
+ * POST /api/pawnTicket/payment
+ * Accepts payments or redemptions for pawn tickets.
+ */
+    payOnTicket = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            await this.payPawnTicketUseCase.execute(req.body);
+            return res.status(200).json({ message: 'Payment processed' });
+        } catch (err) {
+            return next(err);
+        }
+    };
+
 
     /**
      * Create a pawn ticket + items in a single transaction.

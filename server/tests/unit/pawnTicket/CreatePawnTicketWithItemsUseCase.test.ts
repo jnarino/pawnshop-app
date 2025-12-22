@@ -13,6 +13,8 @@ import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
 import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
 
 class MockPawnTicketRepository implements PawnTicketRepository {
+  addPayment = jest.fn();
+  setStatus = jest.fn();
   create = jest.fn(async (t: PawnTicket) => ({
     ...t,
     controlNumber: 'CTL-001'
@@ -26,6 +28,7 @@ class MockPawnTicketRepository implements PawnTicketRepository {
 }
 
 class MockInventoryItemRepository implements InventoryItemRepository {
+  setStatusByPawnTicket = jest.fn();
   create = jest.fn(async (i: InventoryItem) => i);
   update = jest.fn();
   delete = jest.fn();

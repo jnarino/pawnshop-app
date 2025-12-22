@@ -8,6 +8,17 @@ export interface StoreTransactionRepository {
     create(tx: StoreTransaction): Promise<StoreTransaction>;
 
     /**
+     * Create a payment/redemption store transaction (minimal fields).
+     */
+    createPayment(params: {
+        pawnTicketId: string;
+        clerkUserId: string;
+        typeId: number;
+        amount: number;
+        tender: { tenderTypeId: number; amount: number };
+    }): Promise<void>;
+
+    /**
      * All store transactions for a given customer, ordered newest first.
      */
     listByCustomer(customerId: string): Promise<StoreTransaction[]>;

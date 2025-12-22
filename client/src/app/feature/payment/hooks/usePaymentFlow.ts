@@ -9,16 +9,33 @@ export interface SelectedPawnTicket extends PawnTicketData {
   payments?: any[];
 }
 
+export interface PawnTicketRow {
+  id: string;
+  controlNumber: string;
+  dateIn: string;
+  dateOut: string;
+  pawnAmount: number;
+  currentCharges: number;
+  redemption: number;
+  otherPayment: boolean;
+  selected: boolean;
+  otherPaymentAmount?: number;
+  periodsBehind?: number;
+  periodicRate?: number;
+}
+
 export function usePaymentFlow() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [customer, setCustomer] = useState<CustomerDto | null>(null);
   const [selectedPawn, setSelectedPawn] = useState<SelectedPawnTicket | null>(null);
+  const [tickets, setTickets] = useState<PawnTicketRow[]>([]);
 
   const resetFlow = () => {
     setCustomerId(null);
     setCustomer(null);
     setSelectedPawn(null);
+    setTickets([]);
     setActiveTab('customer');
   };
 
@@ -29,6 +46,8 @@ export function usePaymentFlow() {
     setCustomer,
     selectedPawn,
     setSelectedPawn,
+    tickets,
+    setTickets,
     activeTab,
     setActiveTab,
     resetFlow

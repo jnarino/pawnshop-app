@@ -32,4 +32,14 @@ export interface PawnTicketRepository {
    * Find a pawn ticket by id.
    */
   findById(id: string): Promise<PawnTicket | null>;
+
+  /**
+   * Add a payment to a pawn ticket (update total_of_payments and last_payment_at).
+   */
+  addPayment(pawnTicketId: string, amount: number): Promise<void>;
+
+  /**
+   * Set the status of a pawn ticket (e.g., to 'U' for Redeemed).
+   */
+  setStatus(pawnTicketId: string, status: string): Promise<void>;
 }

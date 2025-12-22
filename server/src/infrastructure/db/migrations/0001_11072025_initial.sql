@@ -231,19 +231,19 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
 INSERT INTO inventory_status(code, description, sort_order)
 VALUES
-  ('B', NULL, 10),
-  ('C', NULL, 20),
-  ('D', NULL, 30),
-  ('H', NULL, 40),
-  ('I', NULL, 50),  -- default for new items
-  ('J', NULL, 60),
-  ('L', NULL, 70),
-  ('O', NULL, 80),
-  ('P', NULL, 90),
-  ('S', NULL, 100),
-  ('T', NULL, 110),
-  ('U', NULL, 120),
-  ('V', NULL, 130)
+  ('B', 'Purchased', 10),
+  ('C', 'Confiscation', 20),
+  ('D', 'Deleted', 30),
+  ('H', 'Police Hold', 40),
+  ('I', 'Inventory', 50),  -- default for new items
+  ('J', 'Scrapped', 60),
+  ('L', 'Layaway', 70),
+  ('O', 'Police Hold', 80),
+  ('P', 'Pawn', 90),
+  ('S', 'Sold', 100),
+  ('T', 'Transferred', 110),
+  ('U', 'Redeemed', 120),
+  ('V', 'Voided', 130)
 ON CONFLICT DO NOTHING;
 
 ------------------------------------
@@ -399,7 +399,6 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 INSERT INTO pawn_ticket_status (status, description, transaction_type, is_active) VALUES
   -- PAWN statuses
   ('U', 'Redeem', 'PAWN', true),
-  ('R', 'Redeemed', 'PAWN', false),
   ('D', 'Defaulted', 'PAWN', false),
   ('H', 'Police Hold', 'PAWN', true),
   ('C', 'Confiscation', 'PAWN', false),

@@ -1,5 +1,4 @@
-import React from 'react';
-import type { TabKey, SelectedPawnTicket } from '../hooks/usePaymentFlow';
+import type { TabKey, SelectedPawnTicket, PawnTicketRow } from '../hooks/usePaymentFlow';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 import CustomerInfoTab from './CustomerInfoTab';
@@ -13,6 +12,8 @@ interface Props {
     customerId: string | null;
     customer: CustomerDto | null;
     selectedPawn: SelectedPawnTicket | null;
+    tickets: PawnTicketRow[];
+    onTicketsChange: (tickets: PawnTicketRow[]) => void;
     onCustomerChange: (customer: CustomerDto | null) => void;
     onCustomerSelected: (id: string) => void;
     onTabChange: (tab: TabKey) => void;
@@ -26,6 +27,8 @@ export default function PaymentTabContent({
     customerId,
     customer,
     selectedPawn,
+    tickets,
+    onTicketsChange,
     onCustomerChange,
     onCustomerSelected,
     onTabChange,
@@ -80,6 +83,9 @@ export default function PaymentTabContent({
                 <MakePaymentTab
                     pawnTicket={selectedPawn}
                     customerId={customerId}
+                    customer={customer}
+                    tickets={tickets}
+                    onTicketsChange={onTicketsChange}
                     onBack={() => onTabChange('locatePawns')}
                     onPaymentComplete={onPaymentComplete}
                 />

@@ -6,6 +6,10 @@ import { StoreTransaction } from '../../../domains/storeTransaction/StoreTransac
 import { StoreTransactionTender } from '../../../domains/storeTransaction/StoreTransactionTender';
 import { StoreTransactionItem } from '../../../domains/storeTransaction/StoreTransactionItem';
 
+const SQL_CREATE_PAYMENT = loadSql(
+    'commands',
+    'storeTransaction/store_transaction_create_payment');
+
 const SQL_CREATE_TX = loadSql(
     'commands',
     'storeTransaction/store_transaction_create'
@@ -103,6 +107,22 @@ function mapRowToItem(row: any): StoreTransactionItem {
 
 export class PgStoreTransactionRepository implements StoreTransactionRepository {
     constructor(private readonly pool: Pool) { }
+    async createPayment(params: {
+        pawnTicketId: string;
+        clerkUserId: string;
+        typeId: number;
+        amount: number;
+        tender: { tenderTypeId: number; amount: number };
+    }): Promise<void> {
+        await this.pool.query(SQL_CREATE_PAYMENT, [
+            params.pawnTicketId,
+            params.clerkUserId,
+            params.typeId,
+            params.amount,
+            params.tender.tenderTypeId,
+            params.tender.amount
+        ]);
+    }
 
     /**
      * Creates a store_transaction header + tenders + items

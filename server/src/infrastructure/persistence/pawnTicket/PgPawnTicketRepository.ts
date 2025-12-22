@@ -1,9 +1,21 @@
+
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
 import { PawnTicketRepository } from '../../../domains/pawnTicket/PawnTicketRepository';
 import { PawnTicket } from '../../../domains/pawnTicket/PawnTicket';
 import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
+
+
+const SQL_ADD_PAYMENT = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_add_payment'
+);
+
+const SQL_SET_STATUS = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_set_status'
+);
 
 type DbClient = Pool | PoolClient;
 
@@ -105,6 +117,14 @@ function mapRowToPawnTicket(row: any): PawnTicket {
 
 export class PgPawnTicketRepository implements PawnTicketRepository {
     constructor(private readonly db: DbClient) { }
+
+    async addPayment(pawnTicketId: string, amount: number): Promise<void> {
+        await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
+    }
+
+    async setStatus(pawnTicketId: string, status: string): Promise<void> {
+        await this.db.query(SQL_SET_STATUS, [pawnTicketId, status]);
+    }
 
     async create(ticket: PawnTicket): Promise<PawnTicket> {
         // Convert tenders array to JSONB format

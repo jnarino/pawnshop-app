@@ -4,6 +4,7 @@ import { NotFoundError } from '../../../src/application/common/errors';
 import { GetInventoryItemBySerialNumberUseCase } from '../../../src/application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
 
 class MockInventoryItemRepository implements InventoryItemRepository {
+  setStatusByPawnTicket = jest.fn();
   create = jest.fn();
   update = jest.fn();
   delete = jest.fn();

@@ -4,52 +4,41 @@ import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 import ServiceChargeModal from './ServiceChargeModal';
 import OtherPaymentModal from './OtherPaymentModal';
 import PaymentMethodModal from './PaymentMethodModal';
+import { PawnTicketRow } from '../hooks/usePaymentFlow';
 
 interface Props {
   pawnTicket: any;
   customerId: string;
+  customer: any;
+  tickets: PawnTicketRow[];
+  onTicketsChange: (tickets: PawnTicketRow[]) => void;
   onBack: () => void;
   onPaymentComplete: () => void;
 }
 
-interface PawnTicketRow {
-  id: string;
-  controlNumber: string;
-  dateIn: string;
-  dateOut: string;
-  pawnAmount: number;
-  currentCharges: number;
-  redemption: number;
-  otherPayment: boolean;
-  selected: boolean;
-  otherPaymentAmount?: number;
-  periodsBehind?: number;
-  periodicRate?: number;
-}
-
-export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPaymentComplete }: Props) {
-  const [tickets, setTickets] = useState<PawnTicketRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function MakePaymentTab({
+  pawnTicket,
+  customerId,
+  customer,
+  tickets,
+  onTicketsChange,
+  onBack,
+  onPaymentComplete
+}: Props) {
+  const [loading, setLoading] = useState(tickets.length === 0);
   const [totalPayment, setTotalPayment] = useState('0.00');
   const [selectedCount, setSelectedCount] = useState(0);
-  const [customer, setCustomer] = useState<any>(null);
   const [serviceChargeModalOpen, setServiceChargeModalOpen] = useState(false);
   const [paymentMethodModalOpen, setPaymentMethodModalOpen] = useState(false);
   const [selectedTicketForPayment, setSelectedTicketForPayment] = useState<string | null>(null);
 
   useEffect(() => {
-    loadActiveTickets();
-    loadCustomer();
-  }, [customerId]);
-
-  const loadCustomer = async () => {
-    try {
-      const customerData = await http(`/api/customer/${customerId}`);
-      setCustomer(customerData);
-    } catch (error) {
-      console.error('Failed to load customer:', error);
+    if (tickets.length === 0) {
+      loadActiveTickets();
+    } else {
+      updateTotals(tickets);
     }
-  };
+  }, [customerId]);
 
   const loadActiveTickets = async () => {
     try {
@@ -73,6 +62,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
             const chargesData = await pawnTicketApi.getCurrentCharges(controlNumber);
             currentCharges = chargesData.currentCharges;
             redemption = chargesData.redemptionAmount;
+            periodsBehind = chargesData.periodsBehind;
           } catch (err) {
             console.error(`Failed to load charges for ticket ${controlNumber}:`, err);
           }
@@ -86,14 +76,14 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
           pawnAmount,
           currentCharges,
           redemption,
-          otherPayment: false, // Default to false
-          selected: ticket.id === pawnTicket?.id, // Pre-select if this matches the current ticket
+          otherPayment: false,
+          selected: ticket.id === pawnTicket?.id,
           periodsBehind,
           periodicRate
         };
       }));
 
-      setTickets(ticketRows);
+      onTicketsChange(ticketRows);
       updateTotals(ticketRows);
 
     } catch (error) {
@@ -124,13 +114,13 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
         ? { ...ticket, selected: !ticket.selected }
         : ticket
     );
-    setTickets(updatedTickets);
+    onTicketsChange(updatedTickets);
     updateTotals(updatedTickets);
   };
 
   const selectAll = () => {
     const updatedTickets = tickets.map(ticket => ({ ...ticket, selected: true }));
-    setTickets(updatedTickets);
+    onTicketsChange(updatedTickets);
     updateTotals(updatedTickets);
   };
 
@@ -146,7 +136,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
       otherPayment: false,
       otherPaymentAmount: 0
     }));
-    setTickets(updatedTickets);
+    onTicketsChange(updatedTickets);
     updateTotals(updatedTickets);
   };
 
@@ -165,7 +155,7 @@ export default function MakePaymentTab({ pawnTicket, customerId, onBack, onPayme
           ? { ...ticket, otherPaymentAmount: amount, otherPayment: amount > 0 }
           : ticket
       );
-      setTickets(updatedTickets);
+      onTicketsChange(updatedTickets);
       updateTotals(updatedTickets);
     }
 
