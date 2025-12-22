@@ -69,6 +69,8 @@ interface SaleTicketFormProps {
     items: InventoryItemDraft[];
   }) => Promise<void>;
   readonly disabled?: boolean;
+  readonly taxExemptUsed?: boolean;
+  readonly setTaxExemptUsed: (value: boolean) => void;
 }
 
 export function SaleForm({
@@ -79,6 +81,8 @@ export function SaleForm({
   controlNumber,
   pawnTicket,
   customer,
+  taxExemptUsed,
+  setTaxExemptUsed,
   onSubmit,
   disabled = false
 }: SaleTicketFormProps) {
@@ -90,13 +94,16 @@ export function SaleForm({
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [eatTax, setEatTax] = useState(false);
 
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+
   const [localFormData, setLocalFormData] = useState({
-    customerId: initialData?.customerId || 'temp-customer',
+    customerId: initialData?.customerId,
     inventoryNumber: initialData?.inventoryNumber || '',
     inventoryItem: initialData?.inventoryItem,
     description: initialData?.description || '',
     priceEach: initialData?.priceEach || '',
     quantity: initialData?.quantity,
+    taxExempt: false,
     items: initialData?.items || [] as any[] // TODO: any
   });
 
@@ -144,6 +151,10 @@ export function SaleForm({
 
     const submitData = {
       customerId: formData.customerId,
+      taxExempt: formData.taxExempt,
+      inventoryNumber: formData.inventoryNumber,
+      inventoryItem: formData.inventoryItem!,
+      quantity: formData.quantity!,
       items: formData.items
     };
 
@@ -154,41 +165,57 @@ export function SaleForm({
     // Ensure numeric values are numbers
     const processedItem = {
       ...item,
-      // Generate a temporary ID if no inventory item exists
-      id: item.inventoryItem?.id || item.id || `manual-${Date.now()}`,
+      id: editingRowId || item.inventoryItem?.id || item.id || `manual-${Date.now()}`,
       priceEach: Number(item.priceEach),
       amount: Number(item.priceEach) // Map priceEach to amount for the backend
     };
 
-    if (editingItem) {
+    if (editingRowId) {
       updateFormData({
-        items: formData.items.map(i => i.id === editingItem.id ? processedItem : i)
+        items: formData.items.map(i => i.id === editingRowId ? processedItem : i),
+        inventoryNumber: '',
+        inventoryItem: undefined,
+        description: '',
+        priceEach: '',
+        quantity: undefined
       });
+      setEditingRowId(null);
     } else {
       updateFormData({
         items: [...formData.items, processedItem],
         inventoryNumber: '',
         inventoryItem: undefined,
         description: '',
-        priceEach: undefined,
+        priceEach: '',
         quantity: undefined
       });
     }
 
     setShowItemModal(false);
     setEditingItem(null);
-  }, [editingItem, formData.items, updateFormData]);
+  }, [editingRowId, formData.items, updateFormData]);
 
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
+    setEditingRowId(item.id || null);
     updateFormData({
       inventoryNumber: item.inventoryItem?.inventoryNumber || item.inventoryNumber || '',
       inventoryItem: item.inventoryItem,
       description: item.description,
       quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity),
       priceEach: typeof item.priceEach === 'number' ? item.priceEach : Number(item.priceEach),
-      items: formData.items.filter(i => i.id !== item.id)
     });
-  }, [formData.items, updateFormData]);
+  }, [updateFormData]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingRowId(null);
+    updateFormData({
+      inventoryNumber: '',
+      inventoryItem: undefined,
+      description: '',
+      priceEach: '',
+      quantity: undefined
+    });
+  }, [updateFormData]);
 
   const handleViewItem = useCallback((item: InventoryItemDraft) => {
     setEditingItem(item);
@@ -196,10 +223,13 @@ export function SaleForm({
   }, []);
 
   const handleRemoveItem = useCallback((itemId: string) => {
+    if (itemId === editingRowId) {
+      handleCancelEdit();
+    }
     updateFormData({
       items: formData.items.filter(i => i.id !== itemId)
     });
-  }, [formData.items, updateFormData]);
+  }, [formData.items, updateFormData, editingRowId, handleCancelEdit]);
 
   const handlePrintTicket = useCallback(async () => {
     if (!controlNumber || !customer || !pawnTicket) return;
@@ -296,6 +326,10 @@ export function SaleForm({
           handleFieldByKey={handleFieldByKey}
           disabled={isViewMode}
           customer={customer}
+          taxExemptUsed={taxExemptUsed}
+          setTaxExemptUsed={setTaxExemptUsed}
+          isEditing={!!editingRowId}
+          onCancelEdit={handleCancelEdit}
         />
 
         <Card className="border-2">
@@ -325,7 +359,10 @@ export function SaleForm({
                 </TableHeader>
                 <TableBody>
                   {formData.items.map((item) => (
-                    <TableRow key={item.id || item.inventoryItem?.id}>
+                    <TableRow
+                      key={item.id || item.inventoryItem?.id}
+                      className={item.id === editingRowId ? "bg-amber-50 border-l-4 border-amber-500" : ""}
+                    >
                       <TableCell>
                         {item.inventoryItem?.inventoryNumber || item.inventoryNumber}
                       </TableCell>
@@ -357,7 +394,7 @@ export function SaleForm({
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleEditItem(item)}
-                                disabled={disabled}
+                                disabled={disabled || !!editingRowId}
                               >
                                 <img src={editIcon} alt="Edit" className="w-4 h-4" />
                               </Button>

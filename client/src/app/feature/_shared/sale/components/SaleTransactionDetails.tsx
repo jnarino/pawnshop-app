@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import addIcon from '@/assets/icons/add.svg';
+import editIcon from '@/assets/icons/edit.svg';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,10 +16,14 @@ interface SaleTransactionDetailsProps {
   readonly quantity?: number;
   readonly description?: string;
   readonly customer?: Customer;
+  readonly taxExemptUsed?: boolean;
   readonly priceEach?: number | string;
   readonly onSearchInventoryItem: (value: string) => void;
   readonly handleSaveItem: (item: any) => void; // TODO: any
   readonly handleFieldByKey: (key: string, value: any) => void;
+  readonly setTaxExemptUsed: (value: boolean) => void;
+  readonly isEditing?: boolean;
+  readonly onCancelEdit?: () => void;
 }
 
 export function SaleTransactionDetails({
@@ -28,13 +33,17 @@ export function SaleTransactionDetails({
   quantity,
   description,
   customer,
+  taxExemptUsed,
+  setTaxExemptUsed,
   priceEach,
   onSearchInventoryItem,
   handleSaveItem,
-  handleFieldByKey
+  handleFieldByKey,
+  isEditing,
+  onCancelEdit
 }: SaleTransactionDetailsProps) {
   return (
-    <Card className="border-2 mb-6">
+    <Card className={`border-2 mb-6 ${isEditing ? 'border-amber-400 bg-amber-50/30' : ''}`}>
       <CardHeader className="bg-slate-50 border-b py-4">
         <CardTitle className="text-lg font-semibold">Transaction Details</CardTitle>
       </CardHeader>
@@ -53,11 +62,19 @@ export function SaleTransactionDetails({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      onSearchInventoryItem(e.currentTarget.value)
+                      let val = e.currentTarget.value;
+                      // Determine if it looks like a barcode (10 digits starting with 00)
+                      // Format: 00PPPPPPSS -> P=prefix, S=suffix
+                      if (/^00\d{8}$/.test(val)) {
+                        const prefix = parseInt(val.substring(0, 8), 10);
+                        const suffix = parseInt(val.substring(8), 10);
+                        val = `${prefix}-${suffix}`;
+                        handleFieldByKey('inventoryNumber', val);
+                      }
+                      onSearchInventoryItem(val)
                     }
                   }}
                   onChange={(e) => handleFieldByKey('inventoryNumber', e.currentTarget.value)}
-                // disabled={disabled}
                 />
                 <Button variant="outline" onClick={() => onSearchInventoryItem(inventoryNumber || '')}>Find</Button>
               </div>
@@ -148,8 +165,13 @@ export function SaleTransactionDetails({
           <hr className="my-2" />
           <div className="flex items-center justify-end mt-2 gap-2 items-end">
             <div className="flex gap-2">
-              <Checkbox></Checkbox>
-              <Label>Tax Exempt?</Label>
+              <Checkbox
+                id="taxExempt"
+                checked={taxExemptUsed}
+                onCheckedChange={(checked) => setTaxExemptUsed(checked === true)}
+                disabled={disabled}
+              />
+              <Label htmlFor="taxExempt" className="mb-0">Tax Exempt?</Label>
             </div>
             <Button
               type="button"
@@ -163,9 +185,21 @@ export function SaleTransactionDetails({
               })}
               disabled={disabled || !quantity || quantity <= 0 || !description || priceEach === '' || priceEach === undefined} // Allow saving if we have quantity
               size="sm"
+              className={isEditing ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
             >
-              <img src={addIcon} alt="Add" className="w-4 h-4 mr-1 brightness-0 invert" /> Add Item
+              <img src={isEditing ? editIcon : addIcon} alt={isEditing ? "Save" : "Add"} className="w-4 h-4 mr-1 brightness-0 invert" />
+              {isEditing ? "Update Item" : "Add Item"}
             </Button>
+            {isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onCancelEdit}
+              >
+                Cancel
+              </Button>
+            )}
           </div>
 
         </div>

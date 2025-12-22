@@ -128,8 +128,16 @@ export const options: swaggerJsdoc.Options = {
                         pawnStatus: { type: 'string' },
                         itemIds: {
                             type: 'array',
-                            items: { type: 'string' }
                         }
+                    },
+                },
+                TenderType: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        name: { type: 'string' },
+                        legacyCode: { type: 'string', nullable: true },
+                        active: { type: 'boolean' },
                     },
                 },
             },
@@ -164,3 +172,27 @@ if (fs.existsSync(staticPath)) {
 }
 
 export const swaggerSpec = spec;
+
+export const swaggerUiOptions = {
+    swaggerOptions: {
+        persistAuthorization: true,
+        responseInterceptor: (response: any) => {
+            // Check if this is the login response
+            if (response.url.endsWith('/api/auth/login') && response.status === 200) {
+                try {
+                    const body = response.body;
+                    if (body.accessToken) {
+                        const token = `Bearer ${body.accessToken}`;
+                        // Programmatically set the authorization
+                        // @ts-ignore
+                        window.ui.preauthorizeApiKey("bearerAuth", token);
+                        console.log('[Swagger Auto-Auth] Token set automatically');
+                    }
+                } catch (e) {
+                    console.error('[Swagger Auto-Auth] Failed to set token', e);
+                }
+            }
+            return response;
+        }
+    }
+};

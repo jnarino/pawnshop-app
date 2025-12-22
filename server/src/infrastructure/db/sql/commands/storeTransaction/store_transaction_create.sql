@@ -7,7 +7,6 @@ INSERT INTO store_transaction (
   amount,
   tax_sales,
   tax_exempt_used,
-  tax_exempt_certificate,
   state_tax,
   tender_change,
   gun_proc_fee,
@@ -21,10 +20,9 @@ INSERT INTO store_transaction (
   $6,  -- amount
   $7,  -- tax_sales
   $8,  -- tax_exempt_used
-  $9,  -- tax_exempt_certificate
-  $10, -- state_tax
-  $11, -- tender_change
-  $12, -- gun_proc_fee
-  $13  -- note
+  $9,  -- state_tax
+  $10, -- tender_change
+  $11, -- gun_proc_fee
+  $12  -- note
 )
 RETURNING *;

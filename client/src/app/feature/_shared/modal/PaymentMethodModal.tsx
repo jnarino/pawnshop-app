@@ -1,0 +1,223 @@
+import React, { useState, useEffect } from 'react';
+import { tenderTypeApi, TenderType } from '@/app/core/api/tenderTypeApi';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, DollarSign } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface TenderMethod {
+  id: string;
+  name: string;
+  amount: string;
+  tenderTypeId: number;
+}
+
+interface Props {
+  open: boolean;
+  totalAmount: number;
+  onCancel: () => void;
+  onDone: (tenders: TenderMethod[]) => void;
+}
+
+export default function PaymentMethodModal({ open, totalAmount, onCancel, onDone }: Props) {
+  const [tenders, setTenders] = useState<TenderMethod[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      loadTenderTypes();
+    }
+  }, [open]);
+
+  const loadTenderTypes = async () => {
+    setLoadingTypes(true);
+    try {
+      const types = await tenderTypeApi.list();
+      console.log({ types });
+      setAvailableTypes(types);
+
+      // Initialize default tender if empty or reset
+      if (types.length > 0) {
+        const cashType = types.find(t => t.name === 'CASH') || types[0];
+        setTenders([{
+          id: '1',
+          name: cashType.name,
+          amount: totalAmount.toFixed(2),
+          tenderTypeId: cashType.id
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to load tender types', error);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+  const updateTenderAmount = (id: string, amount: string) => {
+    setTenders(prev => prev.map(t =>
+      t.id === id ? { ...t, amount } : t
+    ));
+  };
+
+  const addTender = () => {
+    // Determine available types that haven't been used yet
+    const usedTypeIds = new Set(tenders.map(t => t.tenderTypeId));
+    const nextAvailableType = availableTypes.find(t => !usedTypeIds.has(t.id));
+
+    if (!nextAvailableType) return; // No more types available to add
+
+    const newTender: TenderMethod = {
+      id: Date.now().toString(),
+      name: nextAvailableType.name,
+      amount: '0.00',
+      tenderTypeId: nextAvailableType.id
+    };
+    setTenders(prev => [...prev, newTender]);
+  };
+
+  const removeTender = (id: string) => {
+    if (tenders.length <= 1) return; // Keep at least one
+    setTenders(prev => prev.filter(t => t.id !== id));
+  };
+
+  const updateTenderType = (id: string, name: string) => {
+    const typeObj = availableTypes.find(t => t.name === name);
+    if (!typeObj) return;
+
+    setTenders(prev => prev.map(t =>
+      t.id === id ? { ...t, name, tenderTypeId: typeObj.id } : t
+    ));
+  };
+
+  const getTotalTendered = () => {
+    return tenders.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0);
+  };
+
+  const getChange = () => {
+    return Math.max(0, getTotalTendered() - totalAmount);
+  };
+
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Payment Method Selection</DialogTitle>
+        </DialogHeader>
+
+        <div className="py-6">
+          <div className="flex flex-col items-center justify-center mb-8 bg-muted/30 p-4 rounded-lg border border-dashed">
+            <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Total Payment Required</Label>
+            <div className="text-3xl font-bold tracking-tight text-primary">
+              ${totalAmount.toFixed(2)}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-xs font-medium uppercase text-muted-foreground flex justify-between items-center px-1">
+              <span>Payment Methods</span>
+              <span className="text-[10px]">{tenders.length} Used</span>
+            </Label>
+
+            {tenders.map((tender, idx) => (
+              <div key={tender.id} className="grid grid-cols-[1.5fr_1fr_auto] gap-3 items-start animate-in fade-in slide-in-from-left-4 duration-300">
+                <Select
+                  value={tender.name}
+                  onValueChange={(value) => updateTenderType(tender.id, value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingTypes ? (
+                      <SelectItem value="loading" disabled>Loading...</SelectItem>
+                    ) : (
+                      availableTypes.map(type => {
+                        // Disable if used in another row
+                        const isUsed = tenders.some(t => t.tenderTypeId === type.id && t.id !== tender.id);
+                        return (
+                          <SelectItem key={type.id} value={type.name} disabled={isUsed}>
+                            {type.name}
+                          </SelectItem>
+                        );
+                      })
+                    )}
+                  </SelectContent>
+                </Select>
+
+                <div className="relative">
+                  <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={tender.amount}
+                    onChange={(e) => updateTenderAmount(tender.id, e.target.value)}
+                    className="pl-8 text-right font-mono"
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeTender(tender.id)}
+                  disabled={tenders.length <= 1}
+                  className={cn("h-10 w-10 text-muted-foreground hover:text-destructive", tenders.length <= 1 && "opacity-0")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            {tenders.length < availableTypes.length && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addTender}
+                className="w-full border-dashed"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Split Payment
+              </Button>
+            )}
+          </div>
+
+          <div className="mt-8 space-y-3 bg-muted p-4 rounded-md">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Tendered:</span>
+              <span className="font-mono font-medium">${getTotalTendered().toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-muted-foreground/20">
+              <span className="font-medium">Change Due:</span>
+              <span className={cn(
+                "font-mono font-bold text-lg",
+                getChange() > 0 ? "text-green-600" : "text-muted-foreground"
+              )}>
+                ${getChange().toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => onDone(tenders)}
+            disabled={getTotalTendered() < totalAmount}
+            className={cn("w-full sm:w-auto", getTotalTendered() >= totalAmount ? "bg-green-600 hover:bg-green-700" : "")}
+          >
+            Process Payment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { http } from '@/app/core/api/http';
 import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
-import ServiceChargeModal from './ServiceChargeModal';
 import OtherPaymentModal from './OtherPaymentModal';
-import PaymentMethodModal from './PaymentMethodModal';
+import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
 
 interface Props {
   pawnTicket: any;
