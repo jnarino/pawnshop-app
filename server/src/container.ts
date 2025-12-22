@@ -177,9 +177,7 @@ export async function createApp() {
   );
 
   const payPawnTicketUseCase = new PayPawnTicketUseCase(
-    pawnTicketRepo,
-    inventoryItemRepo,
-    storeTransactionRepo,
+    pawnTicketUnitOfWork,
     getPawnTicketCurrentChargesUseCase
   );
 

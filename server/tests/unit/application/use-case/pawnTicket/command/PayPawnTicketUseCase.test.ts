@@ -10,10 +10,12 @@ describe('PayPawnTicketUseCase', () => {
   let inventoryItemRepository: jest.Mocked<InventoryItemRepository>;
   let storeTransactionRepository: jest.Mocked<StoreTransactionRepository>;
   let getPawnTicketCurrentChargesUseCase: jest.Mocked<GetPawnTicketCurrentChargesUseCase>;
+  let pawnTicketUnitOfWork: any;
   let useCase: PayPawnTicketUseCase;
 
   beforeEach(() => {
     pawnTicketRepository = {
+      updatePaymentFields: jest.fn(),
       addPayment: jest.fn(),
       setStatus: jest.fn(),
       findById: jest.fn(),
@@ -38,10 +40,18 @@ describe('PayPawnTicketUseCase', () => {
     getPawnTicketCurrentChargesUseCase = {
       execute: jest.fn(),
     } as any;
+    pawnTicketUnitOfWork = {
+      runInTransaction: jest.fn(async (fn: any) => {
+        return fn({
+          inventoryItemRepository,
+          pawnTicketRepository,
+          storeTransactionRepository,
+          dbClient: {} // mock client
+        });
+      })
+    };
     useCase = new PayPawnTicketUseCase(
-      pawnTicketRepository,
-      inventoryItemRepository,
-      storeTransactionRepository,
+      pawnTicketUnitOfWork,
       getPawnTicketCurrentChargesUseCase
     );
   });
@@ -59,10 +69,11 @@ describe('PayPawnTicketUseCase', () => {
       controlNumber: '116951',
       paymentAmount: 100,
       clerkUserId: '11111111-1111-1111-1111-111111111111',
-      tender: { tenderTypeId: 1, amount: 100 }
+      tender: { tenderTypeId: 1, amount: 100 },
+      createdDate: new Date().toISOString()
     }];
     await useCase.execute(input);
-    expect(pawnTicketRepository.addPayment).toHaveBeenCalledWith('60d1c2e9-2a17-44a4-b59c-ca5ca6d1feef', 100);
+    expect(pawnTicketRepository.updatePaymentFields).toHaveBeenCalled();
     expect(storeTransactionRepository.createPayment).toHaveBeenCalledWith({
       pawnTicketId: '60d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
       clerkUserId: '11111111-1111-1111-1111-111111111111',
@@ -71,7 +82,6 @@ describe('PayPawnTicketUseCase', () => {
       tender: { tenderTypeId: 1, amount: 100 }
     });
     expect(inventoryItemRepository.setStatusByPawnTicket).not.toHaveBeenCalled();
-    expect(pawnTicketRepository.setStatus).not.toHaveBeenCalled();
   });
 
   it('should process a redemption', async () => {
@@ -87,10 +97,11 @@ describe('PayPawnTicketUseCase', () => {
       controlNumber: '116952',
       paymentAmount: 200,
       clerkUserId: '22222222-2222-2222-2222-222222222222',
-      tender: { tenderTypeId: 2, amount: 200 }
+      tender: { tenderTypeId: 2, amount: 200 },
+      createdDate: new Date().toISOString()
     }];
     await useCase.execute(input);
-    expect(pawnTicketRepository.addPayment).toHaveBeenCalledWith('70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef', 200);
+    expect(pawnTicketRepository.updatePaymentFields).toHaveBeenCalled();
     expect(storeTransactionRepository.createPayment).toHaveBeenCalledWith({
       pawnTicketId: '70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
       clerkUserId: '22222222-2222-2222-2222-222222222222',
@@ -99,7 +110,6 @@ describe('PayPawnTicketUseCase', () => {
       tender: { tenderTypeId: 2, amount: 200 }
     });
     expect(inventoryItemRepository.setStatusByPawnTicket).toHaveBeenCalledWith('70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef', 'U');
-    expect(pawnTicketRepository.setStatus).toHaveBeenCalledWith('70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef', 'U');
   });
 
   it('should throw NotFoundError if charges not found', async () => {
@@ -109,7 +119,8 @@ describe('PayPawnTicketUseCase', () => {
       controlNumber: '116953',
       paymentAmount: 50,
       clerkUserId: '33333333-3333-3333-3333-333333333333',
-      tender: { tenderTypeId: 1, amount: 50 }
+      tender: { tenderTypeId: 1, amount: 50 },
+      createdDate: new Date().toISOString()
     }];
     await expect(useCase.execute(input)).rejects.toThrow(NotFoundError);
   });

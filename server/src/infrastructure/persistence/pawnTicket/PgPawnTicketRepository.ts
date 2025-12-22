@@ -1,3 +1,13 @@
+const SQL_UPDATE_PAYMENT_FIELDS = `
+  UPDATE pawn_ticket
+  SET total_of_payments = total_of_payments + $1,
+      transaction_date = $2,
+      updated_at = $3,
+      default_date = $4,
+      maturity_date = $5
+      {STATUS_CLAUSE}
+  WHERE id = $6
+`;
 
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
@@ -81,6 +91,7 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     };
 
     return item;
+// ...existing code...
 }
 
 function mapRowToPawnTicket(row: any): PawnTicket {
@@ -121,6 +132,9 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
     async addPayment(pawnTicketId: string, amount: number): Promise<void> {
         await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
     }
+
+// ...existing code...
+    // ...existing code...
 
     async setStatus(pawnTicketId: string, status: string): Promise<void> {
         await this.db.query(SQL_SET_STATUS, [pawnTicketId, status]);
@@ -179,9 +193,31 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         return result.rows.map(mapRowToPawnTicket);
     }
 
+
     async findById(id: string): Promise<PawnTicket | null> {
         const result = await this.db.query(SQL_FIND_BY_ID, [id]);
         if (result.rowCount === 0) return null;
         return mapRowToPawnTicket(result.rows[0]);
+    }
+
+    async updatePaymentFields(params: {
+        pawnTicketId: string;
+        paymentAmount: number;
+        transactionDate: Date;
+        updatedAt: Date;
+        defaultDate: Date;
+        maturityDate: Date;
+        setRedeemed: boolean;
+    }): Promise<void> {
+        const statusClause = params.setRedeemed ? ', pawn_status = \'U\'' : '';
+        const sql = SQL_UPDATE_PAYMENT_FIELDS.replace('{STATUS_CLAUSE}', statusClause);
+        await this.db.query(sql, [
+            params.paymentAmount,
+            params.transactionDate,
+            params.updatedAt,
+            params.defaultDate,
+            params.maturityDate,
+            params.pawnTicketId
+        ]);
     }
 }

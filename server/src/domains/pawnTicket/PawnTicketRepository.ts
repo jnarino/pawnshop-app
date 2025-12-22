@@ -42,4 +42,17 @@ export interface PawnTicketRepository {
    * Set the status of a pawn ticket (e.g., to 'U' for Redeemed).
    */
   setStatus(pawnTicketId: string, status: string): Promise<void>;
+
+  /**
+   * Atomically update all payment-related fields for a pawn ticket.
+   */
+  updatePaymentFields(params: {
+    pawnTicketId: string;
+    paymentAmount: number;
+    transactionDate: Date;
+    updatedAt: Date;
+    defaultDate: Date;
+    maturityDate: Date;
+    setRedeemed: boolean;
+  }): Promise<void>;
 }

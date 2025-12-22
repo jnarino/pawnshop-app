@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 
+
 export const pawnTicketPaymentRequestSchema = z.object({
   pawnTicketId: z.string().uuid(),
   controlNumber: z.string(),
@@ -9,7 +10,8 @@ export const pawnTicketPaymentRequestSchema = z.object({
     tenderTypeId: z.number(), // 1: Cash, 3: Debit
     amount: z.number().positive()
   }),
-  clerkUserId: z.string().uuid()
+  clerkUserId: z.string().uuid(),
+  createdDate: z.string().datetime() // ISO string
 });
 
 export type PawnTicketPaymentRequestDto = z.infer<typeof pawnTicketPaymentRequestSchema>;

@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
 
 import { StoreTransactionRepository } from '../../../domains/storeTransaction/StoreTransactionRepository';
@@ -103,8 +103,7 @@ function mapRowToItem(row: any): StoreTransactionItem {
     });
 }
 
-export class PgStoreTransactionRepository implements StoreTransactionRepository {
-    constructor(private readonly pool: Pool) { }
+    constructor(private readonly pool: Pool | PoolClient) { }
     async createPayment(params: {
         pawnTicketId: string;
         clerkUserId: string;
