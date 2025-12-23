@@ -2,14 +2,6 @@ import { useState, useCallback } from 'react';
 import { type InventoryItemDraft } from './InventoryItemModal/types';
 import { SaleTransactionDetails } from './SaleTransactionDetails';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDownIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,18 +13,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { FormMode } from '../types/types';
-import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
+import type { CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import packageIcon from '@/assets/icons/package.svg';
 import editIcon from '@/assets/icons/edit.svg';
 import deleteIcon from '@/assets/icons/delete.svg';
-import visibilityIcon from '@/assets/icons/visibility.svg';
-import printerIcon from '@/assets/icons/printer.svg';
-import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindAvailableItemByNumber';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
+import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 
 
 const TAX_RATE = 0.065;
@@ -55,16 +45,17 @@ interface SaleTicketFormProps {
     readonly description?: string;
     readonly priceEach?: number | string;
     readonly items?: InventoryItemDraft[];
+    readonly taxExemptUsed?: boolean;
+    readonly eatTax?: boolean;
   };
   readonly externalDraft?: SaleFormDraftState;
   readonly onDraftChange?: (draft: SaleFormDraftState) => void;
-  readonly controlNumber?: string;
-  readonly pawnTicket?: PawnTicketData;
   readonly customer?: CustomerData;
   readonly onSubmit?: (formData: {
     customerId: string;
-    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   }) => Promise<void>;
   readonly disabled?: boolean;
   readonly taxExemptUsed?: boolean;
@@ -78,8 +69,6 @@ export function SaleForm({
   initialData,
   externalDraft,
   onDraftChange,
-  controlNumber,
-  pawnTicket,
   customer,
   taxExemptUsed,
   setTaxExemptUsed,
@@ -104,8 +93,9 @@ export function SaleForm({
     description: initialData?.description || '',
     priceEach: initialData?.priceEach || '',
     quantity: initialData?.quantity,
-    taxExempt: false,
-    items: initialData?.items || [] as any[] // TODO: any
+    items: initialData?.items || [] as any[], // TODO: any
+    taxExemptUsed: initialData?.taxExemptUsed || false,
+    eatTax: initialData?.eatTax || false
   });
 
   const formData = {
@@ -124,10 +114,6 @@ export function SaleForm({
     }
   }, [isControlled, onDraftChange, externalDraft]);
 
-  const [showItemModal, setShowItemModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItemDraft | null>(null);
-
-
   // Calculate totals
   const subtotalSum = formData.items.reduce((sum, item) => {
     const price = Number(item.priceEach) || 0;
@@ -136,11 +122,11 @@ export function SaleForm({
   }, 0);
 
   let subtotal, taxAmount, totalAmount;
-  if (taxExemptUsed) {
+  if (formData.taxExemptUsed) {
     subtotal = subtotalSum;
     taxAmount = 0;
     totalAmount = subtotalSum;
-  } else if (eatTax) {
+  } else if (formData.eatTax) {
     totalAmount = subtotalSum;
     subtotal = totalAmount / 1.065;
     taxAmount = totalAmount - subtotal;
@@ -164,8 +150,12 @@ export function SaleForm({
 
     const submitData = {
       customerId: formData.customerId || '',
-      taxExemptUsed: taxExemptUsed || false,
-      items: formData.items
+      inventoryNumber: formData.inventoryNumber,
+      inventoryItem: formData.inventoryItem!,
+      quantity: formData.quantity!,
+      items: formData.items,
+      taxExemptUsed: formData.taxExemptUsed,
+      eatTax: formData.eatTax
     };
 
     await onSubmit(submitData);
@@ -175,12 +165,14 @@ export function SaleForm({
     // Ensure numeric values are numbers
     const processedItem = {
       ...item,
+      // Keep existing ID if editing, otherwise allow item to provide ID or generate new
       id: editingRowId || item.inventoryItem?.id || item.id || `manual-${Date.now()}`,
       priceEach: Number(item.priceEach),
       amount: Number(item.priceEach) // Map priceEach to amount for the backend
     };
 
     if (editingRowId) {
+      // Update existing item
       updateFormData({
         items: formData.items.map(i => i.id === editingRowId ? processedItem : i),
         inventoryNumber: '',
@@ -191,6 +183,7 @@ export function SaleForm({
       });
       setEditingRowId(null);
     } else {
+      // Add new item
       updateFormData({
         items: [...formData.items, processedItem],
         inventoryNumber: '',
@@ -201,8 +194,7 @@ export function SaleForm({
       });
     }
 
-    setShowItemModal(false);
-    setEditingItem(null);
+    setEditingRowId(null);
   }, [editingRowId, formData.items, updateFormData]);
 
   const handleEditItem = useCallback((item: InventoryItemDraft) => {
@@ -213,6 +205,7 @@ export function SaleForm({
       description: item.description,
       quantity: typeof item.quantity === 'number' ? item.quantity : Number(item.quantity),
       priceEach: typeof item.priceEach === 'number' ? item.priceEach : Number(item.priceEach),
+      // Do NOT remove item from list
     });
   }, [updateFormData]);
 
@@ -227,11 +220,6 @@ export function SaleForm({
     });
   }, [updateFormData]);
 
-  const handleViewItem = useCallback((item: InventoryItemDraft) => {
-    setEditingItem(item);
-    setShowItemModal(true);
-  }, []);
-
   const handleRemoveItem = useCallback((itemId: string) => {
     if (itemId === editingRowId) {
       handleCancelEdit();
@@ -240,63 +228,6 @@ export function SaleForm({
       items: formData.items.filter(i => i.id !== itemId)
     });
   }, [formData.items, updateFormData, editingRowId, handleCancelEdit]);
-
-  const handlePrintTicket = useCallback(async () => {
-    if (!controlNumber || !customer || !pawnTicket) return;
-
-    setIsPrinting(true);
-    try {
-      const customerData = {
-        id: customer.id,
-        firstName: customer.firstName,
-        middleName: customer.middleName || '',
-        lastName: customer.lastName,
-        secondLastName: customer.secondLastName || '',
-        idType: customer.idType || '',
-        idNumber: customer.idNumber || '',
-        phoneNumber: customer.phoneNumber || '',
-        address: customer.streetAddress || '',
-        city: customer.city || '',
-        zipCode: customer.zipCode || ''
-      };
-
-      const items = formData.items.map(item => ({
-        type: item.type,
-        brand: item.brandName,
-        model: item.model,
-        serial: item.serial,
-        description: item.description,
-        amount: item.amount,
-        quantity: item.quantity,
-        ownerNumber: item.ownerNumber
-      }));
-
-      await printTransactionForm({ ticket: pawnTicket, customer: customerData, items });
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [controlNumber, customer, pawnTicket, formData.items, printTransactionForm]);
-
-  const handlePrintLabels = useCallback(() => {
-    setShowLabelModal(true);
-  }, []);
-
-  const handleConfirmPrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
-    if (!controlNumber) return;
-
-    await printLabels(
-      controlNumber,
-      formData.items.map(item => ({
-        id: item.id || '',
-        inventoryNumber: item.ownerNumber || '',
-        description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
-        amount: item.amount || '0',
-        quantity: Number(item.quantity) || 1
-      })),
-      labelCounts
-    );
-    setShowLabelModal(false);
-  }, [controlNumber, formData.items, printLabels]);
 
   const handleOnSearchInventoryItem = useCallback(async (inventoryItem: string) => {
     try {
@@ -310,11 +241,7 @@ export function SaleForm({
         });
       }
     } catch (e) {
-      console.error("Item not found", e);
-      // Optional: Clear inventoryItem if search fails to allow manual entry?
-      // updateFormData({ inventoryItem: undefined });
-      // Actually, if it fails, we assume manual entry. 
-      // We don't want to clear the inventoryNumber they typed.
+      alert(e);
     }
   }, [updateFormData, findAvailableItemByNumber]);
 
@@ -336,8 +263,8 @@ export function SaleForm({
           handleFieldByKey={handleFieldByKey}
           disabled={isViewMode}
           customer={customer}
-          taxExemptUsed={taxExemptUsed}
-          setTaxExemptUsed={setTaxExemptUsed}
+          taxExemptUsed={formData.taxExemptUsed}
+          setTaxExemptUsed={(value) => updateFormData({ taxExemptUsed: value })}
           isEditing={!!editingRowId}
           onCancelEdit={handleCancelEdit}
         />
@@ -363,7 +290,6 @@ export function SaleForm({
                     <TableHead sticky className="bg-white z-20">Quantity</TableHead>
                     <TableHead sticky className="bg-white z-20">Price each</TableHead>
                     <TableHead sticky className="bg-white z-20">Ext. price</TableHead>
-                    <TableHead sticky className="bg-white z-20">Exempt</TableHead>
                     <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -380,22 +306,17 @@ export function SaleForm({
                       <TableCell>{item.quantity || 1}</TableCell>
                       <TableCell>${Number(item.priceEach || 0).toFixed(2)}</TableCell>
                       <TableCell className="font-medium">${(Number(item.priceEach || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
-                      <TableCell>
-                        {item.taxExempt ? 'Yes' : 'No'}
-                      </TableCell>
                       <TableCell className="text-center">
                         <div className="flex gap-2 justify-center items-center">
                           {isViewMode ? (
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleViewItem(item)}
                             >
                               <img
-                                src={visibilityIcon}
+                                src={packageIcon}
                                 alt="View"
                                 className="w-4 h-4"
-                                style={{ filter: 'brightness(0) saturate(100%)' }}
                               />
                             </Button>
                           ) : (
@@ -428,35 +349,6 @@ export function SaleForm({
           </CardContent>
         </Card>
 
-        {isViewMode && controlNumber && (
-          <div className="flex justify-center mt-6">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  disabled={isPrinting}
-                  className="px-8 flex items-center gap-2"
-                >
-                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
-                  {isPrinting ? 'Printing...' : 'Print'}
-                  <ChevronDownIcon className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
-                    {' '}Print Ticket
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePrintLabels}>
-                    {' '}Print Labels
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-
         {!isViewMode && (
           <div className="flex justify-end mt-2 gap-2 items-end">
             <Button
@@ -474,7 +366,7 @@ export function SaleForm({
                 step="0.01"
                 value={subtotal.toFixed(2)}
                 readOnly
-                disabled={true} // Always disabled/read-only to user
+                disabled={true}
                 className="bg-slate-100"
               />
             </div>
@@ -503,8 +395,8 @@ export function SaleForm({
             <div className="flex gap-2 items-center pb-2">
               <Checkbox
                 id="eatTax"
-                checked={eatTax}
-                onCheckedChange={(checked) => setEatTax(checked === true)}
+                checked={formData.eatTax}
+                onCheckedChange={(checked) => updateFormData({ eatTax: checked === true })}
                 disabled={disabled}
               />
               <Label htmlFor="eatTax" className="mb-0">Eat tax?</Label>
@@ -512,7 +404,6 @@ export function SaleForm({
           </div>
         )}
       </form>
-
     </div>
   );
 }

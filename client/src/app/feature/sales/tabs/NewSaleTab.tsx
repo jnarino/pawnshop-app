@@ -4,15 +4,18 @@ import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreateSale } from '../hooks/useCreateSale';
 import { useSalesWorkflow } from '../contexts/SalesWorkflowContext';
 import { SaleForm, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
-import { type InventoryItemDraft } from '../../_shared/sale/components/InventoryItemModal';
-import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
 
-interface NewPawnTabProps {
+import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
+import { useNavigate } from 'react-router-dom';
+import { InventoryItemDraft } from '../../_shared/inventory-item';
+
+interface NewSaleTabProps {
   readonly customer: Customer | null;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
-export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProps) {
+  const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateSale();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useSalesWorkflow();
   const [taxExemptUsed, setTaxExemptUsed] = useState(false);
@@ -21,8 +24,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pendingSaleData, setPendingSaleData] = useState<{
     customerId: string;
-    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   } | null>(null);
 
   const customerId = customer?.id;
@@ -33,14 +37,17 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
-    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   }) => {
     setPendingSaleData({
       customerId: customerId || formData.customerId,
-      taxExemptUsed,
-      items: formData.items
+      items: formData.items,
+      taxExemptUsed: formData.taxExemptUsed,
+      eatTax: formData.eatTax
     });
+    console.log({ pendingSaleData: formData });
     setShowPaymentModal(true);
   }, [customerId, taxExemptUsed]);
 
@@ -51,9 +58,10 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
     const payload = {
       customerId: pendingSaleData.customerId,
-      taxExemptUsed,
+      taxExemptUsed: pendingSaleData.taxExemptUsed,
+      eatTax: pendingSaleData.eatTax,
       items: pendingSaleData.items.map(item => ({
-        inventoryItemId: item.inventoryItem?.id, // Existing item ID
+        inventoryItemId: item.inventoryItem?.id,
         inventoryNumber: item.inventoryItem?.inventoryNumber || item.inventoryNumber || '',
         description: item.description || '',
         quantity: Number(item.quantity) || 1,
@@ -65,33 +73,34 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       }))
     };
 
-    const result = await createTicket(payload as any); // Type assertion until hooks/api types updated
+    const result = await createTicket(payload as any);
 
     if (result) {
       resetPawnDraft();
       if (onTicketCreated) {
         onTicketCreated(result.id);
       }
+      navigate(`/`);
     }
   }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated]);
 
-  const calculateTotal = () => {
+  const calculateTotal = useCallback(() => {
     if (!pendingSaleData) return 0;
     const itemsTotal = pendingSaleData.items.reduce((sum, item) => {
       return sum + (Number(item.priceEach || 0) * Number(item.quantity || 1));
     }, 0);
 
-    if (taxExemptUsed) {
+    if (pendingSaleData.taxExemptUsed) {
       return itemsTotal;
     }
 
-    if (eatTax) {
+    if (pendingSaleData.eatTax) {
       return itemsTotal; // Total is the sum of items when eating tax
     }
 
     const tax = itemsTotal * 0.065;
     return itemsTotal + tax;
-  };
+  }, [pendingSaleData]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
