@@ -55,7 +55,7 @@ import { PgInventoryAttributeRepository } from './infrastructure/persistence/inv
 import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
 import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
 import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
-import { CreateStoreTransaction } from './application/use-case/storeTransaction/command/CreateStoreTransaction';
+import { CreateStoreTransactionUseCase } from './application/use-case/storeTransaction/command/CreateStoreTransactionUseCase';
 
 
 
@@ -125,7 +125,7 @@ export async function createApp() {
   const getPawnTicketCurrentChargesUseCase = new (require('./application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase').GetPawnTicketCurrentChargesUseCase)(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase);
 
   // Store Transaction use-cases
-  const createStoreTransactionUseCase = new CreateStoreTransaction(storeTransactionRepo, inventoryItemRepo);
+  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
 

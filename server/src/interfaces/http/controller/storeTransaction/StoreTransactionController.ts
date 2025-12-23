@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
-import { CreateStoreTransaction } from '../../../../application/use-case/storeTransaction/command/CreateStoreTransaction';
+import { CreateStoreTransactionUseCase } from '../../../../application/use-case/storeTransaction/command/CreateStoreTransactionUseCase';
 import { CreateStoreTransactionDto } from '../../../../application/dto/storeTransaction/CreateStoreTransactionDto';
 import { Actor } from '../../../../application/common/Actor';
 
@@ -11,7 +11,7 @@ export class StoreTransactionController {
   constructor(
     private readonly listByCustomerUseCase: ListStoreTransactionsByCustomerUseCase,
     private readonly listByDateRangeUseCase: ListStoreTransactionsByDateRangeUseCase,
-    private readonly createStoreTransaction: CreateStoreTransaction
+    private readonly createStoreTransactionUseCase: CreateStoreTransactionUseCase
   ) { }
 
   /**
@@ -65,7 +65,7 @@ export class StoreTransactionController {
     try {
       const actor = this.getActor(req);
       const dto = req.body as CreateStoreTransactionDto;
-      const result = await this.createStoreTransaction.execute(dto, actor.id);
+      const result = await this.createStoreTransactionUseCase.execute(dto, actor.id);
       return res.status(201).json(result);
     } catch (error) {
       return next(error);

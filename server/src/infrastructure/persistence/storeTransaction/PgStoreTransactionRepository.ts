@@ -103,7 +103,12 @@ function mapRowToItem(row: any): StoreTransactionItem {
     });
 }
 
-    constructor(private readonly pool: Pool | PoolClient) { }
+export class PgStoreTransactionRepository implements StoreTransactionRepository {
+    private readonly updateInventoryItemSql: string;
+
+    constructor(private readonly pool: Pool | PoolClient) {
+        this.updateInventoryItemSql = loadSql('commands', 'inventory/inventory_item_update_quantity_and_status');
+    }
     async createPayment(params: {
         pawnTicketId: string;
         clerkUserId: string;
@@ -126,7 +131,7 @@ function mapRowToItem(row: any): StoreTransactionItem {
      * in a single DB transaction.
      */
     async create(tx: StoreTransaction, tempInventoryUpdates: { id: string, quantity: number }[] = []): Promise<StoreTransaction> {
-        const client = await this.pool.connect();
+        const client: PoolClient = await (this.pool as Pool).connect();
         console.log('tx', tx)
         try {
             await client.query('BEGIN');
@@ -178,34 +183,9 @@ function mapRowToItem(row: any): StoreTransactionItem {
             }
 
             // Update inventory items (if any specific inventory updates are requested)
-            // This is primarily for "sales" where we decrement quantity and set status to 'S'
+            // Use external SQL file for inventory_item update
             for (const update of tempInventoryUpdates) {
-                // Determine new status? For now we assume if it's being sold, we check if quantity reaches 0?
-                // Actually the requirement is "set status to S (Sold) and reduce quantity".
-                // If quantity > sold_quantity, it might still remain 'I' (In Inventory) but with less quantity?
-                // For this specific requirement "reduce on hand quantity with -1 and create store transacion with their store transacion_items"
-                // And "update the state of the item... status 'S'"
-                // If it's a serialized item (qty 1), it becomes 'S'.
-                // If it's bulk (qty > 1), we reduce quantity.
-
-                // Because we don't have the full item state here efficiently without querying, 
-                // we will execute a query that handles both:
-                // decrement quantity. If result quantity is 0, set status = 'S'. 
-                // Wait, if it's bulk, status might stay 'I'. 
-                // User said: "update the state of the item, reduce on hand quantity" - singular.
-                // Generally PAWN/RETAIL logic:
-                // If quantity becomes 0, status -> 'S'.
-                // If quantity > 0, status -> 'I'.
-
-                // Let's do a robust update:
-                await client.query(`
-                    UPDATE inventory_item
-                    SET 
-                        quantity = quantity - $2,
-                        status = CASE WHEN (quantity - $2) <= 0 THEN 'S' ELSE status END,
-                        updated_at = NOW()
-                    WHERE id = $1
-                `, [update.id, update.quantity]);
+                await client.query(this.updateInventoryItemSql, [update.id, update.quantity]);
             }
 
             await client.query('COMMIT');

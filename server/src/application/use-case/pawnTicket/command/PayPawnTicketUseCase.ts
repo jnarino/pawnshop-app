@@ -32,20 +32,20 @@ export class PayPawnTicketUseCase {
                 let updatedAt = now;
                 let defaultDate: Date;
                 let maturityDate: Date;
-                // Accept initDate from input (must be provided)
-                const initDate = (payment as any).initDate ? new Date((payment as any).initDate) : null;
-                if (!initDate) throw new NotFoundError('initDate is required in input');
+                // Accept createdDate from input (must be provided)
+                const createdDate = (payment as any).createdDate ? new Date((payment as any).createdDate) : null;
+                if (!createdDate) throw new NotFoundError('createdDate is required in input');
                 if (isRedemption) {
                     defaultDate = now;
                     maturityDate = now;
                 } else {
                     // For payment, defaultDate is 60 days from transactionDate
                     defaultDate = new Date(transactionDate.getTime() + 60 * 24 * 60 * 60 * 1000);
-                    // Maturity date moves 30 days forward from the last period, counting from initDate
+                    // Maturity date moves 30 days forward from the last period, counting from createdDate
                     const msPerDay = 24 * 60 * 60 * 1000;
-                    const daysSinceInit = Math.floor((transactionDate.getTime() - initDate.getTime()) / msPerDay);
+                    const daysSinceInit = Math.floor((transactionDate.getTime() - createdDate.getTime()) / msPerDay);
                     const periodsElapsed = Math.floor(daysSinceInit / 30);
-                    maturityDate = new Date(initDate.getTime() + (periodsElapsed + 1) * 30 * msPerDay);
+                    maturityDate = new Date(createdDate.getTime() + (periodsElapsed + 1) * 30 * msPerDay);
                 }
                 // 4. Update pawn_ticket with all required fields (should be a repo method, e.g. updatePaymentFields)
                 await pawnTicketRepository.updatePaymentFields({

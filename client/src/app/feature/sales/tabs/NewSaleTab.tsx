@@ -16,6 +16,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const { createTicket, isLoading, error, success } = useCreateSale();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useSalesWorkflow();
   const [taxExemptUsed, setTaxExemptUsed] = useState(false);
+  const [eatTax, setEatTax] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pendingSaleData, setPendingSaleData] = useState<{
@@ -41,7 +42,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       items: formData.items
     });
     setShowPaymentModal(true);
-  }, [customerId]);
+  }, [customerId, taxExemptUsed]);
 
   // Step 2: User completes payment
   const handlePaymentDone = useCallback(async (tenders: any[]) => {
@@ -76,14 +77,20 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
   const calculateTotal = () => {
     if (!pendingSaleData) return 0;
-    const subtotal = pendingSaleData.items.reduce((sum, item) => {
+    const itemsTotal = pendingSaleData.items.reduce((sum, item) => {
       return sum + (Number(item.priceEach || 0) * Number(item.quantity || 1));
     }, 0);
 
-    const tax = subtotal * 0.07; // 7% Tax Hardcoded for now, ideally verified with eatTax logic from form
-    // TODO: Ideally we pass eatTax preference from form or calculate exactly matching form
-    // For now we assume standard tax.
-    return subtotal + tax;
+    if (taxExemptUsed) {
+      return itemsTotal;
+    }
+
+    if (eatTax) {
+      return itemsTotal; // Total is the sum of items when eating tax
+    }
+
+    const tax = itemsTotal * 0.065;
+    return itemsTotal + tax;
   };
 
   return (
@@ -121,6 +128,8 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           customer={customer || undefined}
           taxExemptUsed={taxExemptUsed}
           setTaxExemptUsed={setTaxExemptUsed}
+          eatTax={eatTax}
+          setEatTax={setEatTax}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}

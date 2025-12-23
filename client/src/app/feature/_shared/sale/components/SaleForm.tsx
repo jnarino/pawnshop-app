@@ -35,7 +35,7 @@ import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindA
 import { InventoryItem } from '@/app/core/api/inventoryApi';
 
 
-const TAX_RATE = 0.07;
+const TAX_RATE = 0.065;
 
 export interface SaleFormDraftState {
   inventoryNumber: string;
@@ -63,14 +63,14 @@ interface SaleTicketFormProps {
   readonly customer?: CustomerData;
   readonly onSubmit?: (formData: {
     customerId: string;
-    inventoryNumber: string;
-    inventoryItem: InventoryItem;
-    quantity: number;
+    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
   }) => Promise<void>;
   readonly disabled?: boolean;
   readonly taxExemptUsed?: boolean;
   readonly setTaxExemptUsed: (value: boolean) => void;
+  readonly eatTax?: boolean;
+  readonly setEatTax: (value: boolean) => void;
 }
 
 export function SaleForm({
@@ -83,6 +83,8 @@ export function SaleForm({
   customer,
   taxExemptUsed,
   setTaxExemptUsed,
+  eatTax,
+  setEatTax,
   onSubmit,
   disabled = false
 }: SaleTicketFormProps) {
@@ -92,7 +94,6 @@ export function SaleForm({
   const { printTransactionForm, printLabels } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
-  const [eatTax, setEatTax] = useState(false);
 
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
@@ -128,14 +129,26 @@ export function SaleForm({
 
 
   // Calculate totals
-  const subtotal = formData.items.reduce((sum, item) => {
+  const subtotalSum = formData.items.reduce((sum, item) => {
     const price = Number(item.priceEach) || 0;
     const qty = Number(item.quantity) || 1;
     return sum + (price * qty);
   }, 0);
 
-  const taxAmount = eatTax ? 0 : subtotal * TAX_RATE;
-  const totalAmount = subtotal + taxAmount;
+  let subtotal, taxAmount, totalAmount;
+  if (taxExemptUsed) {
+    subtotal = subtotalSum;
+    taxAmount = 0;
+    totalAmount = subtotalSum;
+  } else if (eatTax) {
+    totalAmount = subtotalSum;
+    subtotal = totalAmount / 1.065;
+    taxAmount = totalAmount - subtotal;
+  } else {
+    subtotal = subtotalSum;
+    taxAmount = subtotal * TAX_RATE;
+    totalAmount = subtotal + taxAmount;
+  }
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,11 +163,8 @@ export function SaleForm({
     }
 
     const submitData = {
-      customerId: formData.customerId,
-      taxExempt: formData.taxExempt,
-      inventoryNumber: formData.inventoryNumber,
-      inventoryItem: formData.inventoryItem!,
-      quantity: formData.quantity!,
+      customerId: formData.customerId || '',
+      taxExemptUsed: taxExemptUsed || false,
       items: formData.items
     };
 

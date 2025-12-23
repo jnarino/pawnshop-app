@@ -1,5 +1,6 @@
 INSERT INTO store_transaction (
   id,
+  legacy_ticketnum,
   customer_id,
   clerk_user_id,
   type_id,
@@ -13,6 +14,7 @@ INSERT INTO store_transaction (
   note
 ) VALUES (
   $1,  -- id
+  get_next_store_sale_control_number(),  -- legacy_ticketnum (auto-generated)
   $2,  -- customer_id
   $3,  -- clerk_user_id
   $4,  -- type_id

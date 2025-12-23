@@ -2,10 +2,10 @@ import { StoreTransaction } from '../../../../domains/storeTransaction/StoreTran
 import { StoreTransactionRepository } from '../../../../domains/storeTransaction/StoreTransactionRepository';
 import { StoreTransactionTender } from '../../../../domains/storeTransaction/StoreTransactionTender';
 import { StoreTransactionItem } from '../../../../domains/storeTransaction/StoreTransactionItem';
-import { CreateStoreTransactionDto } from '../../../../application/dto/storeTransaction/CreateStoreTransactionDto';
+import { CreateStoreTransactionDto } from '../../../dto/storeTransaction/CreateStoreTransactionDto';
 import { InventoryItemRepository } from '../../../../domains/inventory/InventoryItemRepository';
 
-export class CreateStoreTransaction {
+export class CreateStoreTransactionUseCase {
     constructor(
         private readonly storeTransactionRepository: StoreTransactionRepository,
         private readonly inventoryItemRepository: InventoryItemRepository
@@ -58,18 +58,19 @@ export class CreateStoreTransaction {
             }));
         }
 
-        const taxRate = 0.07;
+        // Calculate tax and amount only if not tax exempt
         let taxSales = 0;
-
-        for (const item of items) {
-            if (!item.taxExempt) {
-                taxSales += (item.lineAmount || 0) * taxRate;
+        let totalAmount = subtotal;
+        if (!input.taxExemptUsed) {
+            const taxRate = 0.065; // 6.5% sales tax
+            for (const item of items) {
+                if (!item.taxExempt) {
+                    taxSales += (item.lineAmount || 0) * taxRate;
+                }
             }
+            taxSales = Math.round(taxSales * 100) / 100;
+            totalAmount = subtotal + taxSales;
         }
-
-        // Round tax
-        taxSales = Math.round(taxSales * 100) / 100;
-        const totalAmount = subtotal + taxSales;
 
         // Tenders
         const tenders: StoreTransactionTender[] = [];
@@ -94,10 +95,13 @@ export class CreateStoreTransaction {
 
         const tenderChange = tenderTotal - totalAmount;
 
+        // Ensure customerId is null if not provided or empty
+        const customerId = input.customerId && input.customerId.trim() !== '' ? input.customerId : null;
+
         // Construct Transaction
         const tx = new StoreTransaction({
             id: transactionId,
-            customerId: input.customerId,
+            customerId: customerId,
             clerkUserId: clerkUserId,
             typeId: 10, // Retail Sale
             occurredAt: new Date(),

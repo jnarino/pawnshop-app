@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   color UUID REFERENCES item_attribute_value(id) ON DELETE SET NULL,
   item_condition TEXT,
 
-  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  quantity INTEGER NOT NULL DEFAULT 1,
 
   price_amount NUMERIC(12,2),
   resale NUMERIC(12,2),
@@ -488,7 +488,7 @@ CREATE TABLE IF NOT EXISTS pawn_ticket_item (
 CREATE TABLE IF NOT EXISTS store_transaction_type (
   id SMALLINT PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,        -- e.g., 'RETAIL_SALE'
-  legacy_code TEXT UNIQUE,          -- original PawnMaster code: 'SS','PPP', etc.
+  legacy_code TEXT UNIQUE,          
   name TEXT NOT NULL,
   cash_dir SMALLINT NOT NULL DEFAULT 0 CHECK (cash_dir IN (-1,0,1)),
   active BOOLEAN NOT NULL DEFAULT TRUE
@@ -779,11 +779,20 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 -- Initialize control numbers for pawn tickets
 -- Separate sequences for PAWN and PURCHASE transactions
+
+-- Add store_sale_control_number_next for retail/layaway sales
 INSERT INTO app_settings (key, value, description)
 VALUES 
   ('pawn_ticket_control_number_next', '100001', 'Next control number for pawn tickets (PAWN type)'),
-  ('purchase_ticket_control_number_next', '1', 'Next control number for purchase tickets (PURCHASE type)')
+  ('purchase_ticket_control_number_next', '1', 'Next control number for purchase tickets (PURCHASE type)'),
+  ('store_sale_control_number_next', '1', 'Next control number for store sales (retail, layaway, etc)')
 ON CONFLICT (key) DO NOTHING;
+
+-- NOTE: After migration, run a script to set store_sale_control_number_next to (max ticketnum + 1) from legacy acct table for types:
+--   'SL', 'SLD', 'SLP', 'SLU', 'SS', 'SSV', 'SLV'
+-- Example:
+--   SELECT MAX(acct.TICKETNUM) FROM acct WHERE acct.TYPE IN ('SL','SLD','SLP','SLU','SS','SSV','SLV');
+--   UPDATE app_settings SET value = '<max+1>' WHERE key = 'store_sale_control_number_next';
 
 -- Function to get next control number for PAWN transactions
 CREATE OR REPLACE FUNCTION get_next_pawn_control_number()
@@ -795,6 +804,22 @@ BEGIN
   SET value = (value::INTEGER + 1)::TEXT,
       updated_at = NOW()
   WHERE key = 'pawn_ticket_control_number_next'
+  RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
+
+  RETURN next_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get next control number for store sales transactions  
+CREATE OR REPLACE FUNCTION get_next_store_sale_control_number()
+RETURNS TEXT AS $$
+DECLARE
+  next_num TEXT;
+BEGIN
+  UPDATE app_settings
+  SET value = (value::INTEGER + 1)::TEXT,
+      updated_at = NOW()
+  WHERE key = 'store_sale_control_number_next'
   RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
 
   RETURN next_num;

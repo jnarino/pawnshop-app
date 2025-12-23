@@ -533,6 +533,32 @@ open http://localhost:3001/api-docs
 
 ---
 
+
+## Control Number Initialization (Pawn, Purchase, Store Sale)
+
+**Pawn:**
+  - Key: `pawn_ticket_control_number_next`
+  - Use: `get_next_pawn_control_number()`
+
+**Purchase:**
+  - Key: `purchase_ticket_control_number_next`
+  - Use: `get_next_purchase_control_number()`
+
+**Store Sale (Retail/Layaway):**
+  - Key: `store_sale_control_number_next`
+  - Use: `get_next_store_sale_control_number()`
+  - To initialize from legacy data:
+    1. Run:
+       ```sql
+       SELECT MAX(acct.TICKETNUM) FROM acct WHERE acct.TYPE IN ('SL','SLD','SLP','SLU','SS','SSV','SLV');
+       ```
+    2. Set value:
+       ```sql
+       UPDATE app_settings SET value = '<max+1>' WHERE key = 'store_sale_control_number_next';
+       ```
+
+---
+
 ## Checklist
 
 - [ ] Domain: Add repository interface method
