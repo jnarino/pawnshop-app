@@ -40,19 +40,22 @@ import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/p
 import { GetPawnTicketPaymentsUseCase } from './application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
-import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
-import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
-import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
-import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
-import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
-import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
-import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
-import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
-import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
-import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+
+import { PayPawnTicketUseCase } from './application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
+import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
+import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
+import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
+import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
+import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { PgControlNumberRepository } from './infrastructure/persistence/controlNumber/PgControlNumberRepository';
+import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
+import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
+import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
+import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
+import { CreateStoreTransactionUseCase } from './application/use-case/storeTransaction/command/CreateStoreTransactionUseCase';
 
 
 
@@ -122,8 +125,12 @@ export async function createApp() {
   const getPawnTicketCurrentChargesUseCase = new (require('./application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase').GetPawnTicketCurrentChargesUseCase)(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase);
 
   // Store Transaction use-cases
+  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
+
+  // Tender Type use-cases
+  const listTenderTypesUseCase = new (require('./application/use-case/tenderType/query/ListTenderTypes').ListTenderTypes)(new (require('./infrastructure/persistence/tenderType/PgTenderTypeRepository').PgTenderTypeRepository)(pool));
 
   // Controllers
   const authController = new AuthController(
@@ -131,6 +138,8 @@ export async function createApp() {
     refreshTokenUseCase,
     logoutUseCase
   );
+
+  const tenderTypeController = new (require('./interfaces/http/controller/tenderType/TenderTypeController').TenderTypeController)(listTenderTypesUseCase);
 
   const appUserController = new AppUserController(
     listAppUserUseCase,
@@ -167,18 +176,25 @@ export async function createApp() {
     getInventoryAttributeValuesByTypeUseCase
   );
 
+  const payPawnTicketUseCase = new PayPawnTicketUseCase(
+    pawnTicketUnitOfWork,
+    getPawnTicketCurrentChargesUseCase
+  );
+
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
     listPawnTicketsByControlNumberUseCase,
     listPawnTicketsByCustomerUseCase,
     listActivePawnTicketsByCustomerUseCase,
     getPawnTicketPaymentsUseCase,
-    getPawnTicketCurrentChargesUseCase
+    getPawnTicketCurrentChargesUseCase,
+    payPawnTicketUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
-    listStoreTransactionsByDateRangeUseCase
+    listStoreTransactionsByDateRangeUseCase,
+    createStoreTransactionUseCase
   );
 
   const app = createExpressApp({
@@ -190,6 +206,7 @@ export async function createApp() {
     inventoryAttributeController,
     pawnTicketController,
     storeTransactionController,
+    tenderTypeController,
     jwtSecret: env.jwtSecret
   });
 

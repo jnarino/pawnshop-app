@@ -1,10 +1,19 @@
 import { http } from './http';
 
 export interface CreateSalePayload {
-    sale: {
-        customerId?: string;
-    };
-    items: any[]; // Using any to match the loose typing of the form for now, or refine based on InventoryItemDraft
+    customerId: string;
+    taxExemptUsed: boolean;
+    items: {
+        inventoryItemId?: string;
+        inventoryNumber: string;
+        description: string;
+        quantity: number;
+        price: number;
+    }[];
+    tenders: {
+        tenderTypeId: string;
+        amount: number;
+    }[];
 }
 
 export interface SaleResponse {

@@ -16,6 +16,8 @@ export default function PaymentFlowContainer() {
         setCustomer,
         selectedPawn,
         setSelectedPawn,
+        tickets,
+        setTickets,
         activeTab,
         setActiveTab,
         resetFlow
@@ -47,6 +49,8 @@ export default function PaymentFlowContainer() {
                 customerId={customerId}
                 customer={customer}
                 selectedPawn={selectedPawn}
+                tickets={tickets}
+                onTicketsChange={setTickets}
                 onCustomerChange={setCustomer}
                 onCustomerSelected={setCustomerId}
                 onTabChange={setActiveTab}

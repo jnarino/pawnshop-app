@@ -1,94 +1,106 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreateSale } from '../hooks/useCreateSale';
 import { useSalesWorkflow } from '../contexts/SalesWorkflowContext';
 import { SaleForm, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
-import { type InventoryItemDraft } from '../../_shared/sale/components/InventoryItemModal';
 
-interface NewPawnTabProps {
+import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
+import { useNavigate } from 'react-router-dom';
+import { InventoryItemDraft } from '../../_shared/inventory-item';
+
+interface NewSaleTabProps {
   readonly customer: Customer | null;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
-export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProps) {
+  const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateSale();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useSalesWorkflow();
+  const [taxExemptUsed, setTaxExemptUsed] = useState(false);
+  const [eatTax, setEatTax] = useState(false);
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingSaleData, setPendingSaleData] = useState<{
+    customerId: string;
+    items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
+  } | null>(null);
+
   const customerId = customer?.id;
 
   const handleDraftChange = useCallback((draft: SaleFormDraftState) => {
-    // Only persist items to the global draft, ignore transient form fields
     updatePawnDraft({ items: draft.items });
   }, [updatePawnDraft]);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   }) => {
-    // ... type conversion helpers ...
-    const toISOString = (dateStr?: string): string => {
-      if (!dateStr) return new Date().toISOString();
-      return new Date(dateStr).toISOString();
-    };
-
-    const removeNullish = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
-      return Object.fromEntries(
-        Object.entries(obj).filter(([, v]) => v != null && v !== '')
-      ) as Partial<T>;
-    };
-
-    const pawnData = removeNullish({
+    setPendingSaleData({
       customerId: customerId || formData.customerId,
+      items: formData.items,
+      taxExemptUsed: formData.taxExemptUsed,
+      eatTax: formData.eatTax
     });
+    console.log({ pendingSaleData: formData });
+    setShowPaymentModal(true);
+  }, [customerId, taxExemptUsed]);
+
+  // Step 2: User completes payment
+  const handlePaymentDone = useCallback(async (tenders: any[]) => {
+    if (!pendingSaleData) return;
+    setShowPaymentModal(false);
 
     const payload = {
-      sale: pawnData,
-      items: formData.items.map(item => {
-        const attributes = removeNullish({
-          sub1: item.sub1,
-          metal: item.metal,
-          karat: item.karat,
-          weight: item.weight,
-          weightUnit: item.weightUnit,
-          gender: item.gender,
-          style: item.style,
-          sizeLength: item.sizeLength,
-          caliber: item.caliber,
-          action: item.action,
-          barrelLength: item.barrelLength,
-          capacity: item.capacity,
-        });
-
-        return removeNullish({
-          inventorySubcategoryId: item.subcategoryId,
-          quantity: Number(item.quantity) || 1,
-          brand: item.brandId,
-          model: item.model,
-          serialNumber: item.serial,
-          itemDescription: item.description,
-          priceAmount: Number(item.amount) || 0,
-          resale: Number(item.resale) || 0,
-          minResale: undefined,
-          itemReplace: item.replace ? Number(item.replace) : undefined,
-          ownerMark: item.ownerNumber,
-          colorId: item.color,
-          itemCondition: item.condition,
-          extra: Object.keys({}).length > 0 ? {} : undefined,
-          attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
-        });
-      }),
+      customerId: pendingSaleData.customerId,
+      taxExemptUsed: pendingSaleData.taxExemptUsed,
+      eatTax: pendingSaleData.eatTax,
+      items: pendingSaleData.items.map(item => ({
+        inventoryItemId: item.inventoryItem?.id,
+        inventoryNumber: item.inventoryItem?.inventoryNumber || item.inventoryNumber || '',
+        description: item.description || '',
+        quantity: Number(item.quantity) || 1,
+        price: Number(item.priceEach) || 0,
+      })),
+      tenders: tenders.map(t => ({
+        tenderTypeId: t.tenderTypeId,
+        amount: parseFloat(t.amount)
+      }))
     };
 
-    const ticket = await createTicket(payload);
-    if (ticket) {
-      // Refresh logic or navigation
+    const result = await createTicket(payload as any);
+
+    if (result) {
       resetPawnDraft();
-      // If we need to redirect or show success, we can use ticket.id
       if (onTicketCreated) {
-        onTicketCreated(ticket.id);
+        onTicketCreated(result.id);
       }
+      navigate(`/`);
     }
-  }, [customerId, createTicket, onTicketCreated, resetPawnDraft]);
+  }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated]);
+
+  const calculateTotal = useCallback(() => {
+    if (!pendingSaleData) return 0;
+    const itemsTotal = pendingSaleData.items.reduce((sum, item) => {
+      return sum + (Number(item.priceEach || 0) * Number(item.quantity || 1));
+    }, 0);
+
+    if (pendingSaleData.taxExemptUsed) {
+      return itemsTotal;
+    }
+
+    if (pendingSaleData.eatTax) {
+      return itemsTotal; // Total is the sum of items when eating tax
+    }
+
+    const tax = itemsTotal * 0.065;
+    return itemsTotal + tax;
+  }, [pendingSaleData]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -110,8 +122,8 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
       <div className={isLoading ? 'opacity-60 pointer-events-none relative' : ''}>
         {isLoading && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-3 rounded-lg shadow-lg font-medium text-gray-700">
-            Processing...
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-3 rounded-lg shadow-lg font-medium text-gray-700 z-50">
+            Processing transaction...
           </div>
         )}
         <SaleForm
@@ -123,11 +135,24 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
             priceEach: 0
           }}
           customer={customer || undefined}
+          taxExemptUsed={taxExemptUsed}
+          setTaxExemptUsed={setTaxExemptUsed}
+          eatTax={eatTax}
+          setEatTax={setEatTax}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}
         />
       </div>
+
+      {showPaymentModal && pendingSaleData && (
+        <PaymentMethodModal
+          open={showPaymentModal}
+          totalAmount={calculateTotal()}
+          onCancel={() => setShowPaymentModal(false)}
+          onDone={handlePaymentDone}
+        />
+      )}
     </div>
   );
 }

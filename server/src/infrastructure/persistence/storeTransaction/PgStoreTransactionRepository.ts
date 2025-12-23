@@ -1,10 +1,14 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
 
 import { StoreTransactionRepository } from '../../../domains/storeTransaction/StoreTransactionRepository';
 import { StoreTransaction } from '../../../domains/storeTransaction/StoreTransaction';
 import { StoreTransactionTender } from '../../../domains/storeTransaction/StoreTransactionTender';
 import { StoreTransactionItem } from '../../../domains/storeTransaction/StoreTransactionItem';
+
+const SQL_CREATE_PAYMENT = loadSql(
+    'commands',
+    'storeTransaction/store_transaction_create_payment');
 
 const SQL_CREATE_TX = loadSql(
     'commands',
@@ -46,7 +50,6 @@ function mapRowToStoreTransactionHeader(row: any): {
     taxSales: number | null;
     stateTax: number | null;
     taxExemptUsed: boolean;
-    taxExemptCertificate: string | null;
     tenderChange: number | null;
     gunProcFee: number | null;
     note: string | null;
@@ -63,7 +66,6 @@ function mapRowToStoreTransactionHeader(row: any): {
         taxSales: row.tax_sales !== null ? Number(row.tax_sales) : null,
         stateTax: row.state_tax !== null ? Number(row.state_tax) : null,
         taxExemptUsed: row.tax_exempt_used,
-        taxExemptCertificate: row.tax_exempt_certificate,
         tenderChange: row.tender_change !== null ? Number(row.tender_change) : null,
         gunProcFee: row.gun_proc_fee !== null ? Number(row.gun_proc_fee) : null,
         note: row.note,
@@ -102,14 +104,35 @@ function mapRowToItem(row: any): StoreTransactionItem {
 }
 
 export class PgStoreTransactionRepository implements StoreTransactionRepository {
-    constructor(private readonly pool: Pool) { }
+    private readonly updateInventoryItemSql: string;
+
+    constructor(private readonly pool: Pool | PoolClient) {
+        this.updateInventoryItemSql = loadSql('commands', 'inventory/inventory_item_update_quantity_and_status');
+    }
+    async createPayment(params: {
+        pawnTicketId: string;
+        clerkUserId: string;
+        typeId: number;
+        amount: number;
+        tender: { tenderTypeId: number; amount: number };
+    }): Promise<void> {
+        await this.pool.query(SQL_CREATE_PAYMENT, [
+            params.pawnTicketId,
+            params.clerkUserId,
+            params.typeId,
+            params.amount,
+            params.tender.tenderTypeId,
+            params.tender.amount
+        ]);
+    }
 
     /**
      * Creates a store_transaction header + tenders + items
      * in a single DB transaction.
      */
-    async create(tx: StoreTransaction): Promise<StoreTransaction> {
-        const client = await this.pool.connect();
+    async create(tx: StoreTransaction, tempInventoryUpdates: { id: string, quantity: number }[] = []): Promise<StoreTransaction> {
+        const client: PoolClient = await (this.pool as Pool).connect();
+        console.log('tx', tx)
         try {
             await client.query('BEGIN');
 
@@ -122,7 +145,6 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 tx.amount,
                 tx.taxSales,
                 tx.taxExemptUsed,
-                tx.taxExemptCertificate,
                 tx.stateTax,
                 tx.tenderChange,
                 tx.gunProcFee,
@@ -158,6 +180,12 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                     item.returned,
                     item.status,
                 ]);
+            }
+
+            // Update inventory items (if any specific inventory updates are requested)
+            // Use external SQL file for inventory_item update
+            for (const update of tempInventoryUpdates) {
+                await client.query(this.updateInventoryItemSql, [update.id, update.quantity]);
             }
 
             await client.query('COMMIT');

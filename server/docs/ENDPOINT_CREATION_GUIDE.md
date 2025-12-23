@@ -798,7 +798,25 @@ npm test
 
 ---
 
-## Summary
+
+## Control Number Initialization (Pawn, Purchase, Store Sale)
+
+The following keys are used in `app_settings` for control numbers:
+
+- `pawn_ticket_control_number_next` (use `get_next_pawn_control_number()`)
+- `purchase_ticket_control_number_next` (use `get_next_purchase_control_number()`)
+- `store_sale_control_number_next` (use `get_next_store_sale_control_number()`)
+
+**To initialize `store_sale_control_number_next` from legacy data:**
+1. Find the max ticket number for relevant types:
+  ```sql
+  SELECT MAX(acct.TICKETNUM) FROM acct WHERE acct.TYPE IN ('SL','SLD','SLP','SLU','SS','SSV','SLV');
+  ```
+2. Set the value in `app_settings`:
+  ```sql
+  UPDATE app_settings SET value = '<max+1>' WHERE key = 'store_sale_control_number_next';
+  ```
+
 
 **Creating a new endpoint involves 8 steps across 4 layers:**
 

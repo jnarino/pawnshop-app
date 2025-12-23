@@ -25,7 +25,7 @@ export interface InventoryItemRepository {
   findBySerialNumber(serialNumber: string): Promise<InventoryItem | null>;
 
   /**
-   * Later we can add search methods (by category, description, etc.)
-   * once we know exactly how the UI will search items.
-   */
+ * Set status for all inventory items linked to a pawn ticket.
+ */
+  setStatusByPawnTicket(pawnTicketId: string, status: string): Promise<void>;
 }

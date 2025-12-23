@@ -83,5 +83,28 @@ export function createStoreTransactionRouter(
      */
     router.get('/by-date', auth, controller.listByDateRange);
 
+    /**
+     * @openapi
+     * /api/store-transaction:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Create a new store transaction (Sale)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/CreateStoreTransactionDto'
+     *     responses:
+     *       201:
+     *         description: Transaction created
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/', auth, controller.create);
+
     return router;
 }

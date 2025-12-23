@@ -1,4 +1,3 @@
-
 import pymssql
 import psycopg2
 from psycopg2.extras import execute_values
@@ -32,14 +31,16 @@ def migrate_sales():
         # Get Transaction Types
         pg_cursor.execute("SELECT id, code FROM store_transaction_type")
         tx_types = {row[1]: str(row[0]) for row in pg_cursor.fetchall()}
-        RETAIL_SALE_ID = tx_types.get('SS') # Code is 'SS' in initial.sql
+        # IDs for all relevant types
+        SALE_TYPE_CODES = ['SL', 'SLD', 'SLP', 'SLU', 'SS', 'SSV', 'SLV']
+        SALE_TYPE_IDS = [tx_types.get(code) for code in SALE_TYPE_CODES if tx_types.get(code)]
+        if not SALE_TYPE_IDS:
+            print("⚠ No valid store sale/layaway type IDs found! Control number update will fail.")
+        # For legacy logic, keep RETAIL_SALE_ID for downstream use
+        RETAIL_SALE_ID = tx_types.get('SS')
         if not RETAIL_SALE_ID:
-             print("⚠ RETAIL_SALE type (SS) not found! sales will fail.")
-             # Try fallback or error?
-             # For now, let it fail with a clear error or picking first available?
-             # No, smallint error means must be INT.
-             # Assume 10 as hardcoded standard if missing? 
-             RETAIL_SALE_ID = '10'
+            print("⚠ RETAIL_SALE type (SS) not found! sales will fail.")
+            RETAIL_SALE_ID = '10'
         
         # Get Tender Types (Assuming mapped by name or legacy code)
         pg_cursor.execute("SELECT id, name FROM tender_type")
@@ -189,6 +190,33 @@ def migrate_sales():
             pg_conn.commit()
             
         print(f"✅ Sales Migration Completed! Errors: {errors}")
+        
+        # Update app_settings for next control numbers (store_sale_control_number_next)
+        try:
+            if SALE_TYPE_IDS:
+                # Build a tuple for SQL IN clause
+                sql_in = ','.join(['%s'] * len(SALE_TYPE_IDS))
+                # Use regex to ensure only numeric ticketnums are considered
+                pg_cursor.execute(f'''
+                    SELECT MAX(legacy_ticketnum::integer) FROM store_transaction 
+                    WHERE type_id IN ({sql_in}) AND legacy_ticketnum ~ '^[0-9]+$'
+                ''', SALE_TYPE_IDS)
+                max_store_sale_control = pg_cursor.fetchone()[0]
+                if max_store_sale_control is not None:
+                    next_control = str(int(max_store_sale_control) + 1)
+                    pg_cursor.execute("""
+                        UPDATE app_settings 
+                        SET value = %s, updated_at = NOW() 
+                        WHERE key = 'store_sale_control_number_next'
+                    """, (next_control,))
+                    print(f"   Set store_sale_control_number_next to {next_control}")
+                else:
+                    print("   No valid store sale control number found; app_settings not updated.")
+            else:
+                print("   No sale/layaway type IDs found; app_settings not updated.")
+        except Exception as e:
+            print(f"   Error updating store_sale_control_number_next: {e}")
+        pg_conn.commit()
         
     except Exception as e:
         print(f"❌ Sales Migration Failed: {e}")
