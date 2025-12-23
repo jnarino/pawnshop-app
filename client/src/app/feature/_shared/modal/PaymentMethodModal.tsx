@@ -40,7 +40,6 @@ export default function PaymentMethodModal({ open, totalAmount, onCancel, onDone
       console.log({ types });
       setAvailableTypes(types);
 
-      // Initialize default tender if empty or reset
       if (types.length > 0) {
         const cashType = types.find(t => t.name === 'CASH') || types[0];
         setTenders([{
@@ -64,16 +63,15 @@ export default function PaymentMethodModal({ open, totalAmount, onCancel, onDone
   };
 
   const addTender = () => {
-    // Determine available types that haven't been used yet
     const usedTypeIds = new Set(tenders.map(t => t.tenderTypeId));
     const nextAvailableType = availableTypes.find(t => !usedTypeIds.has(t.id));
 
-    if (!nextAvailableType) return; // No more types available to add
+    if (!nextAvailableType) return;
 
     const newTender: TenderMethod = {
       id: Date.now().toString(),
       name: nextAvailableType.name,
-      amount: '0.00',
+      amount: (totalAmount - getTotalTendered()).toFixed(2),
       tenderTypeId: nextAvailableType.id
     };
     setTenders(prev => [...prev, newTender]);

@@ -6,22 +6,24 @@ import { useSalesWorkflow } from '../contexts/SalesWorkflowContext';
 import { SaleForm, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
 import { type InventoryItemDraft } from '../../_shared/sale/components/InventoryItemModal';
 import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
+import { useNavigate } from 'react-router-dom';
 
-interface NewPawnTabProps {
+interface NewSaleTabProps {
   readonly customer: Customer | null;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
-export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProps) {
+  const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateSale();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useSalesWorkflow();
-  const [taxExemptUsed, setTaxExemptUsed] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pendingSaleData, setPendingSaleData] = useState<{
     customerId: string;
-    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   } | null>(null);
 
   const customerId = customer?.id;
@@ -32,14 +34,17 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
-    taxExemptUsed: boolean;
     items: InventoryItemDraft[];
+    taxExemptUsed: boolean;
+    eatTax: boolean;
   }) => {
     setPendingSaleData({
       customerId: customerId || formData.customerId,
-      taxExemptUsed,
-      items: formData.items
+      items: formData.items,
+      taxExemptUsed: formData.taxExemptUsed,
+      eatTax: formData.eatTax
     });
+    console.log({ pendingSaleData: formData });
     setShowPaymentModal(true);
   }, [customerId]);
 
@@ -50,9 +55,10 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
     const payload = {
       customerId: pendingSaleData.customerId,
-      taxExemptUsed,
+      taxExemptUsed: pendingSaleData.taxExemptUsed,
+      eatTax: pendingSaleData.eatTax,
       items: pendingSaleData.items.map(item => ({
-        inventoryItemId: item.inventoryItem?.id, // Existing item ID
+        inventoryItemId: item.inventoryItem?.id,
         inventoryNumber: item.inventoryItem?.inventoryNumber || item.inventoryNumber || '',
         description: item.description || '',
         quantity: Number(item.quantity) || 1,
@@ -64,27 +70,29 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       }))
     };
 
-    const result = await createTicket(payload as any); // Type assertion until hooks/api types updated
+    const result = await createTicket(payload as any);
 
     if (result) {
       resetPawnDraft();
       if (onTicketCreated) {
         onTicketCreated(result.id);
       }
+      navigate(`/`);
     }
   }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated]);
 
-  const calculateTotal = () => {
+  const calculateTotal = useCallback(() => {
     if (!pendingSaleData) return 0;
+
     const subtotal = pendingSaleData.items.reduce((sum, item) => {
       return sum + (Number(item.priceEach || 0) * Number(item.quantity || 1));
     }, 0);
 
-    const tax = subtotal * 0.07; // 7% Tax Hardcoded for now, ideally verified with eatTax logic from form
-    // TODO: Ideally we pass eatTax preference from form or calculate exactly matching form
-    // For now we assume standard tax.
+    const tax = (pendingSaleData.eatTax || pendingSaleData.taxExemptUsed) ? 0 : subtotal * 0.07;
+    console.log({ pendingSaleData, subtotal, tax });
+
     return subtotal + tax;
-  };
+  }, [pendingSaleData]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -119,8 +127,6 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
             priceEach: 0
           }}
           customer={customer || undefined}
-          taxExemptUsed={taxExemptUsed}
-          setTaxExemptUsed={setTaxExemptUsed}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}

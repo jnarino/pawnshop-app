@@ -76,7 +76,10 @@ export function SaleTransactionDetails({
                   }}
                   onChange={(e) => handleFieldByKey('inventoryNumber', e.currentTarget.value)}
                 />
-                <Button variant="outline" onClick={() => onSearchInventoryItem(inventoryNumber || '')}>Find</Button>
+                <Button variant="outline" onClick={(e) => {
+                  e.preventDefault();
+                  onSearchInventoryItem(inventoryNumber || '')
+                }}>Find</Button>
               </div>
             </div>
             <div>

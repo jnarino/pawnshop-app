@@ -108,7 +108,6 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
      */
     async create(tx: StoreTransaction, tempInventoryUpdates: { id: string, quantity: number }[] = []): Promise<StoreTransaction> {
         const client = await this.pool.connect();
-        console.log('tx', tx)
         try {
             await client.query('BEGIN');
 
@@ -158,27 +157,7 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 ]);
             }
 
-            // Update inventory items (if any specific inventory updates are requested)
-            // This is primarily for "sales" where we decrement quantity and set status to 'S'
             for (const update of tempInventoryUpdates) {
-                // Determine new status? For now we assume if it's being sold, we check if quantity reaches 0?
-                // Actually the requirement is "set status to S (Sold) and reduce quantity".
-                // If quantity > sold_quantity, it might still remain 'I' (In Inventory) but with less quantity?
-                // For this specific requirement "reduce on hand quantity with -1 and create store transacion with their store transacion_items"
-                // And "update the state of the item... status 'S'"
-                // If it's a serialized item (qty 1), it becomes 'S'.
-                // If it's bulk (qty > 1), we reduce quantity.
-
-                // Because we don't have the full item state here efficiently without querying, 
-                // we will execute a query that handles both:
-                // decrement quantity. If result quantity is 0, set status = 'S'. 
-                // Wait, if it's bulk, status might stay 'I'. 
-                // User said: "update the state of the item, reduce on hand quantity" - singular.
-                // Generally PAWN/RETAIL logic:
-                // If quantity becomes 0, status -> 'S'.
-                // If quantity > 0, status -> 'I'.
-
-                // Let's do a robust update:
                 await client.query(`
                     UPDATE inventory_item
                     SET 

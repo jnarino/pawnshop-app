@@ -2,6 +2,7 @@
 export interface CreateStoreTransactionDto {
     customerId: string | null;
     taxExemptUsed?: boolean;
+    eatTax?: boolean;
     items: {
         inventoryItemId?: string;
         inventoryNumber: string;

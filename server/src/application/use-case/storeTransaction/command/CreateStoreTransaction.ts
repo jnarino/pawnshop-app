@@ -62,7 +62,7 @@ export class CreateStoreTransaction {
         let taxSales = 0;
 
         for (const item of items) {
-            if (!item.taxExempt) {
+            if (!item.taxExempt && !input.taxExemptUsed && !input.eatTax) {
                 taxSales += (item.lineAmount || 0) * taxRate;
             }
         }
