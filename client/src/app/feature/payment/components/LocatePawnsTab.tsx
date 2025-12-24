@@ -205,7 +205,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
     };
 
     const handlePaymentMethodDone = (tenders: TenderMethod[]) => {
-        const payload = Object.entries(paymentSelections)
+        const items = Object.entries(paymentSelections)
             .filter(([_, selection]) => selection && selection.amount > 0)
             .map(([ticketId, selection]) => {
                 const ticket = filteredTickets.find(t => t.id === ticketId);
@@ -214,10 +214,10 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                     controlNumber: ticket?.controlNumber || '',
                     createdDate: ticket?.createdDate || '',
                     amountRemaining: selection!.amount,
-                    tenders
+
                 };
             });
-        console.log("Payload:", payload);
+        console.log("Payload:", { items, tenders });
         setShowPaymentModal(false);
     };
 
