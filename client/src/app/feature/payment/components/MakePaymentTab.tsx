@@ -43,44 +43,28 @@ export default function MakePaymentTab({
     try {
       setLoading(true);
 
-      // Load all active pawn tickets for this customer
-      const response = await http(`/api/pawnTicket?customerId=${customerId}&pawnStatus=active&limit=100`);
+      // Load all active pawn tickets for this customer using the enriched API
+      const response = await pawnTicketApi.getActiveByCustomer(customerId);
 
-      const ticketRows: PawnTicketRow[] = await Promise.all((response || []).map(async (ticket: any) => {
-        let currentCharges = parseFloat(ticket.financeCharge || ticket.finance_charge || '0');
-        let redemption = parseFloat(ticket.totalOfPayments || ticket.total_of_payments || '0');
+      const ticketRows: PawnTicketRow[] = (response || []).map((ticket: any) => {
         const controlNumber = ticket.controlNumber || ticket.control_number;
         const dateIn = new Date(ticket.transactionDate || ticket.transaction_date);
         const dateOut = new Date(ticket.maturityDate || ticket.maturity_date);
-        const pawnAmount = parseFloat(ticket.amountFinanced || ticket.amount_financed || '0');
-        const periodicRate = parseFloat(ticket.periodicRate || ticket.periodic_rate || '0');
-        let periodsBehind = 0;
-
-        if (controlNumber) {
-          try {
-            const chargesData = await pawnTicketApi.getCurrentCharges(controlNumber);
-            currentCharges = chargesData.currentCharges;
-            redemption = chargesData.redemptionAmount;
-            periodsBehind = chargesData.periodsBehind;
-          } catch (err) {
-            console.error(`Failed to load charges for ticket ${controlNumber}:`, err);
-          }
-        }
 
         return {
           id: ticket.id,
           controlNumber: controlNumber || 'N/A',
           dateIn: dateIn.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
           dateOut: dateOut.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-          pawnAmount,
-          currentCharges,
-          redemption,
+          pawnAmount: parseFloat(ticket.amountFinanced || ticket.amount_financed || '0'),
+          currentCharges: parseFloat(ticket.currentCharges || ticket.current_charges || '0'),
+          redemption: parseFloat(ticket.redemptionAmount || ticket.redemption_amount || '0'),
           otherPayment: false,
           selected: ticket.id === pawnTicket?.id,
-          periodsBehind,
-          periodicRate
+          periodsBehind: ticket.periodsBehind || 0,
+          periodicRate: parseFloat(ticket.periodicRate || ticket.periodic_rate || '0')
         };
-      }));
+      });
 
       onTicketsChange(ticketRows);
       updateTotals(ticketRows);

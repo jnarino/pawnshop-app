@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import { ListTenderTypes } from '../../../../application/use-case/tenderType/query/ListTenderTypes';
+import { ListTenderTypesUseCase } from '../../../../application/use-case/tenderType/query/ListTenderTypesUseCase';
 
 export class TenderTypeController {
-    constructor(private listTenderTypes: ListTenderTypes) { }
+    constructor(private listTenderTypesUseCase: ListTenderTypesUseCase) { }
 
     list = async (req: Request, res: Response) => {
         try {
-            const types = await this.listTenderTypes.execute();
+            const types = await this.listTenderTypesUseCase.execute();
             res.json(types);
         } catch (error) {
             console.error('Error listing tender types:', error);

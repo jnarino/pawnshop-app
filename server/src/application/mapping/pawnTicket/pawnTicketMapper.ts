@@ -3,7 +3,11 @@ import { PawnTicketResponseDto } from '../../dto/pawnTicket/query/PawnTicketResp
 import { toInventoryItemResponseDto } from '../inventory/inventoryItemMappers';
 
 export class PawnTicketMapper {
-  static toResponseDto(ticket: PawnTicket): PawnTicketResponseDto {
+  static toResponseDto(
+    ticket: PawnTicket,
+    charges?: { currentCharges?: number; periodsBehind?: number; redemptionAmount?: number }
+  ): PawnTicketResponseDto {
+    const { currentCharges, periodsBehind, redemptionAmount } = charges || {};
     return {
       id: ticket.id,
       controlNumber: ticket.controlNumber,
@@ -21,8 +25,10 @@ export class PawnTicketMapper {
       createdDate: ticket.createdDate.toISOString(),
       pawnStatus: ticket.pawnStatus,
       items: ticket.items ? ticket.items.map(toInventoryItemResponseDto) : [],
-      tenders: ticket.tenders,
-      note: ticket.note
+      note: ticket.note,
+      currentCharges,
+      periodsBehind,
+      redemptionAmount,
     };
   }
 }

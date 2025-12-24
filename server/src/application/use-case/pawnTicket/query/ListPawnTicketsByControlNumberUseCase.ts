@@ -18,6 +18,6 @@ export class ListPawnTicketsByControlNumberUseCase {
         const tickets =
             await this.pawnTicketRepository.listByControlNumber(dto.controlNumber);
 
-        return tickets.map(PawnTicketMapper.toResponseDto);
+        return tickets.map(ticket => PawnTicketMapper.toResponseDto(ticket));
     }
 }

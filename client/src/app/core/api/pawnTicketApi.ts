@@ -74,9 +74,6 @@ export interface PawnTicketCharges {
 }
 
 export const pawnTicketApi = {
-  getCurrentCharges: async (controlNumber: string): Promise<PawnTicketCharges> => {
-    return http(`/api/pawn-ticket/${encodeURIComponent(controlNumber)}/current-charges`);
-  },
 
   create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
     return http('/api/pawn-ticket', {

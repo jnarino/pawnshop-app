@@ -56,6 +56,10 @@ import { PgStoreTransactionRepository } from './infrastructure/persistence/store
 import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
 import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
 import { CreateStoreTransactionUseCase } from './application/use-case/storeTransaction/command/CreateStoreTransactionUseCase';
+import { GetPawnTicketCurrentChargesUseCase } from './application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
+import { ListTenderTypesUseCase } from './application/use-case/tenderType/query/ListTenderTypesUseCase';
+import { PgTenderTypeRepository } from './infrastructure/persistence/tenderType/PgTenderTypeRepository';
+import { TenderTypeController } from './interfaces/http/controller/tenderType/TenderTypeController';
 
 
 
@@ -74,6 +78,7 @@ export async function createApp() {
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
   const controlNumberRepository = new PgControlNumberRepository(pool);
+  const tenderTypeRepository = new PgTenderTypeRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
@@ -119,10 +124,11 @@ export async function createApp() {
   // Pawn Ticket use-cases  
   const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper, controlNumberRepository);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
-  const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
-  const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
   const getPawnTicketPaymentsUseCase = new GetPawnTicketPaymentsUseCase(pawnTicketPaymentRepo);
-  const getPawnTicketCurrentChargesUseCase = new (require('./application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase').GetPawnTicketCurrentChargesUseCase)(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase);
+  const getPawnTicketCurrentChargesUseCase = new GetPawnTicketCurrentChargesUseCase(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase)
+  const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
+  const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
+
 
   // Store Transaction use-cases
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
@@ -130,8 +136,7 @@ export async function createApp() {
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
 
   // Tender Type use-cases
-  const listTenderTypesUseCase = new (require('./application/use-case/tenderType/query/ListTenderTypes').ListTenderTypes)(new (require('./infrastructure/persistence/tenderType/PgTenderTypeRepository').PgTenderTypeRepository)(pool));
-
+  const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
   // Controllers
   const authController = new AuthController(
     loginUseCase,
@@ -139,8 +144,9 @@ export async function createApp() {
     logoutUseCase
   );
 
-  const tenderTypeController = new (require('./interfaces/http/controller/tenderType/TenderTypeController').TenderTypeController)(listTenderTypesUseCase);
-
+  const tenderTypeController = new TenderTypeController(
+    listTenderTypesUseCase
+  );
   const appUserController = new AppUserController(
     listAppUserUseCase,
     createAppUserUseCase,

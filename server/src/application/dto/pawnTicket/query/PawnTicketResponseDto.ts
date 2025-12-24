@@ -37,6 +37,8 @@ export interface PawnTicketResponseDto {
   pawnStatus: PawnStatusDto;
 
   items: InventoryItemResponseDto[];
-  tenders: TenderInfoDto[];
   note?: string;
+  currentCharges?: number | null;
+  periodsBehind?: number | null;
+  redemptionAmount?: number | null;
 }
