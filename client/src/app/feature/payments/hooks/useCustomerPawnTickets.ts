@@ -31,19 +31,7 @@ export function useCustomerPawnTickets(customerId: string): UseCustomerPawnTicke
       setLoading(true);
       setError(null);
       const data = await pawnTicketApi.getActiveByCustomer(customerId);
-
-      // Fetch current charges for each ticket in parallel
-      const ticketsWithCharges = await Promise.all((data || []).map(async (ticket) => {
-        try {
-          const charges = await pawnTicketApi.getCurrentCharges(ticket.controlNumber);
-          return { ...ticket, ...charges };
-        } catch (err) {
-          console.error(`Failed to load charges for ticket ${ticket.controlNumber}:`, err);
-          return ticket;
-        }
-      }));
-
-      setTickets(ticketsWithCharges);
+      setTickets(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load pawn tickets');
       setTickets([]);

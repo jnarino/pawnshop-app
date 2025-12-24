@@ -7,13 +7,13 @@ import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
 
 function PawnsWorkspaceContent() {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    openCancelModal, 
-    customer, 
+  const {
+    activeTab,
+    setActiveTab,
+    openCancelModal,
+    customer,
     setCustomer,
-    canNavigateToTab 
+    canNavigateToTab
   } = usePawnWorkflow();
 
   const handleTabChange = (tab: string) => {
@@ -24,7 +24,8 @@ function PawnsWorkspaceContent() {
   };
 
   return (
-    <div className="pawn-flow">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Pawn / Buy</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-5">
@@ -50,7 +51,7 @@ function PawnsWorkspaceContent() {
         </div>
 
         <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">
-          <CustomerInfoTab 
+          <CustomerInfoTab
             customer={customer}
             onCustomerChange={setCustomer}
             onCustomerSelected={() => setActiveTab('newPawn')}
@@ -58,7 +59,7 @@ function PawnsWorkspaceContent() {
         </TabsContent>
 
         <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
-          <NewPawnTab 
+          <NewPawnTab
             customer={customer}
           />
         </TabsContent>
@@ -79,7 +80,7 @@ function PawnsWorkspaceContent() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
 

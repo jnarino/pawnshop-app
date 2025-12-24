@@ -12,12 +12,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     refreshMenu: () => {
         ipcRenderer.send('refresh-menu');
     },
-    printLabels: (items: Array<{ 
-        inventoryNumber: string; 
-        description: string; 
-        amount: string 
+    printLabels: (items: Array<{
+        inventoryNumber: string;
+        description: string;
+        amount: string
     }>) => ipcRenderer.invoke('print-labels', items),
-    
+
     printDocument: (html: string) => ipcRenderer.invoke('print-document', html),
 
     // Menu-driven actions
@@ -37,5 +37,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const handler = () => cb();
         ipcRenderer.on('menu:pawn-maintain', handler);
         return () => ipcRenderer.removeListener('menu:pawn-maintain', handler);
+    },
+
+    onForfeit: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:forfeit-pull', handler);
+        return () => ipcRenderer.removeListener('menu:forfeit-pull', handler);
     },
 });

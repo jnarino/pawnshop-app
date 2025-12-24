@@ -8,10 +8,10 @@ declare global {
       onManageCash?: (cb: () => void) => () => void;
       onInventoryMaintain?: (cb: () => void) => () => void;
       onPawnMaintain?: (cb: () => void) => () => void;
-      printLabels?: (items: Array<{ 
-        inventoryNumber: string; 
-        description: string; 
-        amount: string; 
+      printLabels?: (items: Array<{
+        inventoryNumber: string;
+        description: string;
+        amount: string;
       }>) => Promise<{ success: boolean; count?: number; error?: string }>;
       printDocument?: (html: string) => Promise<{ success: boolean; error?: string }>;
     };
@@ -25,10 +25,11 @@ declare global {
       onManageCash?: (cb: () => void) => () => void;
       onInventoryMaintain?: (cb: () => void) => () => void;
       onPawnMaintain?: (cb: () => void) => () => void;
-      printLabels?: (items: Array<{ 
-        inventoryNumber: string; 
-        description: string; 
-        amount: string; 
+      onForfeit?: (cb: () => void) => () => void;
+      printLabels?: (items: Array<{
+        inventoryNumber: string;
+        description: string;
+        amount: string;
       }>) => Promise<{ success: boolean; count?: number; error?: string }>;
       printDocument?: (html: string) => Promise<{ success: boolean; error?: string }>;
     } | undefined;
@@ -37,4 +38,4 @@ declare global {
   }
 }
 
-export {};
+export { };

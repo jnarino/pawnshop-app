@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { refreshAccessToken, getRefreshToken, isAuthenticated } from '@/app/core/auth/authService';
+import { Header } from '@/components/ui/Header';
 
 export default function Protected({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
@@ -31,5 +32,12 @@ export default function Protected({ children }: { children: React.ReactNode }) {
     }, [status, navigate]);
 
     if (status !== 'authed') return null;
-    return <>{children}</>;
+    return <>
+        <Header />
+        <div className="min-h-screen flex flex-col">
+            <main className="py-7 px-7 max-w-[1100px] w-full mx-auto">
+                {children}
+            </main>
+        </div>
+    </>;
 }

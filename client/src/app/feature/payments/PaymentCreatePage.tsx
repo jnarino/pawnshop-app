@@ -7,9 +7,9 @@ import { FindByInputModal } from '@/app/feature/_shared/inventory-item';
 import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
-import { ViewPawnTab } from './components/ViewPawnTab';
 import { useFindByTicket } from './hooks/useFindByTicket';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
+import { ViewPawnTab } from './components/ViewPawnTab';
 
 type TabKey = 'customer' | 'viewPawn' | 'locatePawns';
 
@@ -59,7 +59,8 @@ export default function PaymentCreatePage() {
   }, [findByTicket]);
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Payments</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-3">
@@ -109,6 +110,7 @@ export default function PaymentCreatePage() {
             <ViewPawnTab
               pawnTicket={selectedPawn}
               customer={customer}
+              onMakePayment={() => { }}
               onBack={() => setActiveTab('locatePawns')}
             />
           )}
@@ -137,6 +139,6 @@ export default function PaymentCreatePage() {
         inputPlaceholder="Enter ticket number..."
         infoMessage="You can type the ticket number manually or use a barcode scanner to scan the ticket."
       />
-    </div>
+    </>
   );
 }
