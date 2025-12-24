@@ -212,6 +212,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 return {
                     pawnTicketId: ticketId,
                     controlNumber: ticket?.controlNumber || '',
+                    createdDate: ticket?.createdDate || '',
                     amountRemaining: selection!.amount,
                     tenders
                 };
