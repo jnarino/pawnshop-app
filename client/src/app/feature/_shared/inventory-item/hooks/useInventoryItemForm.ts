@@ -136,7 +136,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     let processedValue = value;
     
     // Don't uppercase IDs, description, or fields that store lookup IDs
-    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action'];
+    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action', 'style'];
     if (typeof value === 'string' && !noUppercaseFields.includes(field)) {
       processedValue = value.toUpperCase();
     }

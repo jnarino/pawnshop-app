@@ -50,7 +50,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
-      <DialogContent className="max-w-4xl w-full max-h-[85vh] overflow-y-auto p-5">
+      <DialogContent className="max-w-4xl w-full max-h-[85vh] overflow-y-auto p-5" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {(() => {

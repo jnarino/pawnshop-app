@@ -20,12 +20,12 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
     <>
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Style</Label>
-        <Input
+        <LookupSelect
+          typeName={LookupTypeName.STYLE}
           value={draft.style || ''}
-          onChange={(e) => updateField('style', e.target.value)}
-          placeholder="STYLE"
+          onChange={(value) => updateField('style', value)}
+          placeholder="SELECT STYLE..."
           disabled={disabled}
-          className="uppercase text-xs h-8"
         />
       </div>
 
