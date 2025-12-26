@@ -40,6 +40,9 @@ export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) 
         width: initialStone.width || '',
         clarity: initialStone.clarity || ''
       });
+    } else {
+      // Reset form when initialStone becomes null (e.g., after cancel)
+      setFormData(DEFAULT_FORM);
     }
   }, [initialStone]);
 
