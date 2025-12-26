@@ -105,7 +105,11 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
           </div>
 
           {isJewelry && (
-            <StonesSection />
+            <StonesSection 
+              stones={draft.stones || []} 
+              onChange={(stones) => updateField('stones', stones)}
+              disabled={isViewMode}
+            />
           )}
 
           <div className="space-y-1">

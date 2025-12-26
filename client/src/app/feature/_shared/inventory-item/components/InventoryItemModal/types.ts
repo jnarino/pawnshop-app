@@ -1,3 +1,5 @@
+import type { Stone } from './stones/types';
+
 export interface InventoryItemDraft {
   id?: string;
   type: string;
@@ -29,10 +31,12 @@ export interface InventoryItemDraft {
   action?: string;
   barrelLength?: string;
   capacity?: string;
+  stones?: Stone[];
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {
   type: '',
   quantity: '1',
-  weightUnit: 'Grams'
+  weightUnit: 'Grams',
+  stones: []
 };
