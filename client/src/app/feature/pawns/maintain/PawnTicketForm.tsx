@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { InventoryItemModal, type InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
-import { PrintLabelsModal } from './PrintLabelsModal';
-import { TransactionDetails } from './TransactionDetails';
+import { PrintLabelsModal } from '../../_shared/pawn-ticket/components/PrintLabelsModal';
+import { TransactionDetails } from '../../_shared/pawn-ticket/components/TransactionDetails';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,8 +15,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
-import type { FormMode } from '../types/types';
+import type { FormMode } from '../../_shared/pawn-ticket/types/types';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
+import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
@@ -73,23 +74,23 @@ interface PawnTicketFormProps {
   readonly disabled?: boolean;
 }
 
-export function PawnTicketForm({ 
-  mode = 'CREATE', 
-  initialData, 
+export function PawnTicketForm({
+  mode = 'CREATE',
+  initialData,
   externalDraft,
   onDraftChange,
   controlNumber,
   pawnTicket,
   customer,
-  onSubmit, 
-  disabled = false 
+  onSubmit,
+  disabled = false
 }: PawnTicketFormProps) {
   const isViewMode = mode === 'VIEW';
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
   const { printTransactionForm, printLabels } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
-  
+
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
     type: initialData?.type || 'PAWN' as const,
@@ -184,7 +185,7 @@ export function PawnTicketForm({
 
   const handlePrintTicket = useCallback(async () => {
     if (!controlNumber || !customer || !pawnTicket) return;
-    
+
     setIsPrinting(true);
     try {
       const customerData = {
@@ -224,7 +225,7 @@ export function PawnTicketForm({
 
   const handleConfirmPrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
     if (!controlNumber) return;
-    
+
     await printLabels(
       controlNumber,
       formData.items.map(item => ({
@@ -317,9 +318,9 @@ export function PawnTicketForm({
                               onClick={() => handleViewItem(item)}
                               className="cursor-pointer hover:opacity-70"
                             >
-                              <img 
-                                src={visibilityIcon} 
-                                alt="View" 
+                              <img
+                                src={visibilityIcon}
+                                alt="View"
                                 className="w-5 h-5"
                                 style={{ filter: 'brightness(0) saturate(100%)' }}
                               />
@@ -413,9 +414,9 @@ export function PawnTicketForm({
 
       <InventoryItemModal
         mode={(() => {
-          if (isViewMode) return 'VIEW';
-          if (editingItem) return 'EDIT';
-          return 'CREATE';
+          if (isViewMode) return ViewMode.VIEW;
+          if (editingItem) return ViewMode.MODIFY;
+          return ViewMode.CREATE;
         })()}
         open={showItemModal}
         initial={editingItem}

@@ -41,6 +41,10 @@ function buildMenu() {
             label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:pawn-maintain'),
           },
+          {
+            label: 'Forfeit (Pull)',
+            click: () => mainWindow?.webContents.send('menu:forfeit-pull'),
+          },
         ],
       },
       {
@@ -171,9 +175,12 @@ ipcMain.handle('print-document', async (event, html: string) => {
       throw new Error('Main window not available');
     }
 
-    // Create hidden window for printing
+    // Create visible window for print preview
     const printWindow = new BrowserWindow({
-      show: false,
+      show: true,
+      width: 800,
+      height: 600,
+      title: 'Print Preview - Pawn Ticket',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true
@@ -182,14 +189,6 @@ ipcMain.handle('print-document', async (event, html: string) => {
 
     await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 
-    // Print to default printer
-    await printWindow.webContents.print({
-      silent: false, // Show print dialog
-      printBackground: true,
-      margins: { marginType: 'default' }
-    });
-
-    printWindow.close();
     return { success: true };
   } catch (error) {
     console.error('[Electron] Document print failed:', error);

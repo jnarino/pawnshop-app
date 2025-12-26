@@ -121,6 +121,25 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           capacity: item.capacity,
         });
 
+        // Build stones array for backend (convert string values to numbers where needed)
+        const stones = item.stones?.map(stone => removeNullish({
+          quantity: Number(stone.quantity) || 1,
+          type: stone.type || undefined,
+          shape: stone.shape || undefined,
+          carat: stone.carat ? Number(stone.carat) : undefined,
+          color: stone.color || undefined,
+          weight: stone.weight ? Number(stone.weight) : undefined,
+          length: stone.length ? Number(stone.length) : undefined,
+          width: stone.width ? Number(stone.width) : undefined,
+          clarity: stone.clarity || undefined,
+        }));
+
+        const extra = removeNullish({
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          stones: stones && stones.length > 0 ? stones : undefined,
+        });
+
         return removeNullish({
           inventorySubcategoryId: item.subcategoryId,
           quantity: Number(item.quantity) || 1,
@@ -135,7 +154,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           ownerMark: item.ownerNumber,
           colorId: item.color,
           itemCondition: item.condition,
-          extra: Object.keys({}).length > 0 ? {} : undefined,
+          extra: Object.keys(extra).length > 0 ? extra : undefined,
           attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
         });
       }),

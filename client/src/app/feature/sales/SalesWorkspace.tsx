@@ -23,7 +23,8 @@ function SalesWorkspaceContent() {
   };
 
   return (
-    <div className="pawn-flow">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Sales</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-2">
@@ -54,7 +55,7 @@ function SalesWorkspaceContent() {
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
 
