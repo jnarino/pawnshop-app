@@ -1,6 +1,6 @@
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 
-export type FormMode = 'CREATE' | 'VIEW';
+export type FormMode = 'CREATE' | 'VIEW' | 'MODIFY';
 
 export interface PawnDraft {
     type: 'PAWN' | 'PURCHASE';

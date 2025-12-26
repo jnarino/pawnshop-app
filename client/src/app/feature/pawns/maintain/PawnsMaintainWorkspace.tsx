@@ -19,6 +19,17 @@ type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items
 type ScopeFilter = 'all' | 'active';
 type TabKey = 'customer' | 'ticket';
 
+// Helper to extract ID from attribute objects or return string value
+const extractId = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object' && 'id' in value) {
+    return (value as { id: string }).id || '';
+  }
+  return '';
+};
+
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -32,6 +43,32 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     return '';
   };
 
+  const transformStones = (stones: Array<{
+    type?: { id: string; name?: string | null } | string;
+    shape?: { id: string; name?: string | null } | string;
+    color?: { id: string; name?: string | null } | string;
+    carat?: number | string;
+    weight?: number | string;
+    length?: number | string;
+    width?: number | string;
+    clarity?: string;
+    quantity?: number | string;
+  }> | undefined) => {
+    if (!stones || !Array.isArray(stones)) return undefined;
+    return stones.map((stone, index) => ({
+      id: `stone-${index}-${Date.now()}`,
+      quantity: String(stone.quantity || 1),
+      type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
+      shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
+      color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
+      carat: String(stone.carat || ''),
+      weight: String(stone.weight || ''),
+      length: String(stone.length || ''),
+      width: String(stone.width || ''),
+      clarity: stone.clarity || '',
+    }));
+  };
+
   const transformedItems = (pawnTicket.items || []).map((item) => ({
     id: item.id,
     type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
@@ -42,7 +79,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     brandName: getBrandName(item.brand),
     model: item.model || '',
     serial: item.serialNumber || '',
-    color: item.colorId || '',
+    color: extractId(item.colorId),
     condition: item.itemCondition || '',
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
@@ -50,13 +87,15 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     replace: String(item.itemReplace || 0),
     ownerNumber: item.inventoryNumber || '',
     description: item.itemDescription || '',
-    metal: (typeof item.attributes?.metal === 'string' ? item.attributes.metal : '') || '',
-    karat: (typeof item.attributes?.karat === 'string' ? item.attributes.karat : '') || '',
-    weight: (typeof item.extra?.weight === 'string' || typeof item.extra?.weight === 'number' ? String(item.extra.weight) : '') || '',
-    weightUnit: 'Grams',
-    gender: (typeof item.extra?.gender === 'string' ? item.extra.gender : '') || '',
-    style: (typeof item.attributes?.style === 'string' ? item.attributes.style : '') || '',
-    sizeLength: (typeof item.extra?.size === 'string' ? item.extra.size : '') || ''
+    metal: extractId(item.attributes?.metal),
+    karat: extractId(item.attributes?.karat),
+    weight: extractId(item.extra?.weight),
+    weightUnit: extractId(item.extra?.weightUnit) || 'Grams',
+    gender: extractId(item.extra?.gender),
+    style: extractId(item.attributes?.style),
+    sizeLength: extractId(item.extra?.size),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stones: transformStones(item.extra?.stones as any),
   }));
 
   const transactionType = pawnTicket.transactionType?.toUpperCase();
@@ -321,30 +360,23 @@ function PawnsMaintainWorkspaceContent() {
                       <TableHead className="w-40">Customer</TableHead>
                       <TableHead className="w-32">DOB</TableHead>
                       <TableHead className="w-32">ID Number</TableHead>
-                      <TableHead className="w-16 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {customerResults.map((c) => (
-                      <TableRow key={c.id}>
+                      <TableRow 
+                        key={c.id}
+                        className={`cursor-pointer hover:bg-muted/50 ${selectedCustomer?.id === c.id ? 'bg-muted' : ''}`}
+                        onClick={() => !loading && loadTicketsForCustomer(c)}
+                      >
                         <TableCell className="font-semibold">{c.firstName} {c.lastName}</TableCell>
                         <TableCell>{c.dateOfBirth || '—'}</TableCell>
                         <TableCell>{c.idNumber || '—'}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => loadTicketsForCustomer(c)}
-                            disabled={loading}
-                          >
-                            Select
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))}
                     {customerResults.length === 0 && !loading && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
                           No customers yet. Search by name or DOB.
                         </TableCell>
                       </TableRow>
@@ -448,13 +480,14 @@ function PawnsMaintainWorkspaceContent() {
       {selectedTicket && (
         <div className="space-y-4">
           <PawnTicketForm
-            mode="VIEW"
+            mode="MODIFY"
             initialData={transformPawnTicketToFormData(selectedTicket)}
             controlNumber={selectedTicket.controlNumber}
             pawnTicket={selectedTicket}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
+            <Button onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Update Pawn</Button>
           </div>
         </div>
       )}

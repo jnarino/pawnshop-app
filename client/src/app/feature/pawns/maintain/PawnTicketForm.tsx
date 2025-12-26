@@ -86,6 +86,7 @@ export function PawnTicketForm({
   disabled = false
 }: PawnTicketFormProps) {
   const isViewMode = mode === 'VIEW';
+  const isEditMode = mode === 'MODIFY';
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
   const { printTransactionForm, printLabels } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
@@ -355,7 +356,7 @@ export function PawnTicketForm({
           </CardContent>
         </Card>
 
-        {isViewMode && controlNumber && (
+        {(isViewMode || isEditMode) && controlNumber && (
           <div className="flex justify-center mt-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -398,7 +399,7 @@ export function PawnTicketForm({
           onCancel={() => setShowLabelModal(false)}
         />
 
-        {!isViewMode && (
+        {mode === 'CREATE' && (
           <div className="flex justify-center mt-6">
             <Button
               type="submit"
