@@ -12,6 +12,11 @@ const SQL_UPDATE_PAYMENT_FIELDS = loadSql(
     'pawnTicket/pawn_ticket_update_payment_fields'
 );
 
+const SQL_STATUS_BY_CODE = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_status_by_code'
+);
+
 
 const SQL_ADD_PAYMENT = loadSql(
     'commands',
@@ -238,14 +243,20 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         maturityDate: Date;
         setRedeemed: boolean;
     }): Promise<void> {
-        const statusClause = params.setRedeemed ? ', pawn_status = \'U\'' : '';
-        const sql = SQL_UPDATE_PAYMENT_FIELDS.replace('{STATUS_CLAUSE}', statusClause);
-        await this.db.query(sql, [
+        let statusId: string | null = null;
+
+        if (params.setRedeemed) {
+            const statusResult = await this.db.query(SQL_STATUS_BY_CODE, ['U', 'PAWN']);
+            statusId = statusResult.rows?.[0]?.id ?? null;
+        }
+
+        await this.db.query(SQL_UPDATE_PAYMENT_FIELDS, [
             params.paymentAmount,
             params.transactionDate,
             params.updatedAt,
             params.defaultDate,
             params.maturityDate,
+            statusId,
             params.pawnTicketId
         ]);
     }
