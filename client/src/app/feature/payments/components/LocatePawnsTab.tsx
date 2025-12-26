@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
     Table,
@@ -300,21 +299,25 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
             )}
 
             <Card className="flex flex-col">
-                <ScrollArea className="h-[50vh]">
+                <div className="overflow-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Ticket #</TableHead>
-                                <TableHead>Date In</TableHead>
-                                <TableHead>Date Out</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-center">Current Charges</TableHead>
-                                <TableHead className="text-center">Redemption</TableHead>
-                                <TableHead className="text-center">Other Payments</TableHead>
-                                <TableHead className="text-center">Actions</TableHead>
+                                <TableHead className="w-[100px]">Ticket #</TableHead>
+                                <TableHead className="w-[100px]">Date In</TableHead>
+                                <TableHead className="w-[100px]">Date Out</TableHead>
+                                <TableHead className="w-[90px] text-right">Amount</TableHead>
+                                <TableHead className="w-[80px]">Status</TableHead>
+                                <TableHead className="w-[140px] text-center">Current Charges</TableHead>
+                                <TableHead className="w-[120px] text-center">Redemption</TableHead>
+                                <TableHead className="w-[140px] text-center">Other Payments</TableHead>
+                                <TableHead className="w-[80px] text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
+                    </Table>
+                </div>
+                <div className="h-[47vh] overflow-y-auto">
+                    <Table>
                         <TableBody>
                             {filteredTickets.map((ticket) => (
                                 <TableRow
@@ -322,24 +325,24 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                     onClick={() => selectTicket(ticket.id)}
                                     className={`cursor-pointer hover:bg-muted/50 ${selectedTicket?.id === ticket.id ? 'bg-muted' : ''}`}
                                 >
-                                    <TableCell className="font-medium">
+                                    <TableCell className="w-[100px] font-medium">
                                         {ticket.controlNumber}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[100px]">
                                         {formatDate(ticket.createdDate)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[100px]">
                                         {calculateDateOut(ticket.createdDate)}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="w-[90px] text-right">
                                         {formatMoney(ticket.amountFinanced ?? ticket.purchaseTradeValue ?? 0)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[80px]">
                                         <Badge variant={getStatusVariant(ticket.pawnStatus || (ticket as any).status)}>
                                             {((ticket.pawnStatus || (ticket as any).status || 'UNKNOWN') === 'P' ? 'PAWN' : (ticket.pawnStatus || (ticket as any).status || 'UNKNOWN')).replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[140px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'current'}
@@ -348,7 +351,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                             <span className="text-sm">{formatMoney(calculateCurrentCharges(ticket))}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[120px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'redemption'}
@@ -357,7 +360,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                             <span className="text-sm">{formatMoney(calculateRedemption(ticket))}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[140px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'other'}
@@ -371,7 +374,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[80px]">
                                         <div className="flex items-center justify-center gap-3">
                                             <button
                                                 type="button"
@@ -397,7 +400,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                             )}
                         </TableBody>
                     </Table>
-                </ScrollArea>
+                </div>
 
                 <CardContent className="py-4 border-t">
                     <div className="flex items-center justify-end">
