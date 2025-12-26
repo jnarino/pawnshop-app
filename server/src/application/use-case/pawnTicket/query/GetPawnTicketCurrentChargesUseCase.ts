@@ -33,46 +33,73 @@ export class GetPawnTicketCurrentChargesUseCase {
         const increases = payments.filter(p => p.principalPaid < 0);    // negative = increase
         const chargePays = payments.filter(p => p.principalPaid > 0);   // positive = monthly charge payment
 
-        // ---------- 3) current pawn amount & initial pawn date ----------
-        // pawnAmount: if increases exist, it's the sum of absolute negatives; else use amountFinanced.
-        const pawnAmount = increases.length > 0
-            ? increases.reduce((sum, p) => sum + Math.abs(p.principalPaid), 0)
-            : (typeof ticket.amountFinanced === 'number' ? ticket.amountFinanced : 0);
-
-        // initial anchor: first increase date; else createdDate (if sane); else transactionDate; else first activity; else today
-        const firstIncreaseDate = increases.length ? new Date(increases[0].paymentDate) : undefined;
+        // ---------- 3) initial pawn date and anchor ----------
+        // Determine the starting point: use createdDate (if sane), else transactionDate, else first activity
         const created = ticket.createdDate ? new Date(ticket.createdDate) : undefined;
         const createdIsSane = created && created.getUTCFullYear() >= 2000;
         const firstChargePayDate = chargePays.length ? new Date(chargePays[0].paymentDate) : undefined;
+        const firstIncreaseDate = increases.length ? new Date(increases[0].paymentDate) : undefined;
 
         const initialPawnDate =
-            firstIncreaseDate ??
-            (createdIsSane ? created! :
-                (ticket.transactionDate ? new Date(ticket.transactionDate) :
-                    (firstChargePayDate ?? new Date(referenceDate))));
+            (createdIsSane ? created! : firstIncreaseDate) ??
+            (ticket.transactionDate ? new Date(ticket.transactionDate) :
+                (firstChargePayDate ?? new Date(referenceDate)));
 
         // ---------- 4) compute due dates and periods ----------
-        // Due dates: initial + 30, +60, ...
         const daysFromStart = Math.max(0, Math.floor((referenceDate.getTime() - initialPawnDate.getTime()) / dayMs));
-        const periodsElapsedToRef = Math.floor(daysFromStart / 30);  // full 30d periods completed by reference
+        const periodsElapsedToRef = Math.floor(daysFromStart / 30);
         const lastDueDate = addDays(initialPawnDate, 30 * periodsElapsedToRef);
         const daysSinceLastDue = Math.max(0, Math.min(30, Math.floor((referenceDate.getTime() - lastDueDate.getTime()) / dayMs)));
 
-        // ---------- 5) periodsBehind = periods up to next due − number of payments done ----------
-        // Count payments up to referenceDate (we treat each positive row as satisfying one period).
-        const paymentsCount = chargePays.filter(p => p.paymentDate.getTime() <= referenceDate.getTime()).length;
+        // ---------- 5) track pawn amount over time and calculate periods paid ----------
+        const periodsDueAt = (date: Date) => {
+            const elapsedDays = Math.max(0, Math.floor((date.getTime() - initialPawnDate.getTime()) / dayMs));
+            const elapsedPeriods = Math.floor(elapsedDays / 30);
+            const lastDue = addDays(initialPawnDate, 30 * elapsedPeriods);
+            const daysSince = Math.max(0, Math.min(30, Math.floor((date.getTime() - lastDue.getTime()) / dayMs)));
+            return elapsedPeriods + (daysSince > 0 ? 1 : 0);
+        };
 
-        // Total periods with dueDate <= lastDueDate are (periodsElapsedToRef + 1 if daysSinceLastDue > 0, else periodsElapsedToRef)
-        const totalPeriodsUpToRef = periodsElapsedToRef + (daysSinceLastDue > 0 ? 1 : 0);
-        let periodsBehind = Math.max(0, totalPeriodsUpToRef - paymentsCount);
+        // Process all payments chronologically to track running pawn amount and periods paid
+        // If there are increases, start from 0 and add them; otherwise use amountFinanced
+        let runningPawnAmount = increases.length > 0 ? 0 : (typeof ticket.amountFinanced === 'number' ? ticket.amountFinanced : 0);
+        let periodsPaid = 0;
+
+        for (const payment of payments) {
+            if (payment.paymentDate.getTime() < initialPawnDate.getTime()) continue;
+            if (payment.paymentDate.getTime() > referenceDate.getTime()) break;
+
+            if (payment.principalPaid < 0) {
+                // Increase: add to pawn amount
+                runningPawnAmount += Math.abs(payment.principalPaid);
+            } else if (payment.principalPaid > 0) {
+                // Charge payment: calculate periods based on current pawn amount
+                const monthlyAtPayment = round2(periodicRate * runningPawnAmount);
+                if (monthlyAtPayment <= 0) continue;
+
+                const dueSoFar = periodsDueAt(payment.paymentDate);
+                const outstanding = Math.max(0, dueSoFar - periodsPaid);
+                if (outstanding === 0) continue;
+
+                const paymentPeriods = Math.min(Math.floor(payment.principalPaid / monthlyAtPayment), outstanding);
+                periodsPaid += paymentPeriods;
+            }
+        }
+
+        // Final pawn amount and monthly charge for current calculations
+        const pawnAmount = runningPawnAmount;
+        const monthly = round2(periodicRate * pawnAmount);
+        const daily = monthly / 30;
+
+        // ---------- 6) calculate periods behind ----------
+        const totalPeriodsUpToRef = periodsDueAt(referenceDate);
+        let periodsBehind = Math.max(0, totalPeriodsUpToRef - periodsPaid);
         // Always charge at least 1 period if any days have elapsed and not fully paid
-        if (periodsBehind === 0 && daysFromStart > 0 && paymentsCount === 0) {
+        if (periodsBehind === 0 && daysFromStart > 0 && periodsPaid === 0) {
             periodsBehind = 1;
         }
 
-        // ---------- 6) current charges & redemption ----------
-        const monthly = round2(periodicRate * pawnAmount);
-        const daily = monthly / 30;
+        // ---------- 7) current charges & redemption ----------
 
         // Special rule: if maturity is <= 60 days from initialPawnDate, always charge full period(s)
         let currentCharges = 0;

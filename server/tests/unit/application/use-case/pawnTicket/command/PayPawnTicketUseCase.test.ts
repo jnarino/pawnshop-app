@@ -86,7 +86,8 @@ describe('PayPawnTicketUseCase', () => {
       clerkUserId: '11111111-1111-1111-1111-111111111111',
       typeId: 7,
       amount: 100,
-      tender: { tenderTypeId: 1, amount: 100 }
+      controlNumber: '116951',
+      tenders: [{ tenderTypeId: 1, amount: 100 }]
     });
     expect(inventoryItemRepository.setStatusByPawnTicket).not.toHaveBeenCalled();
   });
@@ -121,7 +122,8 @@ describe('PayPawnTicketUseCase', () => {
       clerkUserId: '22222222-2222-2222-2222-222222222222',
       typeId: 8,
       amount: 200,
-      tender: { tenderTypeId: 2, amount: 200 }
+      controlNumber: '116952',
+      tenders: [{ tenderTypeId: 2, amount: 200 }]
     });
     expect(inventoryItemRepository.setStatusByPawnTicket).toHaveBeenCalledWith('70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef', 'U');
   });
