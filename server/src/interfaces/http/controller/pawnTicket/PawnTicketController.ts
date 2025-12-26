@@ -28,10 +28,7 @@ export class PawnTicketController {
         try {
             const payload = {
                 ...req.body,
-                payment: {
-                    ...req.body.payment,
-                    clerkUserId: req.user?.id,
-                },
+                clerkUserId: req.user?.id,
             };
             await this.payPawnTicketUseCase.execute(payload);
             return res.status(200).json({ message: 'Payment processed' });

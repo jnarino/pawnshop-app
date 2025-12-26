@@ -12,10 +12,11 @@ export interface StoreTransactionRepository {
      */
     createPayment(params: {
         pawnTicketId: string;
+        controlNumber: string;
         clerkUserId: string;
         typeId: number;
         amount: number;
-        tender: { tenderTypeId: number; amount: number };
+        tenders: { tenderTypeId: number; amount: number }[];
     }): Promise<void>;
 
     /**
