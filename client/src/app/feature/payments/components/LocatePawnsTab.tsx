@@ -20,6 +20,7 @@ import { Loader2, AlertCircle, Search, X } from 'lucide-react';
 import { useCustomerPawnTickets } from '../hooks/useCustomerPawnTickets';
 import OtherPaymentModal from './OtherPaymentModal';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
+import { pawnTicketPaymentApi } from '@/app/core/api/pawnTicketPaymentApi';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
 
@@ -52,6 +53,8 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTicketForModal, setSelectedTicketForModal] = useState<CustomerActivePawnTicket | null>(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const handlePaymentTypeChange = useCallback((ticketId: string, type: 'current' | 'redemption' | 'other') => {
         const ticket = filteredTickets.find(t => t.id === ticketId);
@@ -204,7 +207,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
         }
     };
 
-    const handlePaymentMethodDone = (tenders: TenderMethod[]) => {
+    const handlePaymentMethodDone = useCallback(async (tenders: TenderMethod[]) => {
         const items = Object.entries(paymentSelections)
             .filter(([_, selection]) => selection && selection.amount > 0)
             .map(([ticketId, selection]) => {
@@ -212,14 +215,33 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                 return {
                     pawnTicketId: ticketId,
                     controlNumber: ticket?.controlNumber || '',
-                    createdDate: ticket?.createdDate || '',
-                    amountRemaining: selection!.amount,
-
+                    createdDate: ticket?.createdDate || new Date().toISOString(),
+                    amountPaid: selection!.amount,
                 };
             });
-        console.log("Payload:", { items, tenders });
-        setShowPaymentModal(false);
-    };
+
+        if (items.length === 0) {
+            setSubmitError('No payments selected');
+            return;
+        }
+
+        setSubmitting(true);
+        setSubmitError(null);
+
+        try {
+            await pawnTicketPaymentApi.create({ items, tenders });
+            setShowPaymentModal(false);
+            setPaymentSelections({});
+            setOtherAmounts({});
+            // Refresh the tickets list
+            applyFilter();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Payment failed';
+            setSubmitError(message);
+        } finally {
+            setSubmitting(false);
+        }
+    }, [paymentSelections, filteredTickets, applyFilter]);
 
     if (loading) {
         return (
@@ -270,10 +292,10 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                 </CardContent>
             </Card>
 
-            {error && (
+            {(error || submitError) && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{error || submitError}</AlertDescription>
                 </Alert>
             )}
 
