@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -103,10 +102,7 @@ function PawnsMaintainWorkspaceContent() {
     setTicketNumber('');
     setError(null);
     setActiveTab('customer');
-    // onClose();
-  }, [loading, detailLoading,
-    // onClose
-  ]);
+  }, [loading, detailLoading]);
 
   const searchCustomers = useCallback(async () => {
     if (!firstName && !lastName && !dateOfBirth) {
@@ -161,29 +157,6 @@ function PawnsMaintainWorkspaceContent() {
     await fetchTicketsForCustomer(customer, scope);
   }, [fetchTicketsForCustomer, scope]);
 
-  const searchByTicket = useCallback(async () => {
-    if (!ticketNumber.trim()) {
-      setError('Enter a ticket number');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await pawnTicketApi.findByControlNumber(ticketNumber.trim());
-      setSelectedCustomer(null);
-      setTicketResults(data);
-      if (data.length === 0) {
-        setError('No ticket found with that number');
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Search failed';
-      setError(message);
-      setTicketResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [ticketNumber]);
-
   const ensureDetail = useCallback(async (result: TicketResult): Promise<PawnTicketData> => {
     if ((result as CustomerActivePawnTicket).items?.length) {
       return result as PawnTicketData;
@@ -194,6 +167,31 @@ function PawnsMaintainWorkspaceContent() {
     }
     throw new Error('Ticket details not available. Try searching with customer ID to load items.');
   }, []);
+
+  const searchByTicket = useCallback(async () => {
+    if (!ticketNumber.trim()) {
+      setError('Enter a ticket number');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await pawnTicketApi.findByControlNumber(ticketNumber.trim());
+      if (data.length === 0) {
+        setError('No ticket found with that number');
+        return;
+      }
+      // Ticket found - go directly to edit mode
+      const ticket = data[0];
+      const detail = await ensureDetail(ticket);
+      setSelectedTicket(detail);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Search failed';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [ticketNumber, ensureDetail]);
 
   const handleOpenTicket = useCallback(async (result: TicketResult) => {
     setDetailLoading(true);
@@ -442,55 +440,6 @@ function PawnsMaintainWorkspaceContent() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="border rounded-lg">
-                <Table stickyHeader>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-28">Ticket #</TableHead>
-                      <TableHead className="w-32">Customer</TableHead>
-                      <TableHead className="w-20">Type</TableHead>
-                      <TableHead className="w-24">Amount</TableHead>
-                      <TableHead className="w-32">Transaction</TableHead>
-                      <TableHead className="w-16 text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ticketResults.map((row) => {
-                      const amount = row.transactionType === 'PURCHASE'
-                        ? row.purchaseTradeValue ?? 0
-                        : row.amountFinanced ?? 0;
-                      return (
-                        <TableRow key={`${row.controlNumber}-${row.id}`}>
-                          <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                          <TableCell>{row.customerId}</TableCell>
-                          <TableCell className="uppercase">{row.transactionType}</TableCell>
-                          <TableCell>${amount}</TableCell>
-                          <TableCell>{row.transactionDate ? new Date(row.transactionDate).toLocaleDateString() : '—'}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenTicket(row)}
-                              disabled={detailLoading}
-                              aria-label="Edit pawn"
-                            >
-                              {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {ticketResults.length === 0 && !loading && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                          No tickets yet. Search by ticket number.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
             </TabsContent>
           </Tabs>
         </div>
