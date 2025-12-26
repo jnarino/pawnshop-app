@@ -8,7 +8,7 @@ export function createPawnTicketPaymentRouter(controller: PawnTicketController, 
 
   /**
    * @openapi
-  * /api/pawn-tickets/payment:
+  * /api/pawn-ticket/payment:
    *   post:
    *     tags:
    *       - PawnTickets
@@ -33,7 +33,7 @@ export function createPawnTicketPaymentRouter(controller: PawnTicketController, 
    *       401:
    *         description: Unauthorized
    */
-  router.post('/payment', auth, controller.payOnTicket); 
+  router.post('/payment', auth, controller.payOnTicket);
 
   return router;
 }

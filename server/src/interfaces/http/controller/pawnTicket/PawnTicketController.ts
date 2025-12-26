@@ -21,9 +21,9 @@ export class PawnTicketController {
     ) { }
 
     /**
- * POST /api/pawnTicket/payment
- * Accepts payments or redemptions for pawn tickets.
- */
+     * POST /api/pawn-ticket/payment
+     * Accepts payments or redemptions for pawn tickets.
+     */
     payOnTicket = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
             const payload = {
