@@ -1,13 +1,4 @@
-const SQL_UPDATE_PAYMENT_FIELDS = `
-  UPDATE pawn_ticket
-  SET total_of_payments = total_of_payments + $1,
-      transaction_date = $2,
-      updated_at = $3,
-      default_date = $4,
-      maturity_date = $5
-      {STATUS_CLAUSE}
-  WHERE id = $6
-`;
+
 
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
@@ -15,6 +6,11 @@ import { PawnTicketRepository } from '../../../domains/pawnTicket/PawnTicketRepo
 import { PawnTicket } from '../../../domains/pawnTicket/PawnTicket';
 import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
+
+const SQL_UPDATE_PAYMENT_FIELDS = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_update_payment_fields'
+);
 
 
 const SQL_ADD_PAYMENT = loadSql(
@@ -91,7 +87,7 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     };
 
     return item;
-// ...existing code...
+    // ...existing code...
 }
 
 function mapRowToPawnTicket(row: any): PawnTicket {
@@ -133,7 +129,7 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
     }
 
-// ...existing code...
+    // ...existing code...
     // ...existing code...
 
     async setStatus(pawnTicketId: string, status: string): Promise<void> {

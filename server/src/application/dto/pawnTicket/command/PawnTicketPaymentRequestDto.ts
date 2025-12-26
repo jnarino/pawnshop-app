@@ -1,20 +1,25 @@
 import { z } from 'zod';
 
-
-
-export const pawnTicketPaymentRequestSchema = z.object({
+export const pawnTicketPaymentItemSchema = z.object({
   pawnTicketId: z.string().uuid(),
   controlNumber: z.string(),
-  paymentAmount: z.number().positive(),
-  tender: z.object({
-    tenderTypeId: z.number(), // 1: Cash, 3: Debit
-    amount: z.number().positive()
-  }),
-  clerkUserId: z.string().uuid(),
-  createdDate: z.string().datetime() // ISO string
+  createdDate: z.string().datetime(),
+  amountPaid: z.number().positive(),
 });
 
-export type PawnTicketPaymentRequestDto = z.infer<typeof pawnTicketPaymentRequestSchema>;
+export const pawnTicketTenderSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  amount: z.union([z.string(), z.number()]),
+  tenderTypeId: z.number(),
+});
 
-export const pawnTicketPaymentBatchRequestSchema = z.array(pawnTicketPaymentRequestSchema);
-export type PawnTicketPaymentBatchRequestDto = z.infer<typeof pawnTicketPaymentBatchRequestSchema>;
+export const pawnTicketPaymentRequestSchema = z.object({
+  items: z.array(pawnTicketPaymentItemSchema),
+  tenders: z.array(pawnTicketTenderSchema),
+  clerkUserId: z.string().uuid()
+});
+
+export type PawnTicketPaymentItemDto = z.infer<typeof pawnTicketPaymentItemSchema>;
+export type PawnTicketTenderDto = z.infer<typeof pawnTicketTenderSchema>;
+export type PawnTicketPaymentRequestDto = z.infer<typeof pawnTicketPaymentRequestSchema>;
