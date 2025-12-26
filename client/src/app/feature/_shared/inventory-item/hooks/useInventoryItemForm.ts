@@ -39,12 +39,25 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
 
     let cancelled = false;
     
-    const loadRootCategories = async () => {
+    const loadCategoriesAndInitialData = async () => {
       try {
         setIsLoading(true);
-        const data = await getRootCategories();
-        if (!cancelled) {
-          setRootCategories(data);
+        
+        // Load root categories
+        const rootCategoriesData = await getRootCategories();
+        if (cancelled) return;
+        setRootCategories(rootCategoriesData);
+        
+        // For MODIFY mode with initial data, pre-load subcategories and brands
+        if (mode === ViewMode.MODIFY && initial?.type) {
+          const [subcategoriesData, brandsData] = await Promise.all([
+            getSubcategories(initial.type),
+            getBrands(initial.type)
+          ]);
+          
+          if (cancelled) return;
+          setSubcategories(subcategoriesData);
+          setBrands(brandsData);
         }
       } catch (err) {
         if (!cancelled) {
@@ -57,7 +70,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       }
     };
 
-    loadRootCategories();
+    loadCategoriesAndInitialData();
     
     return () => {
       cancelled = true;
@@ -72,6 +85,11 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     if (!draft.type) {
       setSubcategories([]);
       setBrands([]);
+      return;
+    }
+
+    // In MODIFY mode, skip if this is the initial type (already loaded in first effect)
+    if (mode === ViewMode.MODIFY && initial?.type === draft.type && subcategories.length > 0) {
       return;
     }
 

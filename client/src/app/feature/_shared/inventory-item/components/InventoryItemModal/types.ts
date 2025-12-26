@@ -32,6 +32,9 @@ export interface InventoryItemDraft {
   barrelLength?: string;
   capacity?: string;
   stones?: Stone[];
+  // Additional fields for update operations
+  status?: string;
+  inventoryNumber?: string;
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {

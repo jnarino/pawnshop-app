@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
 import type { FormMode } from '../../_shared/pawn-ticket/types/types';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
+import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
 import editIcon from '@/assets/icons/edit.svg';
@@ -413,9 +414,9 @@ export function PawnTicketForm({
 
       <InventoryItemModal
         mode={(() => {
-          if (isViewMode) return 'VIEW';
-          if (editingItem) return 'EDIT';
-          return 'CREATE';
+          if (isViewMode) return ViewMode.VIEW;
+          if (editingItem) return ViewMode.MODIFY;
+          return ViewMode.CREATE;
         })()}
         open={showItemModal}
         initial={editingItem}
