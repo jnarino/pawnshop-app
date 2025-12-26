@@ -6,7 +6,7 @@ export function toInventoryItemResponseDto(
   item: InventoryItem
 ): InventoryItemResponseDto {
   const enrichedData = (item as any)._enrichedData;
-  
+
   return {
     id: item.id,
 
@@ -24,7 +24,12 @@ export function toInventoryItemResponseDto(
     brand: enrichedData?.brand || (item.brand ? { id: item.brand, name: '' } : null),
     model: item.model,
     serialNumber: item.serialNumber,
-    colorId: item.colorId,
+    colorId:
+      item.colorId && typeof item.colorId === 'object' && 'id' in item.colorId && 'name' in item.colorId
+        ? item.colorId
+        : (typeof item.colorId === 'string' && item.colorId !== ''
+          ? { id: item.colorId, name: '' }
+          : null),
     itemCondition: item.itemCondition,
     ownerMark: item.ownerMark,
     itemDescription: item.itemDescription,

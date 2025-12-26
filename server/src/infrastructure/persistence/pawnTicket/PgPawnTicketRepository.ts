@@ -51,6 +51,40 @@ const SQL_FIND_BY_ID = loadSql(
 );
 
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
+    // Helper to unwrap id/name or fallback to id
+    const unwrapLookup = (val: any) => {
+        if (!val) return null;
+        if (typeof val === 'object' && 'id' in val && 'name' in val) return val;
+        return { id: val, name: null };
+    };
+
+    // Map colorId as id/name object if present
+    const colorId = unwrapLookup(itemData.color_id);
+
+    // Map extra.stones array with id/name for type/color/shape
+    let extra = itemData.extra || {};
+    if (extra.stones && Array.isArray(extra.stones)) {
+        extra = {
+            ...extra,
+            stones: extra.stones.map((stone: any) => ({
+                ...stone,
+                type: unwrapLookup(stone.type),
+                color: unwrapLookup(stone.color),
+                shape: unwrapLookup(stone.shape)
+            }))
+        };
+    }
+
+    // Map attributes lookups as id/name
+    let attributes = itemData.attributes || {};
+    const attrFields = ['karat', 'metal', 'style', 'gender', 'sizeLength'];
+    attributes = { ...attributes };
+    for (const field of attrFields) {
+        if (attributes[field]) {
+            attributes[field] = unwrapLookup(attributes[field]);
+        }
+    }
+
     const item = new InventoryItem({
         id: itemData.id,
         inventorySubcategoryId: itemData.inventory_subcategory?.id || '',
@@ -59,7 +93,7 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         brand: itemData.brand?.id || null,
         model: itemData.model,
         serialNumber: itemData.serial_number,
-        colorId: itemData.color_id,
+        colorId,
         itemCondition: itemData.item_condition,
         ownerMark: itemData.owner_mark,
         itemDescription: itemData.item_description,
@@ -67,8 +101,8 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         resale: itemData.resale !== null ? Number(itemData.resale) : null,
         minResale: itemData.min_resale !== null ? Number(itemData.min_resale) : null,
         itemReplace: itemData.item_replace !== null ? Number(itemData.item_replace) : null,
-        extra: itemData.extra || {},
-        attributes: itemData.attributes || {},
+        extra,
+        attributes,
         legacyInventoryNumber: itemData.legacy_inventory_number,
         legacyItemGuid: itemData.legacy_item_guid,
         legacyCategoryDescription: itemData.legacy_category_description,
@@ -87,7 +121,6 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     };
 
     return item;
-    // ...existing code...
 }
 
 function mapRowToPawnTicket(row: any): PawnTicket {

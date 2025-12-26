@@ -49,7 +49,21 @@ SELECT
         'min_resale', ii.min_resale,
         'item_replace', ii.item_replace,
         'extra', ii.extra,
-        'attributes', ii.attributes,
+        'attributes', (
+          CASE WHEN ii.attributes IS NULL THEN NULL ELSE (
+            (
+              SELECT jsonb_object_agg(
+                attr.key,
+                CASE
+                  WHEN attrval.id IS NOT NULL THEN jsonb_build_object('id', attrval.id, 'name', attrval.value, 'attribute_type_id', attrval.attribute_type_id)
+                  ELSE attr.value
+                END
+              )
+              FROM jsonb_each(ii.attributes) attr
+              LEFT JOIN item_attribute_value attrval ON attrval.id = CASE WHEN (attr.value #>> '{}') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (attr.value #>> '{}')::uuid ELSE NULL END
+            )
+          ) END
+        ),
         'legacy_inventory_number', ii.legacy_inventory_number,
         'legacy_item_guid', ii.legacy_item_guid,
         'legacy_category_description', ii.legacy_category_description,

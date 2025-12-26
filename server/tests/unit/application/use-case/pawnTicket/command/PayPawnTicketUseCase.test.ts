@@ -64,14 +64,21 @@ describe('PayPawnTicketUseCase', () => {
       periodsBehind: 0,
       redemptionAmount: 200
     });
-    const input = [{
-      pawnTicketId: '60d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
-      controlNumber: '116951',
-      paymentAmount: 100,
-      clerkUserId: '11111111-1111-1111-1111-111111111111',
-      tender: { tenderTypeId: 1, amount: 100 },
-      createdDate: new Date().toISOString()
-    }];
+    const input = {
+      items: [{
+        pawnTicketId: '60d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
+        controlNumber: '116951',
+        createdDate: new Date().toISOString(),
+        amountPaid: 100
+      }],
+      tenders: [{
+        id: '1',
+        name: 'Cash',
+        amount: 100,
+        tenderTypeId: 1
+      }],
+      clerkUserId: '11111111-1111-1111-1111-111111111111'
+    };
     await useCase.execute(input);
     expect(pawnTicketRepository.updatePaymentFields).toHaveBeenCalled();
     expect(storeTransactionRepository.createPayment).toHaveBeenCalledWith({
@@ -92,14 +99,21 @@ describe('PayPawnTicketUseCase', () => {
       periodsBehind: 0,
       redemptionAmount: 150
     });
-    const input = [{
-      pawnTicketId: '70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
-      controlNumber: '116952',
-      paymentAmount: 200,
-      clerkUserId: '22222222-2222-2222-2222-222222222222',
-      tender: { tenderTypeId: 2, amount: 200 },
-      createdDate: new Date().toISOString()
-    }];
+    const input = {
+      items: [{
+        pawnTicketId: '70d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
+        controlNumber: '116952',
+        createdDate: new Date().toISOString(),
+        amountPaid: 200
+      }],
+      tenders: [{
+        id: '2',
+        name: 'Card',
+        amount: 200,
+        tenderTypeId: 2
+      }],
+      clerkUserId: '22222222-2222-2222-2222-222222222222'
+    };
     await useCase.execute(input);
     expect(pawnTicketRepository.updatePaymentFields).toHaveBeenCalled();
     expect(storeTransactionRepository.createPayment).toHaveBeenCalledWith({
@@ -114,14 +128,21 @@ describe('PayPawnTicketUseCase', () => {
 
   it('should throw NotFoundError if charges not found', async () => {
     getPawnTicketCurrentChargesUseCase.execute.mockImplementation(() => Promise.reject(new NotFoundError('Pawn ticket not found')));
-    const input = [{
-      pawnTicketId: '80d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
-      controlNumber: '116953',
-      paymentAmount: 50,
-      clerkUserId: '33333333-3333-3333-3333-333333333333',
-      tender: { tenderTypeId: 1, amount: 50 },
-      createdDate: new Date().toISOString()
-    }];
+    const input = {
+      items: [{
+        pawnTicketId: '80d1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
+        controlNumber: '116953',
+        createdDate: new Date().toISOString(),
+        amountPaid: 50
+      }],
+      tenders: [{
+        id: '1',
+        name: 'Cash',
+        amount: 50,
+        tenderTypeId: 1
+      }],
+      clerkUserId: '33333333-3333-3333-3333-333333333333'
+    };
     await expect(useCase.execute(input)).rejects.toThrow(NotFoundError);
   });
 });
