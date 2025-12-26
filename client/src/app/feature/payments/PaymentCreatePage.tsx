@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
@@ -8,6 +8,7 @@ import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
 import { useFindByTicket } from './hooks/useFindByTicket';
+import { useCustomerPawnTickets } from './hooks/useCustomerPawnTickets';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 import { ViewPawnTab } from './components/ViewPawnTab';
 
@@ -22,6 +23,19 @@ export default function PaymentCreatePage() {
 
   const navigate = useNavigate();
   const { loading: findingTicket, error: findTicketError, findByTicket } = useFindByTicket();
+  
+  // Lift pawn tickets hook to parent level to prevent re-fetching on tab changes
+  const pawnTicketsData = useCustomerPawnTickets(customer?.id || '');
+  
+  // Reset pawn tickets data and selected pawn when customer changes
+  useEffect(() => {
+    if (customer?.id) {
+      pawnTicketsData.reload();
+    }
+    // Clear selected pawn when customer changes
+    setSelectedPawn(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer?.id]);
 
   const canNavigateToTab = (tab: TabKey) => {
     if (tab === 'customer') return true;
@@ -94,7 +108,7 @@ export default function PaymentCreatePage() {
         <TabsContent value="locatePawns" className="flex-1 min-h-0 pt-4">
           {customer?.id && (
             <LocatePawnsTab
-              customerId={customer.id}
+              pawnTicketsData={pawnTicketsData}
               onBack={() => setActiveTab('customer')}
               onPawnSelected={handlePawnSelected}
               onViewPawn={(pawn) => {

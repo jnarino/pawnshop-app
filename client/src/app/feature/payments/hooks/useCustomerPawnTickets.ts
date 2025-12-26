@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { pawnTicketApi, CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 
-interface UseCustomerPawnTicketsResult {
+export interface UseCustomerPawnTicketsResult {
   tickets: CustomerActivePawnTicket[];
   filteredTickets: CustomerActivePawnTicket[];
   loading: boolean;

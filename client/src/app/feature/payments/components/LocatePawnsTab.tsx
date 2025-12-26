@@ -28,13 +28,13 @@ const DEFAULT_PAWN_PERIOD_DAYS = 60;
 type PaymentSelectionType = 'current' | 'redemption' | 'other' | null;
 
 interface Props {
-    customerId: string;
+    pawnTicketsData: ReturnType<typeof useCustomerPawnTickets>;
     onBack: () => void;
     onPawnSelected: (pawn: CustomerActivePawnTicket) => void;
     onViewPawn: (pawn: CustomerActivePawnTicket) => void;
 }
 
-export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onViewPawn }: Props) {
+export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected, onViewPawn }: Props) {
     const {
         filteredTickets,
         loading,
@@ -45,7 +45,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
         applyFilter,
         clearFilter,
         selectTicket,
-    } = useCustomerPawnTickets(customerId);
+    } = pawnTicketsData;
 
     const [paymentSelections, setPaymentSelections] = useState<Record<string, { type: PaymentSelectionType, amount: number } | null>>({});
     const [otherAmounts, setOtherAmounts] = useState<Record<string, number>>({});
@@ -277,8 +277,8 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 </Alert>
             )}
 
-            <Card className="flex-1 flex flex-col min-h-0">
-                <ScrollArea className="flex-1">
+            <Card className="flex flex-col">
+                <ScrollArea className="h-[50vh]">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -378,10 +378,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 </ScrollArea>
 
                 <CardContent className="py-4 border-t">
-                    <div className="flex items-center justify-between">
-                        <Button variant="outline" onClick={onBack}>
-                            Back
-                        </Button>
+                    <div className="flex items-center justify-end">
                         <div className="flex items-center gap-3">
                             <Button variant="outline" onClick={handleClearSelections}>
                                 Clear All
@@ -394,7 +391,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                             </Button>
                             <Separator orientation="vertical" className="h-8" />
                             <Button variant="default" onClick={handleSave} disabled={totalPayment === 0}>
-                                Save
+                                Make Payment
                             </Button>
                         </div>
                     </div>
