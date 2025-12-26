@@ -1,10 +1,49 @@
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import ManageCashDialog from '@/app/feature/admin/components/ManageCashDialog';
 import { FindByInputModal, InventoryItemModal } from '@/app/feature/_shared/inventory-item';
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import { useNavigate } from 'react-router-dom';
+
+// Helper to extract ID from attribute objects or return string value
+const extractId = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object' && 'id' in value) {
+    return (value as { id: string }).id || '';
+  }
+  return '';
+};
+
+// Transform stones from API format to frontend format
+function transformStones(stones: Array<{
+  type?: { id: string; name?: string | null } | string;
+  shape?: { id: string; name?: string | null } | string;
+  color?: { id: string; name?: string | null } | string;
+  carat?: number | string;
+  weight?: number | string;
+  length?: number | string;
+  width?: number | string;
+  clarity?: string;
+  quantity?: number | string;
+}> | undefined) {
+  if (!stones || !Array.isArray(stones)) return undefined;
+  return stones.map((stone, index) => ({
+    id: `stone-${index}-${Date.now()}`,
+    quantity: String(stone.quantity || 1),
+    type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
+    shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
+    color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
+    carat: String(stone.carat || ''),
+    weight: String(stone.weight || ''),
+    length: String(stone.length || ''),
+    width: String(stone.width || ''),
+    clarity: stone.clarity || '',
+  }));
+}
 
 // Map API response to InventoryItemDraft format
 function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryItemDraft {
@@ -21,7 +60,7 @@ function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryIt
     brandName: item.brand?.name || '',
     model: item.model || '',
     serial: item.serialNumber || '',
-    color: item.colorId || '',
+    color: extractId(item.colorId),
     condition: item.itemCondition || '',
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
@@ -30,13 +69,17 @@ function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryIt
     ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
     // Jewelry attributes (UUIDs from lookup)
-    metal: (attributes.metal as string) || '',
-    karat: (attributes.karat as string) || '',
-    style: (attributes.style as string) || '',
-    gender: (attributes.gender as string) || '',
-    sizeLength: (attributes.sizeLength as string) || '',
-    weight: String((attributes.weight as string | number) || (extra.weight as string | number) || ''),
-    weightUnit: (attributes.weightUnit as string) || 'Grams',
+    metal: extractId(attributes.metal),
+    karat: extractId(attributes.karat),
+    style: extractId(attributes.style),
+    // Extra fields
+    gender: extractId(extra.gender),
+    sizeLength: extractId(extra.size),
+    weight: extractId(extra.weight),
+    weightUnit: extractId(extra.weightUnit) || 'Grams',
+    // Stones
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stones: transformStones(extra.stones as any),
     // Store original data for update
     status: item.status,
     inventoryNumber: item.inventoryNumber,
@@ -52,18 +95,36 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
   if (draft.metal) attributes.metal = draft.metal;
   if (draft.karat) attributes.karat = draft.karat;
   if (draft.style) attributes.style = draft.style;
-  if (draft.gender) attributes.gender = draft.gender;
-  if (draft.sizeLength) attributes.sizeLength = draft.sizeLength;
-  if (draft.weight) {
-    attributes.weight = draft.weight;
-    extra.weight = Number.parseFloat(draft.weight) || 0;
-  }
-  if (draft.weightUnit) attributes.weightUnit = draft.weightUnit;
   
   // Firearm attributes
   if (draft.caliber) attributes.caliber = draft.caliber;
   if (draft.action) attributes.action = draft.action;
   if (draft.barrelLength) attributes.barrelLength = draft.barrelLength;
+
+  // Build extra object (weight, weightUnit, gender, size, stones)
+  if (draft.weight) extra.weight = draft.weight;
+  if (draft.weightUnit) extra.weightUnit = draft.weightUnit;
+  if (draft.gender) extra.gender = draft.gender;
+  if (draft.sizeLength) extra.size = draft.sizeLength;
+
+  // Build stones array for backend (convert string values to numbers where needed)
+  if (draft.stones && draft.stones.length > 0) {
+    const stones = draft.stones.map(stone => {
+      const stoneData: Record<string, unknown> = {
+        quantity: Number(stone.quantity) || 1,
+      };
+      if (stone.type) stoneData.type = stone.type;
+      if (stone.shape) stoneData.shape = stone.shape;
+      if (stone.carat) stoneData.carat = Number(stone.carat);
+      if (stone.color) stoneData.color = stone.color;
+      if (stone.weight) stoneData.weight = Number(stone.weight);
+      if (stone.length) stoneData.length = Number(stone.length);
+      if (stone.width) stoneData.width = Number(stone.width);
+      if (stone.clarity) stoneData.clarity = stone.clarity;
+      return stoneData;
+    });
+    extra.stones = stones;
+  }
   
   return {
     inventorySubcategoryId: draft.subcategoryId || undefined,
@@ -163,10 +224,12 @@ export default function ElectronMenuBridge() {
     try {
       const payload = mapDraftToUpdatePayload(draft);
       await updateInventoryItem(draft.id, payload);
+      toast.success('Inventory item updated successfully!');
       setInventoryItemModalOpen(false);
       setInventoryItem(null);
     } catch (err) {
       console.error('Failed to update inventory item:', err);
+      toast.error('Failed to update inventory item');
       // The modal will stay open so user can retry or cancel
     }
   }, []);
