@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/core/redux/store';
+import { useAuthStore } from '@/app/core/store/useAuthStore';
 
 /**
  * Synchronizes auth state to Electron main process so menu can update (login/logout + disabled items).
@@ -8,11 +7,11 @@ import { RootState } from '@/app/core/redux/store';
 // global declaration moved to electron/preload.ts
 
 export default function AuthMenuSync() {
-  const user = useSelector((s: RootState) => s.auth.user);
+  const user = useAuthStore((s) => s.user);
   useEffect(() => {
     const api = window.electronAPI;
     if (api?.authChanged) {
-      const authed = !!user; // only trust Redux user state to drive menu visibility
+      const authed = !!user; // only trust Store user state to drive menu visibility
       api.authChanged(authed);
       api.refreshMenu?.();
     }

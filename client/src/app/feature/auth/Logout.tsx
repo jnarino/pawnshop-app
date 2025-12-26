@@ -1,8 +1,7 @@
 // src/app/feature/auth/Logout.tsx
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { logout } from '../../core/redux/authSlice';
+import { useAuth } from '@/app/core/hooks/useAuth';
 
 // ✅ Single Responsibility: Handle Electron notifications safely
 const notifyElectronAuth = (authenticated: boolean): void => {
@@ -17,24 +16,24 @@ const notifyElectronAuth = (authenticated: boolean): void => {
 };
 
 export default function Logout() {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
-    useEffect(() => {
-        (async () => {
-            try {
-                await dispatch<any>(logout());
-                notifyElectronAuth(false);
-            } finally {
-                // Navigate then hard refresh to clear any lingering component state
-                navigate('/test', { replace: true });
-                setTimeout(() => {
-                    if (window.location.hash !== '#/test') window.location.hash = '#/test';
-                    window.location.reload();
-                }, 50);
-            }
-        })();
-    }, [navigate, dispatch]);
+  useEffect(() => {
+    (async () => {
+      try {
+        await logout();
+        notifyElectronAuth(false);
+      } finally {
+        // Navigate then hard refresh to clear any lingering component state
+        navigate('/test', { replace: true });
+        setTimeout(() => {
+          if (window.location.hash !== '#/test') window.location.hash = '#/test';
+          window.location.reload();
+        }, 50);
+      }
+    })();
+  }, [navigate, logout]);
 
-    return null;
+  return null;
 }

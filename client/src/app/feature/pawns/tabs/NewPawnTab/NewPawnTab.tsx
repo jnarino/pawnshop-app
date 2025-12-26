@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { PawnTicketForm, PrintLabelsModal, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,8 +6,7 @@ import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
-import { logout } from '@/app/core/redux/authSlice';
-import type { AppDispatch } from '@/app/core/redux/store';
+import { useAuth } from '@/app/core/hooks/useAuth';
 import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 interface NewPawnTabProps {
@@ -25,8 +23,8 @@ interface PrintState {
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
   const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
@@ -46,14 +44,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
   const handleLogoutAfterPrint = useCallback(async () => {
     try {
-      await dispatch(logout());
+      await logout();
       if (globalThis.electronAPI?.authChanged) {
         globalThis.electronAPI.authChanged(false);
       }
     } finally {
       navigate('/login', { replace: true });
     }
-  }, [dispatch, navigate]);
+  }, [logout, navigate]);
 
   const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
     const success = await printLabels(printState.controlNumber, printState.printItems, labelCounts);
