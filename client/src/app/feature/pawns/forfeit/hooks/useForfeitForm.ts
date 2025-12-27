@@ -13,6 +13,7 @@ export interface ForfeitFormData {
 
 import { InventoryItem, pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
+import { transformStones } from '@/app/shared/components/ElectronMenuBridge';
 
 export const useForfeitForm = () => {
     const [items, setItems] = useState<TicketByControlNumber[]>([]);
@@ -61,7 +62,67 @@ export const useForfeitForm = () => {
 
     const onPawnSelected = (pawn: TicketByControlNumber) => {
         console.log(pawn);
-        form.setValue('pawnSelected', pawn);
+
+        const selectedPawn = {
+            ...pawn,
+            items: pawn.items.map((item) => inventoryItemToDraft(item))
+        }
+
+        form.setValue('pawnSelected', selectedPawn);
+    };
+
+    const inventoryItemToDraft = (item: InventoryItem): InventoryItemDraft => {
+        const attributes = item.attributes || {};
+        const extra = item.extra || {};
+
+        return {
+            id: item.id,
+            type: item.inventoryCategory?.id || '',
+            categoryName: item.inventoryCategory?.name || '',
+            subcategoryId: item.inventorySubcategory?.id || '',
+            subcategoryName: item.inventorySubcategory?.name || '',
+            brandId: item.brand?.id || '',
+            brandName: item.brand?.name || '',
+            model: item.model || '',
+            serial: item.serialNumber || '',
+            color: item.colorId?.id || '',
+            condition: item.itemCondition || '',
+            quantity: String(item.quantity || 1),
+            amount: String(item.priceAmount || 0),
+            resale: String(item.resale || 0),
+            replace: String(item.itemReplace || 0),
+            ownerNumber: item.ownerMark || '',
+            description: item.itemDescription || '',
+            // Jewelry attributes (UUIDs from lookup)
+            metal: attributes.metal?.id || '',
+            karat: attributes.karat?.id || '',
+            style: attributes.style?.id || '',
+            // Extra fields
+            gender: attributes.gender?.id || '',
+            sizeLength: attributes.sizeLength?.id || '',
+            weight: String(extra.weight || ''),
+            weightUnit: String(extra.weightUnit || 'Grams'),
+            // Stones
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            stones: transformStones(extra.stones as any),
+            // Store original data
+            status: "Pending to pull",
+            inventoryNumber: item.inventoryNumber || undefined,
+        };
+    };
+
+    const updatePawnItem = (updatedItem: InventoryItemDraft) => {
+        const currentPawn = form.getValues('pawnSelected');
+        if (!currentPawn) return;
+
+        const updatedItems = currentPawn.items.map(item =>
+            item.id === updatedItem.id ? updatedItem : item
+        );
+
+        form.setValue('pawnSelected', {
+            ...currentPawn,
+            items: updatedItems
+        });
     };
 
     return {
@@ -70,6 +131,7 @@ export const useForfeitForm = () => {
         loading,
         submitForfeit,
         searchByDate,
-        onPawnSelected
+        onPawnSelected,
+        updatePawnItem
     };
 };

@@ -18,29 +18,44 @@ import { getByInventoryNumber } from '@/app/core/api/inventoryItemApi';
 import { mapApiToInventoryItemDraft } from '@/app/shared/components/ElectronMenuBridge';
 
 interface PawnTableList {
-    items: InventoryItem[]
+    items: InventoryItemDraft[];
+    onItemUpdate: (item: InventoryItemDraft) => void;
 }
 
-export const PawnItemList = ({ items }: PawnTableList) => {
+export const PawnItemList = ({ items, onItemUpdate }: PawnTableList) => {
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [inventoryItemSelected, setInventoryItemSelected] = useState<InventoryItemDraft | null>();
+    const [currentEditIndex, setCurrentEditIndex] = useState<number>(-1);
 
     const handleCloseInventoryItem = () => {
         setEditingRowId(null);
         setInventoryItemSelected(null);
+        setCurrentEditIndex(-1);
     };
 
     const handleSaveInventoryItem = (item: InventoryItemDraft) => {
-        setEditingRowId(null);
-        setInventoryItemSelected(item);
+        const updatedItem = { ...item, status: 'Pulled' };
+        onItemUpdate(updatedItem);
+
+        const nextIndex = currentEditIndex + 1;
+        if (nextIndex < items.length) {
+            const nextItem = items[nextIndex];
+            setCurrentEditIndex(nextIndex);
+            setEditingRowId(nextItem.id || null);
+            setInventoryItemSelected(nextItem);
+        } else {
+            handleCloseInventoryItem();
+        }
     };
 
-    const handleFindInventory = useCallback(async (inventoryNumber: string) => {
+    const handleFindInventory = useCallback(async (inventoryNumber: string | undefined, index: number) => {
         if (!inventoryNumber) return;
         try {
             const item = await getByInventoryNumber(inventoryNumber);
             const mappedItem = mapApiToInventoryItemDraft(item);
             setInventoryItemSelected(mappedItem);
+            setCurrentEditIndex(index);
+            setEditingRowId(item.id || null);
         } catch (err) {
             console.error('Error finding inventory item:', err);
         }
@@ -59,16 +74,16 @@ export const PawnItemList = ({ items }: PawnTableList) => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {items.map((item) => (
+                    {items.map((item, index) => (
                         <TableRow
                             key={item.id}
                             className={item.id === editingRowId ? "bg-amber-50 border-l-4 border-amber-500" : ""}
                         >
                             <TableCell>
-                                {item.itemDescription}
+                                {item.description}
                             </TableCell>
                             <TableCell>{item.quantity}</TableCell>
-                            <TableCell>${Number(item.priceAmount).toFixed(2)}</TableCell>
+                            <TableCell>${Number(item.amount).toFixed(2)}</TableCell>
                             <TableCell className={item.status === "Pending to pull" ? "bg-amber-50 border-l-4 border-amber-500" : item.status === "Pulled" ? "bg-green-50 border-l-4 border-green-500" : ""}>{item.status}</TableCell>
                             <TableCell className="text-center">
                                 <Tooltip content="Pull item">
@@ -76,8 +91,7 @@ export const PawnItemList = ({ items }: PawnTableList) => {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => {
-                                            setEditingRowId(item.id || null);
-                                            handleFindInventory(item.inventoryNumber || '');
+                                            handleFindInventory(item.inventoryNumber, index);
                                         }}
                                         disabled={false || !!editingRowId}
                                     >
@@ -98,11 +112,12 @@ export const PawnItemList = ({ items }: PawnTableList) => {
                 </TableBody>
             </Table>
             <InventoryItemModal
-                mode={ViewMode.VIEW}
-                open={!!editingRowId}
+                mode={ViewMode.PULL}
+                open={!!inventoryItemSelected}
                 initial={inventoryItemSelected}
                 onCancel={handleCloseInventoryItem}
                 onSave={handleSaveInventoryItem}
+                hasNextItem={currentEditIndex < items.length - 1}
             />
         </>
     )

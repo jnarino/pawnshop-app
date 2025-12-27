@@ -12,7 +12,7 @@ export type ForfeitTabKey = 'pull-transaction';
 
 function ForfeitWorkspaceContent() {
 
-  const { form, submitForfeit, searchByDate, onPawnSelected, items } = useForfeitForm();
+  const { form, submitForfeit, searchByDate, onPawnSelected, items, updatePawnItem } = useForfeitForm();
 
   return (
     <>
@@ -70,7 +70,10 @@ function ForfeitWorkspaceContent() {
             </div>
           </div>
           <div className='mt-4'>
-            <PawnItemList items={form.watch('pawnSelected')?.items || []} />
+            <PawnItemList
+              items={form.watch('pawnSelected')?.items || []}
+              onItemUpdate={updatePawnItem}
+            />
           </div>
         </form>
       </div>

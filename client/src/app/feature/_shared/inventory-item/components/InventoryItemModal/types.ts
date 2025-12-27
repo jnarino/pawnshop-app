@@ -35,6 +35,8 @@ export interface InventoryItemDraft {
   // Additional fields for update operations
   status?: string;
   inventoryNumber?: string;
+  itemStatus?: 'I' | 'J';
+  minResale?: string;
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {
