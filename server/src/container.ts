@@ -50,6 +50,7 @@ import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/
 import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
 import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
+import { ListPawnTicketsByDateRangeUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
 import { PgControlNumberRepository } from './infrastructure/persistence/controlNumber/PgControlNumberRepository';
 import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
 import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
@@ -128,6 +129,7 @@ export async function createApp() {
   const getPawnTicketCurrentChargesUseCase = new GetPawnTicketCurrentChargesUseCase(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase)
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
+  const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo);
 
 
   // Store Transaction use-cases
@@ -194,7 +196,8 @@ export async function createApp() {
     listActivePawnTicketsByCustomerUseCase,
     getPawnTicketPaymentsUseCase,
     getPawnTicketCurrentChargesUseCase,
-    payPawnTicketUseCase
+    payPawnTicketUseCase,
+    listPawnTicketsByDateRangeUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

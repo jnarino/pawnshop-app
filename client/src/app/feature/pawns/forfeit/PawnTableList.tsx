@@ -22,7 +22,7 @@ export const PawnTableList = ({ items }: PawnTableList) => {
         <Table stickyHeader>
             <TableHeader>
                 <TableRow>
-                    <TableHead sticky className="bg-white z-20">Customer #</TableHead>
+                    <TableHead sticky className="bg-white z-20">Customer</TableHead>
                     <TableHead sticky className="bg-white z-20">Ticket #</TableHead>
                     <TableHead sticky className="bg-white z-20">Date out</TableHead>
                     <TableHead sticky className="bg-white z-20">Amount</TableHead>
@@ -37,7 +37,7 @@ export const PawnTableList = ({ items }: PawnTableList) => {
                         className={item.id === editingRowId ? "bg-amber-50 border-l-4 border-amber-500" : ""}
                     >
                         <TableCell>
-                            {item.customerId}
+                            {item.customer ? `${item.customer.firstName} ${item.customer.lastName}` : item.customerId}
                         </TableCell>
                         <TableCell>{item.controlNumber}</TableCell>
                         <TableCell>{item.maturityDate}</TableCell>

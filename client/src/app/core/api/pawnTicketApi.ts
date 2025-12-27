@@ -63,6 +63,10 @@ export interface TicketByControlNumber {
   defaultDate: string;
   pawnStatus: string;
   itemIds: string[];
+  customer?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 export interface PawnTicketCharges {
@@ -101,5 +105,9 @@ export const pawnTicketApi = {
     return http(
       `/api/pawn-ticket/customer/${customerId}/active?controlNumber=${encodeURIComponent(controlNumber)}`
     );
+  },
+
+  findByDateRange: async (from: string, to: string): Promise<TicketByControlNumber[]> => {
+    return http(`/api/pawn-ticket/date-range?from=${from}&to=${to}`);
   },
 };

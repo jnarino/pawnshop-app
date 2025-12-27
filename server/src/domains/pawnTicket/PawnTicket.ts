@@ -68,6 +68,14 @@ export class PawnTicket {
    */
   note?: string;
 
+  /**
+   * Loaded only in some queries (e.g. date range search)
+   */
+  customer?: {
+    firstName: string;
+    lastName: string;
+  };
+
   constructor(params: {
     id: string;
     controlNumber: string;
@@ -92,6 +100,10 @@ export class PawnTicket {
     items?: InventoryItem[];
     tenders: TenderInfo[];
     note?: string;
+    customer?: {
+      firstName: string;
+      lastName: string;
+    };
   }) {
     this.id = params.id;
 
@@ -117,5 +129,6 @@ export class PawnTicket {
     this.items = params.items;
     this.tenders = params.tenders;
     this.note = params.note;
+    this.customer = params.customer;
   }
 }

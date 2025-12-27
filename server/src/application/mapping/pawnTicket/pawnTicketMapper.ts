@@ -29,6 +29,10 @@ export class PawnTicketMapper {
       currentCharges,
       periodsBehind,
       redemptionAmount,
+      customer: {
+        firstName: ticket.customer?.firstName || '',
+        lastName: ticket.customer?.lastName || ''
+      }
     };
   }
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Customer } from '@/app/feature/pawns/types';
 
 export interface ForfeitFormData {
     dateRange: {
@@ -13,7 +12,6 @@ export interface ForfeitFormData {
 import { pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 export const useForfeitForm = () => {
-    const [customer, setCustomer] = useState<Customer | null>(null);
     const [items, setItems] = useState<TicketByControlNumber[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -37,7 +35,13 @@ export const useForfeitForm = () => {
                 const results = await pawnTicketApi.findByControlNumber(data.ticketNumber.trim());
                 setItems(results);
             } else {
-                setItems([]);
+                const { from, to } = data.dateRange;
+                if (from && to) {
+                    const results = await pawnTicketApi.findByDateRange(from, to);
+                    setItems(results);
+                } else {
+                    setItems([]);
+                }
             }
         } catch (error) {
             console.error(error);
@@ -50,8 +54,6 @@ export const useForfeitForm = () => {
     return {
         form,
         submitForfeit,
-        customer,
-        setCustomer,
         items,
         loading
     };

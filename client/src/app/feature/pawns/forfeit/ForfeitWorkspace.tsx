@@ -11,7 +11,7 @@ export type ForfeitTabKey = 'pull-transaction';
 
 function ForfeitWorkspaceContent() {
 
-  const { form, submitForfeit, customer, setCustomer, items } = useForfeitForm();
+  const { form, submitForfeit, items } = useForfeitForm();
 
   return (
     <>
@@ -21,8 +21,8 @@ function ForfeitWorkspaceContent() {
         <div className='self-end'>
           <CancelButton />
         </div>
-        <form onSubmit={form.handleSubmit(submitForfeit)} className="grid grid-cols-3 gap-4">
-          <FieldSet className="card section">
+        <form onSubmit={form.handleSubmit(submitForfeit)} className="grid grid-cols-5 gap-4">
+          <FieldSet className="card section col-span-2">
             <FieldLegend className="mb-2 text-sm">Personal Information</FieldLegend>
             <div className="flex flex-col gap-4">
               <div className="flex items-end gap-2">
@@ -63,7 +63,7 @@ function ForfeitWorkspaceContent() {
               </div>
             </div>
           </FieldSet>
-          <div className='col-span-2'>
+          <div className='col-span-3'>
             <PawnTableList items={items} />
           </div>
         </form>
