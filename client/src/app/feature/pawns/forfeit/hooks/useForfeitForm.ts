@@ -7,9 +7,12 @@ export interface ForfeitFormData {
         to: string;
     };
     ticketNumber: string;
+    pawnSelected: TicketByControlNumber;
+    items: TicketByControlNumber[];
 }
 
-import { pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { InventoryItem, pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 
 export const useForfeitForm = () => {
     const [items, setItems] = useState<TicketByControlNumber[]>([]);
@@ -51,10 +54,22 @@ export const useForfeitForm = () => {
         }
     };
 
+    const searchByDate = () => {
+        form.setValue('ticketNumber', '');
+        form.handleSubmit(submitForfeit)();
+    };
+
+    const onPawnSelected = (pawn: TicketByControlNumber) => {
+        console.log(pawn);
+        form.setValue('pawnSelected', pawn);
+    };
+
     return {
         form,
-        submitForfeit,
         items,
-        loading
+        loading,
+        submitForfeit,
+        searchByDate,
+        onPawnSelected
     };
 };

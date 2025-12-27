@@ -13,10 +13,11 @@ import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { Tooltip } from '@/components/ui/tooltip';
 
 interface PawnTableList {
-    items: TicketByControlNumber[]
+    items: TicketByControlNumber[];
+    onPawnSelected: (pawn: TicketByControlNumber) => void;
 }
 
-export const PawnList = ({ items }: PawnTableList) => {
+export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
     return (
@@ -51,8 +52,9 @@ export const PawnList = ({ items }: PawnTableList) => {
                                     size="icon"
                                     onClick={() => {
                                         setEditingRowId(item.id || null);
+                                        onPawnSelected(item);
                                     }}
-                                    disabled={false || !!editingRowId}
+                                    disabled={item.id === editingRowId}
                                 >
                                     <Eye className='w-4 h-4' />
                                 </Button>

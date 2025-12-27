@@ -12,7 +12,7 @@ export type ForfeitTabKey = 'pull-transaction';
 
 function ForfeitWorkspaceContent() {
 
-  const { form, submitForfeit, items } = useForfeitForm();
+  const { form, submitForfeit, searchByDate, onPawnSelected, items } = useForfeitForm();
 
   return (
     <>
@@ -38,7 +38,7 @@ function ForfeitWorkspaceContent() {
                       />
                     )}
                   />
-                  <Button type="submit">Search</Button>
+                  <Button type="button" onClick={searchByDate}>Search</Button>
                 </div>
 
                 <div className="grid grid-cols-2">
@@ -66,14 +66,11 @@ function ForfeitWorkspaceContent() {
               </div>
             </FieldSet>
             <div className='col-span-3'>
-              <PawnList items={items} />
+              <PawnList items={items} onPawnSelected={onPawnSelected} />
             </div>
           </div>
-          <div className=''>
-            <PawnItemList items={[{ id: '1', description: "Gun 1", quantity: 1, amountEach: 75.2, status: "Pending to pull", amountTotal: 75.2 },
-            { id: '1', description: "Gun 2", quantity: 2, amountEach: 3.1, status: "Pulled", amountTotal: 6.2 }
-            ]} />
-
+          <div className='mt-4'>
+            <PawnItemList items={form.watch('pawnSelected')?.items || []} />
           </div>
         </form>
       </div>
