@@ -5,12 +5,13 @@ import { CancelButton } from '@/app/shared/components/CancelButton';
 import { useForfeitForm } from './hooks/useForfeitForm';
 import { Controller } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
+import { PawnTableList } from './PawnTableList';
 
 export type ForfeitTabKey = 'pull-transaction';
 
 function ForfeitWorkspaceContent() {
 
-  const { form, submitForfeit, customer, setCustomer } = useForfeitForm();
+  const { form, submitForfeit, customer, setCustomer, items } = useForfeitForm();
 
   return (
     <>
@@ -20,7 +21,7 @@ function ForfeitWorkspaceContent() {
         <div className='self-end'>
           <CancelButton />
         </div>
-        <form onSubmit={form.handleSubmit(submitForfeit)} className="grid grid-cols-2 gap-2">
+        <form onSubmit={form.handleSubmit(submitForfeit)} className="grid grid-cols-3 gap-4">
           <FieldSet className="card section">
             <FieldLegend className="mb-2 text-sm">Personal Information</FieldLegend>
             <div className="flex flex-col gap-4">
@@ -49,6 +50,12 @@ function ForfeitWorkspaceContent() {
                         {...field}
                         value={field.value}
                         onChange={field.onChange}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            form.handleSubmit(submitForfeit)();
+                          }
+                        }}
                       />
                     )}
                   />
@@ -56,12 +63,11 @@ function ForfeitWorkspaceContent() {
               </div>
             </div>
           </FieldSet>
-          <div>
-
+          <div className='col-span-2'>
+            <PawnTableList items={items} />
           </div>
         </form>
       </div>
-
     </>
   );
 }

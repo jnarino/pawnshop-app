@@ -10,8 +10,12 @@ export interface ForfeitFormData {
     ticketNumber: string;
 }
 
+import { pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+
 export const useForfeitForm = () => {
     const [customer, setCustomer] = useState<Customer | null>(null);
+    const [items, setItems] = useState<TicketByControlNumber[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const today = new Date();
     const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -26,14 +30,29 @@ export const useForfeitForm = () => {
         }
     });
 
-    const submitForfeit = (data: ForfeitFormData) => {
-        console.log('Forfeit Form Data:', data);
+    const submitForfeit = async (data: ForfeitFormData) => {
+        setLoading(true);
+        try {
+            if (data.ticketNumber) {
+                const results = await pawnTicketApi.findByControlNumber(data.ticketNumber.trim());
+                setItems(results);
+            } else {
+                setItems([]);
+            }
+        } catch (error) {
+            console.error(error);
+            setItems([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return {
         form,
         submitForfeit,
         customer,
-        setCustomer
+        setCustomer,
+        items,
+        loading
     };
 };
