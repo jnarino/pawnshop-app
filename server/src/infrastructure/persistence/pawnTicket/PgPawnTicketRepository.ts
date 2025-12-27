@@ -50,6 +50,11 @@ const SQL_LIST_ACTIVE_BY_CUSTOMER = loadSql(
     'pawnTicket/pawn_ticket_list_active_by_customer'
 );
 
+const SQL_FIND_BY_DATE_RANGE = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_find_by_date_range'
+);
+
 const SQL_FIND_BY_ID = loadSql(
     'queries',
     'pawnTicket/pawn_ticket_find_by_id'
@@ -156,7 +161,11 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         items: row.items_data ?
             (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) :
             undefined,
-        tenders: row.tenders || []
+        tenders: row.tenders || [],
+        customer: (row.first_name && row.last_name) ? {
+            firstName: row.first_name,
+            lastName: row.last_name
+        } : undefined
     });
 }
 
@@ -217,6 +226,11 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
 
     async findByCustomer(customerId: string): Promise<PawnTicket[]> {
         const result = await this.db.query(SQL_FIND_BY_CUSTOMER, [customerId]);
+        return result.rows.map(mapRowToPawnTicket);
+    }
+
+    async findByDateRange(from: Date, to: Date): Promise<PawnTicket[]> {
+        const result = await this.db.query(SQL_FIND_BY_DATE_RANGE, [from, to]);
         return result.rows.map(mapRowToPawnTicket);
     }
 

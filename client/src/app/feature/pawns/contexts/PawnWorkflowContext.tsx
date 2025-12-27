@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 
@@ -15,19 +14,16 @@ export interface PawnDraftState {
   items: InventoryItemDraft[];
 }
 
-interface PawnWorkflowState {
+export interface PawnWorkflowState {
   activeTab: TabKey;
   customer: Customer | null;
   setCustomer: (customer: Customer | null) => void;
   pawnDraft: PawnDraftState;
   updatePawnDraft: (updates: Partial<PawnDraftState>) => void;
   resetPawnDraft: () => void;
-  cancelModalOpen: boolean;
   setActiveTab: (tab: TabKey) => void;
+  navigateToTab: (tab: TabKey) => boolean;
   canNavigateToTab: (tab: TabKey) => boolean;
-  openCancelModal: () => void;
-  closeCancelModal: () => void;
-  confirmCancelTransaction: () => void;
 }
 
 const PawnWorkflowContext = createContext<PawnWorkflowState | null>(null);
@@ -38,9 +34,9 @@ function createInitialDraft(): PawnDraftState {
   maturityDate.setDate(maturityDate.getDate() + 30);
   const expirationDate = new Date(today);
   expirationDate.setDate(expirationDate.getDate() + 60);
-  
+
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
-  
+
   return {
     type: 'PAWN',
     periodicRate: '25',
@@ -51,18 +47,25 @@ function createInitialDraft(): PawnDraftState {
   };
 }
 
+// Import moved up to top-level normally, but here just ensure it's available
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+
 export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [activeTab, setActiveTab] = useState<TabKey>('customer');
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
-  
-  const navigate = useNavigate();
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
     if (tab === 'customer') return true;
     return !!customer?.id;
   }, [customer?.id]);
+
+  const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
+    initialTab: 'customer',
+    canNavigate: canNavigateToTab
+  });
+
+  const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
+
+  const navigate = useNavigate();
 
   const updatePawnDraft = useCallback((updates: Partial<PawnDraftState>) => {
     setPawnDraft(prev => ({ ...prev, ...updates }));
@@ -72,22 +75,6 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     setPawnDraft(createInitialDraft());
   }, []);
 
-  const openCancelModal = useCallback(() => {
-    setCancelModalOpen(true);
-  }, []);
-
-  const closeCancelModal = useCallback(() => {
-    setCancelModalOpen(false);
-  }, []);
-
-  const confirmCancelTransaction = useCallback(() => {
-    setActiveTab('customer');
-    setCustomer(null);
-    setPawnDraft(createInitialDraft());
-    setCancelModalOpen(false);
-    navigate('/', { replace: true });
-  }, [navigate]);
-
   const value = useMemo(() => ({
     activeTab,
     customer,
@@ -95,26 +82,14 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     pawnDraft,
     updatePawnDraft,
     resetPawnDraft,
-    cancelModalOpen,
     setActiveTab,
+    navigateToTab,
     canNavigateToTab,
-    openCancelModal,
-    closeCancelModal,
-    confirmCancelTransaction
-  }), [activeTab, customer, pawnDraft, cancelModalOpen, updatePawnDraft, resetPawnDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction]);
+  }), [activeTab, customer, pawnDraft, updatePawnDraft, resetPawnDraft, canNavigateToTab, setActiveTab, navigateToTab]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>
       {children}
-      <ConfirmModal
-        open={cancelModalOpen}
-        title="Cancel Transaction"
-        message="Are you sure you want to cancel the transaction? All unsaved changes will be lost."
-        confirmText="Yes, cancel"
-        cancelText="No, keep working"
-        onConfirm={confirmCancelTransaction}
-        onCancel={closeCancelModal}
-      />
     </PawnWorkflowContext.Provider>
   );
 }

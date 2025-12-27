@@ -29,9 +29,7 @@ export default function AppRouter() {
       <Route path="/pawn" element={<Protected><PawnsWorkspace /></Protected>} />
 
       {/* ✅ Add payment routes */}
-      <Route path="/Payments" element={<Protected><PaymentCreatePage /></Protected>} />
       <Route path="/payments" element={<Protected><PaymentCreatePage /></Protected>} />
-      <Route path="/payments/new" element={<Protected><PaymentCreatePage /></Protected>} />
 
       {/* ✅ Add other main menu routes for consistency */}
       <Route path="/pawn-tickets/new" element={<Protected><PawnsWorkspace /></Protected>} />

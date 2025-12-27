@@ -21,7 +21,7 @@ export default function HomePage() {
                     icon={MoneyBagIcon}
                     subtitle="Pay Pawn"
                     title="Payments"
-                    to="/Payments"
+                    to="/payments"
                 />
                 <ActionCard
                     icon={SellIcon}

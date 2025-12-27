@@ -21,6 +21,10 @@ export interface PawnTicketResponseDto {
   controlNumber: string;
   transactionType: PawnTransactionTypeDto;
   customerId: string;
+  customer: {
+    firstName: string;
+    lastName: string;
+  };
   clerkUserId: string;
 
   amountFinanced: number | null;

@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/useAuthStore';
+
 const ACCESS_TOKEN_KEY = 'pawnshopApp.auth.accessToken';
 const REFRESH_TOKEN_KEY = 'pawnshopApp.auth.refreshToken';
 const ACCESS_EXPIRES_AT_KEY = 'pawnshopApp.auth.accessExpiresAt';
@@ -17,18 +19,23 @@ function setAccessExpiry(expiresInSeconds?: number): void {
   localStorage.setItem(ACCESS_EXPIRES_AT_KEY, expiresAt.toString());
 }
 
-function storeTokens(response: { access_token: string; refresh_token?: string; expires_in?: number }): void {
+function storeTokens(response: { access_token: string; refresh_token?: string; expires_in?: number, user?: any }): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
   if (response.refresh_token) {
     localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
   }
   setAccessExpiry(response.expires_in);
+
+  if (response.user) {
+    useAuthStore.getState().setUser(response.user);
+  }
 }
 
 function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(ACCESS_EXPIRES_AT_KEY);
+  useAuthStore.getState().clearUser();
 }
 
 function notifyElectronAuthChange(isAuthenticated: boolean): void {
@@ -64,7 +71,7 @@ export async function login(username: string, password: string): Promise<boolean
 
 export async function logout(): Promise<void> {
   const refreshToken = getRefreshToken();
-  
+
   try {
     if (refreshToken) {
       await fetch(LOGOUT_ENDPOINT, {
@@ -118,7 +125,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     const result = await response.json();
     storeTokens(result);
     notifyElectronAuthChange(true);
-    
+
     return true;
   } catch (error) {
     console.error('[Auth] refresh failed', error);
@@ -132,11 +139,11 @@ export async function ensureFreshAccessToken(): Promise<boolean> {
   if (!access) {
     return getRefreshToken() ? refreshAccessToken() : false;
   }
-  
+
   if (isAccessTokenExpired()) {
     return refreshAccessToken();
   }
-  
+
   return true;
 }
 
@@ -151,3 +158,4 @@ export function isAuthenticated(): boolean {
 export function initializeAuth(): void {
   // Intentionally empty - localStorage is always available in browser environment
 }
+

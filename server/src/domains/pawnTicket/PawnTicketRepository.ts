@@ -23,6 +23,11 @@ export interface PawnTicketRepository {
   findByCustomer(customerId: string): Promise<PawnTicket[]>;
 
   /**
+   * Find tickets within a given date range.
+   */
+  findByDateRange(from: Date, to: Date): Promise<PawnTicket[]>;
+
+  /**
    * List ACTIVE (non-redeemed / non-voided / non-defaulted) tickets for a customer.
    * This is what you'd show on "open pawns" for that customer.
    */

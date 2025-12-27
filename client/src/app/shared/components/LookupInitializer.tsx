@@ -1,25 +1,22 @@
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '@/app/core/redux/store';
-import { fetchAttributeTypes } from '@/app/core/redux/lookupSlice';
-import { isAuthenticated } from '@/app/core/auth/authService';
+import { useLookup } from '@/app/shared/hooks/useLookup';
+import { useAuthStore } from '@/app/core/store/useAuthStore';
 
 /**
  * Initializes item_attribute_types on app startup.
- * Fetches all available item_attribute_types from the API and caches them in Redux.
+ * Fetches all available item_attribute_types from the API and caches them in Store.
  * This enables the LookupSelect component to load values on-demand for each type.
  */
 export function LookupInitializer({ children }: { readonly children: React.ReactNode }) {
-  const dispatch = useDispatch<AppDispatch>();
-  const typesLoaded = useSelector((state: RootState) => state.lookup.typesLoaded);
-  const typesLoading = useSelector((state: RootState) => state.lookup.typesLoading);
+  const { loadTypes } = useLookup();
+  const isAuthenticated = useAuthStore(s => s.status === 'authenticated');
 
   useEffect(() => {
     // Only fetch lookups if user is authenticated
-    if (!typesLoaded && !typesLoading && isAuthenticated()) {
-      dispatch(fetchAttributeTypes());
+    if (isAuthenticated) {
+      loadTypes();
     }
-  }, [dispatch, typesLoaded, typesLoading]);
+  }, [loadTypes, isAuthenticated]);
 
   return <>{children}</>;
 }
