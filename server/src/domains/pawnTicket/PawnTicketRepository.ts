@@ -60,4 +60,13 @@ export interface PawnTicketRepository {
     maturityDate: Date;
     setRedeemed: boolean;
   }): Promise<void>;
+
+  /**
+   * Update non-status marking fields on a pawn ticket.
+   */
+  updateMarkings(params: {
+    pawnTicketId: string;
+    transactionDate: Date;
+    defaultMarkedBy: string;
+  }): Promise<void>;
 }

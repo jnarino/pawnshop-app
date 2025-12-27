@@ -5,6 +5,7 @@ import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicket
 class MockPawnTicketRepository implements PawnTicketRepository {
   addPayment = jest.fn();
   setStatus = jest.fn();
+  updateMarkings = jest.fn();
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();

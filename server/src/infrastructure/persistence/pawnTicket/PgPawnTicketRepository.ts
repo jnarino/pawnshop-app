@@ -28,6 +28,11 @@ const SQL_SET_STATUS = loadSql(
     'pawnTicket/pawn_ticket_set_status'
 );
 
+const SQL_UPDATE_MARKINGS = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_update_markings'
+);
+
 type DbClient = Pool | PoolClient;
 
 const SQL_CREATE = loadSql(
@@ -181,6 +186,14 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
 
     async setStatus(pawnTicketId: string, status: string): Promise<void> {
         await this.db.query(SQL_SET_STATUS, [pawnTicketId, status]);
+    }
+
+    async updateMarkings(params: { pawnTicketId: string; transactionDate: Date; defaultMarkedBy: string; }): Promise<void> {
+        await this.db.query(SQL_UPDATE_MARKINGS, [
+            params.transactionDate,
+            params.defaultMarkedBy,
+            params.pawnTicketId
+        ]);
     }
 
     async create(ticket: PawnTicket): Promise<PawnTicket> {

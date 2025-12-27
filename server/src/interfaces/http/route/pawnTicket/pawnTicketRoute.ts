@@ -218,6 +218,69 @@ export function createPawnTicketRouter(
 
     /**
      * @openapi
+     * /api/pawn-ticket/pull-to-inventory:
+     *   post:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Mark ticket and update items when pulled into inventory
+     *     description: Updates the pawn ticket status and item statuses/resale/minResale in one transaction. Supports scrapping items into an existing inventory number by increasing its quantity.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               pawnTicketId:
+     *                 type: string
+     *               controlNumber:
+     *                 type: string
+     *               typeTicket:
+     *                 type: string
+     *                 enum: [PAWN, PURCHASE]
+     *               ticketStatus:
+     *                 type: string
+     *                 enum: [D, I]
+     *               defaultMarkedBy:
+     *                 type: string
+     *               transactionDate:
+     *                 type: string
+     *                 format: date-time
+     *               items:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     id:
+     *                       type: string
+     *                     quantity:
+     *                       type: integer
+     *                     itemStatus:
+     *                       type: string
+     *                       enum: [I, J]
+     *                     scrappedIntoInvItem:
+     *                       type: string
+     *                       nullable: true
+     *                     resale:
+     *                       type: number
+     *                       nullable: true
+     *                     minResale:
+     *                       type: number
+     *                       nullable: true
+     *     responses:
+     *       200:
+     *         description: Ticket and items updated
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/pull-to-inventory', auth, controller.pullToInventory);
+
+    /**
+     * @openapi
      * /api/pawn-ticket/{controlNumber}/current-charges:
      *   get:
      *     tags:
