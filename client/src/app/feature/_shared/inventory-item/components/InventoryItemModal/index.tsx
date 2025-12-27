@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import { StonesSection } from './stones';
 import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import type { InventoryItemDraft } from './types';
+import { DollarInput } from '@/components/ui/dollar-input';
 
 export type { InventoryItemDraft } from './types';
 
@@ -25,9 +27,10 @@ interface InventoryItemModalProps {
   readonly onSave?: (item: InventoryItemDraft) => void;
 }
 
-export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave }: InventoryItemModalProps) {
+export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave, hasNextItem = false }: InventoryItemModalProps & { hasNextItem?: boolean }) {
   const isViewMode = mode === ViewMode.VIEW;
-  
+  const isPullMode = mode === ViewMode.PULL;
+
   const {
     draft,
     error,
@@ -46,7 +49,19 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
     handleBrandChange,
     handleSubmit,
     handleMetalChange,
-  } = useInventoryItemForm({ open, initial, onSave: onSave || (() => {}), mode });
+  } = useInventoryItemForm({ open, initial, onSave: onSave || (() => { }), mode });
+
+  useEffect(() => {
+    if (isPullMode && open) {
+      console.log('draft', draft)
+      if (!draft.itemStatus) {
+        updateField('itemStatus', 'I');
+      }
+      if (!draft.resale || draft.resale === '0') {
+        updateField('resale', draft.amount || '0');
+      }
+    }
+  }, [isPullMode, open, initial]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
@@ -55,12 +70,13 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
           <DialogTitle>
             {(() => {
               if (isViewMode) return 'View Item Details';
+              if (isPullMode) return 'Pull Item';
               if (initial) return 'Edit Item';
               return 'Add New Item';
             })()}
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-12 gap-3">
             <CategoryFields
@@ -71,44 +87,44 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               handleCategoryChange={handleCategoryChange}
               handleSubcategoryChange={handleSubcategoryChange}
               updateField={updateField}
-              disabled={isViewMode}
+              disabled={isViewMode || isPullMode}
             />
-            
+
             <BasicInfoFields
               draft={draft}
               updateField={updateField}
               isFirearm={isFirearm}
               brands={brands}
               handleBrandChange={handleBrandChange}
-              disabled={isViewMode}
+              disabled={isViewMode || isPullMode}
             />
 
             {!isJewelry && !isFirearm && <div></div>}
-            
+
             {isJewelry && (
               <JewelryFields
                 draft={draft}
                 updateField={updateField}
                 handleMetalChange={handleMetalChange}
                 isRing={isRing}
-                disabled={isViewMode}
+                disabled={isViewMode || isPullMode}
               />
             )}
-            
+
             {isFirearm && (
               <FirearmFields
                 draft={draft}
                 updateField={updateField}
-                disabled={isViewMode}
+                disabled={isViewMode || isPullMode}
               />
             )}
           </div>
 
           {isJewelry && (
-            <StonesSection 
-              stones={draft.stones || []} 
+            <StonesSection
+              stones={draft.stones || []}
               onChange={(stones) => updateField('stones', stones)}
-              disabled={isViewMode}
+              disabled={isViewMode || isPullMode}
             />
           )}
 
@@ -120,9 +136,69 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               rows={2}
               placeholder="Brief description (free text)..."
               className="text-xs resize-none"
-              disabled={isViewMode}
+              disabled={isViewMode || isPullMode}
             />
           </div>
+
+          {isPullMode && (
+            <div className="p-4 bg-gray-50 rounded-lg space-y-4 border border-gray-200">
+              <h4 className="text-sm font-bold text-gray-700">Pull Information</h4>
+
+              {!isFirearm && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Item Action</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="itemStatus"
+                        value="I"
+                        checked={draft.itemStatus === 'I'}
+                        onChange={(e) => updateField('itemStatus', e.target.value)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      Pull to Inventory
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="itemStatus"
+                        value="J"
+                        checked={draft.itemStatus === 'J'}
+                        onChange={(e) => updateField('itemStatus', e.target.value)}
+                        className="w-4 h-4 text-red-600"
+                      />
+                      Scrap
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Resale Price ($)</Label>
+                  <DollarInput
+                    value={draft.resale || ''}
+                    onChange={(value) => updateField('resale', value)}
+                    placeholder="0.00"
+                    required
+                    className="h-8 text-xs bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Min Resale Price ($)</Label>
+                  <DollarInput
+                    value={draft.minResale || ''}
+                    onChange={(value) => updateField('minResale', value)}
+                    placeholder="0.00"
+                    required
+                    className="h-8 text-xs bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <Alert variant="destructive" className="py-2.5 px-3.5">
@@ -132,7 +208,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
             </Alert>
           )}
 
-          {!isViewMode && (
+          {(!isViewMode && !isPullMode) && (
             <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
               <div className="flex items-center gap-4">
                 <Button
@@ -174,6 +250,29 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               </div>
             </div>
           )}
+
+          {isPullMode && (
+            <div className="flex justify-end pt-4 border-t-2 border-gray-200 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onCancel}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="text-xs"
+                disabled={!draft.resale || !draft.minResale || (!isFirearm && !draft.itemStatus)}
+              >
+                {hasNextItem ? "Next item" : "Finish"}
+              </Button>
+            </div>
+          )}
+
           {isViewMode && (
             <div className="flex justify-end pt-4 border-t-2 border-gray-200">
               <Button

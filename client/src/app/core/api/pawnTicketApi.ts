@@ -67,7 +67,73 @@ export interface TicketByControlNumber {
     firstName: string;
     lastName: string;
   };
+  items: InventoryItem[]
 }
+
+export type Lookup = {
+  id: string;
+  name: string;
+};
+
+export type Stone = {
+  type: Lookup | null;
+  color: Lookup | null;
+  shape: Lookup | null;
+  width?: number;
+  quantity?: number;
+  [key: string]: unknown;
+};
+
+export type Extra = {
+  stones?: Stone[];
+  [key: string]: unknown;
+};
+
+export type Attributes = {
+  karat?: Lookup | null;
+  metal?: Lookup | null;
+  style?: Lookup | null;
+  gender?: Lookup | null;
+  sizeLength?: Lookup | null;
+  [key: string]: unknown;
+};
+
+export type InventoryItem = {
+  id: string;
+
+  inventorySubcategory: Lookup;
+  inventoryCategory: Lookup;
+  status: string;
+  quantity: number;
+
+  brand: Lookup | null;
+  model: string | null;
+  serialNumber: string | null;
+  colorId: Lookup | null;
+  itemCondition: string | null;
+  ownerMark: string | null;
+  itemDescription: string | null;
+
+  priceAmount: number | null;
+  resale: number | null;
+  minResale: number | null;
+  itemReplace: number | null;
+
+  extra: Extra;
+  attributes: Attributes;
+
+  legacyInventoryNumber: string | null;
+  legacyItemGuid: string | null;
+  legacyCategoryDescription: string | null;
+  legacyBrandColorDescription: string | null;
+
+  inventoryNumber: string | null;
+  lastUpdatedUserId: string | null;
+
+  createdAt: string | null;
+  updatedAt: string;
+};
+
 
 export interface PawnTicketCharges {
   pawnTicketId: string;
