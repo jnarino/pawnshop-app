@@ -15,7 +15,7 @@ export interface PawnDraftState {
   items: InventoryItemDraft[];
 }
 
-interface PawnWorkflowState {
+export interface PawnWorkflowState {
   activeTab: TabKey;
   customer: Customer | null;
   setCustomer: (customer: Customer | null) => void;
@@ -24,6 +24,7 @@ interface PawnWorkflowState {
   resetPawnDraft: () => void;
   cancelModalOpen: boolean;
   setActiveTab: (tab: TabKey) => void;
+  navigateToTab: (tab: TabKey) => boolean;
   canNavigateToTab: (tab: TabKey) => boolean;
   openCancelModal: () => void;
   closeCancelModal: () => void;
@@ -38,9 +39,9 @@ function createInitialDraft(): PawnDraftState {
   maturityDate.setDate(maturityDate.getDate() + 30);
   const expirationDate = new Date(today);
   expirationDate.setDate(expirationDate.getDate() + 60);
-  
+
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
-  
+
   return {
     type: 'PAWN',
     periodicRate: '25',
@@ -51,18 +52,28 @@ function createInitialDraft(): PawnDraftState {
   };
 }
 
+// Import moved up to top-level normally, but here just ensure it's available
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+
 export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [activeTab, setActiveTab] = useState<TabKey>('customer');
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  // Re-ordered: Customer first so it can be used in canNavigate
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
-  
-  const navigate = useNavigate();
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
     if (tab === 'customer') return true;
     return !!customer?.id;
   }, [customer?.id]);
+
+  // Use the hook
+  const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
+    initialTab: 'customer',
+    canNavigate: canNavigateToTab
+  });
+
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
+
+  const navigate = useNavigate();
 
   const updatePawnDraft = useCallback((updates: Partial<PawnDraftState>) => {
     setPawnDraft(prev => ({ ...prev, ...updates }));
@@ -86,7 +97,7 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     setPawnDraft(createInitialDraft());
     setCancelModalOpen(false);
     navigate('/', { replace: true });
-  }, [navigate]);
+  }, [navigate, setActiveTab]);
 
   const value = useMemo(() => ({
     activeTab,
@@ -97,11 +108,12 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     resetPawnDraft,
     cancelModalOpen,
     setActiveTab,
+    navigateToTab,
     canNavigateToTab,
     openCancelModal,
     closeCancelModal,
     confirmCancelTransaction
-  }), [activeTab, customer, pawnDraft, cancelModalOpen, updatePawnDraft, resetPawnDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction]);
+  }), [activeTab, customer, pawnDraft, cancelModalOpen, updatePawnDraft, resetPawnDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction, setActiveTab, navigateToTab]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>

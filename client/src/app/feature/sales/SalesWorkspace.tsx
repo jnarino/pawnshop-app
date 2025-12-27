@@ -12,14 +12,11 @@ function SalesWorkspaceContent() {
     openCancelModal,
     customer,
     setCustomer,
-    canNavigateToTab
+    navigateToTab
   } = useSalesWorkflow();
 
   const handleTabChange = (tab: string) => {
-    const tabKey = tab as TabKey;
-    if (canNavigateToTab(tabKey)) {
-      setActiveTab(tabKey);
-    }
+    navigateToTab(tab as TabKey);
   };
 
   return (

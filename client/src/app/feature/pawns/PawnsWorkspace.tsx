@@ -13,14 +13,13 @@ function PawnsWorkspaceContent() {
     openCancelModal,
     customer,
     setCustomer,
-    canNavigateToTab
+    canNavigateToTab,
+    navigateToTab
   } = usePawnWorkflow();
 
   const handleTabChange = (tab: string) => {
     const tabKey = tab as TabKey;
-    if (canNavigateToTab(tabKey)) {
-      setActiveTab(tabKey);
-    }
+    navigateToTab(tabKey);
   };
 
   return (

@@ -15,7 +15,7 @@ export interface SaleDraftState {
   items: InventoryItemDraft[];
 }
 
-interface SaleWorkflowState {
+export interface SaleWorkflowState {
   activeTab: TabKey;
   customer: Customer | null;
   setCustomer: (customer: Customer | null) => void;
@@ -24,7 +24,7 @@ interface SaleWorkflowState {
   resetPawnDraft: () => void;
   cancelModalOpen: boolean;
   setActiveTab: (tab: TabKey) => void;
-  canNavigateToTab: (tab: TabKey) => boolean;
+  navigateToTab: (tab: TabKey) => boolean;
   openCancelModal: () => void;
   closeCancelModal: () => void;
   confirmCancelTransaction: () => void;
@@ -51,18 +51,19 @@ function createInitialDraft(): SaleDraftState {
   };
 }
 
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+
 export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [activeTab, setActiveTab] = useState<TabKey>('newSale');
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
+
+  const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
+    initialTab: 'newSale',
+  });
+
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [saleDraft, setSaleDraft] = useState<SaleDraftState>(createInitialDraft);
 
   const navigate = useNavigate();
-
-  const canNavigateToTab = useCallback((tab: TabKey) => {
-    if (tab === 'customer' || tab === 'newSale') return true;
-    return !!customer?.id;
-  }, [customer?.id]);
 
   const updateSaleDraft = useCallback((updates: Partial<SaleDraftState>) => {
     setSaleDraft(prev => ({ ...prev, ...updates }));
@@ -86,7 +87,7 @@ export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNo
     setSaleDraft(createInitialDraft());
     setCancelModalOpen(false);
     navigate('/', { replace: true });
-  }, [navigate]);
+  }, [navigate, setActiveTab]);
 
   const value = useMemo(() => ({
     activeTab,
@@ -97,11 +98,11 @@ export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNo
     resetPawnDraft: resetSaleDraft,
     cancelModalOpen,
     setActiveTab,
-    canNavigateToTab,
+    navigateToTab,
     openCancelModal,
     closeCancelModal,
     confirmCancelTransaction
-  }), [activeTab, customer, saleDraft, cancelModalOpen, updateSaleDraft, resetSaleDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction]);
+  }), [activeTab, customer, saleDraft, cancelModalOpen, updateSaleDraft, resetSaleDraft, openCancelModal, closeCancelModal, confirmCancelTransaction, setActiveTab, navigateToTab]);
 
   return (
     <SalesWorkflowContext.Provider value={value}>

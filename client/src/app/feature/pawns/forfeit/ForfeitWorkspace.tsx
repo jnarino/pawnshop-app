@@ -12,13 +12,14 @@ import CustomerInfoTab from '@/app/shared/components/CustomerInfoTab';
 import { Customer } from '../types';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { DatePicker } from '@/components/ui/date-picker';
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
 type ScopeFilter = 'all' | 'active';
-type TabKey = 'customer' | 'pull-transaction';
+
+export type ForfeitTabKey = 'customer' | 'pull-transaction';
 
 function ForfeitWorkspaceContent() {
-  const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [scope, setScope] = useState<ScopeFilter>('active');
 
   const [firstName, setFirstName] = useState('');
@@ -35,6 +36,10 @@ function ForfeitWorkspaceContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<PawnTicketData | null>(null);
 
+  const { activeTab, setActiveTab } = useWorkspaceTabs<ForfeitTabKey>({
+    initialTab: 'customer',
+  });
+
   const handleClose = useCallback(() => {
     if (loading || detailLoading) return;
     setCustomerResults([]);
@@ -47,10 +52,7 @@ function ForfeitWorkspaceContent() {
     setTicketNumber('');
     setError(null);
     setActiveTab('customer');
-    // onClose();
-  }, [loading, detailLoading,
-    // onClose
-  ]);
+  }, [loading, detailLoading, setActiveTab]);
 
   const searchCustomers = useCallback(async () => {
     if (!firstName && !lastName && !dateOfBirth) {
@@ -171,7 +173,7 @@ function ForfeitWorkspaceContent() {
       <h1 className="text-2xl font-extrabold mb-2.5">Forfeit (Pull)</h1>
 
       <div className="space-y-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ForfeitTabKey)}>
           <div className="flex items-center gap-4 flex-shrink-0">
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="customer">Customer Info</TabsTrigger>
