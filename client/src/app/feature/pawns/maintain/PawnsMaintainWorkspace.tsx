@@ -12,8 +12,7 @@ import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
 import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
 import { PawnTicketForm } from './PawnTicketForm';
-import ConfirmModal from '@/app/shared/components/ConfirmModal';
-import { useNavigate } from 'react-router-dom';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
 type ScopeFilter = 'all' | 'active';
@@ -246,16 +245,6 @@ function PawnsMaintainWorkspaceContent() {
     }
   }, [ensureDetail]);
 
-  const navigate = useNavigate();
-
-
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-
-  const confirmCancelTransaction = useCallback(() => {
-    setCancelModalOpen(false);
-    navigate('/', { replace: true });
-  }, [navigate]);
-
   const modalTitle = selectedTicket ? `Pawn #${selectedTicket.controlNumber}` : 'Maintain Pawn Tickets';
 
   return (
@@ -269,9 +258,7 @@ function PawnsMaintainWorkspaceContent() {
                 <TabsTrigger value="customer">By Customer</TabsTrigger>
                 <TabsTrigger value="ticket">By Ticket ID</TabsTrigger>
               </TabsList>
-              <Button variant="destructive" onClick={() => setCancelModalOpen(true)}>
-                Cancel Transaction
-              </Button>
+              <CancelButton />
             </div>
             <TabsContent value="customer" className="space-y-4">
               <div className="grid grid-cols-12 gap-3">
@@ -364,7 +351,7 @@ function PawnsMaintainWorkspaceContent() {
                   </TableHeader>
                   <TableBody>
                     {customerResults.map((c) => (
-                      <TableRow 
+                      <TableRow
                         key={c.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedCustomer?.id === c.id ? 'bg-muted' : ''}`}
                         onClick={() => !loading && loadTicketsForCustomer(c)}
@@ -491,16 +478,6 @@ function PawnsMaintainWorkspaceContent() {
           </div>
         </div>
       )}
-
-      <ConfirmModal
-        open={cancelModalOpen}
-        title="Cancel Transaction"
-        message="Are you sure you want to cancel the transaction? All unsaved changes will be lost."
-        confirmText="Yes, cancel"
-        cancelText="No, keep working"
-        onConfirm={confirmCancelTransaction}
-        onCancel={() => setCancelModalOpen(false)}
-      />
     </>
   );
 }

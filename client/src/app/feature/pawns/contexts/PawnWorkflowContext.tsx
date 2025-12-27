@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 
@@ -22,13 +21,9 @@ export interface PawnWorkflowState {
   pawnDraft: PawnDraftState;
   updatePawnDraft: (updates: Partial<PawnDraftState>) => void;
   resetPawnDraft: () => void;
-  cancelModalOpen: boolean;
   setActiveTab: (tab: TabKey) => void;
   navigateToTab: (tab: TabKey) => boolean;
   canNavigateToTab: (tab: TabKey) => boolean;
-  openCancelModal: () => void;
-  closeCancelModal: () => void;
-  confirmCancelTransaction: () => void;
 }
 
 const PawnWorkflowContext = createContext<PawnWorkflowState | null>(null);
@@ -56,7 +51,6 @@ function createInitialDraft(): PawnDraftState {
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
-  // Re-ordered: Customer first so it can be used in canNavigate
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
@@ -64,13 +58,11 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     return !!customer?.id;
   }, [customer?.id]);
 
-  // Use the hook
   const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
     initialTab: 'customer',
     canNavigate: canNavigateToTab
   });
 
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
 
   const navigate = useNavigate();
@@ -83,22 +75,6 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     setPawnDraft(createInitialDraft());
   }, []);
 
-  const openCancelModal = useCallback(() => {
-    setCancelModalOpen(true);
-  }, []);
-
-  const closeCancelModal = useCallback(() => {
-    setCancelModalOpen(false);
-  }, []);
-
-  const confirmCancelTransaction = useCallback(() => {
-    setActiveTab('customer');
-    setCustomer(null);
-    setPawnDraft(createInitialDraft());
-    setCancelModalOpen(false);
-    navigate('/', { replace: true });
-  }, [navigate, setActiveTab]);
-
   const value = useMemo(() => ({
     activeTab,
     customer,
@@ -106,27 +82,14 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     pawnDraft,
     updatePawnDraft,
     resetPawnDraft,
-    cancelModalOpen,
     setActiveTab,
     navigateToTab,
     canNavigateToTab,
-    openCancelModal,
-    closeCancelModal,
-    confirmCancelTransaction
-  }), [activeTab, customer, pawnDraft, cancelModalOpen, updatePawnDraft, resetPawnDraft, canNavigateToTab, openCancelModal, closeCancelModal, confirmCancelTransaction, setActiveTab, navigateToTab]);
+  }), [activeTab, customer, pawnDraft, updatePawnDraft, resetPawnDraft, canNavigateToTab, setActiveTab, navigateToTab]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>
       {children}
-      <ConfirmModal
-        open={cancelModalOpen}
-        title="Cancel Transaction"
-        message="Are you sure you want to cancel the transaction? All unsaved changes will be lost."
-        confirmText="Yes, cancel"
-        cancelText="No, keep working"
-        onConfirm={confirmCancelTransaction}
-        onCancel={closeCancelModal}
-      />
     </PawnWorkflowContext.Provider>
   );
 }

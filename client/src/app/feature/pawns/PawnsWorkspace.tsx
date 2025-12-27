@@ -1,16 +1,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 function PawnsWorkspaceContent() {
   const {
     activeTab,
     setActiveTab,
-    openCancelModal,
     customer,
     setCustomer,
     canNavigateToTab,
@@ -44,9 +43,7 @@ function PawnsWorkspaceContent() {
               History
             </TabsTrigger>
           </TabsList>
-          <Button variant="destructive" onClick={openCancelModal}>
-            Cancel Transaction
-          </Button>
+          <CancelButton />
         </div>
 
         <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">

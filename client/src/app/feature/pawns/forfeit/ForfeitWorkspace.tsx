@@ -1,18 +1,16 @@
 import { useCallback, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { pawnTicketApi, type CustomerActivePawnTicket, type TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
 import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
-import ConfirmModal from '@/app/shared/components/ConfirmModal';
-import { useNavigate } from 'react-router-dom';
 import CustomerInfoTab from '@/app/shared/components/CustomerInfoTab';
 import { Customer } from '../types';
 import { Field, FieldLabel, FieldSet, FieldLegend } from '@/components/ui/field';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
 type ScopeFilter = 'all' | 'active';
@@ -155,17 +153,6 @@ function ForfeitWorkspaceContent() {
     }
   }, [ensureDetail]);
 
-  const navigate = useNavigate();
-
-
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-
-  const confirmCancelTransaction = useCallback(() => {
-    setCancelModalOpen(false);
-    navigate('/', { replace: true });
-  }, [navigate]);
-
-
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   return (
@@ -179,9 +166,7 @@ function ForfeitWorkspaceContent() {
               <TabsTrigger value="customer">Customer Info</TabsTrigger>
               <TabsTrigger value="pull-transaction">Pull Transaction</TabsTrigger>
             </TabsList>
-            <Button variant="destructive" onClick={() => setCancelModalOpen(true)}>
-              Cancel Transaction
-            </Button>
+            <CancelButton />
           </div>
           <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">
             <CustomerInfoTab
@@ -224,15 +209,7 @@ function ForfeitWorkspaceContent() {
           </TabsContent>
         </Tabs>
       </div>
-      <ConfirmModal
-        open={cancelModalOpen}
-        title="Cancel Transaction"
-        message="Are you sure you want to cancel the transaction? All unsaved changes will be lost."
-        confirmText="Yes, cancel"
-        cancelText="No, keep working"
-        onConfirm={confirmCancelTransaction}
-        onCancel={() => setCancelModalOpen(false)}
-      />
+
     </>
   );
 }
