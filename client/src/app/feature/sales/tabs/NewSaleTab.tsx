@@ -149,6 +149,7 @@ export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProp
         <PaymentMethodModal
           open={showPaymentModal}
           totalAmount={calculateTotal()}
+          allowedTenderTypes={[1, 2, 3, 4, 5, 6, 7, 8]} // CASH and DEBIT
           onCancel={() => setShowPaymentModal(false)}
           onDone={handlePaymentDone}
         />

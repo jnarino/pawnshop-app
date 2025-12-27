@@ -19,6 +19,7 @@ import { createInventoryAttributeRouter } from './route/inventory/inventoryAttri
 import { InventoryAttributeController } from './controller/inventory/InventoryAttributeController';
 import { PawnTicketController } from './controller/pawnTicket/PawnTicketController';
 import { createPawnTicketRouter } from './route/pawnTicket/pawnTicketRoute';
+import { createPawnTicketPaymentRouter } from './route/pawnTicket/pawnTicketPaymentRoute';
 import { StoreTransactionController } from './controller/storeTransaction/StoreTransactionController';
 import { createStoreTransactionRouter } from './route/storeTransaction/storeTransactionRoute';
 import { TenderTypeController } from './controller/tenderType/TenderTypeController';
@@ -52,6 +53,7 @@ export function createExpressApp(
   app.use('/api/category', createInventoryCategoryRouter(deps.inventoryCategoryController, deps.jwtSecret));
   app.use('/api/inventory/attributes', createInventoryAttributeRouter(deps.inventoryAttributeController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketRouter(deps.pawnTicketController, deps.jwtSecret));
+  app.use('/api/pawn-ticket', createPawnTicketPaymentRouter(deps.pawnTicketController, deps.jwtSecret));
   app.use('/api/sales', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
   app.use('/api/tender-types', createTenderTypeRouter(deps.tenderTypeController, deps.jwtSecret));
 

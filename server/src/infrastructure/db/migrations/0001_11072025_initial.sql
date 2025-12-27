@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS inventory_item (
   color UUID REFERENCES item_attribute_value(id) ON DELETE SET NULL,
   item_condition TEXT,
 
-  quantity ISNTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 0),
+  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 0),
 
   price_amount NUMERIC(12,2),
   resale NUMERIC(12,2),

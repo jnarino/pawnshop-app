@@ -1,13 +1,4 @@
-const SQL_UPDATE_PAYMENT_FIELDS = `
-  UPDATE pawn_ticket
-  SET total_of_payments = total_of_payments + $1,
-      transaction_date = $2,
-      updated_at = $3,
-      default_date = $4,
-      maturity_date = $5
-      {STATUS_CLAUSE}
-  WHERE id = $6
-`;
+
 
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
@@ -15,6 +6,16 @@ import { PawnTicketRepository } from '../../../domains/pawnTicket/PawnTicketRepo
 import { PawnTicket } from '../../../domains/pawnTicket/PawnTicket';
 import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
+
+const SQL_UPDATE_PAYMENT_FIELDS = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_update_payment_fields'
+);
+
+const SQL_STATUS_BY_CODE = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_status_by_code'
+);
 
 
 const SQL_ADD_PAYMENT = loadSql(
@@ -49,12 +50,51 @@ const SQL_LIST_ACTIVE_BY_CUSTOMER = loadSql(
     'pawnTicket/pawn_ticket_list_active_by_customer'
 );
 
+const SQL_FIND_BY_DATE_RANGE = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_find_by_date_range'
+);
+
 const SQL_FIND_BY_ID = loadSql(
     'queries',
     'pawnTicket/pawn_ticket_find_by_id'
 );
 
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
+    // Helper to unwrap id/name or fallback to id
+    const unwrapLookup = (val: any) => {
+        if (!val) return null;
+        if (typeof val === 'object' && 'id' in val && 'name' in val) return val;
+        return { id: val, name: null };
+    };
+
+    // Map colorId as id/name object if present
+    const colorId = unwrapLookup(itemData.color_id);
+
+    // Map extra.stones array with id/name for type/color/shape
+    let extra = itemData.extra || {};
+    if (extra.stones && Array.isArray(extra.stones)) {
+        extra = {
+            ...extra,
+            stones: extra.stones.map((stone: any) => ({
+                ...stone,
+                type: unwrapLookup(stone.type),
+                color: unwrapLookup(stone.color),
+                shape: unwrapLookup(stone.shape)
+            }))
+        };
+    }
+
+    // Map attributes lookups as id/name
+    let attributes = itemData.attributes || {};
+    const attrFields = ['karat', 'metal', 'style', 'gender', 'sizeLength'];
+    attributes = { ...attributes };
+    for (const field of attrFields) {
+        if (attributes[field]) {
+            attributes[field] = unwrapLookup(attributes[field]);
+        }
+    }
+
     const item = new InventoryItem({
         id: itemData.id,
         inventorySubcategoryId: itemData.inventory_subcategory?.id || '',
@@ -63,7 +103,7 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         brand: itemData.brand?.id || null,
         model: itemData.model,
         serialNumber: itemData.serial_number,
-        colorId: itemData.color_id,
+        colorId,
         itemCondition: itemData.item_condition,
         ownerMark: itemData.owner_mark,
         itemDescription: itemData.item_description,
@@ -71,8 +111,8 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
         resale: itemData.resale !== null ? Number(itemData.resale) : null,
         minResale: itemData.min_resale !== null ? Number(itemData.min_resale) : null,
         itemReplace: itemData.item_replace !== null ? Number(itemData.item_replace) : null,
-        extra: itemData.extra || {},
-        attributes: itemData.attributes || {},
+        extra,
+        attributes,
         legacyInventoryNumber: itemData.legacy_inventory_number,
         legacyItemGuid: itemData.legacy_item_guid,
         legacyCategoryDescription: itemData.legacy_category_description,
@@ -91,7 +131,6 @@ function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     };
 
     return item;
-// ...existing code...
 }
 
 function mapRowToPawnTicket(row: any): PawnTicket {
@@ -122,7 +161,11 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         items: row.items_data ?
             (Array.isArray(row.items_data) ? row.items_data.map(mapJsonbToInventoryItem) : []) :
             undefined,
-        tenders: row.tenders || []
+        tenders: row.tenders || [],
+        customer: (row.first_name && row.last_name) ? {
+            firstName: row.first_name,
+            lastName: row.last_name
+        } : undefined
     });
 }
 
@@ -133,7 +176,7 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
     }
 
-// ...existing code...
+    // ...existing code...
     // ...existing code...
 
     async setStatus(pawnTicketId: string, status: string): Promise<void> {
@@ -186,6 +229,11 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         return result.rows.map(mapRowToPawnTicket);
     }
 
+    async findByDateRange(from: Date, to: Date): Promise<PawnTicket[]> {
+        const result = await this.db.query(SQL_FIND_BY_DATE_RANGE, [from, to]);
+        return result.rows.map(mapRowToPawnTicket);
+    }
+
     async listActiveByCustomer(customerId: string): Promise<PawnTicket[]> {
         const result = await this.db.query(SQL_LIST_ACTIVE_BY_CUSTOMER, [
             customerId
@@ -209,14 +257,20 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         maturityDate: Date;
         setRedeemed: boolean;
     }): Promise<void> {
-        const statusClause = params.setRedeemed ? ', pawn_status = \'U\'' : '';
-        const sql = SQL_UPDATE_PAYMENT_FIELDS.replace('{STATUS_CLAUSE}', statusClause);
-        await this.db.query(sql, [
+        let statusId: string | null = null;
+
+        if (params.setRedeemed) {
+            const statusResult = await this.db.query(SQL_STATUS_BY_CODE, ['U', 'PAWN']);
+            statusId = statusResult.rows?.[0]?.id ?? null;
+        }
+
+        await this.db.query(SQL_UPDATE_PAYMENT_FIELDS, [
             params.paymentAmount,
             params.transactionDate,
             params.updatedAt,
             params.defaultDate,
             params.maturityDate,
+            statusId,
             params.pawnTicketId
         ]);
     }

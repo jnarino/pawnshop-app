@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
 
@@ -111,19 +112,34 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
     }
     async createPayment(params: {
         pawnTicketId: string;
+        controlNumber: string;
         clerkUserId: string;
         typeId: number;
         amount: number;
-        tender: { tenderTypeId: number; amount: number };
+        tenders: { tenderTypeId: number; amount: number }[];
     }): Promise<void> {
-        await this.pool.query(SQL_CREATE_PAYMENT, [
+        // Create the store transaction
+        const txResult = await this.pool.query(SQL_CREATE_PAYMENT, [
             params.pawnTicketId,
             params.clerkUserId,
             params.typeId,
             params.amount,
-            params.tender.tenderTypeId,
-            params.tender.amount
+            params.controlNumber
         ]);
+        
+        const transactionId = txResult.rows[0].id;
+
+        // Insert all tenders
+        for (let i = 0; i < params.tenders.length; i++) {
+            const tender = params.tenders[i];
+            await this.pool.query(SQL_INSERT_TENDER, [
+                crypto.randomUUID(),
+                transactionId,
+                i + 1,
+                tender.tenderTypeId,
+                tender.amount
+            ]);
+        }
     }
 
     /**

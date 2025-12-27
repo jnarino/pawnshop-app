@@ -5,31 +5,34 @@ import { StoneForm } from './StoneForm';
 import { StoneTable } from './StoneTable';
 import { Stone } from './types';
 
-// StonesSection usa estado local - los stones NO se envían con el form principal
-// Esto es solo visual por ahora
-export function StonesSection() {
-  const [stones, setStones] = useState<Stone[]>([]);
+interface StonesSectionProps {
+  readonly stones: Stone[];
+  readonly onChange: (stones: Stone[]) => void;
+  readonly disabled?: boolean;
+}
+
+export function StonesSection({ stones, onChange, disabled = false }: StonesSectionProps) {
   const [selectedStone, setSelectedStone] = useState<Stone | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const addStone = useCallback((stone: Omit<Stone, 'id'>) => {
     const newStone: Stone = { ...stone, id: crypto.randomUUID() };
-    setStones(prev => [...prev, newStone]);
-  }, []);
+    onChange([...stones, newStone]);
+  }, [stones, onChange]);
 
   const updateStone = useCallback((id: string, updates: Omit<Stone, 'id'>) => {
-    setStones(prev => prev.map(s => s.id === id ? { ...updates, id } : s));
+    onChange(stones.map(s => s.id === id ? { ...updates, id } : s));
     setSelectedStone(null);
     setIsEditing(false);
-  }, []);
+  }, [stones, onChange]);
 
   const removeStone = useCallback((id: string) => {
-    setStones(prev => prev.filter(s => s.id !== id));
+    onChange(stones.filter(s => s.id !== id));
     if (selectedStone?.id === id) {
       setSelectedStone(null);
       setIsEditing(false);
     }
-  }, [selectedStone]);
+  }, [stones, onChange, selectedStone]);
 
   const startEdit = useCallback((stone: Stone) => {
     setSelectedStone(stone);

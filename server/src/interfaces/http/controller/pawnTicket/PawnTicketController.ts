@@ -9,6 +9,8 @@ import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/p
 import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
 import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 
+import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
+
 export class PawnTicketController {
     constructor(
         private readonly createPawnTicketWithItemsUseCase: CreatePawnTicketWithItemsUseCase,
@@ -17,16 +19,38 @@ export class PawnTicketController {
         private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
         private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
         private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
-        private readonly payPawnTicketUseCase: PayPawnTicketUseCase
+        private readonly payPawnTicketUseCase: PayPawnTicketUseCase,
+        private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase
     ) { }
 
     /**
- * POST /api/pawnTicket/payment
- * Accepts payments or redemptions for pawn tickets.
- */
+     * GET /api/pawn-ticket/date-range
+     */
+    listByDateRange = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { from, to } = req.query;
+            const result = await this.listByDateRangeUseCase.execute({ from, to });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * POST /api/pawn-ticket/payment
+     * Accepts payments or redemptions for pawn tickets.
+     */
     payOnTicket = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
-            await this.payPawnTicketUseCase.execute(req.body);
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id,
+            };
+            await this.payPawnTicketUseCase.execute(payload);
             return res.status(200).json({ message: 'Payment processed' });
         } catch (err) {
             return next(err);

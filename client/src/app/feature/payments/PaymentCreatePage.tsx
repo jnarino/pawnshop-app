@@ -1,15 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import type { Customer as CustomerDto } from '@/app/feature/_shared/customer/types';
 import { CustomerManager } from '@/app/feature/_shared/customer';
 import { FindByInputModal } from '@/app/feature/_shared/inventory-item';
-import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import LocatePawnsTab from './components/LocatePawnsTab';
-import { ViewPawnTab } from './components/ViewPawnTab';
 import { useFindByTicket } from './hooks/useFindByTicket';
+import { useCustomerPawnTickets } from './hooks/useCustomerPawnTickets';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
+import { ViewPawnTab } from './components/ViewPawnTab';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 type TabKey = 'customer' | 'viewPawn' | 'locatePawns';
 
@@ -17,11 +17,23 @@ export default function PaymentCreatePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [customer, setCustomer] = useState<CustomerDto | null>(null);
   const [selectedPawn, setSelectedPawn] = useState<CustomerActivePawnTicket | null>(null);
-  const [cancelOpen, setCancelOpen] = useState(false);
   const [findByTicketOpen, setFindByTicketOpen] = useState(false);
 
   const navigate = useNavigate();
   const { loading: findingTicket, error: findTicketError, findByTicket } = useFindByTicket();
+
+  // Lift pawn tickets hook to parent level to prevent re-fetching on tab changes
+  const pawnTicketsData = useCustomerPawnTickets(customer?.id || '');
+
+  // Reset pawn tickets data and selected pawn when customer changes
+  useEffect(() => {
+    if (customer?.id) {
+      pawnTicketsData.reload();
+    }
+    // Clear selected pawn when customer changes
+    setSelectedPawn(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer?.id]);
 
   const canNavigateToTab = (tab: TabKey) => {
     if (tab === 'customer') return true;
@@ -37,13 +49,6 @@ export default function PaymentCreatePage() {
     }
   };
 
-  const confirmCancel = () => {
-    setCancelOpen(false);
-    setCustomer(null);
-    setSelectedPawn(null);
-    setActiveTab('customer');
-    navigate('/', { replace: true });
-  };
 
   const handlePawnSelected = useCallback((pawn: CustomerActivePawnTicket) => {
     setSelectedPawn(pawn);
@@ -59,7 +64,8 @@ export default function PaymentCreatePage() {
   }, [findByTicket]);
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Payments</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-3">
@@ -73,9 +79,7 @@ export default function PaymentCreatePage() {
               View Pawn
             </TabsTrigger>
           </TabsList>
-          <Button variant="destructive" onClick={() => setCancelOpen(true)}>
-            Cancel
-          </Button>
+          <CancelButton />
         </div>
 
         <TabsContent value="customer" className="flex-1 min-h-0 pt-4">
@@ -93,7 +97,7 @@ export default function PaymentCreatePage() {
         <TabsContent value="locatePawns" className="flex-1 min-h-0 pt-4">
           {customer?.id && (
             <LocatePawnsTab
-              customerId={customer.id}
+              pawnTicketsData={pawnTicketsData}
               onBack={() => setActiveTab('customer')}
               onPawnSelected={handlePawnSelected}
               onViewPawn={(pawn) => {
@@ -109,21 +113,12 @@ export default function PaymentCreatePage() {
             <ViewPawnTab
               pawnTicket={selectedPawn}
               customer={customer}
+              onMakePayment={() => { }}
               onBack={() => setActiveTab('locatePawns')}
             />
           )}
         </TabsContent>
       </Tabs>
-
-      <ConfirmModal
-        open={cancelOpen}
-        title="Cancel Payment"
-        message="Are you sure you want to cancel the payment process?"
-        confirmText="Yes, cancel"
-        cancelText="No, keep working"
-        onConfirm={confirmCancel}
-        onCancel={() => setCancelOpen(false)}
-      />
 
       <FindByInputModal
         open={findByTicketOpen}
@@ -137,6 +132,6 @@ export default function PaymentCreatePage() {
         inputPlaceholder="Enter ticket number..."
         infoMessage="You can type the ticket number manually or use a barcode scanner to scan the ticket."
       />
-    </div>
+    </>
   );
 }

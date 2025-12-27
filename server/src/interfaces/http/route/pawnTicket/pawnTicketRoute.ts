@@ -177,6 +177,47 @@ export function createPawnTicketRouter(
 
     /**
      * @openapi
+     * /api/pawn-ticket/date-range:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List tickets by date range
+     *     description: Retrieve pawn tickets within a specific date range
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: from
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Start date (YYYY-MM-DD)
+     *       - in: query
+     *         name: to
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: End date (YYYY-MM-DD)
+     *     responses:
+     *       200:
+     *         description: List of pawn tickets
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/PawnTicket'
+     *       401:
+     *         description: Unauthorized
+     *       400:
+     *         description: Invalid input
+     */
+    router.get('/date-range', auth, controller.listByDateRange);
+
+    /**
+     * @openapi
      * /api/pawn-ticket/{controlNumber}/current-charges:
      *   get:
      *     tags:

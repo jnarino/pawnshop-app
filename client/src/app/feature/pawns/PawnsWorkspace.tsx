@@ -1,30 +1,29 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from './tabs/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 function PawnsWorkspaceContent() {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    openCancelModal, 
-    customer, 
+  const {
+    activeTab,
+    setActiveTab,
+    customer,
     setCustomer,
-    canNavigateToTab 
+    canNavigateToTab,
+    navigateToTab
   } = usePawnWorkflow();
 
   const handleTabChange = (tab: string) => {
     const tabKey = tab as TabKey;
-    if (canNavigateToTab(tabKey)) {
-      setActiveTab(tabKey);
-    }
+    navigateToTab(tabKey);
   };
 
   return (
-    <div className="pawn-flow">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Pawn / Buy</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-5">
@@ -44,13 +43,11 @@ function PawnsWorkspaceContent() {
               History
             </TabsTrigger>
           </TabsList>
-          <Button variant="destructive" onClick={openCancelModal}>
-            Cancel Transaction
-          </Button>
+          <CancelButton />
         </div>
 
         <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">
-          <CustomerInfoTab 
+          <CustomerInfoTab
             customer={customer}
             onCustomerChange={setCustomer}
             onCustomerSelected={() => setActiveTab('newPawn')}
@@ -58,7 +55,7 @@ function PawnsWorkspaceContent() {
         </TabsContent>
 
         <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
-          <NewPawnTab 
+          <NewPawnTab
             customer={customer}
           />
         </TabsContent>
@@ -79,7 +76,7 @@ function PawnsWorkspaceContent() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
 

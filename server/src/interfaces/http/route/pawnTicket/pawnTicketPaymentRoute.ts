@@ -8,7 +8,7 @@ export function createPawnTicketPaymentRouter(controller: PawnTicketController, 
 
   /**
    * @openapi
-   * /api/pawnTicket/payment:
+  * /api/pawn-ticket/payment:
    *   post:
    *     tags:
    *       - PawnTickets

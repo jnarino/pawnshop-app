@@ -13,17 +13,19 @@ import {
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 
+import { Matcher } from "react-day-picker";
+
 interface DatePickerProps {
-  value?: string; // ISO format yyyy-mm-dd (stored format)
+  value?: string;
   onChange?: (value: string | undefined) => void;
   disabled?: boolean;
   placeholder?: string;
+  disabledDays?: Matcher | Matcher[];
 }
 
-// Parse ISO date (yyyy-mm-dd) or mm/dd/yyyy to Date object
 function parseDate(dateString: string): Date | undefined {
   if (!dateString) return undefined;
-  
+
   // Try ISO format first (yyyy-mm-dd)
   if (dateString.includes('-')) {
     const [year, month, day] = dateString.split('-').map(p => Number.parseInt(p, 10));
@@ -34,14 +36,14 @@ function parseDate(dateString: string): Date | undefined {
       }
     }
   }
-  
+
   // Try mm/dd/yyyy format
   const parts = dateString.split('/');
   if (parts.length === 3) {
     const month = Number.parseInt(parts[0], 10);
     const day = Number.parseInt(parts[1], 10);
     const year = Number.parseInt(parts[2], 10);
-    
+
     if (!Number.isNaN(month) && !Number.isNaN(day) && !Number.isNaN(year)) {
       const date = new Date(year, month - 1, day);
       if (date.getMonth() === month - 1 && date.getDate() === day && date.getFullYear() === year) {
@@ -49,7 +51,7 @@ function parseDate(dateString: string): Date | undefined {
       }
     }
   }
-  
+
   return undefined;
 }
 
@@ -71,9 +73,9 @@ function formatDateForDisplay(date: Date): string {
 
 function formatInputValue(value: string): string {
   // Remove all non-numeric characters
-   
+
   const digits = value.replace(new RegExp('\\D', 'g'), '');
-  
+
   // Format as mm/dd/yyyy
   if (digits.length <= 2) {
     return digits;
@@ -84,16 +86,16 @@ function formatInputValue(value: string): string {
   }
 }
 
-export function DatePicker({ value, onChange, disabled, placeholder = "mm/dd/yyyy" }: DatePickerProps) {
+export function DatePicker({ value, onChange, disabled, placeholder = "dd/mm/yyyy", disabledDays }: DatePickerProps) {
   // Convert ISO to display format for input
   const initialDisplay = value ? (() => {
     const d = parseDate(value);
     return d ? formatDateForDisplay(d) : '';
   })() : '';
-  
+
   const [inputValue, setInputValue] = React.useState(initialDisplay);
   const [isOpen, setIsOpen] = React.useState(false);
-  
+
   // Sync input value with prop value
   React.useEffect(() => {
     if (value) {
@@ -109,7 +111,7 @@ export function DatePicker({ value, onChange, disabled, placeholder = "mm/dd/yyy
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatInputValue(e.target.value);
     setInputValue(formatted);
-    
+
     // Only trigger onChange if we have a complete, valid date
     if (formatted.length === 10) {
       const parsed = parseDate(formatted);
@@ -180,6 +182,7 @@ export function DatePicker({ value, onChange, disabled, placeholder = "mm/dd/yyy
             captionLayout="dropdown-months"
             startMonth={new Date(1900, 0)}
             endMonth={new Date(new Date().getFullYear() + 10, 11)}
+            disabled={disabledDays}
           />
         </PopoverContent>
       </Popover>

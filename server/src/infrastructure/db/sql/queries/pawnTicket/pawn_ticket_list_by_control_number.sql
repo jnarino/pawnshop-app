@@ -3,6 +3,8 @@
       pt.control_number,
       pt.transaction_type,
       pt.customer_id,
+      c.first_name,
+      c.last_name,
       pt.amount_financed,
       pt.finance_charge,
       pt.periodic_rate,
@@ -23,12 +25,16 @@
     ON pti.pawn_ticket_id = pt.id
   LEFT JOIN pawn_ticket_status pts
     ON pt.status_id = pts.id
+  LEFT JOIN customer c
+    ON pt.customer_id = c.id
   WHERE pt.control_number = $1
   GROUP BY
     pt.id,
     pt.control_number,
     pt.transaction_type,
     pt.customer_id,
+    c.first_name,
+    c.last_name,
     pt.amount_financed,
     pt.finance_charge,
     pt.periodic_rate,

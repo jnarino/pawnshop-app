@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface TenderMethod {
+export interface TenderMethod {
   id: string;
   name: string;
   amount: string;
@@ -18,11 +18,12 @@ interface TenderMethod {
 interface Props {
   open: boolean;
   totalAmount: number;
+  allowedTenderTypes: number[];
   onCancel: () => void;
   onDone: (tenders: TenderMethod[]) => void;
 }
 
-export default function PaymentMethodModal({ open, totalAmount, onCancel, onDone }: Props) {
+export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone }: Props) {
   const [tenders, setTenders] = useState<TenderMethod[]>([]);
   const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -37,11 +38,12 @@ export default function PaymentMethodModal({ open, totalAmount, onCancel, onDone
     setLoadingTypes(true);
     try {
       const types = await tenderTypeApi.list();
+      const filteredTypes = types.filter(t => allowedTenderTypes.includes(t.id));
       console.log({ types });
-      setAvailableTypes(types);
+      setAvailableTypes(filteredTypes);
 
-      if (types.length > 0) {
-        const cashType = types.find(t => t.name === 'CASH') || types[0];
+      if (filteredTypes.length > 0) {
+        const cashType = filteredTypes.find(t => t.name === 'CASH') || filteredTypes[0];
         setTenders([{
           id: '1',
           name: cashType.name,

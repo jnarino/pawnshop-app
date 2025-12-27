@@ -21,7 +21,13 @@ export interface PawnTicketResponseDto {
   controlNumber: string;
   transactionType: PawnTransactionTypeDto;
   customerId: string;
+  customer: {
+    firstName: string;
+    lastName: string;
+  };
   clerkUserId: string;
+
+  itemIds: string[];
 
   amountFinanced: number | null;
   originalPawnAmount: number | null;
@@ -37,6 +43,8 @@ export interface PawnTicketResponseDto {
   pawnStatus: PawnStatusDto;
 
   items: InventoryItemResponseDto[];
-  tenders: TenderInfoDto[];
   note?: string;
+  currentCharges?: number | null;
+  periodsBehind?: number | null;
+  redemptionAmount?: number | null;
 }

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
     Table,
@@ -20,20 +19,21 @@ import { Loader2, AlertCircle, Search, X } from 'lucide-react';
 import { useCustomerPawnTickets } from '../hooks/useCustomerPawnTickets';
 import OtherPaymentModal from './OtherPaymentModal';
 import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
+import { pawnTicketPaymentApi } from '@/app/core/api/pawnTicketPaymentApi';
 import visibilityIcon from '@/assets/icons/visibility.svg';
+import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
 
-const DEFAULT_PAWN_PERIOD_DAYS = 60;
 
 type PaymentSelectionType = 'current' | 'redemption' | 'other' | null;
 
 interface Props {
-    customerId: string;
+    pawnTicketsData: ReturnType<typeof useCustomerPawnTickets>;
     onBack: () => void;
     onPawnSelected: (pawn: CustomerActivePawnTicket) => void;
     onViewPawn: (pawn: CustomerActivePawnTicket) => void;
 }
 
-export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onViewPawn }: Props) {
+export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected, onViewPawn }: Props) {
     const {
         filteredTickets,
         loading,
@@ -44,17 +44,31 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
         applyFilter,
         clearFilter,
         selectTicket,
-    } = useCustomerPawnTickets(customerId);
+    } = pawnTicketsData;
 
-    const [paymentSelections, setPaymentSelections] = useState<Record<string, PaymentSelectionType>>({});
+    const [paymentSelections, setPaymentSelections] = useState<Record<string, { type: PaymentSelectionType, amount: number } | null>>({});
     const [otherAmounts, setOtherAmounts] = useState<Record<string, number>>({});
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedTicketForModal, setSelectedTicketForModal] = useState<CustomerActivePawnTicket | null>(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const handlePaymentTypeChange = useCallback((ticketId: string, type: 'current' | 'redemption' | 'other') => {
+        const ticket = filteredTickets.find(t => t.id === ticketId);
+        if (!ticket) return;
+
         if (type === 'other') {
-            const ticket = filteredTickets.find(t => t.id === ticketId);
-            if (ticket) {
+            if (paymentSelections[ticketId]?.type === 'other') {
+                setPaymentSelections(prev => ({
+                    ...prev,
+                    [ticketId]: null
+                }));
+                setOtherAmounts(prev => ({
+                    ...prev,
+                    [ticketId]: 0
+                }));
+            } else {
                 setSelectedTicketForModal(ticket);
                 setModalOpen(true);
             }
@@ -63,9 +77,9 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
 
         setPaymentSelections(prev => ({
             ...prev,
-            [ticketId]: prev[ticketId] === type ? null : type
+            [ticketId]: prev[ticketId]?.type === type ? null : { type, amount: type === 'current' ? calculateCurrentCharges(ticket) : calculateRedemption(ticket) }
         }));
-    }, [filteredTickets]);
+    }, [filteredTickets, paymentSelections]);
 
     const handleOtherPaymentDone = (amount: number) => {
         if (selectedTicketForModal) {
@@ -75,7 +89,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
             }));
             setPaymentSelections(prev => ({
                 ...prev,
-                [selectedTicketForModal.id]: amount > 0 ? 'other' : null
+                [selectedTicketForModal.id]: amount > 0 ? { type: 'other', amount } : null
             }));
         }
         setModalOpen(false);
@@ -97,36 +111,28 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
     };
 
     const totalPayment = useMemo(() => {
-        return filteredTickets.reduce((sum, ticket) => {
-            const selectionType = paymentSelections[ticket.id];
-            if (selectionType === 'current') {
-                return sum + calculateCurrentCharges(ticket);
-            } else if (selectionType === 'redemption') {
-                return sum + calculateRedemption(ticket);
-            }
-            if (selectionType === 'other') {
-                return sum + (otherAmounts[ticket.id] || 0);
-            }
-            return sum;
-        }, 0);
-    }, [paymentSelections, filteredTickets, otherAmounts]);
+        return Object.values(paymentSelections)
+            .filter(selection => selection?.type)
+            .reduce((sum, selection) => sum + (selection?.amount || 0), 0);
+    }, [paymentSelections]);
 
     const handleSave = useCallback(() => {
         console.log('Save clicked', paymentSelections);
+        setShowPaymentModal(true);
     }, [paymentSelections]);
 
     const handlePayAllCurrentCharges = useCallback(() => {
-        const newSelections: Record<string, PaymentSelectionType> = {};
+        const newSelections: Record<string, { type: PaymentSelectionType, amount: number } | null> = {};
         filteredTickets.forEach(ticket => {
-            newSelections[ticket.id] = 'current';
+            newSelections[ticket.id] = { type: 'current', amount: calculateCurrentCharges(ticket) };
         });
         setPaymentSelections(newSelections);
     }, [filteredTickets]);
 
     const handleRedeemAll = useCallback(() => {
-        const newSelections: Record<string, PaymentSelectionType> = {};
+        const newSelections: Record<string, { type: PaymentSelectionType, amount: number } | null> = {};
         filteredTickets.forEach(ticket => {
-            newSelections[ticket.id] = 'redemption';
+            newSelections[ticket.id] = { type: 'redemption', amount: calculateRedemption(ticket) };
         });
         setPaymentSelections(newSelections);
     }, [filteredTickets]);
@@ -168,19 +174,6 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
         return Number.isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
     };
 
-    const calculateDateOut = (dateIn: string) => {
-        try {
-            const date = new Date(dateIn);
-            date.setDate(date.getDate() + DEFAULT_PAWN_PERIOD_DAYS);
-            return date.toLocaleDateString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric'
-            });
-        } catch {
-            return 'N/A';
-        }
-    };
 
     const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
         const normalizedStatus = (status || '').toLowerCase().replace('_', ' ');
@@ -198,6 +191,42 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 return 'outline';
         }
     };
+
+    const handlePaymentMethodDone = useCallback(async (tenders: TenderMethod[]) => {
+        const items = Object.entries(paymentSelections)
+            .filter(([_, selection]) => selection && selection.amount > 0)
+            .map(([ticketId, selection]) => {
+                const ticket = filteredTickets.find(t => t.id === ticketId);
+                return {
+                    pawnTicketId: ticketId,
+                    controlNumber: ticket?.controlNumber || '',
+                    createdDate: ticket?.createdDate || new Date().toISOString(),
+                    amountPaid: selection!.amount,
+                };
+            });
+
+        if (items.length === 0) {
+            setSubmitError('No payments selected');
+            return;
+        }
+
+        setSubmitting(true);
+        setSubmitError(null);
+
+        try {
+            await pawnTicketPaymentApi.create({ items, tenders });
+            setShowPaymentModal(false);
+            setPaymentSelections({});
+            setOtherAmounts({});
+            // Refresh the tickets list
+            applyFilter();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Payment failed';
+            setSubmitError(message);
+        } finally {
+            setSubmitting(false);
+        }
+    }, [paymentSelections, filteredTickets, applyFilter]);
 
     if (loading) {
         return (
@@ -248,29 +277,33 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 </CardContent>
             </Card>
 
-            {error && (
+            {(error || submitError) && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{error || submitError}</AlertDescription>
                 </Alert>
             )}
 
-            <Card className="flex-1 flex flex-col min-h-0">
-                <ScrollArea className="flex-1">
+            <Card className="flex flex-col">
+                <div className="overflow-hidden">
                     <Table>
-                        <TableHeader>
+                        <TableHeader className="border-b sticky top-0 bg-background z-10">
                             <TableRow>
-                                <TableHead>Ticket #</TableHead>
-                                <TableHead>Date In</TableHead>
-                                <TableHead>Date Out</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-center">Current Charges</TableHead>
-                                <TableHead className="text-center">Redemption</TableHead>
-                                <TableHead className="text-center">Other Payments</TableHead>
-                                <TableHead className="text-center">Actions</TableHead>
+                                <TableHead className="w-[100px]">Ticket #</TableHead>
+                                <TableHead className="w-[100px]">Date In</TableHead>
+                                <TableHead className="w-[100px]">Date Out</TableHead>
+                                <TableHead className="w-[90px] text-right">Amount</TableHead>
+                                <TableHead className="w-[80px]">Status</TableHead>
+                                <TableHead className="w-[140px] text-center">Current Charges</TableHead>
+                                <TableHead className="w-[120px] text-center">Redemption</TableHead>
+                                <TableHead className="w-[140px] text-center">Other Payments</TableHead>
+                                <TableHead className="w-[80px] text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
+                    </Table>
+                </div>
+                <div className="h-[47vh] overflow-y-auto">
+                    <Table>
                         <TableBody>
                             {filteredTickets.map((ticket) => (
                                 <TableRow
@@ -278,49 +311,46 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                     onClick={() => selectTicket(ticket.id)}
                                     className={`cursor-pointer hover:bg-muted/50 ${selectedTicket?.id === ticket.id ? 'bg-muted' : ''}`}
                                 >
-                                    <TableCell className="font-medium">
+                                    <TableCell className="w-[100px] font-medium">
                                         {ticket.controlNumber}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[100px]">
                                         {formatDate(ticket.createdDate)}
                                     </TableCell>
                                     <TableCell>
-                                        {calculateDateOut(ticket.createdDate)}
+                                        {formatDate(ticket.defaultDate)}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="w-[90px] text-right">
                                         {formatMoney(ticket.amountFinanced ?? ticket.purchaseTradeValue ?? 0)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[80px]">
                                         <Badge variant={getStatusVariant(ticket.pawnStatus || (ticket as any).status)}>
                                             {((ticket.pawnStatus || (ticket as any).status || 'UNKNOWN') === 'P' ? 'PAWN' : (ticket.pawnStatus || (ticket as any).status || 'UNKNOWN')).replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[140px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
-                                                checked={paymentSelections[ticket.id] === 'current'}
+                                                checked={paymentSelections[ticket.id]?.type === 'current'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'current')}
-                                                disabled={!!paymentSelections[ticket.id] && paymentSelections[ticket.id] !== 'current'}
                                             />
                                             <span className="text-sm">{formatMoney(calculateCurrentCharges(ticket))}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[120px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
-                                                checked={paymentSelections[ticket.id] === 'redemption'}
+                                                checked={paymentSelections[ticket.id]?.type === 'redemption'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'redemption')}
-                                                disabled={!!paymentSelections[ticket.id] && paymentSelections[ticket.id] !== 'redemption'}
                                             />
                                             <span className="text-sm">{formatMoney(calculateRedemption(ticket))}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[140px]">
                                         <div className="flex items-center justify-center gap-2">
                                             <Checkbox
-                                                checked={paymentSelections[ticket.id] === 'other'}
+                                                checked={paymentSelections[ticket.id]?.type === 'other'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'other')}
-                                                disabled={!!paymentSelections[ticket.id] && paymentSelections[ticket.id] !== 'other'}
                                             />
                                             <span
                                                 className={`text-sm ${otherAmounts[ticket.id] ? 'text-blue-600 font-bold cursor-pointer' : ''}`}
@@ -330,7 +360,7 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[80px]">
                                         <div className="flex items-center justify-center gap-3">
                                             <button
                                                 type="button"
@@ -356,13 +386,10 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                             )}
                         </TableBody>
                     </Table>
-                </ScrollArea>
+                </div>
 
                 <CardContent className="py-4 border-t">
-                    <div className="flex items-center justify-between">
-                        <Button variant="outline" onClick={onBack}>
-                            Back
-                        </Button>
+                    <div className="flex items-center justify-end">
                         <div className="flex items-center gap-3">
                             <Button variant="outline" onClick={handleClearSelections}>
                                 Clear All
@@ -374,8 +401,8 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                                 Redeem All
                             </Button>
                             <Separator orientation="vertical" className="h-8" />
-                            <Button variant="default" onClick={handleSave}>
-                                Save
+                            <Button variant="default" onClick={handleSave} disabled={totalPayment === 0}>
+                                Make Payment
                             </Button>
                         </div>
                     </div>
@@ -418,6 +445,15 @@ export default function LocatePawnsTab({ customerId, onBack, onPawnSelected, onV
                 }}
                 onDone={handleOtherPaymentDone}
             />
+            {showPaymentModal && (
+                <PaymentMethodModal
+                    open={true}
+                    totalAmount={totalPayment}
+                    allowedTenderTypes={[1, 3]} // CASH and DEBIT
+                    onCancel={() => setShowPaymentModal(false)}
+                    onDone={handlePaymentMethodDone}
+                />
+            )}
         </div>
     );
 }

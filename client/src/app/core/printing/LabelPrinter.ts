@@ -52,20 +52,6 @@ export class LabelPrinter {
     try {
       console.log(`[LabelPrinter] Printing ${labels.length} labels`);
       
-      // Electron: Send to GoDEX printer via IPC
-      if (window.electronAPI?.printLabels) {
-        // Convert to format expected by Electron API
-        const electronLabels = labels.map(label => ({
-          inventoryNumber: label.inventoryNumber,
-          description: label.description,
-          amount: label.amount,
-          controlNumber: label.controlNumber
-        }));
-        const result = await window.electronAPI.printLabels(electronLabels);
-        return { success: result.success, error: result.error };
-      }
-
-      // Browser: Generate HTML for each label
       const html = this.generateMultipleLabelsHTML(labels);
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
@@ -74,7 +60,6 @@ export class LabelPrinter {
       
       printWindow.document.write(html);
       printWindow.document.close();
-      printWindow.print();
       
       return { success: true };
     } catch (error) {

@@ -1,4 +1,5 @@
 import { ListActivePawnTicketsByCustomerUseCase } from "../../../src/application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase";
+import { GetPawnTicketCurrentChargesUseCase } from "../../../src/application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase";
 import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
 import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
@@ -8,6 +9,7 @@ class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
+  findByDateRange = jest.fn();
   listActiveByCustomer = jest.fn();
   updatePaymentFields = jest.fn();
   async findById(id: string): Promise<PawnTicket | null> {
@@ -25,6 +27,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
 
   it('should return only active tickets for a customer', async () => {
     const repo = new MockPawnTicketRepository();
+    const mockChargesUseCase = { execute: jest.fn() } as unknown as GetPawnTicketCurrentChargesUseCase;
     const activeTickets = [
       new PawnTicket({
         id: ticketId,
@@ -32,8 +35,8 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
         transactionType: 'PAWN',
         customerId: customerId,
         clerkUserId: userId,
-        amountFinanced: 500,
-        originalPawnAmount: 500,
+        amountFinanced: 200,
+        originalPawnAmount: 200,
         periodicRate: 0.25,
         apr: 25,
         purchaseTradeValue: null,
@@ -43,27 +46,57 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
         createdDate: new Date(),
         pawnStatus: 'P',
         itemIds: [itemId],
-        tenders: [{ tenderTypeId: 1, amount: 500 }],
+        tenders: [{ tenderTypeId: 1, amount: 200 }],
         items: [],
         note: undefined
       })
     ];
     repo.listActiveByCustomer.mockResolvedValue(activeTickets);
+    (mockChargesUseCase.execute as jest.Mock).mockResolvedValue({
+      currentCharges: 50,
+      periodsBehind: 1,
+      redemptionAmount: 250,
+    });
 
-    const useCase = new ListActivePawnTicketsByCustomerUseCase(repo);
+    const useCase = new ListActivePawnTicketsByCustomerUseCase(repo, mockChargesUseCase);
 
     const result = await useCase.execute({ customerId: customerId });
 
     expect(repo.listActiveByCustomer).toHaveBeenCalledWith(customerId);
+    expect(mockChargesUseCase.execute).toHaveBeenCalledWith({ controlNumber: 'CTL-001' });
     expect(result).toHaveLength(1);
-    expect(result[0].pawnStatus).toBe('P');
+    expect(result[0]).toEqual({
+      id: ticketId,
+      controlNumber: 'CTL-001',
+      transactionType: 'PAWN',
+      customerId: customerId,
+      clerkUserId: userId,
+      amountFinanced: 200,
+      originalPawnAmount: 200,
+      periodicRate: 0.25,
+      apr: 25,
+      purchaseTradeValue: null,
+      transactionDate: activeTickets[0].transactionDate.toISOString(),
+      maturityDate: activeTickets[0].maturityDate.toISOString(),
+      defaultDate: activeTickets[0].defaultDate.toISOString(),
+      createdDate: activeTickets[0].createdDate.toISOString(),
+      pawnStatus: 'P',
+      itemIds: [itemId],
+      items: [],
+      note: undefined,
+      currentCharges: 50,
+      periodsBehind: 1,
+      redemptionAmount: 250,
+      customer: { firstName: '', lastName: '' }
+    });
   });
 
   it('should return empty array when customer has no active tickets', async () => {
     const repo = new MockPawnTicketRepository();
+    const mockChargesUseCase = { execute: jest.fn() } as unknown as GetPawnTicketCurrentChargesUseCase;
     repo.listActiveByCustomer.mockResolvedValue([]);
 
-    const useCase = new ListActivePawnTicketsByCustomerUseCase(repo);
+    const useCase = new ListActivePawnTicketsByCustomerUseCase(repo, mockChargesUseCase);
 
     const result = await useCase.execute({ customerId: nonExistentId });
 

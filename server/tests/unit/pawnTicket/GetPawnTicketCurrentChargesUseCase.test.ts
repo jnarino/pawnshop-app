@@ -23,6 +23,10 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             controlNumber: 'PAWN-1',
             transactionType: 'PAWN' as const,
             customerId: 'cust-1',
+            customer: {
+                firstName: 'John',
+                lastName: 'Doe'
+            },
             clerkUserId: '',
             amountFinanced: 200,
             originalPawnAmount: 200,
@@ -34,8 +38,8 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-01-31T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
-            items: [],
-            tenders: []
+            itemIds: [],
+            items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
@@ -56,6 +60,10 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             controlNumber: 'PAWN-2',
             transactionType: 'PAWN' as const,
             customerId: 'cust-2',
+            customer: {
+                firstName: 'Jane',
+                lastName: 'Smith'
+            },
             clerkUserId: '',
             amountFinanced: 200,
             originalPawnAmount: 200,
@@ -67,8 +75,8 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-02-25T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
-            items: [],
-            tenders: []
+            itemIds: [],
+            items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
@@ -89,6 +97,10 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             controlNumber: 'PAWN-3',
             transactionType: 'PAWN' as const,
             customerId: 'cust-3',
+            customer: {
+                firstName: 'Alice',
+                lastName: 'Brown'
+            },
             clerkUserId: '',
             amountFinanced: 200,
             originalPawnAmount: 200,
@@ -100,8 +112,8 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-02-28T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
-            items: [],
-            tenders: []
+            itemIds: [],
+            items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
@@ -115,4 +127,5 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             redemptionAmount: 301.67
         });
     });
+
 });

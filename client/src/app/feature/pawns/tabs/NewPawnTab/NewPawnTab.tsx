@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { PawnTicketForm, PrintLabelsModal, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,8 +6,7 @@ import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
 import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
-import { logout } from '@/app/core/redux/authSlice';
-import type { AppDispatch } from '@/app/core/redux/store';
+import { useAuth } from '@/app/core/hooks/useAuth';
 import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 interface NewPawnTabProps {
@@ -25,8 +23,8 @@ interface PrintState {
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
   const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
@@ -46,14 +44,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
 
   const handleLogoutAfterPrint = useCallback(async () => {
     try {
-      await dispatch(logout());
+      await logout();
       if (globalThis.electronAPI?.authChanged) {
         globalThis.electronAPI.authChanged(false);
       }
     } finally {
       navigate('/login', { replace: true });
     }
-  }, [dispatch, navigate]);
+  }, [logout, navigate]);
 
   const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
     const success = await printLabels(printState.controlNumber, printState.printItems, labelCounts);
@@ -121,6 +119,25 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           capacity: item.capacity,
         });
 
+        // Build stones array for backend (convert string values to numbers where needed)
+        const stones = item.stones?.map(stone => removeNullish({
+          quantity: Number(stone.quantity) || 1,
+          type: stone.type || undefined,
+          shape: stone.shape || undefined,
+          carat: stone.carat ? Number(stone.carat) : undefined,
+          color: stone.color || undefined,
+          weight: stone.weight ? Number(stone.weight) : undefined,
+          length: stone.length ? Number(stone.length) : undefined,
+          width: stone.width ? Number(stone.width) : undefined,
+          clarity: stone.clarity || undefined,
+        }));
+
+        const extra = removeNullish({
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          stones: stones && stones.length > 0 ? stones : undefined,
+        });
+
         return removeNullish({
           inventorySubcategoryId: item.subcategoryId,
           quantity: Number(item.quantity) || 1,
@@ -135,7 +152,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           ownerMark: item.ownerNumber,
           colorId: item.color,
           itemCondition: item.condition,
-          extra: Object.keys({}).length > 0 ? {} : undefined,
+          extra: Object.keys(extra).length > 0 ? extra : undefined,
           attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
         });
       }),
