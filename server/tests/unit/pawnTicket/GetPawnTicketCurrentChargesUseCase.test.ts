@@ -38,6 +38,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-01-31T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
+            itemIds: [],
             items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
@@ -74,6 +75,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-02-25T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
+            itemIds: [],
             items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
@@ -110,6 +112,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             defaultDate: '2026-02-28T00:00:00.000Z',
             createdDate: '2025-12-01T00:00:00.000Z',
             pawnStatus: 'P' as const,
+            itemIds: [],
             items: []
         };
         listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);

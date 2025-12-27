@@ -81,6 +81,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
       defaultDate: activeTickets[0].defaultDate.toISOString(),
       createdDate: activeTickets[0].createdDate.toISOString(),
       pawnStatus: 'P',
+      itemIds: [itemId],
       items: [],
       note: undefined,
       currentCharges: 50,
