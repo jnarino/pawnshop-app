@@ -9,23 +9,23 @@ import {
 import { Button } from '@/components/ui/button';
 import editIcon from '@/assets/icons/edit.svg';
 import { useState } from 'react';
-import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { Tooltip } from '@/components/ui/tooltip';
+import { ArrowDownToLine } from 'lucide-react';
 
 interface PawnTableList {
-    items: TicketByControlNumber[]
+    items: any[]
 }
 
-export const PawnTableList = ({ items }: PawnTableList) => {
+export const PawnItemList = ({ items }: PawnTableList) => {
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
     return (
         <Table stickyHeader>
             <TableHeader>
                 <TableRow>
-                    <TableHead sticky className="bg-white z-20">Customer</TableHead>
-                    <TableHead sticky className="bg-white z-20">Ticket #</TableHead>
-                    <TableHead sticky className="bg-white z-20">Date out</TableHead>
-                    <TableHead sticky className="bg-white z-20">Amount</TableHead>
+                    <TableHead sticky className="bg-white z-20">Description</TableHead>
+                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
+                    <TableHead sticky className="bg-white z-20">Amount each</TableHead>
                     <TableHead sticky className="bg-white z-20">Status</TableHead>
                     <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
                 </TableRow>
@@ -37,14 +37,13 @@ export const PawnTableList = ({ items }: PawnTableList) => {
                         className={item.id === editingRowId ? "bg-amber-50 border-l-4 border-amber-500" : ""}
                     >
                         <TableCell>
-                            {item.customer ? `${item.customer.firstName} ${item.customer.lastName}` : item.customerId}
+                            {item.description}
                         </TableCell>
-                        <TableCell>{item.controlNumber}</TableCell>
-                        <TableCell>{item.maturityDate}</TableCell>
-                        <TableCell>${Number(item.amountFinanced).toFixed(2)}</TableCell>
-                        <TableCell className="font-medium">{item.pawnStatus}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>${Number(item.amountEach).toFixed(2)}</TableCell>
+                        <TableCell className={item.status === "Pending to pull" ? "bg-amber-50 border-l-4 border-amber-500" : item.status === "Pulled" ? "bg-green-50 border-l-4 border-green-500" : ""}>{item.status}</TableCell>
                         <TableCell className="text-center">
-                            <div className="flex gap-2 justify-center items-center">
+                            <Tooltip content="Pull item">
                                 <Button className='!p-0'
                                     variant="ghost"
                                     size="icon"
@@ -53,12 +52,20 @@ export const PawnTableList = ({ items }: PawnTableList) => {
                                     }}
                                     disabled={false || !!editingRowId}
                                 >
-                                    <img src={editIcon} alt="Edit" className="w-4 h-4" />
+                                    <ArrowDownToLine />
                                 </Button>
-                            </div>
+                            </Tooltip>
                         </TableCell>
                     </TableRow>
                 ))}
+                {items.length === 0 &&
+                    <TableRow id="empty-state-row">
+                        <TableCell colSpan={6} className="text-center p-4">
+                            <p><strong>No data found</strong></p>
+                            <p>Please search by ticket # or select a date range</p>
+                        </TableCell>
+                    </TableRow>
+                }
             </TableBody>
         </Table>
     )
