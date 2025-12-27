@@ -9,6 +9,7 @@ class MockPawnTicketRepository implements PawnTicketRepository {
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
+  findByDateRange = jest.fn();
   listActiveByCustomer = jest.fn();
   updatePaymentFields = jest.fn();
   async findById(id: string): Promise<PawnTicket | null> {
@@ -80,11 +81,13 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
       defaultDate: activeTickets[0].defaultDate.toISOString(),
       createdDate: activeTickets[0].createdDate.toISOString(),
       pawnStatus: 'P',
+      itemIds: [itemId],
       items: [],
       note: undefined,
       currentCharges: 50,
       periodsBehind: 1,
       redemptionAmount: 250,
+      customer: { firstName: '', lastName: '' }
     });
   });
 

@@ -14,6 +14,7 @@ export class PawnTicketMapper {
       transactionType: ticket.transactionType,
       customerId: ticket.customerId,
       clerkUserId: ticket.clerkUserId,
+      itemIds: ticket.itemIds,
       amountFinanced: ticket.amountFinanced,
       originalPawnAmount: ticket.originalPawnAmount,
       periodicRate: ticket.periodicRate,

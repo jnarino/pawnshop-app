@@ -23,7 +23,6 @@ import { pawnTicketPaymentApi } from '@/app/core/api/pawnTicketPaymentApi';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
 
-const DEFAULT_PAWN_PERIOD_DAYS = 60;
 
 type PaymentSelectionType = 'current' | 'redemption' | 'other' | null;
 
@@ -175,19 +174,6 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
         return Number.isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
     };
 
-    const calculateDateOut = (dateIn: string) => {
-        try {
-            const date = new Date(dateIn);
-            date.setDate(date.getDate() + DEFAULT_PAWN_PERIOD_DAYS);
-            return date.toLocaleDateString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric'
-            });
-        } catch {
-            return 'N/A';
-        }
-    };
 
     const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
         const normalizedStatus = (status || '').toLowerCase().replace('_', ' ');
@@ -301,7 +287,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
             <Card className="flex flex-col">
                 <div className="overflow-hidden">
                     <Table>
-                        <TableHeader>
+                        <TableHeader className="border-b sticky top-0 bg-background z-10">
                             <TableRow>
                                 <TableHead className="w-[100px]">Ticket #</TableHead>
                                 <TableHead className="w-[100px]">Date In</TableHead>
@@ -331,8 +317,8 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                     <TableCell className="w-[100px]">
                                         {formatDate(ticket.createdDate)}
                                     </TableCell>
-                                    <TableCell className="w-[100px]">
-                                        {calculateDateOut(ticket.createdDate)}
+                                    <TableCell>
+                                        {formatDate(ticket.defaultDate)}
                                     </TableCell>
                                     <TableCell className="w-[90px] text-right">
                                         {formatMoney(ticket.amountFinanced ?? ticket.purchaseTradeValue ?? 0)}

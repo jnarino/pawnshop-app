@@ -27,6 +27,8 @@ export interface PawnTicketResponseDto {
   };
   clerkUserId: string;
 
+  itemIds: string[];
+
   amountFinanced: number | null;
   originalPawnAmount: number | null;
   periodicRate: number | null;
