@@ -439,6 +439,13 @@ function PawnsMaintainWorkspaceContent() {
                     placeholder="Enter ticket number"
                     disabled={loading}
                     className="text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !loading) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        searchByTicket();
+                      }
+                    }}
                   />
                 </div>
                 <div className="col-span-6 flex justify-end gap-2">
