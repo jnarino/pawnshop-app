@@ -13,6 +13,7 @@ export interface InventoryItemDraft {
   model?: string;
   serial?: string;
   color?: string;
+  colorName?: string;
   amount?: string;
   quantity?: string;
   metal?: string;

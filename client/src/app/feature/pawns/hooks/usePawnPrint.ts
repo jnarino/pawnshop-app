@@ -194,7 +194,7 @@ export function usePawnPrint(): UsePawnPrintResult {
             totalLabels: count,
             category: item.category,
             subcategory: item.subcategory,
-            color: item.color,
+            description: item.description,
             model: item.model,
             serialNumber: item.serialNumber,
           });

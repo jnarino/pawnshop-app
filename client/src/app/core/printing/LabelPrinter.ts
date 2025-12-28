@@ -1,4 +1,5 @@
 import type { TransactionPrintData, PrintResult } from './types';
+import JsBarcode from 'jsbarcode';
 
 export interface LabelPrintData {
   controlNumber: string;
@@ -9,9 +10,10 @@ export interface LabelPrintData {
   totalLabels: number;
   category?: string;
   subcategory?: string;
-  color?: string;
+  description: string;
   model?: string;
   serialNumber?: string;
+  barcodeDataUrl?: string;
 }
 
 export class LabelPrinter {
@@ -90,9 +92,10 @@ export class LabelPrinter {
       totalLabels: data.items.length,
       category: item.category,
       subcategory: item.subcategory,
-      color: item.color,
+      description: item.description,
       model: item.modelNumber,
       serialNumber: item.serialNumber,
+      barcodeDataUrl: data.controlNumber ? this.generateBarcodeBase64(data.controlNumber) : undefined,
     }));
 
     return this.renderLabels(labels);
@@ -102,12 +105,33 @@ export class LabelPrinter {
     const updatedLabels = labels.map((label, idx) => ({
       ...label,
       labelIndex: idx + 1,
-      totalLabels: labels.length
+      totalLabels: labels.length,
+      barcodeDataUrl: label.controlNumber ? this.generateBarcodeBase64(label.controlNumber) : label.barcodeDataUrl
     }));
     return this.renderLabels(updatedLabels);
   }
 
+  private generateBarcodeBase64(value: string): string {
+    if (!value) return '';
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, value, {
+        format: 'CODE39',
+        displayValue: false,
+        height: 60,
+        margin: 0,
+        width: 2,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      console.error('Barcode generation failed:', e);
+      return '';
+    }
+  }
+
   private renderLabels(labels: LabelPrintData[]): string {
+    const noneIfEmpty = (val?: string) => (!val || val.trim() === '' ? 'NONE' : val);
+
     return `
 <!DOCTYPE html>
 <html>
@@ -118,7 +142,7 @@ export class LabelPrinter {
     .label {
       width: 2.5in;
       height: 1.0in;
-      padding: 0.1in 0.15in;
+      padding: 0.05in 0.15in;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
@@ -129,47 +153,72 @@ export class LabelPrinter {
     }
     .row {
       display: flex;
-      justify-content: flex-start;
-      gap: 0.25in;
+      justify-content: space-between;
       white-space: nowrap;
       width: 100%;
       text-transform: uppercase;
+      gap: 0.1in;
     }
-    .row.space-between {
-      justify-content: space-between;
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      text-align: left;
+    }
+    .date-type {
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .barcode-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: auto;
+      width: 100%;
+      min-height: 0.3in;
     }
     .barcode {
-      font-family: 'Libre Barcode 39', 'Courier New', monospace;
-      font-size: 24pt;
-      text-align: center;
-      line-height: 1;
-      margin-top: -2px;
+      height: 0.35in;
+      width: auto;
+      max-width: 100%;
+      display: block;
+      margin: 0 auto;
     }
     .bold { font-weight: bold; }
+    .sequence { font-size: 7.5pt; font-weight: bold; flex-shrink: 0; }
+    .description {
+      font-size: 7.5pt;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
   </style>
 </head>
 <body>
   ${labels.map((label) => `
     <div class="label">
       <div class="row">
-        <span>${label.customerName}</span>
-        <span>${label.transactionType} ${label.transactionDate}</span>
+        <span class="name">${label.customerName}</span>
+        <span class="date-type">${label.transactionType} ${label.transactionDate}</span>
       </div>
       <div class="row">
         <span>${label.subcategory || ''}${label.category ? ', ' + label.category : ''}</span>
       </div>
       <div class="row">
-        <span>${label.color || ''}</span>
+        <span class="description">${label.description}</span>
       </div>
-      <div class="row space-between">
-        <span>${label.model || ''}</span>
-        <span>${label.serialNumber || ''}</span>
+      <div class="row">
+        <span>MODEL: ${noneIfEmpty(label.model)}</span>
+        <span>SN: ${noneIfEmpty(label.serialNumber)}</span>
       </div>
-      <div class="row space-between">
+      <div class="row">
         <span class="bold">${label.controlNumber}</span>
-        <span>${label.labelIndex} OF ${label.totalLabels}</span>
+        <span class="sequence">${label.labelIndex} OF ${label.totalLabels}</span>
       </div>
-      <div class="barcode">*${label.controlNumber}*</div>
+      <div class="barcode-container">
+        ${label.barcodeDataUrl ? `<img src="${label.barcodeDataUrl}" class="barcode" />` : ''}
+      </div>
     </div>`).join('')}
   <script>window.print();</script>
 </body>

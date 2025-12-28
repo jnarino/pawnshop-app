@@ -196,7 +196,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         ownerNumber: item.ownerNumber,
         categoryName: item.categoryName,
         subcategoryName: item.subcategoryName,
-        colorName: item.color,
+        colorName: item.colorName,
       }));
 
       await printTransactionForm({

@@ -274,7 +274,7 @@ export class TransactionFormPrinter {
             businessPhone: STORE.phone ?? '',
             transactionDate: txnDate.toLocaleDateString(),
             transactionTime: timeStr,
-            controlNumber: data.controlNumber ?? '',
+            controlNumber: '', // User requested barcode only, no number
             controlNumberBarcode: barcodeDataUrl ? `<img src="${barcodeDataUrl}" style="height: 100%; max-width: 100%;" />` : '',
             buyCheckbox: data.ticketType === 'PURCHASE' ? 'X' : '',
             pawnCheckbox: data.ticketType === 'PAWN' ? 'X' : '',
