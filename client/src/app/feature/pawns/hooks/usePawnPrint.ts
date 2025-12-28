@@ -12,6 +12,11 @@ export interface PrintItem {
   description: string;
   amount: string;
   quantity?: number;
+  category?: string;
+  subcategory?: string;
+  color?: string;
+  model?: string;
+  serialNumber?: string;
 }
 
 export interface FormDataItem {
@@ -23,6 +28,9 @@ export interface FormDataItem {
   amount?: string;
   quantity?: string;
   ownerNumber?: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  colorName?: string;
 }
 
 interface PrintFormParams {
@@ -37,7 +45,8 @@ interface PrintFormParams {
 interface UsePawnPrintResult {
   printTransactionForm: (params: PrintFormParams) => Promise<boolean>;
   printLabels: (
-    controlNumber: string,
+    ticket: TicketByControlNumber,
+    customer: Customer,
     items: PrintItem[],
     labelCounts: Record<string, number>
   ) => Promise<boolean>;
@@ -78,6 +87,11 @@ export function usePawnPrint(): UsePawnPrintResult {
       description: item.description || `${item.brand || ''} ${item.model || ''}`.trim() || 'Item',
       amount: formatMoney(item.amount),
       quantity: item.quantity ? parseInt(item.quantity, 10) : 1,
+      category: item.categoryName,
+      subcategory: item.subcategoryName,
+      color: item.colorName,
+      model: item.model,
+      serialNumber: item.serial,
     }));
   }, []);
 
@@ -154,7 +168,8 @@ export function usePawnPrint(): UsePawnPrintResult {
   }, []);
 
   const printLabels = useCallback(async (
-    controlNumber: string,
+    ticket: TicketByControlNumber,
+    customer: Customer,
     items: PrintItem[],
     labelCounts: Record<string, number>
   ): Promise<boolean> => {
@@ -163,18 +178,25 @@ export function usePawnPrint(): UsePawnPrintResult {
 
     try {
       const labels: LabelPrintData[] = [];
+      const customerName = `${customer.lastName.toUpperCase()}, ${customer.firstName.toUpperCase()}`;
+      const transactionType = ticket.transactionType === 'PAWN' ? 'P' : 'B';
+      const transactionDate = formatDate(ticket.transactionDate);
 
       for (const item of items) {
         const count = labelCounts[item.id] || 0;
         for (let i = 0; i < count; i++) {
           labels.push({
-            inventoryNumber: item.inventoryNumber,
-            description: item.description,
-            amount: item.amount,
-            controlNumber,
-            itemId: item.id,
+            controlNumber: ticket.controlNumber,
+            customerName,
+            transactionType,
+            transactionDate,
             labelIndex: i + 1,
             totalLabels: count,
+            category: item.category,
+            subcategory: item.subcategory,
+            description: item.description,
+            model: item.model,
+            serialNumber: item.serialNumber,
           });
         }
       }

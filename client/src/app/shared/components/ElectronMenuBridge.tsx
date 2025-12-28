@@ -8,7 +8,7 @@ import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import { useNavigate } from 'react-router-dom';
 
 // Helper to extract ID from attribute objects or return string value
-const extractId = (value: unknown): string => {
+export const extractId = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
@@ -19,7 +19,7 @@ const extractId = (value: unknown): string => {
 };
 
 // Transform stones from API format to frontend format
-function transformStones(stones: Array<{
+export function transformStones(stones: Array<{
   type?: { id: string; name?: string | null } | string;
   shape?: { id: string; name?: string | null } | string;
   color?: { id: string; name?: string | null } | string;
@@ -46,10 +46,10 @@ function transformStones(stones: Array<{
 }
 
 // Map API response to InventoryItemDraft format
-function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryItemDraft {
+export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryItemDraft {
   const attributes = item.attributes || {};
   const extra = item.extra || {};
-  
+
   return {
     id: item.id,
     type: item.inventoryCategory?.id || '',
@@ -90,12 +90,12 @@ function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): InventoryIt
 function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventoryItemPayload, 'id'> {
   const attributes: Record<string, unknown> = {};
   const extra: Record<string, unknown> = {};
-  
+
   // Build attributes for jewelry/firearm
   if (draft.metal) attributes.metal = draft.metal;
   if (draft.karat) attributes.karat = draft.karat;
   if (draft.style) attributes.style = draft.style;
-  
+
   // Firearm attributes
   if (draft.caliber) attributes.caliber = draft.caliber;
   if (draft.action) attributes.action = draft.action;
@@ -125,7 +125,7 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
     });
     extra.stones = stones;
   }
-  
+
   return {
     inventorySubcategoryId: draft.subcategoryId || undefined,
     status: draft.status || undefined,
@@ -220,7 +220,7 @@ export default function ElectronMenuBridge() {
       console.error('Cannot update item without ID');
       return;
     }
-    
+
     try {
       const payload = mapDraftToUpdatePayload(draft);
       await updateInventoryItem(draft.id, payload);

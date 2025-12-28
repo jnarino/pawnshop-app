@@ -102,7 +102,10 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
         <LookupSelect
           typeName={isFirearm ? LookupTypeName.FINISH : LookupTypeName.COLOR}
           value={draft.color || ''}
-          onChange={(value) => updateField('color', value)}
+          onChange={(value, name) => {
+            updateField('color', value);
+            updateField('colorName', name);
+          }}
           placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."}
           disabled={disabled}
         />

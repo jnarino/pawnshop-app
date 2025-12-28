@@ -36,7 +36,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         <LookupSelect
           typeName={LookupTypeName.METAL}
           value={draft.metal || ''}
-          onChange={handleMetalChange}
+          onChange={(value) => handleMetalChange(value)}
           placeholder="SELECT METAL..."
           disabled={disabled}
           required
@@ -112,8 +112,8 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">Unit</Label>
-        <Select 
-          value={draft.weightUnit?.toUpperCase() || 'GRAMS'} 
+        <Select
+          value={draft.weightUnit?.toUpperCase() || 'GRAMS'}
           onValueChange={(value) => updateField('weightUnit', value)}
           disabled={disabled}
         >

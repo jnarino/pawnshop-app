@@ -8,6 +8,7 @@ import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/
 import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
 import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
+import { PullPawnTicketItemsToInventoryUseCase } from '../../../../application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
 
 import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
 
@@ -20,7 +21,8 @@ export class PawnTicketController {
         private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
         private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
         private readonly payPawnTicketUseCase: PayPawnTicketUseCase,
-        private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase
+        private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase,
+        private readonly pullPawnTicketItemsToInventoryUseCase: PullPawnTicketItemsToInventoryUseCase
     ) { }
 
     /**
@@ -35,6 +37,20 @@ export class PawnTicketController {
             const { from, to } = req.query;
             const result = await this.listByDateRangeUseCase.execute({ from, to });
             return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * POST /api/pawn-ticket/pull-to-inventory
+     * Marks ticket status and updates linked items (including scrap handling) in a single transaction.
+     */
+    pullToInventory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = req.body;
+            await this.pullPawnTicketItemsToInventoryUseCase.execute(payload);
+            return res.status(200).json({ message: 'Ticket and items updated' });
         } catch (err) {
             return next(err);
         }
@@ -173,4 +189,16 @@ export class PawnTicketController {
             return next(err);
         }
     };
+
+    updateDefaultedPawnTicket = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            // Implementation for updating a defaulted pawn ticket goes here    
+        } catch (err) {
+            return next(err);
+        }
+    }
 }

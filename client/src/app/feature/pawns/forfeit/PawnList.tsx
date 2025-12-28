@@ -7,15 +7,17 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import editIcon from '@/assets/icons/edit.svg';
+import { Eye } from 'lucide-react';
 import { useState } from 'react';
 import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface PawnTableList {
-    items: TicketByControlNumber[]
+    items: TicketByControlNumber[];
+    onPawnSelected: (pawn: TicketByControlNumber) => void;
 }
 
-export const PawnTableList = ({ items }: PawnTableList) => {
+export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
     return (
@@ -44,21 +46,30 @@ export const PawnTableList = ({ items }: PawnTableList) => {
                         <TableCell>${Number(item.amountFinanced).toFixed(2)}</TableCell>
                         <TableCell className="font-medium">{item.pawnStatus}</TableCell>
                         <TableCell className="text-center">
-                            <div className="flex gap-2 justify-center items-center">
+                            <Tooltip content="View pawn">
                                 <Button className='!p-0'
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => {
                                         setEditingRowId(item.id || null);
+                                        onPawnSelected(item);
                                     }}
-                                    disabled={false || !!editingRowId}
+                                    disabled={item.id === editingRowId}
                                 >
-                                    <img src={editIcon} alt="Edit" className="w-4 h-4" />
+                                    <Eye className='w-4 h-4' />
                                 </Button>
-                            </div>
+                            </Tooltip>
                         </TableCell>
                     </TableRow>
                 ))}
+                {items.length === 0 &&
+                    <TableRow id="empty-state-row">
+                        <TableCell colSpan={6} className="text-center p-4">
+                            <p><strong>No data found</strong></p>
+                            <p>Please search by ticket # or select a date range</p>
+                        </TableCell>
+                    </TableRow>
+                }
             </TableBody>
         </Table>
     )

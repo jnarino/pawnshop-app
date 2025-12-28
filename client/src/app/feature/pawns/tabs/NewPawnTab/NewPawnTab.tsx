@@ -54,13 +54,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   }, [logout, navigate]);
 
   const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
-    const success = await printLabels(printState.controlNumber, printState.printItems, labelCounts);
+    if (!printState.ticketData || !customer) return;
+    const success = await printLabels(printState.ticketData, customer, printState.printItems, labelCounts);
     if (success) {
       setPrintState(prev => ({ ...prev, showLabelModal: false }));
       resetPawnDraft();
       handleLogoutAfterPrint();
     }
-  }, [printState.controlNumber, printState.printItems, printLabels, resetPawnDraft, handleLogoutAfterPrint]);
+  }, [printState.ticketData, customer, printState.printItems, printLabels, resetPawnDraft, handleLogoutAfterPrint]);
 
   const handleLabelCancel = useCallback(() => {
     setPrintState(prev => ({ ...prev, showLabelModal: false }));
@@ -174,6 +175,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         defaultDate: toISOString(formData.expirationDate),
         pawnStatus: 'P',
         itemIds: formData.items.map((_, idx) => `item-${idx}`),
+        items: [],
       };
 
       const rate = formData.periodicRate ? Number(formData.periodicRate) : 0;
@@ -192,6 +194,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         amount: item.amount,
         quantity: item.quantity,
         ownerNumber: item.ownerNumber,
+        categoryName: item.categoryName,
+        subcategoryName: item.subcategoryName,
+        colorName: item.colorName,
       }));
 
       await printTransactionForm({

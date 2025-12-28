@@ -13,6 +13,7 @@ export interface InventoryItemDraft {
   model?: string;
   serial?: string;
   color?: string;
+  colorName?: string;
   amount?: string;
   quantity?: string;
   metal?: string;
@@ -35,6 +36,8 @@ export interface InventoryItemDraft {
   // Additional fields for update operations
   status?: string;
   inventoryNumber?: string;
+  itemStatus?: 'I' | 'J';
+  minResale?: string;
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {
