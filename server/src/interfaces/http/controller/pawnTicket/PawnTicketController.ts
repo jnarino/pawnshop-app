@@ -48,7 +48,10 @@ export class PawnTicketController {
      */
     pullToInventory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
-            const payload = req.body;
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id,
+            };
             const result = await this.pullPawnTicketItemsToInventoryUseCase.execute(payload);
             return res.status(200).json(result);
         } catch (err) {
@@ -190,15 +193,4 @@ export class PawnTicketController {
         }
     };
 
-    updateDefaultedPawnTicket = async (
-        req: AuthenticatedRequest,
-        res: Response,
-        next: NextFunction
-    ) => {
-        try {
-            // Implementation for updating a defaulted pawn ticket goes here    
-        } catch (err) {
-            return next(err);
-        }
-    }
 }

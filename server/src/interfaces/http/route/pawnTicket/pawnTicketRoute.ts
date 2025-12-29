@@ -223,7 +223,7 @@ export function createPawnTicketRouter(
      *     tags:
      *       - Pawn Tickets
      *     summary: Mark ticket and update items when pulled into inventory
-     *     description: Updates the pawn ticket status and item statuses/resale/minResale in one transaction. Supports scrapping items into an existing inventory number by increasing its quantity.
+     *     description: Updates the pawn ticket status based on typeTicket (PAWN→D, PURCHASE→I) and item statuses based on scrappedIntoInvItem array presence. Supports scrapping items into existing inventory by increasing their quantity.
      *     security:
      *       - bearerAuth: []
      *     requestBody:
@@ -240,11 +240,10 @@ export function createPawnTicketRouter(
      *               typeTicket:
      *                 type: string
      *                 enum: [PAWN, PURCHASE]
-     *               ticketStatus:
+     *                 description: PAWN sets ticket status to 'D' (Defaulted), PURCHASE sets to 'I' (Inventory)
+     *               clerkUserId:
      *                 type: string
-     *                 enum: [D, I]
-     *               defaultMarkedBy:
-     *                 type: string
+     *                 description: ID of the user performing the pull action (auto-injected from JWT)
      *               transactionDate:
      *                 type: string
      *                 format: date-time
@@ -255,14 +254,22 @@ export function createPawnTicketRouter(
      *                   properties:
      *                     id:
      *                       type: string
-     *                     quantity:
-     *                       type: integer
      *                     itemStatus:
      *                       type: string
      *                       enum: [I, J]
-     *                     scrappedIntoInvItem:
-     *                       type: string
      *                       nullable: true
+     *                       description: Optional - ignored by backend, item status determined by scrappedIntoInvItem presence
+     *                     scrappedIntoInvItem:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           inventoryNumber:
+     *                             type: string
+     *                           quantity:
+     *                             type: integer
+     *                       nullable: true
+     *                       description: If present and non-empty, item status set to 'J' (Scrap), otherwise 'I' (Inventory)
      *                     resale:
      *                       type: number
      *                       nullable: true
@@ -270,24 +277,26 @@ export function createPawnTicketRouter(
      *                       type: number
      *                       nullable: true
      *     responses:
-    *       200:
-    *         description: Items pulled to inventory (scrapped items omitted)
-    *         content:
-    *           application/json:
-    *             schema:
-    *               type: array
-    *               items:
-    *                 type: object
-    *                 properties:
-    *                   id:
-    *                     type: string
-    *                   inventoryNumber:
-    *                     type: string
-    *                     nullable: true
+     *       200:
+     *         description: Items pulled to inventory (scrapped items omitted from response)
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   id:
+     *                     type: string
+     *                   inventoryNumber:
+     *                     type: string
+     *                     nullable: true
      *       400:
-     *         description: Invalid input
+     *         description: Invalid input or pawn ticket status not found
      *       401:
      *         description: Unauthorized
+     *       404:
+     *         description: Pawn ticket, inventory item, or scrap target not found
      */
     router.post('/pull-to-inventory', auth, controller.pullToInventory);
 

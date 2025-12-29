@@ -33,6 +33,11 @@ const SQL_UPDATE_MARKINGS = loadSql(
     'pawnTicket/pawn_ticket_update_markings'
 );
 
+const SQL_SET_STATUS_BY_CODE = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_set_status_by_code'
+);
+
 type DbClient = Pool | PoolClient;
 
 const SQL_CREATE = loadSql(
@@ -286,5 +291,19 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
             statusId,
             params.pawnTicketId
         ]);
+    }
+
+    async findStatusIdByCode(statusCode: string, transactionType: 'PAWN' | 'PURCHASE'): Promise<number | null> {
+        const result = await this.db.query(SQL_STATUS_BY_CODE, [statusCode, transactionType]);
+        if (result.rowCount === 0) return null;
+        return result.rows[0].id;
+    }
+
+    async setStatusByCode(pawnTicketId: string, statusCode: string, transactionType: 'PAWN' | 'PURCHASE', transactionDate: Date, defaultMarkedBy: string): Promise<void> {
+        const statusId = await this.findStatusIdByCode(statusCode, transactionType);
+        if (statusId === null) {
+            throw new Error(`Pawn ticket status not found for code: ${statusCode} and transaction type: ${transactionType}`);
+        }
+        await this.db.query(SQL_SET_STATUS_BY_CODE, [statusId, transactionDate, defaultMarkedBy, pawnTicketId]);
     }
 }

@@ -14,22 +14,31 @@ export class PullPawnTicketItemsToInventoryUseCase {
         return await this.uow.runInTransaction(async ({ pawnTicketRepository, inventoryItemRepository }) => {
             const responseItems: PullPawnTicketItemsToInventoryResponseDto = [];
 
-            // 1) Update ticket status and markings
-            const statusCode = dto.ticketStatus;
-            await pawnTicketRepository.setStatus(dto.pawnTicketId, statusCode);
-            await pawnTicketRepository.updateMarkings({
-                pawnTicketId: dto.pawnTicketId,
-                transactionDate: dto.transactionDate,
-                defaultMarkedBy: dto.defaultMarkedBy
-            });
+            // 1) Fetch the pawn ticket
+            const ticket = await pawnTicketRepository.findById(dto.pawnTicketId);
+            if (!ticket) throw new NotFoundError(`Pawn ticket not found: ${dto.pawnTicketId}`);
 
-            // 2) Update each item
+            // 2) Determine status based on typeTicket
+            // PAWN → 'D' (Defaulted), PURCHASE → 'I' (Inventory/Purchase)
+            const statusCode = dto.typeTicket === 'PAWN' ? 'D' : 'I';
+
+            // 3) Set pawn ticket status, transaction_date, and default_marked_by in one call
+            await pawnTicketRepository.setStatusByCode(
+                dto.pawnTicketId,
+                statusCode,
+                dto.typeTicket,
+                dto.transactionDate,
+                dto.clerkUserId
+            );
+
+            // 4) Update each item
             for (const it of dto.items) {
                 const item = await inventoryItemRepository.findById(it.id);
                 if (!item) throw new NotFoundError(`Inventory item not found: ${it.id}`);
 
-                // Determine status (override to 'J' if scrappedIntoInvItem provided)
-                const finalStatus = it.scrappedIntoInvItem ? 'J' : it.itemStatus;
+                // Determine item status based only on scrappedIntoInvItem array
+                // If array is empty → 'I', if array has data → 'J'
+                const finalStatus = it.scrappedIntoInvItem && it.scrappedIntoInvItem.length > 0 ? 'J' : 'I';
 
                 // Compute resale/minResale
                 const resale = typeof it.resale === 'number' ? it.resale : item.resale ?? item.priceAmount ?? 0;
@@ -39,7 +48,7 @@ export class PullPawnTicketItemsToInventoryUseCase {
 
                 // Apply updates to original item
                 item.status = finalStatus;
-                item.quantity = it.quantity;
+                item.quantity = item.quantity; // Keep original quantity
                 item.resale = resale;
                 item.minResale = minResale;
                 item.createdAt = new Date();
@@ -51,13 +60,15 @@ export class PullPawnTicketItemsToInventoryUseCase {
                     responseItems.push({ id: item.id, inventoryNumber: item.inventoryNumber ?? null });
                 }
 
-                // If scrapped into another inventory item, increment that item's quantity
-                if (it.scrappedIntoInvItem) {
-                    const target = await inventoryItemRepository.findByInventoryNumber(it.scrappedIntoInvItem);
-                    if (!target) throw new NotFoundError(`Scrap target inventory_number not found: ${it.scrappedIntoInvItem}`);
-                    target.quantity = (target.quantity ?? 0) + it.quantity;
-                    target.updatedAt = new Date();
-                    await inventoryItemRepository.update(target);
+                // If scrapped into other inventory items, increment each target's quantity
+                if (it.scrappedIntoInvItem && it.scrappedIntoInvItem.length > 0) {
+                    for (const scrapTarget of it.scrappedIntoInvItem) {
+                        const target = await inventoryItemRepository.findByInventoryNumber(scrapTarget.inventoryNumber);
+                        if (!target) throw new NotFoundError(`Scrap target inventory_number not found: ${scrapTarget.inventoryNumber}`);
+                        target.quantity = (target.quantity ?? 0) + scrapTarget.quantity;
+                        target.updatedAt = new Date();
+                        await inventoryItemRepository.update(target);
+                    }
                 }
             }
 

@@ -7,22 +7,30 @@ const mkUow = (handlers: any): PawnTicketUnitOfWork => ({
       inventoryItemRepository: handlers.inventoryItemRepository,
       pawnTicketRepository: handlers.pawnTicketRepository,
       storeTransactionRepository: handlers.storeTransactionRepository ?? ({} as any),
-      dbClient: {} as any
+      dbClient: handlers.dbClient ?? ({} as any)
     });
   })
 }) as any;
 
 describe('PullPawnTicketItemsToInventoryUseCase', () => {
-  it('updates ticket and items, computes default minResale, and handles scrap increment', async () => {
+  it('updates ticket and items, computes default minResale, and handles multiple scrap targets', async () => {
     const inventoryItemRepository = {
       findById: jest.fn(),
       update: jest.fn(),
       findByInventoryNumber: jest.fn()
     } as any;
     const pawnTicketRepository = {
-      setStatus: jest.fn(),
-      updateMarkings: jest.fn()
+      findById: jest.fn(),
+      updateMarkings: jest.fn(),
+      setStatusByCode: jest.fn()
     } as any;
+
+    // Pawn ticket mock
+    const pawnTicket = {
+      id: '00000000-0000-0000-0000-000000000001',
+      transactionType: 'PAWN'
+    } as any;
+    pawnTicketRepository.findById.mockResolvedValue(pawnTicket);
 
     // Original item
     const originalItem = {
@@ -36,13 +44,20 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
     } as any;
     inventoryItemRepository.findById.mockResolvedValue(originalItem);
 
-    // Target scrap item
-    const targetItem = {
-      id: 'scrap-target',
+    // Target scrap items
+    const targetItem1 = {
+      id: 'scrap-target-1',
       quantity: 2,
       updatedAt: new Date()
     } as any;
-    inventoryItemRepository.findByInventoryNumber.mockResolvedValue(targetItem);
+    const targetItem2 = {
+      id: 'scrap-target-2',
+      quantity: 5,
+      updatedAt: new Date()
+    } as any;
+    inventoryItemRepository.findByInventoryNumber
+      .mockResolvedValueOnce(targetItem1)
+      .mockResolvedValueOnce(targetItem2);
 
     const useCase = new PullPawnTicketItemsToInventoryUseCase(mkUow({ inventoryItemRepository, pawnTicketRepository }));
 
@@ -50,15 +65,15 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
       pawnTicketId: '00000000-0000-0000-0000-000000000001',
       controlNumber: 'CN-1',
       typeTicket: 'PAWN',
-      ticketStatus: 'D',
-      defaultMarkedBy: '00000000-0000-0000-0000-000000000002',
+      clerkUserId: '00000000-0000-0000-0000-000000000002',
       transactionDate: new Date().toISOString(),
       items: [
         {
           id: '00000000-0000-0000-0000-000000000003',
-          quantity: 3,
-          itemStatus: 'I',
-          scrappedIntoInvItem: 'INV-999',
+          scrappedIntoInvItem: [
+            { inventoryNumber: 'INV-999', quantity: 3 },
+            { inventoryNumber: 'INV-888', quantity: 2 }
+          ],
           resale: undefined,
           minResale: undefined
         }
@@ -67,22 +82,34 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
 
     expect(result).toEqual([]); // scrapped items are omitted from response
 
-    expect(pawnTicketRepository.setStatus).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000001', 'D');
-    expect(pawnTicketRepository.updateMarkings).toHaveBeenCalled();
+    // Verify pawn ticket status lookup and update with all parameters
+    expect(pawnTicketRepository.setStatusByCode).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      'D',
+      'PAWN',
+      expect.any(Date),
+      '00000000-0000-0000-0000-000000000002'
+    );
 
-    // Original item updated -> status 'J' due to scrap, quantity 3, resale default from priceAmount (100), minResale 80
+    // Original item updated -> status 'J' due to scrap, quantity unchanged, resale default from priceAmount (100), minResale 80
     expect(inventoryItemRepository.update).toHaveBeenCalledWith(expect.objectContaining({
       id: 'item-1',
       status: 'J',
-      quantity: 3,
+      quantity: 1,
       resale: 100,
       minResale: 80
     }));
 
-    // Target item quantity incremented by 3
+    // Target item 1 quantity incremented by 3
     expect(inventoryItemRepository.update).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'scrap-target',
+      id: 'scrap-target-1',
       quantity: 5
+    }));
+
+    // Target item 2 quantity incremented by 2
+    expect(inventoryItemRepository.update).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'scrap-target-2',
+      quantity: 7
     }));
   });
 
@@ -93,9 +120,17 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
       findByInventoryNumber: jest.fn()
     } as any;
     const pawnTicketRepository = {
-      setStatus: jest.fn(),
-      updateMarkings: jest.fn()
+      findById: jest.fn(),
+      updateMarkings: jest.fn(),
+      setStatusByCode: jest.fn()
     } as any;
+
+    // Pawn ticket mock
+    const pawnTicket = {
+      id: '00000000-0000-0000-0000-000000000010',
+      transactionType: 'PAWN'
+    } as any;
+    pawnTicketRepository.findById.mockResolvedValue(pawnTicket);
 
     const item = {
       id: 'item-2',
@@ -115,14 +150,11 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
       pawnTicketId: '00000000-0000-0000-0000-000000000010',
       controlNumber: 'CN-2',
       typeTicket: 'PAWN',
-      ticketStatus: 'D',
-      defaultMarkedBy: '00000000-0000-0000-0000-000000000011',
+      clerkUserId: '00000000-0000-0000-0000-000000000011',
       transactionDate: new Date().toISOString(),
       items: [
         {
           id: '00000000-0000-0000-0000-000000000012',
-          quantity: 1,
-          itemStatus: 'I',
           resale: undefined,
           minResale: undefined
         }

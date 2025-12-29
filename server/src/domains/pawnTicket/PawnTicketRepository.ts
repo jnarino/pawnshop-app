@@ -69,4 +69,15 @@ export interface PawnTicketRepository {
     transactionDate: Date;
     defaultMarkedBy: string;
   }): Promise<void>;
+
+  /**
+   * Find status_id from pawn_ticket_status table by status code and transaction type.
+   */
+  findStatusIdByCode(statusCode: string, transactionType: 'PAWN' | 'PURCHASE'): Promise<number | null>;
+
+  /**
+   * Set the status_id of a pawn ticket by looking up the status code.
+   * Also updates transaction_date and default_marked_by.
+   */
+  setStatusByCode(pawnTicketId: string, statusCode: string, transactionType: 'PAWN' | 'PURCHASE', transactionDate: Date, defaultMarkedBy: string): Promise<void>;
 }
