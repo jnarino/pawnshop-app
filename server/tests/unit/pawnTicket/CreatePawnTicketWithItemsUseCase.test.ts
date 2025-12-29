@@ -16,6 +16,8 @@ class MockPawnTicketRepository implements PawnTicketRepository {
   addPayment = jest.fn();
   setStatus = jest.fn();
   updateMarkings = jest.fn();
+  findStatusIdByCode = jest.fn();
+  setStatusByCode = jest.fn();
   create = jest.fn(async (t: PawnTicket) => ({
     ...t,
     controlNumber: 'CTL-001'
@@ -39,6 +41,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   findByInventoryNumber = jest.fn();
   findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
+  findByInventoryNumbers = jest.fn();
 }
 
 class MockItemAttributeMapper {

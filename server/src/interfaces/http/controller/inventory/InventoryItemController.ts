@@ -7,6 +7,7 @@ import { DeleteInventoryItemUseCase } from '../../../../application/use-case/inv
 import { GetInventoryItemByInventoryNumberUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 import { GetInventoryItemBySerialNumberUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
 import { GetItemOnInventoryUseCase } from '../../../../application/use-case/inventory/query/GetItemOnInventoryUseCase';
+import { GetScrapInventoryNumbersUseCase } from '../../../../application/use-case/inventory/query/GetScrapInventoryNumbersUseCase';
 
 export class InventoryItemController {
     constructor(
@@ -15,7 +16,8 @@ export class InventoryItemController {
         private readonly deleteInventoryItemUseCase: DeleteInventoryItemUseCase,
         private readonly getInventoryItemByInventoryNumberUseCase: GetInventoryItemByInventoryNumberUseCase,
         private readonly getInventoryItemBySerialNumberUseCase: GetInventoryItemBySerialNumberUseCase,
-        private readonly getItemOnInventoryUseCase: GetItemOnInventoryUseCase
+        private readonly getItemOnInventoryUseCase: GetItemOnInventoryUseCase,
+        private readonly getScrapInventoryNumbersUseCase: GetScrapInventoryNumbersUseCase
     ) { }
 
     /**
@@ -69,6 +71,19 @@ export class InventoryItemController {
                 inventoryNumber: req.params.inventoryNumber
             });
 
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get scrap inventory numbers with descriptions.
+     * GET /api/inventory-items/scrap-inventory-numbers
+     */
+    getScrapInventoryNumbers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.getScrapInventoryNumbersUseCase.execute();
             return res.json(result);
         } catch (err) {
             return next(err);

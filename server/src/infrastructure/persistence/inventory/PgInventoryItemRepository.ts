@@ -17,6 +17,9 @@ const SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER = loadSql(
 const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_serial_number'
 );
+const SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS = loadSql(
+    'queries', 'inventory/inventory_item_find_by_scrap_inventory_numbers'
+);
 
 function mapRowToInventoryItem(row: any): InventoryItem {
     const item = new InventoryItem({
@@ -133,6 +136,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
             item.legacyBrandColorDescription,
             item.inventoryNumber,
             item.lastUpdatedUserId,
+            item.createdAt,
             item.updatedAt
         ]);
 
@@ -181,5 +185,15 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         ]);
         if (result.rows.length === 0) return null;
         return mapRowToInventoryItem(result.rows[0]);
+    }
+
+    async findByInventoryNumbers(
+        inventoryNumbers: string[]
+    ): Promise<Array<{ inventoryNumber: string; itemDescription: string | null }>> {
+        const result = await this.db.query(SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS);
+        return result.rows.map((row: any) => ({
+            inventoryNumber: row.inventory_number,
+            itemDescription: row.item_description
+        }));
     }
 }
