@@ -133,6 +133,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
             item.legacyBrandColorDescription,
             item.inventoryNumber,
             item.lastUpdatedUserId,
+            item.createdAt,
             item.updatedAt
         ]);
 

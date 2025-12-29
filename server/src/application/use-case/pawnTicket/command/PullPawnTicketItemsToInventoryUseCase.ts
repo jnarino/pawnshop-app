@@ -39,6 +39,7 @@ export class PullPawnTicketItemsToInventoryUseCase {
         item.quantity = it.quantity;
         item.resale = resale;
         item.minResale = minResale;
+        item.createdAt = new Date();
         item.updatedAt = new Date();
         await inventoryItemRepository.update(item);
 

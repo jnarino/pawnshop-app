@@ -22,6 +22,7 @@ SET
   legacy_brand_color_description = $21,
   inventory_number            = $22,
   last_updated_user_id        = $23,
-  updated_at                  = $24
+  created_at                  = $24,
+  updated_at                  = $25
 WHERE id = $1
 RETURNING *;
