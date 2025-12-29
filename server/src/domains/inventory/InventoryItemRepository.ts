@@ -28,4 +28,10 @@ export interface InventoryItemRepository {
  * Set status for all inventory items linked to a pawn ticket.
  */
   setStatusByPawnTicket(pawnTicketId: string, status: string): Promise<void>;
+
+  /**
+   * Find multiple inventory items by their inventory numbers.
+   * Returns inventory_number and item_description only.
+   */
+  findByInventoryNumbers(inventoryNumbers: string[]): Promise<Array<{ inventoryNumber: string; itemDescription: string | null }>>;
 }

@@ -43,6 +43,36 @@ export function createInventoryItemRouter(
 
     /**
      * @openapi
+     * /api/inventory-items/scrap-inventory-numbers:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Get scrap inventory numbers with descriptions
+     *     description: Retrieve all scrap inventory numbers and descriptions (hardcoded list). Used to populate dropdowns when scrapping items.
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Scrap inventory items with numbers and descriptions ordered by description
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   inventoryNumber:
+     *                     type: string
+     *                   itemDescription:
+     *                     type: string
+     *                     nullable: true
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/scrap-inventory-numbers', auth, controller.getScrapInventoryNumbers);
+
+    /**
+     * @openapi
      * /api/inventory-items/by-inventory-number/{inventoryNumber}:
      *   get:
      *     tags:

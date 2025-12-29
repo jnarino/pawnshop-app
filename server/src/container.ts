@@ -29,6 +29,7 @@ import { DeleteInventoryItemUseCase } from './application/use-case/inventory/com
 import { UpdateInventoryItemUseCase } from './application/use-case/inventory/command/UpdateInventoryItemUseCase';
 
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
+import { GetScrapInventoryNumbersUseCase } from './application/use-case/inventory/query/GetScrapInventoryNumbersUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
 import { InventoryCategoryController } from './interfaces/http/controller/inventory/InventoryCategoryController';
@@ -112,6 +113,7 @@ export async function createApp() {
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
   const getItemOnInventoryUseCase = new GetItemOnInventoryUseCase(inventoryItemRepo);
+  const getScrapInventoryNumbersUseCase = new GetScrapInventoryNumbersUseCase(inventoryItemRepo);
 
   // Inventory Category use-cases 
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
@@ -171,7 +173,8 @@ export async function createApp() {
     deleteInventoryItemUseCase,
     getInventoryItemByInventoryNumberUseCase,
     getInventoryItemBySerialNumberUseCase,
-    getItemOnInventoryUseCase
+    getItemOnInventoryUseCase,
+    getScrapInventoryNumbersUseCase
   );
 
   const inventoryCategoryController = new InventoryCategoryController(
