@@ -46,7 +46,7 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
 
     const useCase = new PullPawnTicketItemsToInventoryUseCase(mkUow({ inventoryItemRepository, pawnTicketRepository }));
 
-    await useCase.execute({
+    const result = await useCase.execute({
       pawnTicketId: '00000000-0000-0000-0000-000000000001',
       controlNumber: 'CN-1',
       typeTicket: 'PAWN',
@@ -65,6 +65,8 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
       ]
     });
 
+    expect(result).toEqual([]); // scrapped items are omitted from response
+
     expect(pawnTicketRepository.setStatus).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000001', 'D');
     expect(pawnTicketRepository.updateMarkings).toHaveBeenCalled();
 
@@ -82,5 +84,51 @@ describe('PullPawnTicketItemsToInventoryUseCase', () => {
       id: 'scrap-target',
       quantity: 5
     }));
+  });
+
+  it('returns inventory numbers for non-scrapped items', async () => {
+    const inventoryItemRepository = {
+      findById: jest.fn(),
+      update: jest.fn(),
+      findByInventoryNumber: jest.fn()
+    } as any;
+    const pawnTicketRepository = {
+      setStatus: jest.fn(),
+      updateMarkings: jest.fn()
+    } as any;
+
+    const item = {
+      id: 'item-2',
+      status: 'P',
+      quantity: 1,
+      priceAmount: 200,
+      resale: null,
+      minResale: null,
+      inventoryNumber: 'INV-123',
+      updatedAt: new Date()
+    } as any;
+    inventoryItemRepository.findById.mockResolvedValue(item);
+
+    const useCase = new PullPawnTicketItemsToInventoryUseCase(mkUow({ inventoryItemRepository, pawnTicketRepository }));
+
+    const result = await useCase.execute({
+      pawnTicketId: '00000000-0000-0000-0000-000000000010',
+      controlNumber: 'CN-2',
+      typeTicket: 'PAWN',
+      ticketStatus: 'D',
+      defaultMarkedBy: '00000000-0000-0000-0000-000000000011',
+      transactionDate: new Date().toISOString(),
+      items: [
+        {
+          id: '00000000-0000-0000-0000-000000000012',
+          quantity: 1,
+          itemStatus: 'I',
+          resale: undefined,
+          minResale: undefined
+        }
+      ]
+    });
+
+    expect(result).toEqual([{ id: 'item-2', inventoryNumber: 'INV-123' }]);
   });
 });

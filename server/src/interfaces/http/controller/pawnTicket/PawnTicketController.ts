@@ -49,8 +49,8 @@ export class PawnTicketController {
     pullToInventory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
             const payload = req.body;
-            await this.pullPawnTicketItemsToInventoryUseCase.execute(payload);
-            return res.status(200).json({ message: 'Ticket and items updated' });
+            const result = await this.pullPawnTicketItemsToInventoryUseCase.execute(payload);
+            return res.status(200).json(result);
         } catch (err) {
             return next(err);
         }

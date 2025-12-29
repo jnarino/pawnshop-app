@@ -270,8 +270,20 @@ export function createPawnTicketRouter(
      *                       type: number
      *                       nullable: true
      *     responses:
-     *       200:
-     *         description: Ticket and items updated
+    *       200:
+    *         description: Items pulled to inventory (scrapped items omitted)
+    *         content:
+    *           application/json:
+    *             schema:
+    *               type: array
+    *               items:
+    *                 type: object
+    *                 properties:
+    *                   id:
+    *                     type: string
+    *                   inventoryNumber:
+    *                     type: string
+    *                     nullable: true
      *       400:
      *         description: Invalid input
      *       401:
