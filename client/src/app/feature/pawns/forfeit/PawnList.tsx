@@ -11,13 +11,37 @@ import { Eye } from 'lucide-react';
 import { useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useForfeitStore } from './stores/forfeitStore';
+import ConfirmModal from '@/app/shared/components/ConfirmModal';
+import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 export const PawnList = () => {
-    const { searchResults: items, selectPawn } = useForfeitStore();
+    const { searchResults: items, selectPawn, isPullInProgress } = useForfeitStore();
+    const [temporalEditingRowId, setTemporalEditingRowId] = useState<string | null>(null);
+
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false)
+
+    const confirmChangeOfPawnTicket = () => {
+        setCancelModalOpen(false);
+        const selectedPawn = items.find(item => item.id === temporalEditingRowId);
+        if (selectedPawn) {
+            setEditingRowId(temporalEditingRowId);
+            selectPawn(selectedPawn);
+        }
+    }
+
+    const selectPawnAndShowConfirmChangeOfPawnTicket = (item: TicketByControlNumber) => {
+        setTemporalEditingRowId(item.id || null);
+        if (isPullInProgress) {
+            setCancelModalOpen(true);
+        } else {
+            setEditingRowId(item.id || null);
+            selectPawn(item);
+        }
+    }
 
     return (
-        <Table stickyHeader>
+        <><Table stickyHeader>
             <TableHeader>
                 <TableRow>
                     <TableHead sticky className="bg-white z-20">Customer</TableHead>
@@ -47,8 +71,7 @@ export const PawnList = () => {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => {
-                                        setEditingRowId(item.id || null);
-                                        selectPawn(item);
+                                        selectPawnAndShowConfirmChangeOfPawnTicket(item);
                                     }}
                                     disabled={item.id === editingRowId}
                                 >
@@ -68,5 +91,16 @@ export const PawnList = () => {
                 }
             </TableBody>
         </Table>
+            <ConfirmModal
+                open={cancelModalOpen}
+                title="Cancel Pull"
+                message="Are you sure you want to select another Pawn Ticket? All unsaved changes will be lost."
+                confirmText="Yes, select"
+                cancelText="No, keep working"
+                onConfirm={confirmChangeOfPawnTicket}
+                onCancel={() => setCancelModalOpen(false)}
+            />
+        </>
+
     )
 }

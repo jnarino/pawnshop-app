@@ -16,6 +16,7 @@ interface ForfeitStore {
     selectedPawn: TicketByControlNumber | null;
     selectedItems: InventoryItemDraft[];
     searchCriteria: SearchCriteria;
+    isPullInProgress: boolean;
 
     // Actions
     setSearchCriteria: (criteria: Partial<SearchCriteria>) => void;
@@ -74,6 +75,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     searchResults: [],
     selectedPawn: null,
     selectedItems: [],
+    isPullInProgress: false,
     searchCriteria: {
         from: '1990-01-01',
         to: localToday,
@@ -88,7 +90,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
 
     searchPawns: async () => {
         const { searchCriteria } = get();
-        set({ loading: true, searchResults: [], selectedPawn: null, selectedItems: [] });
+        set({ loading: true, searchResults: [], selectedPawn: null, selectedItems: [], isPullInProgress: false });
 
         try {
             let results: TicketByControlNumber[] = [];
@@ -110,15 +112,19 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
 
     selectPawn: (pawn) => {
         const items = pawn.items.map(inventoryItemToDraft);
-        set({ selectedPawn: pawn, selectedItems: items });
+        set({ selectedPawn: pawn, selectedItems: items, isPullInProgress: false });
     },
 
     updateItem: (updatedItem) => {
-        set((state) => ({
-            selectedItems: state.selectedItems.map(item =>
+        set((state) => {
+            const newItems = state.selectedItems.map(item =>
                 item.id === updatedItem.id ? updatedItem : item
-            )
-        }));
+            );
+            return {
+                selectedItems: newItems,
+                isPullInProgress: newItems.some(item => item.status === 'Pulled')
+            };
+        });
     },
 
     submitForfeit: async () => {
@@ -156,6 +162,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
             searchResults: [],
             selectedPawn: null,
             selectedItems: [],
+            isPullInProgress: false,
             searchCriteria: {
                 from: '1990-01-01',
                 to: localToday,
