@@ -3,15 +3,16 @@ import { useCallback, useState } from 'react';
 import ConfirmModal from './ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 
-export const CancelButton = () => {
+export const CancelButton = ({ onCancelTransaction }: { onCancelTransaction?: () => void }) => {
     const navigate = useNavigate();
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false)
 
     const confirmCancelTransaction = useCallback(() => {
         setCancelModalOpen(false);
+        onCancelTransaction?.();
         navigate('/', { replace: true });
-    }, [navigate]);
+    }, [navigate, onCancelTransaction]);
 
     return (<>
         <Button variant="destructive" onClick={() => setCancelModalOpen(true)}>

@@ -7,7 +7,7 @@ import { ForfeitSearchBar } from './ForfeitSearchBar';
 import { useForfeitStore } from './stores/forfeitStore';
 
 function ForfeitWorkspaceContent() {
-  const { submitForfeit, selectedItems } = useForfeitStore();
+  const { submitForfeit, selectedItems, reset } = useForfeitStore();
 
   return (
     <>
@@ -15,7 +15,7 @@ function ForfeitWorkspaceContent() {
 
       <div className="flex flex-col space-y-4">
         <div className='self-end'>
-          <CancelButton />
+          <CancelButton onCancelTransaction={reset} />
         </div>
 
         <div className="grid grid-cols-5 gap-4">
