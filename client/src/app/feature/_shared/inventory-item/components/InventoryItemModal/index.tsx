@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -50,18 +49,6 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
     handleSubmit,
     handleMetalChange,
   } = useInventoryItemForm({ open, initial, onSave: onSave || (() => { }), mode });
-
-  useEffect(() => {
-    if (isPullMode && open) {
-      console.log('draft', draft)
-      if (!draft.itemStatus) {
-        updateField('itemStatus', 'I');
-      }
-      if (!draft.resale || draft.resale === '0') {
-        updateField('resale', draft.amount || '0');
-      }
-    }
-  }, [isPullMode, open, initial]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>

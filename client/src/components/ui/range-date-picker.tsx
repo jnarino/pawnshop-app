@@ -36,10 +36,10 @@ export function RangeDatePicker({ value, onChange, disabled }: RangeDatePickerPr
                     value={value.from}
                     onChange={handleFromChange}
                     disabled={disabled}
-                    disabledDays={[
-                        { after: today },
-                        ...(toDate ? [{ after: toDate }] : [])
-                    ]}
+                /* disabledDays={[
+                    { after: today },
+                    ...(toDate ? [{ after: toDate }] : [])
+                ]} */
                 />
             </Field>
             <Field className="flex-1">

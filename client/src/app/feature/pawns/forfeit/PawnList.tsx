@@ -9,15 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import { useState } from 'react';
-import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useForfeitStore } from './stores/forfeitStore';
 
-interface PawnTableList {
-    items: TicketByControlNumber[];
-    onPawnSelected: (pawn: TicketByControlNumber) => void;
-}
-
-export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
+export const PawnList = () => {
+    const { searchResults: items, selectPawn } = useForfeitStore();
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
     return (
@@ -52,7 +48,7 @@ export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
                                     size="icon"
                                     onClick={() => {
                                         setEditingRowId(item.id || null);
-                                        onPawnSelected(item);
+                                        selectPawn(item);
                                     }}
                                     disabled={item.id === editingRowId}
                                 >
