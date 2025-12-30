@@ -73,6 +73,7 @@ export function StonesSection({ stones, onChange, disabled = false }: StonesSect
                 initialStone={isEditing ? selectedStone : null}
                 onSubmit={isEditing ? handleUpdate : handleAdd}
                 onCancel={cancelEdit}
+                disabled={disabled}
               />
               <div className="flex flex-col gap-2">
                 <Button

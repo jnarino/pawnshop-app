@@ -7,7 +7,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { ArrowDownToLine } from 'lucide-react';
 import { InventoryItemDraft } from '../../_shared/inventory-item';
@@ -18,10 +18,14 @@ import { mapApiToInventoryItemDraft } from '@/app/shared/components/ElectronMenu
 import { useForfeitStore } from './stores/forfeitStore';
 
 export const PawnItemList = () => {
-    const { selectedItems: items, updateItem: onItemUpdate } = useForfeitStore();
+    const { selectedItems: items, updateItem: onItemUpdate, scrapItems, fetchScrapItems } = useForfeitStore();
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [inventoryItemSelected, setInventoryItemSelected] = useState<InventoryItemDraft | null>();
     const [currentEditIndex, setCurrentEditIndex] = useState<number>(-1);
+
+    useEffect(() => {
+        fetchScrapItems();
+    }, [fetchScrapItems]);
 
     const handleCloseInventoryItem = () => {
         setEditingRowId(null);
@@ -119,6 +123,7 @@ export const PawnItemList = () => {
                 onCancel={handleCloseInventoryItem}
                 onSave={handleSaveInventoryItem}
                 hasNextItem={currentEditIndex < items.length - 1}
+                scrapItems={scrapItems}
             />
         </>
     )

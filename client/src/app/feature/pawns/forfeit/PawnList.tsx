@@ -62,9 +62,9 @@ export const PawnList = () => {
                             {item.customer ? `${item.customer.firstName} ${item.customer.lastName}` : item.customerId}
                         </TableCell>
                         <TableCell>{item.controlNumber}</TableCell>
-                        <TableCell>{item.maturityDate}</TableCell>
+                        <TableCell>{item.defaultDate}</TableCell>
                         <TableCell>${Number(item.amountFinanced).toFixed(2)}</TableCell>
-                        <TableCell className="font-medium">{item.pawnStatus}</TableCell>
+                        <TableCell className="font-medium">{item.pawnStatus === "B" ? "PURCHASED" : item.pawnStatus === "P" ? "PAWN" : "-"}</TableCell>
                         <TableCell className="text-center">
                             <Tooltip content="View pawn">
                                 <Button className='!p-0'

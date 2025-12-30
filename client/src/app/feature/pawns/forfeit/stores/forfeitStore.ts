@@ -17,6 +17,7 @@ interface ForfeitStore {
     selectedItems: InventoryItemDraft[];
     searchCriteria: SearchCriteria;
     isPullInProgress: boolean;
+    scrapItems: { itemDescription: string; inventoryNumber: string }[];
 
     // Actions
     setSearchCriteria: (criteria: Partial<SearchCriteria>) => void;
@@ -24,6 +25,7 @@ interface ForfeitStore {
     selectPawn: (pawn: TicketByControlNumber) => void;
     updateItem: (item: InventoryItemDraft) => void;
     submitForfeit: () => Promise<void>;
+    fetchScrapItems: () => Promise<void>;
     reset: () => void;
 }
 
@@ -76,6 +78,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     selectedPawn: null,
     selectedItems: [],
     isPullInProgress: false,
+    scrapItems: [],
     searchCriteria: {
         from: '1990-01-01',
         to: localToday,
@@ -143,8 +146,11 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
             items: selectedItems.map(item => ({
                 id: item.id,
                 quantity: Number(item.quantity) || 1,
-                // scrappedIntoInvItem: [], // User example had this, defaulting to empty or needed?
-                // Assuming empty for now as it wasn't clarified where this comes from.
+                scrappedIntoInvItem: item.scrappedIntoInvItem?.map(scrap => ({
+                    invId: scrap.inventoryNumber,
+                    quantity: Number(scrap.quantity) || 0,
+                    id: scrap.stoneId // Assuming 'id' in user requirement maps to stoneId for tracking
+                })) || [],
                 resale: Number(item.resale) || 0,
                 minResale: Number(item.minResale) || 0,
                 status: item.itemStatus // 'I' or 'J'
@@ -156,6 +162,16 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
         // await someApi.saveForfeit(payload);
     },
 
+    fetchScrapItems: async () => {
+        try {
+            const { getScrapInventoryNumbers } = await import('@/app/core/api/inventoryItemApi');
+            const items = await getScrapInventoryNumbers();
+            set({ scrapItems: items });
+        } catch (error) {
+            console.error("Failed to fetch scrap items:", error);
+        }
+    },
+
     reset: () => {
         set({
             loading: false,
@@ -163,6 +179,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
             selectedPawn: null,
             selectedItems: [],
             isPullInProgress: false,
+            // scrapItems: [], 
             searchCriteria: {
                 from: '1990-01-01',
                 to: localToday,
