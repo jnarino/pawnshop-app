@@ -18,6 +18,9 @@ interface ForfeitStore {
     searchCriteria: SearchCriteria;
     isPullInProgress: boolean;
     scrapItems: { itemDescription: string; inventoryNumber: string }[];
+    loadingProcessPull: boolean;
+    createdItems: { id: string; inventoryNumber: string; description: string; amount: string; quantity: number }[];
+    submitError: string | null;
 
     // Actions
     setSearchCriteria: (criteria: Partial<SearchCriteria>) => void;
@@ -26,6 +29,7 @@ interface ForfeitStore {
     updateItem: (item: InventoryItemDraft) => void;
     submitForfeit: () => Promise<void>;
     fetchScrapItems: () => Promise<void>;
+    closePrintModal: () => void;
     reset: () => void;
 }
 
@@ -79,11 +83,14 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     selectedItems: [],
     isPullInProgress: false,
     scrapItems: [],
+    loadingProcessPull: false,
+    createdItems: [],
     searchCriteria: {
         from: '1990-01-01',
         to: localToday,
         ticketNumber: ''
     },
+    submitError: null,
 
     setSearchCriteria: (criteria) => {
         set((state) => ({
@@ -93,7 +100,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
 
     searchPawns: async () => {
         const { searchCriteria } = get();
-        set({ loading: true, searchResults: [], selectedPawn: null, selectedItems: [], isPullInProgress: false });
+        set({ loading: true, searchResults: [], selectedPawn: null, selectedItems: [], isPullInProgress: false, createdItems: [] });
 
         try {
             let results: TicketByControlNumber[] = [];
@@ -115,7 +122,7 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
 
     selectPawn: (pawn) => {
         const items = pawn.items.map(inventoryItemToDraft);
-        set({ selectedPawn: pawn, selectedItems: items, isPullInProgress: false });
+        set({ selectedPawn: pawn, selectedItems: items, isPullInProgress: false, createdItems: [] });
     },
 
     updateItem: (updatedItem) => {
@@ -131,35 +138,63 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     },
 
     submitForfeit: async () => {
-        const { selectedPawn, selectedItems } = get();
+        const { selectedPawn, selectedItems, reset } = get();
 
         if (!selectedPawn) {
             console.error("No pawn ticket selected");
             return;
         }
 
+        set({ loadingProcessPull: true, submitError: null });
+
         const payload = {
             pawnTicketId: selectedPawn.id,
             controlNumber: selectedPawn.controlNumber,
-            typeTicket: selectedPawn.transactionType, // PAWN | PURCHASE
-            transactionDate: selectedPawn.transactionDate, // Or current date? User said "get from useForfeitForm", usually refers to ticket data
+            typeTicket: selectedPawn.transactionType,
+            transactionDate: new Date().toISOString(),
             items: selectedItems.map(item => ({
                 id: item.id,
-                quantity: Number(item.quantity) || 1,
-                scrappedIntoInvItem: item.scrappedIntoInvItem?.map(scrap => ({
-                    invId: scrap.inventoryNumber,
-                    quantity: Number(scrap.quantity) || 0,
-                    id: scrap.stoneId // Assuming 'id' in user requirement maps to stoneId for tracking
-                })) || [],
                 resale: Number(item.resale) || 0,
                 minResale: Number(item.minResale) || 0,
-                status: item.itemStatus // 'I' or 'J'
+                itemStatus: item.itemStatus,
+                scrappedIntoInvItem: item.scrappedIntoInvItem?.map(scrap => ({
+                    inventoryNumber: scrap.inventoryNumber,
+                    quantity: Number(scrap.quantity) || 0,
+                })) || []
             }))
         };
 
-        console.log("Submitting Forfeit/Pull Payload:", payload);
-        // TODO: Implement actual API call here
-        // await someApi.saveForfeit(payload);
+        try {
+            console.log("Submitting Forfeit/Pull Payload:", payload);
+            const responseItems = await pawnTicketApi.pullToInventory(payload);
+
+            if (responseItems && responseItems.length > 0) {
+                const pulledItems = selectedItems.filter(i => i.itemStatus === 'I');
+
+                const mappedCreatedItems = responseItems.map((respItem, index) => {
+                    const sourceItem = pulledItems[index];
+                    return {
+                        id: respItem.id,
+                        inventoryNumber: respItem.inventoryNumber,
+                        description: sourceItem?.description || 'Pulled Item',
+                        amount: sourceItem?.resale || '0',
+                        quantity: Number(sourceItem?.quantity) || 1
+                    };
+                });
+
+                set({ createdItems: mappedCreatedItems, loadingProcessPull: false });
+            } else {
+                set({ loadingProcessPull: false });
+                reset();
+            }
+        } catch (error) {
+            console.error("Submit forfeit failed:", error);
+            set({ submitError: "Error while processing pull, please try again", loadingProcessPull: false });
+        }
+    },
+
+    closePrintModal: () => {
+        get().reset();
     },
 
     fetchScrapItems: async () => {
@@ -175,11 +210,13 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     reset: () => {
         set({
             loading: false,
+            loadingProcessPull: false,
             searchResults: [],
             selectedPawn: null,
             selectedItems: [],
             isPullInProgress: false,
-            // scrapItems: [], 
+            createdItems: [],
+            submitError: null,
             searchCriteria: {
                 from: '1990-01-01',
                 to: localToday,
