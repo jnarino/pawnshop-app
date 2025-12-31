@@ -67,6 +67,9 @@ import { PgPoliceReportRepository } from './infrastructure/persistence/reports/p
 import { GenerateDailyPoliceReportUseCase } from './application/use-case/reports/police/query/GenerateDailyPoliceReportUseCase';
 import { PoliceReportFixedWidthService } from './application/service/reports/PoliceReportFixedWidthService';
 import { PoliceReportController } from './interfaces/http/controller/reports/police/PoliceReportController';
+import { PgCashDrawerReportRepository } from './infrastructure/persistence/reports/cashDrawer/PgCashDrawerReportRepository';
+import { GenerateCashDrawerDetailUseCase } from './application/use-case/reports/cashDrawer/query/GenerateCashDrawerDetailUseCase';
+import { CashDrawerReportController } from './interfaces/http/controller/reports/cashDrawer/CashDrawerReportController';
 
 
 
@@ -87,6 +90,7 @@ export async function createApp() {
   const controlNumberRepository = new PgControlNumberRepository(pool);
   const tenderTypeRepository = new PgTenderTypeRepository(pool);
   const policeReportRepo = new PgPoliceReportRepository(pool);
+  const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
@@ -151,6 +155,8 @@ export async function createApp() {
 
   // Police Report use-cases
   const generateDailyPoliceReportUseCase = new GenerateDailyPoliceReportUseCase(policeReportRepo, policeReportFixedWidthService);
+  // Cash Drawer Report use-cases
+  const generateCashDrawerDetailUseCase = new GenerateCashDrawerDetailUseCase(cashDrawerReportRepo);
   
   // Controllers
   const authController = new AuthController(
@@ -225,6 +231,9 @@ export async function createApp() {
   const policeReportController = new PoliceReportController(
     generateDailyPoliceReportUseCase
   );
+  const cashDrawerReportController = new CashDrawerReportController(
+    generateCashDrawerDetailUseCase
+  );
 
   const app = createExpressApp({
     authController,
@@ -237,6 +246,7 @@ export async function createApp() {
     storeTransactionController,
     tenderTypeController,
     policeReportController,
+    cashDrawerReportController,
     jwtSecret: env.jwtSecret
   });
 
