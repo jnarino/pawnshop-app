@@ -18,11 +18,8 @@ interface ScrapDetailsProps {
 }
 
 export function ScrapDetails({ draft, updateField, disabled, availableScrapItems = [] }: ScrapDetailsProps) {
-    const isJewelry = !!draft.stones; // Or use another check if 'stones' exists
     const stones = draft.stones || [];
     const hasStones = stones.length > 0;
-
-    console.log('scrapitems', availableScrapItems)
 
     useEffect(() => {
         if (!draft.scrappedIntoInvItem || draft.scrappedIntoInvItem.length === 0) {
