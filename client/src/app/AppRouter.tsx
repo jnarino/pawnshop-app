@@ -10,6 +10,8 @@ import Logout from '@/app/feature/auth/Logout';
 import SalesWorkspace from '@/app/feature/sales/SalesWorkspace';
 import PawnsMaintainWorkspace from './feature/pawns/maintain/PawnsMaintainWorkspace';
 import ForfeitWorkspace from './feature/pawns/forfeit/ForfeitWorkspace';
+import { PoliceReportPage } from './feature/reports/police/PoliceReportPage';
+import { DailyReportPage } from './feature/reports/dailly/DailyReportPage';
 
 export default function AppRouter() {
   return (
@@ -20,16 +22,19 @@ export default function AppRouter() {
 
       {/* protected only */}
       <Route path="/" element={<Protected><HomePage /></Protected>} />
-      <Route path="/reports" element={<Protected><ReportsPage /></Protected>} />
       <Route path="/pawns" element={<Protected><PawnsWorkspace /></Protected>} />
       <Route path="/pawns/maintain" element={<Protected><PawnsMaintainWorkspace /></Protected>} />
       <Route path="/pawns/forfeit" element={<Protected><ForfeitWorkspace /></Protected>} />
       <Route path="/customer" element={<Protected><CustomerPage /></Protected>} />
-      <Route path="/reports" element={<Protected><ReportsPage /></Protected>} />
       <Route path="/pawn" element={<Protected><PawnsWorkspace /></Protected>} />
 
       {/* ✅ Add payment routes */}
       <Route path="/payments" element={<Protected><PaymentCreatePage /></Protected>} />
+
+      {/* Reports routes */}
+      <Route path="/reports" element={<Protected><ReportsPage /></Protected>} />
+      <Route path="/reports/daily" element={<Protected><DailyReportPage /></Protected>} />
+      <Route path="/reports/police" element={<Protected><PoliceReportPage /></Protected>} />
 
       {/* ✅ Add other main menu routes for consistency */}
       <Route path="/pawn-tickets/new" element={<Protected><PawnsWorkspace /></Protected>} />
