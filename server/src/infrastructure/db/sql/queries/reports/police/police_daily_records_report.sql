@@ -1,51 +1,63 @@
--- Daily police records report (transactions by date range)
-SELECT 
-  pt.id,
+-- $1: start_date (timestamp)
+-- $2: end_date (timestamp)
+SELECT
   pt.control_number,
-  pt.transaction_type,
-  pt.transaction_date,
+  pt.created_at AS transaction_date,
+  CASE
+    WHEN pt.transaction_type = 'PURCHASE' THEN 'B'
+    WHEN pt.transaction_type = 'PAWN' THEN 'P'
+    ELSE NULL
+  END AS transaction_type,
 
   c.first_name,
   c.middle_name,
   c.last_name,
   c.date_of_birth,
-  c.gender,
-  c.address AS customer_address,
-  c.city AS customer_city,
-  c.state AS customer_state,
-  c.zip AS customer_zip,
-  c.phone_number AS customer_phone,
-  c.employer_name AS customer_employer,
-  c.id_type AS customer_id_type,
-  c.id_number AS customer_id_number,
-  c.height AS customer_height,
-  c.weight AS customer_weight,
-  c.hair_color AS customer_hair_color,
-  c.eye_color AS customer_eye_color,
+  c.sex,
+  LEFT(c.race, 1) AS race,
+  c.street_address,
+  c.city,
+  c.state_us,
+  c.zip_code,
+  CASE
+    WHEN length(regexp_replace(coalesce(c.phone_number, ''), '\\D', '', 'g')) = 10 THEN
+      '(' || substr(regexp_replace(coalesce(c.phone_number, ''), '\\D', '', 'g'), 1, 3) || ') ' ||
+      substr(regexp_replace(coalesce(c.phone_number, ''), '\\D', '', 'g'), 4, 3) || '-' ||
+      substr(regexp_replace(coalesce(c.phone_number, ''), '\\D', '', 'g'), 7, 4)
+    ELSE c.phone_number
+  END AS phone_number,
+  c.employer_name,
+  CASE
+    WHEN length(regexp_replace(coalesce(c.employer_phone_number, ''), '\\D', '', 'g')) = 10 THEN
+      '(' || substr(regexp_replace(coalesce(c.employer_phone_number, ''), '\\D', '', 'g'), 1, 3) || ') ' ||
+      substr(regexp_replace(coalesce(c.employer_phone_number, ''), '\\D', '', 'g'), 4, 3) || '-' ||
+      substr(regexp_replace(coalesce(c.employer_phone_number, ''), '\\D', '', 'g'), 7, 4)
+    ELSE c.employer_phone_number
+  END AS employer_phone_number,
+  c.id_number,
+  c.id_state,
+  c.id_type,
+  c.height,
+  c.weight,
+  c.eye_color,
+  c.hair_color,
 
-  ii.id AS inventory_item_id,
-  isub.name AS item_type,
-  ib.name AS item_brand,
-  ii.item_description,
-  ii.model,
   ii.serial_number,
-  ii.color,
-  ii.quantity,
-  COALESCE(ii.price_amount, 0) AS item_amount,
-  ii.status AS item_status,
-  CASE 
-    WHEN isub.code ILIKE '%GUN%' OR isub.code ILIKE '%FIREARM%' THEN 'G'
-    WHEN ii.status = 'I' THEN 'J'
-    ELSE 'O'
-  END AS record_type
+  ii.owner_mark,
+  isub.name AS subcategory_name,
+  ib.name AS brand_name,
+  ii.model,
+  ii.item_description,
+  iav_color.value AS color_value
 FROM pawn_ticket pt
 JOIN customer c ON pt.customer_id = c.id
-LEFT JOIN pawn_ticket_item pti ON pt.id = pti.pawn_ticket_id
-LEFT JOIN inventory_item ii ON ii.id = pti.inventory_item_id
-LEFT JOIN inventory_subcategory isub ON ii.inventory_subcategory_id = isub.id
-LEFT JOIN inventory_brand ib ON ii.inventory_brand_id = ib.id
-WHERE pt.transaction_date >= $1 
-  AND pt.transaction_date < $2 + INTERVAL '1 day'
-  AND ($3::TEXT IS NULL OR pt.control_number = $3)
-ORDER BY pt.transaction_date ASC, pt.control_number ASC, ii.id ASC
-LIMIT $4 OFFSET $5;
+JOIN pawn_ticket_item pti ON pti.pawn_ticket_id = pt.id
+JOIN inventory_item ii ON ii.id = pti.inventory_item_id
+JOIN inventory_subcategory isub ON isub.id = ii.inventory_subcategory_id
+JOIN inventory_brand ib ON ib.id = ii.inventory_brand_id
+LEFT JOIN item_attribute_value iav_color
+  ON iav_color.id = ii.color
+ AND iav_color.attribute_type_id = '826b349d-fe7c-44b7-ad37-083fe7b8b24c'
+WHERE pt.created_at >= $1
+  AND pt.created_at < $2
+ORDER BY pt.created_at ASC, pt.control_number ASC, ii.id ASC;

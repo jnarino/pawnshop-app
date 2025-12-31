@@ -25,8 +25,6 @@ export class GenerateDailyPoliceReportUseCase {
         const criteria: FindPoliceReportsCriteria = {
             startDate: start,
             endDate: end,
-            limit: 5000,
-            offset: 0,
         };
 
         const reports = await this.policeReportRepo.findByCriteria(criteria);
@@ -36,7 +34,7 @@ export class GenerateDailyPoliceReportUseCase {
         }
 
         const content = this.fixedWidthService.toFixedWidth(reports);
-        const fileName = `POLICE_${this.formatDate(start)}_${this.formatDate(end)}.EXP`;
+        const fileName = 'POLICE.EXP';
 
         return {
             content,

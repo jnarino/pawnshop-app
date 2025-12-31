@@ -11,55 +11,15 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
     constructor(private readonly pool: Pool) { }
 
     async findByCriteria(criteria: FindPoliceReportsCriteria): Promise<PoliceReport[]> {
-        const limit = criteria.limit ?? 5000;
-        const offset = criteria.offset ?? 0;
-        const startDate = criteria.startDate ?? new Date('1970-01-01');
+        const startDate = criteria.startDate ?? new Date();
         const endDate = criteria.endDate ?? new Date();
 
         const result = await this.pool.query(sqlDailyReport, [
             startDate,
             endDate,
-            null, // control number filter not used here
-            limit,
-            offset,
         ]);
 
         return this.mapRowsToReports(result.rows);
-    }
-
-    async findByControlNumber(controlNumber: string): Promise<PoliceReport | null> {
-        const startDate = new Date('1970-01-01');
-        const endDate = new Date();
-
-        const result = await this.pool.query(sqlDailyReport, [
-            startDate,
-            endDate,
-            controlNumber,
-            1,
-            0,
-        ]);
-
-        if (result.rowCount === 0) return null;
-
-        const reports = this.mapRowsToReports(result.rows);
-        return reports.length > 0 ? reports[0] : null;
-    }
-
-    // Legacy interface methods retained but return empty data for non-hold flow
-    async findActiveHolds(): Promise<PoliceReport[]> {
-        return [];
-    }
-
-    async findByAgency(): Promise<PoliceReport[]> {
-        return [];
-    }
-
-    async create(report: PoliceReport): Promise<PoliceReport> {
-        return report;
-    }
-
-    async countHolds(): Promise<number> {
-        return 0;
     }
 
     private mapRowsToReports(rows: any[]): PoliceReport[] {
@@ -100,32 +60,32 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
                     customerMiddleName: row.middle_name || '',
                     customerLastName: row.last_name || '',
                     customerDob: row.date_of_birth ? new Date(row.date_of_birth) : new Date(),
-                    customerGender: row.gender || '',
-                    customerAddress: row.customer_address || '',
-                    customerCity: row.customer_city || '',
-                    customerState: row.customer_state || '',
-                    customerZip: row.customer_zip || '',
-                    customerPhone: row.customer_phone || '',
-                    customerEmployer: row.customer_employer || '',
-                    customerIdType: row.customer_id_type || '',
-                    customerIdNumber: row.customer_id_number || '',
+                    customerGender: row.sex || '',
+                    customerAddress: row.street_address || '',
+                    customerCity: row.city || '',
+                    customerState: row.state_us || '',
+                    customerZip: row.zip_code || '',
+                    customerPhone: row.phone_number || '',
+                    customerEmployer: row.employer_name || '',
+                    customerIdType: row.id_type || '',
+                    customerIdNumber: row.id_number || '',
 
-                    customerHeight: row.customer_height || '',
-                    customerWeight: row.customer_weight || 0,
-                    customerHairColor: row.customer_hair_color || '',
-                    customerEyeColor: row.customer_eye_color || '',
+                    customerHeight: row.height || '',
+                    customerWeight: row.weight || 0,
+                    customerHairColor: row.hair_color || '',
+                    customerEyeColor: row.eye_color || '',
 
-                    itemType: row.item_type || '',
-                    itemBrand: row.item_brand || '',
+                    itemType: row.subcategory_name || '',
+                    itemBrand: row.brand_name || '',
                     itemDescription: row.item_description || '',
                     itemMetalType: '', // Would need additional info
                     itemKarat: 0, // Would need additional info
                     itemWeight: 0, // Would need additional info
                     itemSize: '', // Would need additional info
-                    itemQuantity: row.quantity || 0,
-                    itemAmount: row.item_amount || 0,
-                    itemStatus: row.item_status || '',
-                    recordType: row.record_type || 'J',
+                    itemQuantity: 0,
+                    itemAmount: 0,
+                    itemStatus: '',
+                    recordType: 'J',
 
                     holdDate: transactionDate,
                     holdAgency: '',
