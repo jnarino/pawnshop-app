@@ -12,7 +12,8 @@ def safe_str(value):
     """Return string value or None if input is None"""
     if value is None:
         return None
-    return str(value)
+    # Replace NUL characters which break SQL literals
+    return str(value).replace('\x00', '')
 
 def parse_composit3_jewelry(composit3_str, attr_lookup):
     """
