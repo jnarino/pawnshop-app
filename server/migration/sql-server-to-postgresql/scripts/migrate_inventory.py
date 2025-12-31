@@ -9,11 +9,10 @@ from tqdm import tqdm
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 
 def safe_str(value):
-    """Safely convert value to string, strip whitespace and NUL bytes"""
+    """Return string value or None if input is None"""
     if value is None:
         return None
-    # Convert to string, remove NUL bytes, then strip whitespace
-    return str(value).replace('\x00', '').strip() if value else None
+    return str(value)
 
 def parse_composit3_jewelry(composit3_str, attr_lookup):
     """
@@ -409,8 +408,8 @@ def migrate_inventory():
               i.LEVEL1_FK, i.LEVEL2_FK, i.LEVEL5_FK,
               i.STATUS, i.MODELNUM, i.SERIALNUM, i.Color, i.Condition,
               i.OnHand, i.AMOUNT, i.RESALEAMT, i.LOWSLPRICE, i.INSREPCOST,
-              i.DateItemEntered, i.INVNUM, 
-              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3, i.Composit4
+              i.DateItemEntered, i.INVNUM, i.OWNERNUM,
+              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3, i.Composit4, i.storagefee
            FROM dbo.items i
            WHERE (i.DateItemEntered >= '1900-01-01' OR i.DateItemEntered IS NULL)
         """)
@@ -567,7 +566,9 @@ def migrate_inventory():
                     # else: color_uuid = None
                 
                 # Dates
-                created_at = row['DateItemEntered'] or datetime.now()
+                created_at = row['DateItemEntered'] or None
+                
+                updated_at = datetime.utcnow()
                 
                 # Legacy Columns
                 # CAT_DESC and BRAND_COLOR_DESC were removed from query as they were invalid
@@ -582,12 +583,12 @@ def migrate_inventory():
                     safe_str(row['SERIALNUM']),
                     color_uuid,
                     safe_str(row['Condition']),
-                    max(1, int(float(row['OnHand'] or 0))), # Enforce quantity > 0
+                    int(float(row['OnHand'] or 0)), # Allow quantity to be 0 or more
                     row['AMOUNT'],
                     row['RESALEAMT'],
                     row['LOWSLPRICE'],
                     row['INSREPCOST'],
-                    None, # owner_mark
+                    safe_str(row['OWNERNUM']),# owner_mark
                     safe_str(row['DESCRIPT']), # Item Description
                     safe_str(row['BIN']), # Bin Location
                     row.get('storagefee'),
@@ -600,7 +601,7 @@ def migrate_inventory():
                     safe_str(row['INVNUM']), # inventory_number
                     user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
-                    created_at
+                    updated_at
                 ))
                 
                 if len(batch_data) >= batch_size:

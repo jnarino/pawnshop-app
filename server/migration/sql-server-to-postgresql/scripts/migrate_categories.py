@@ -9,9 +9,7 @@ def sanitize_code(text):
     """Sanitize text for ltree compatibility - only alphanumeric and underscore"""
     if not text:
         return "UNNAMED"
-    # Replace special chars with underscore, remove consecutive underscores
-    sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', text.upper())
-    sanitized = re.sub(r'_+', '_', sanitized)
+    return text
 def migrate_categories():
     print("🚀 Starting Category Migration (Split Schema)...")
     
