@@ -7,25 +7,25 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
 import { ArrowDownToLine } from 'lucide-react';
 import { InventoryItemDraft } from '../../_shared/inventory-item';
 import { InventoryItemModal } from '../../_shared/inventory-item/components/InventoryItemModal';
 import { ViewMode } from '../../_shared/types/viewMode';
-import { InventoryItem } from '@/app/core/api/pawnTicketApi';
 import { getByInventoryNumber } from '@/app/core/api/inventoryItemApi';
 import { mapApiToInventoryItemDraft } from '@/app/shared/components/ElectronMenuBridge';
+import { useForfeitStore } from './stores/forfeitStore';
 
-interface PawnTableList {
-    items: InventoryItemDraft[];
-    onItemUpdate: (item: InventoryItemDraft) => void;
-}
-
-export const PawnItemList = ({ items, onItemUpdate }: PawnTableList) => {
+export const PawnItemList = () => {
+    const { selectedItems: items, updateItem: onItemUpdate, scrapItems, fetchScrapItems } = useForfeitStore();
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [inventoryItemSelected, setInventoryItemSelected] = useState<InventoryItemDraft | null>();
     const [currentEditIndex, setCurrentEditIndex] = useState<number>(-1);
+
+    useEffect(() => {
+        fetchScrapItems();
+    }, [fetchScrapItems]);
 
     const handleCloseInventoryItem = () => {
         setEditingRowId(null);
@@ -53,13 +53,18 @@ export const PawnItemList = ({ items, onItemUpdate }: PawnTableList) => {
         try {
             const item = await getByInventoryNumber(inventoryNumber);
             const mappedItem = mapApiToInventoryItemDraft(item);
-            setInventoryItemSelected(mappedItem);
+            const itemExisted = items.find(item => item.id === mappedItem.id && item.status === "Pulled");
+            if (itemExisted) {
+                setInventoryItemSelected(itemExisted);
+            } else {
+                setInventoryItemSelected(mappedItem);
+            }
             setCurrentEditIndex(index);
             setEditingRowId(item.id || null);
         } catch (err) {
             console.error('Error finding inventory item:', err);
         }
-    }, []);
+    }, [items, inventoryItemSelected]);
 
     return (
         <>
@@ -118,6 +123,7 @@ export const PawnItemList = ({ items, onItemUpdate }: PawnTableList) => {
                 onCancel={handleCloseInventoryItem}
                 onSave={handleSaveInventoryItem}
                 hasNextItem={currentEditIndex < items.length - 1}
+                scrapItems={scrapItems}
             />
         </>
     )

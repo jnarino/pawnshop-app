@@ -9,9 +9,7 @@ def sanitize_code(text):
     """Sanitize text for ltree compatibility - only alphanumeric and underscore"""
     if not text:
         return "UNNAMED"
-    # Replace special chars with underscore, remove consecutive underscores
-    sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', text.upper())
-    sanitized = re.sub(r'_+', '_', sanitized)
+    return text
 def migrate_categories():
     print("🚀 Starting Category Migration (Split Schema)...")
     
@@ -31,16 +29,19 @@ def migrate_categories():
         # PHASE 1: Categories (Level 1) -> inventory_category
         # ==========================================
         print("\n📂 Phase 1: Migrating Categories (Level 1)...")
-        mssql_cursor.execute("SELECT * FROM dbo.Level1")
+        mssql_cursor.execute("SELECT * FROM dbo.Level1 ORDER BY lv1_pk")
         rows = mssql_cursor.fetchall()
         
+        print(f"  Found {len(rows)} categories in Level1")
         inserted = 0
-        for row in tqdm(rows):
+        errors = 0
+        
+        for row in tqdm(rows, desc="Migrating categories"):
             try:
                 l1_pk = row['lv1_pk']
                 cat_id = str(row['lv1_ID']) # Use existing UUID if possible
                 name = (row['DESCRIPT'] or 'Unknown').strip() # FIXED L1 Casing
-                code = name[:3].strip().upper() # Derived Code
+                code = name[:3].strip().upper() if name and name != 'Unknown' else 'UNK'
                 
                 # Insert into inventory_category
                 pg_cursor.execute("""
@@ -51,12 +52,13 @@ def migrate_categories():
                         code = EXCLUDED.code
                 """, (cat_id, name, code, True))
                 
+                pg_conn.commit()  # Commit each successful insert
                 l1_map[l1_pk] = cat_id
                 inserted += 1
-            except Exception as e:
+                
+            except psycopg2.errors.UniqueViolation as e:
                 pg_conn.rollback()
-                # Handle unique code violation if necessary
-                # Try uniquify code
+                # Handle unique code violation
                 suffix = cat_id[:4].upper()
                 new_code = f"{code}_{suffix}"
                 try:
@@ -65,13 +67,20 @@ def migrate_categories():
                         VALUES (%s, %s, %s, %s)
                         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
                     """, (cat_id, name, new_code, True))
+                    pg_conn.commit()
+                    l1_map[l1_pk] = cat_id
                     inserted += 1
-                except:
-                    print(f"  Error inserting Category {name}: {e}")
-            else:
-                pg_conn.commit()
+                    print(f"\n  ⚠️  Code collision for '{name}' - using '{new_code}'")
+                except Exception as e2:
+                    errors += 1
+                    print(f"\n  ❌ Error inserting Category {l1_pk} '{name}': {e2}")
+            except Exception as e:
+                pg_conn.rollback()
+                errors += 1
+                print(f"\n  ❌ Error inserting Category {l1_pk} '{name}': {e}")
                 
-        print(f"  Migrated {inserted} Categories")
+        print(f"  ✅ Migrated {inserted} Categories (Errors: {errors})")
+        print(f"  Category Map: {l1_map}")
 
         # ==========================================
         # PHASE 2: Subcategories (Level 2) -> inventory_subcategory

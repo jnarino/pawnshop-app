@@ -10,6 +10,7 @@ interface StoneFormProps {
   initialStone?: Stone | null;
   onSubmit: (stone: Omit<Stone, 'id'>) => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
 const DEFAULT_FORM = {
@@ -24,7 +25,7 @@ const DEFAULT_FORM = {
   clarity: ''
 };
 
-export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) {
+export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneFormProps) {
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
   useEffect(() => {
@@ -160,7 +161,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel }: StoneFormProps) 
       </div>
 
       <div className="flex flex-col gap-2 pt-2">
-        <Button type="button" size="sm" className="w-full text-xs" onClick={handleSubmit}>
+        <Button type="button" size="sm" className="w-full text-xs" onClick={handleSubmit} disabled={disabled}>
           {initialStone ? 'Update' : 'Add'} Stone
         </Button>
         {initialStone && (

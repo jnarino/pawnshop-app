@@ -12,7 +12,7 @@ export async function http(
   options: RequestInit = {}
 ): Promise<any> {
 
-  console.log(`🌐 Making request to: ${path}`);
+  // console.log(`🌐 Making request to: ${path}`);
 
   // ✅ Check for duplicate requests
   const cacheKey = `${options.method || 'GET'}:${path}`;
@@ -49,7 +49,7 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     const fullUrl = path.startsWith('/') ? path : `/${path}`;
     const absoluteUrl = path.startsWith('http') ? path : `${BASE_URL}${fullUrl}`;
 
-    console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
+    //console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
 
     const response = await fetch(absoluteUrl, {
       ...options,
@@ -60,7 +60,7 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
       },
     });
 
-    console.log(`📥 Response: ${response.status} ${response.statusText}`);
+    // console.log(`📥 Response: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -92,7 +92,7 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     }
 
     const data = await response.json();
-    console.log(`✅ Success:`, data);
+    // console.log(`✅ Success:`, data);
     return data;
 
   } catch (error) {

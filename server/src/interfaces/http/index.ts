@@ -24,6 +24,8 @@ import { StoreTransactionController } from './controller/storeTransaction/StoreT
 import { createStoreTransactionRouter } from './route/storeTransaction/storeTransactionRoute';
 import { TenderTypeController } from './controller/tenderType/TenderTypeController';
 import { createTenderTypeRouter } from './route/tenderType/tenderTypeRoute';
+import { PoliceReportController } from './controller/reports/police/PoliceReportController';
+import { createPoliceReportRouter } from './route/reports/police/policeReportRoute';
 
 export function createExpressApp(
   deps: {
@@ -37,6 +39,7 @@ export function createExpressApp(
     pawnTicketController: PawnTicketController;
     storeTransactionController: StoreTransactionController;
     tenderTypeController: TenderTypeController;
+    policeReportController: PoliceReportController;
   }
 ) {
   const app = express();
@@ -56,6 +59,7 @@ export function createExpressApp(
   app.use('/api/pawn-ticket', createPawnTicketPaymentRouter(deps.pawnTicketController, deps.jwtSecret));
   app.use('/api/sales', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
   app.use('/api/tender-types', createTenderTypeRouter(deps.tenderTypeController, deps.jwtSecret));
+  app.use('/api/reports/police', createPoliceReportRouter(deps.policeReportController, deps.jwtSecret));
 
   app.use(errorMiddleware);
 

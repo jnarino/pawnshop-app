@@ -61,6 +61,7 @@ class MigrationEngine:
         """Build mapping from legacy category ID (Level1) to new UUID"""
         logger.info("Building category map...")
         category_map = {}
+        unmapped_categories = []
         
         # Get legacy categories
         try:
@@ -80,6 +81,10 @@ class MigrationEngine:
         # Create lookup for new cats
         new_cat_lookup = {name.upper(): uid for name, uid in zip(new_cats['name'], new_cats['id'])}
         
+        logger.info(f"Legacy categories from Level1: {len(legacy_cats)}")
+        logger.info(f"Target categories in PostgreSQL: {len(new_cats)}")
+        logger.debug(f"PostgreSQL categories: {list(new_cat_lookup.keys())}")
+        
         for _, row in legacy_cats.iterrows():
             legacy_id = row['lv1_pk']
             name = row['DESCRIPT'].strip().upper() if row['DESCRIPT'] else ''
@@ -87,10 +92,36 @@ class MigrationEngine:
             if name in new_cat_lookup:
                 category_map[legacy_id] = new_cat_lookup[name]
             else:
-                # Try partial match or mapping logic here if needed
-                pass
+                # Log unmapped categories for debugging
+                unmapped_categories.append({
+                    'legacy_id': legacy_id,
+                    'legacy_name': row['DESCRIPT'],
+                    'normalized_name': name
+                })
+        
+        # Log all unmapped categories
+        if unmapped_categories:
+            logger.warning(f"⚠️  {len(unmapped_categories)} UNMAPPED CATEGORIES (will cause data loss):")
+            for cat in unmapped_categories:
+                logger.warning(f"   - ID {cat['legacy_id']}: '{cat['legacy_name']}' (normalized: '{cat['normalized_name']}')")
+            
+            # Write unmapped categories to file for manual mapping
+            unmapped_file = "unmapped_categories.csv"
+            import csv
+            try:
+                with open(unmapped_file, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=['legacy_id', 'legacy_name', 'normalized_name', 'matching_pg_category'])
+                    writer.writeheader()
+                    for cat in unmapped_categories:
+                        # Find closest matches in PostgreSQL
+                        matches = [k for k in new_cat_lookup.keys() if cat['normalized_name'] in k or k in cat['normalized_name']]
+                        cat['matching_pg_category'] = matches[0] if matches else 'NO MATCH'
+                        writer.writerow(cat)
+                logger.info(f"📋 Unmapped categories saved to {unmapped_file}")
+            except Exception as e:
+                logger.error(f"Could not write unmapped_categories.csv: {e}")
                 
-        logger.info(f"Mapped {len(category_map)} categories")
+        logger.info(f"✅ Mapped {len(category_map)}/{len(legacy_cats)} categories")
         return category_map
 
     def build_customer_map(self):

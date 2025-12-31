@@ -82,3 +82,7 @@ export async function updateInventoryItem(id: string, payload: Omit<UpdateInvent
     body: JSON.stringify(payload),
   });
 }
+
+export async function getScrapInventoryNumbers(): Promise<{ itemDescription: string; inventoryNumber: string }[]> {
+  return http('/api/inventory-items/scrap-inventory-numbers');
+}

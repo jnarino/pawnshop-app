@@ -63,6 +63,10 @@ import { GetPawnTicketCurrentChargesUseCase } from './application/use-case/pawnT
 import { ListTenderTypesUseCase } from './application/use-case/tenderType/query/ListTenderTypesUseCase';
 import { PgTenderTypeRepository } from './infrastructure/persistence/tenderType/PgTenderTypeRepository';
 import { TenderTypeController } from './interfaces/http/controller/tenderType/TenderTypeController';
+import { PgPoliceReportRepository } from './infrastructure/persistence/reports/police/PgPoliceReportRepository';
+import { GenerateDailyPoliceReportUseCase } from './application/use-case/reports/police/query/GenerateDailyPoliceReportUseCase';
+import { PoliceReportFixedWidthService } from './application/service/reports/PoliceReportFixedWidthService';
+import { PoliceReportController } from './interfaces/http/controller/reports/police/PoliceReportController';
 
 
 
@@ -82,10 +86,12 @@ export async function createApp() {
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
   const controlNumberRepository = new PgControlNumberRepository(pool);
   const tenderTypeRepository = new PgTenderTypeRepository(pool);
+  const policeReportRepo = new PgPoliceReportRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
   const itemAttributeMapper = new ItemAttributeMapper(inventoryCategoryRepo);
+  const policeReportFixedWidthService = new PoliceReportFixedWidthService();
 
 
   // Auth use-cases
@@ -142,6 +148,10 @@ export async function createApp() {
 
   // Tender Type use-cases
   const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
+
+  // Police Report use-cases
+  const generateDailyPoliceReportUseCase = new GenerateDailyPoliceReportUseCase(policeReportRepo, policeReportFixedWidthService);
+  
   // Controllers
   const authController = new AuthController(
     loginUseCase,
@@ -212,6 +222,10 @@ export async function createApp() {
     createStoreTransactionUseCase
   );
 
+  const policeReportController = new PoliceReportController(
+    generateDailyPoliceReportUseCase
+  );
+
   const app = createExpressApp({
     authController,
     appUserController,
@@ -222,6 +236,7 @@ export async function createApp() {
     pawnTicketController,
     storeTransactionController,
     tenderTypeController,
+    policeReportController,
     jwtSecret: env.jwtSecret
   });
 

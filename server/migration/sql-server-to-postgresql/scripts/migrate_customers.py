@@ -62,8 +62,11 @@ def migrate_customers():
             suite_number = (row['CUS_ADD2'] or '').strip()
             
             ac1 = (row['CUS_AC1'] or '').strip()
+            ac2 = (row['CUS_AC2'] or '').strip()
             phone_body = (row['CUS_PHONE1'] or '').strip()
+            employ_body = (row['CUS_EMPPHONE'] or '').strip()
             phone_number = f"{ac1}{phone_body}"
+            employ_number = f"{ac2}{employ_body}"
             
             # Prepare row
             batch_data.append((
@@ -98,7 +101,7 @@ def migrate_customers():
                 (row['CUS_IDADD1'] or '').strip(),
                 (row['CUS_IDADD2'] or '').strip(),
                 (row['CUS_IDCITY'] or '').strip(),
-                (row['CUS_IDSTATE'] or '').strip(),
+                (row['CUS_ID1ISSUE'] or '').strip(),
                 (row['CUS_IDZIP'] or '').strip(),
                 # Employer
                 (row['CUS_EMPLOYER'] or '').strip(),
@@ -107,7 +110,7 @@ def migrate_customers():
                 (row['CUS_EMPCITY'] or '').strip(),
                 (row['CUS_EMPSTATE'] or '').strip(),
                 (row['CUS_EMPZIP'] or '').strip(),
-                (row['CUS_EMPPHONE'] or '').strip(),
+                employ_number,
                 # Misc
                 (row['CUS_COMMENT'] or '').strip(),
                 (row['CUS_FFLNUM'] or '').strip(),

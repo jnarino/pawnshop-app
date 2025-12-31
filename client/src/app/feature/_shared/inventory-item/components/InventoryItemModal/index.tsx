@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -12,6 +11,7 @@ import { BasicInfoFields } from './BasicInfoFields';
 import { JewelryFields } from './JewelryFields';
 import { FirearmFields } from './FirearmFields';
 import { StonesSection } from './stones';
+import { ScrapDetails } from './ScrapDetails';
 import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import type { InventoryItemDraft } from './types';
@@ -25,9 +25,10 @@ interface InventoryItemModalProps {
   readonly initial?: InventoryItemDraft | null;
   readonly onCancel: () => void;
   readonly onSave?: (item: InventoryItemDraft) => void;
+  readonly scrapItems?: { itemDescription: string; inventoryNumber: string }[];
 }
 
-export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave, hasNextItem = false }: InventoryItemModalProps & { hasNextItem?: boolean }) {
+export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
   const isViewMode = mode === ViewMode.VIEW;
   const isPullMode = mode === ViewMode.PULL;
 
@@ -51,17 +52,9 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
     handleMetalChange,
   } = useInventoryItemForm({ open, initial, onSave: onSave || (() => { }), mode });
 
-  useEffect(() => {
-    if (isPullMode && open) {
-      console.log('draft', draft)
-      if (!draft.itemStatus) {
-        updateField('itemStatus', 'I');
-      }
-      if (!draft.resale || draft.resale === '0') {
-        updateField('resale', draft.amount || '0');
-      }
-    }
-  }, [isPullMode, open, initial]);
+  const isDisabled = draft.itemStatus === 'I' ?
+    !draft.resale || !draft.minResale || (!isFirearm && !draft.itemStatus) :
+    draft.itemStatus === 'J' ? !draft.scrappedIntoInvItem || draft.scrappedIntoInvItem.length === 0 || draft.scrappedIntoInvItem.every((item) => item.inventoryNumber === '') : true;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
@@ -174,29 +167,47 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold">Resale Price ($)</Label>
-                  <DollarInput
-                    value={draft.resale || ''}
-                    onChange={(value) => updateField('resale', value)}
-                    placeholder="0.00"
-                    required
-                    className="h-8 text-xs bg-white"
-                  />
-                </div>
+              {!draft.itemStatus && (
+                <>
+                  <p>Please select an item action</p>
+                </>
+              )}
 
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold">Min Resale Price ($)</Label>
-                  <DollarInput
-                    value={draft.minResale || ''}
-                    onChange={(value) => updateField('minResale', value)}
-                    placeholder="0.00"
-                    required
-                    className="h-8 text-xs bg-white"
-                  />
-                </div>
-              </div>
+              {draft.itemStatus === 'J' && !isFirearm && (
+                <ScrapDetails
+                  draft={draft}
+                  updateField={updateField}
+                  disabled={isViewMode}
+                  availableScrapItems={scrapItems}
+                />
+              )}
+
+              {draft.itemStatus === 'I' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">Resale Price ($)</Label>
+                      <DollarInput
+                        value={draft.resale || ''}
+                        onChange={(value) => updateField('resale', value)}
+                        placeholder="0.00"
+                        required
+                        className="h-8 text-xs bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">Min Resale Price ($)</Label>
+                      <DollarInput
+                        value={draft.minResale || ''}
+                        onChange={(value) => updateField('minResale', value)}
+                        placeholder="0.00"
+                        required
+                        className="h-8 text-xs bg-white"
+                      />
+                    </div>
+                  </div></>
+              )}
             </div>
           )}
 
@@ -266,7 +277,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
                 type="submit"
                 size="sm"
                 className="text-xs"
-                disabled={!draft.resale || !draft.minResale || (!isFirearm && !draft.itemStatus)}
+                disabled={isDisabled}
               >
                 {hasNextItem ? "Next item" : "Finish"}
               </Button>

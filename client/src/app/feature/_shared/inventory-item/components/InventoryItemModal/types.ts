@@ -1,5 +1,12 @@
 import type { Stone } from './stones/types';
 
+export interface ScrappedItem {
+  inventoryNumber?: string;
+  quantity?: string;
+  description?: string;
+  stoneId?: string;
+}
+
 export interface InventoryItemDraft {
   id?: string;
   type: string;
@@ -38,6 +45,7 @@ export interface InventoryItemDraft {
   inventoryNumber?: string;
   itemStatus?: 'I' | 'J';
   minResale?: string;
+  scrappedIntoInvItem?: ScrappedItem[];
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {

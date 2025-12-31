@@ -9,19 +9,39 @@ import {
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import { useState } from 'react';
-import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useForfeitStore } from './stores/forfeitStore';
+import ConfirmModal from '@/app/shared/components/ConfirmModal';
+import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
-interface PawnTableList {
-    items: TicketByControlNumber[];
-    onPawnSelected: (pawn: TicketByControlNumber) => void;
-}
+export const PawnList = () => {
+    const { searchResults: items, selectPawn, isPullInProgress } = useForfeitStore();
+    const [temporalEditingRowId, setTemporalEditingRowId] = useState<string | null>(null);
 
-export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false)
+
+    const confirmChangeOfPawnTicket = () => {
+        setCancelModalOpen(false);
+        const selectedPawn = items.find(item => item.id === temporalEditingRowId);
+        if (selectedPawn) {
+            setEditingRowId(temporalEditingRowId);
+            selectPawn(selectedPawn);
+        }
+    }
+
+    const selectPawnAndShowConfirmChangeOfPawnTicket = (item: TicketByControlNumber) => {
+        setTemporalEditingRowId(item.id || null);
+        if (isPullInProgress) {
+            setCancelModalOpen(true);
+        } else {
+            setEditingRowId(item.id || null);
+            selectPawn(item);
+        }
+    }
 
     return (
-        <Table stickyHeader>
+        <><Table stickyHeader>
             <TableHeader>
                 <TableRow>
                     <TableHead sticky className="bg-white z-20">Customer</TableHead>
@@ -42,17 +62,16 @@ export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
                             {item.customer ? `${item.customer.firstName} ${item.customer.lastName}` : item.customerId}
                         </TableCell>
                         <TableCell>{item.controlNumber}</TableCell>
-                        <TableCell>{item.maturityDate}</TableCell>
+                        <TableCell>{item.defaultDate}</TableCell>
                         <TableCell>${Number(item.amountFinanced).toFixed(2)}</TableCell>
-                        <TableCell className="font-medium">{item.pawnStatus}</TableCell>
+                        <TableCell className="font-medium">{item.pawnStatus === "B" ? "PURCHASED" : item.pawnStatus === "P" ? "PAWN" : "-"}</TableCell>
                         <TableCell className="text-center">
                             <Tooltip content="View pawn">
                                 <Button className='!p-0'
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => {
-                                        setEditingRowId(item.id || null);
-                                        onPawnSelected(item);
+                                        selectPawnAndShowConfirmChangeOfPawnTicket(item);
                                     }}
                                     disabled={item.id === editingRowId}
                                 >
@@ -72,5 +91,16 @@ export const PawnList = ({ items, onPawnSelected }: PawnTableList) => {
                 }
             </TableBody>
         </Table>
+            <ConfirmModal
+                open={cancelModalOpen}
+                title="Cancel Pull"
+                message="Are you sure you want to select another Pawn Ticket? All unsaved changes will be lost."
+                confirmText="Yes, select"
+                cancelText="No, keep working"
+                onConfirm={confirmChangeOfPawnTicket}
+                onCancel={() => setCancelModalOpen(false)}
+            />
+        </>
+
     )
 }
