@@ -9,7 +9,7 @@ const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_AP
 
 export async function http(
   path: string,
-  options: RequestInit = {}
+  options: CustomRequestInit = {}
 ): Promise<any> {
 
   // console.log(`🌐 Making request to: ${path}`);
@@ -35,7 +35,11 @@ export async function http(
   return requestPromise;
 }
 
-async function makeRequest(path: string, options: RequestInit = {}): Promise<any> {
+interface CustomRequestInit extends RequestInit {
+  responseType?: 'json' | 'blob' | 'text';
+}
+
+async function makeRequest(path: string, options: CustomRequestInit = {}): Promise<any> {
   try {
     // ✅ Ensure we have a fresh access token
     const hasValidToken = await ensureFreshAccessToken();
@@ -61,6 +65,10 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     });
 
     // console.log(`📥 Response: ${response.status} ${response.statusText}`);
+
+    if (response.status === 204) {
+      return null;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -91,6 +99,14 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
       throw new Error(errorMessage);
     }
 
+    if (options.responseType === 'blob') {
+      return response.blob();
+    }
+
+    if (options.responseType === 'text') {
+      return response.text();
+    }
+
     const data = await response.json();
     // console.log(`✅ Success:`, data);
     return data;
@@ -106,3 +122,4 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     throw error;
   }
 }
+
