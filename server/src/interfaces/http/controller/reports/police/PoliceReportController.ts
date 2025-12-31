@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../middleware/authMiddleware';
 import { GenerateDailyPoliceReportUseCase } from '../../../../../application/use-case/reports/police/query/GenerateDailyPoliceReportUseCase';
+import { ForbiddenError, NotFoundError } from '../../../../../application/common/errors';
 
 export class PoliceReportController {
     constructor(
@@ -22,6 +23,9 @@ export class PoliceReportController {
             res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
             return res.send(result.content);
         } catch (err) {
+            // Minimal mapping for known business errors; defer everything else to global error middleware
+            if (err instanceof NotFoundError) return res.status(204).send();
+            if (err instanceof ForbiddenError) return res.status(403).json({ message: 'Forbidden' });
             return next(err);
         }
     };
