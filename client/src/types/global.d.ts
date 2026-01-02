@@ -25,7 +25,6 @@ declare global {
       onManageCash?: (cb: () => void) => () => void;
       onInventoryMaintain?: (cb: () => void) => () => void;
       onPawnMaintain?: (cb: () => void) => () => void;
-      onForfeit?: (cb: () => void) => () => void;
       printLabels?: (items: Array<{
         inventoryNumber: string;
         description: string;

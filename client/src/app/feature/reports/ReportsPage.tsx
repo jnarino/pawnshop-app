@@ -1,7 +1,7 @@
+import { Link } from 'react-router-dom';
 import { ActionCard } from "@/components/ui/ActionCard";
 import PoliceIcon from '@/assets/icons/police.svg?react';
-import { Link } from 'react-router-dom';
-import { Coins, ArrowBigLeft } from 'lucide-react';
+import { Coins, ArrowBigLeft, ArrowDownToLine } from 'lucide-react';
 
 
 export default function ReportsPage() {
@@ -12,6 +12,12 @@ export default function ReportsPage() {
     <h1 className="text-2xl font-extrabold mb-2.5">Reports</h1>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-6">
+      <ActionCard
+        icon={ArrowDownToLine}
+        subtitle="Pull items"
+        title="Forfeit (pull)"
+        to="/pawns/forfeit"
+      />
       <ActionCard
         icon={PoliceIcon}
         subtitle="Police"
