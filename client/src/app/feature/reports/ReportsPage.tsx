@@ -14,9 +14,9 @@ export default function ReportsPage() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-6">
       <ActionCard
         icon={ArrowDownToLine}
-        subtitle="Pull items"
+        subtitle="Pulled items"
         title="Forfeit (pull)"
-        to="/pawns/forfeit"
+        to="/reports/forfeit"
       />
       <ActionCard
         icon={PoliceIcon}

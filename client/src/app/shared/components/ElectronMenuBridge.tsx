@@ -187,6 +187,13 @@ export default function ElectronMenuBridge() {
       if (dispose) unsubscribes.push(dispose);
     }
 
+    if (api.onForfeit) {
+      const dispose = api.onForfeit(() => {
+        navigate('/pawns/forfeit', { replace: true });
+      });
+      if (dispose) unsubscribes.push(dispose);
+    }
+
     return () => {
       unsubscribes.forEach((fn) => fn());
     };
