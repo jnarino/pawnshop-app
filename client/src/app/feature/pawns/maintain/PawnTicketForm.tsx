@@ -25,6 +25,7 @@ import deleteIcon from '@/assets/icons/delete.svg';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -287,32 +288,36 @@ export function PawnTicketForm({
           </CardHeader>
 
           <CardContent className="p-0">
-            <ScrollArea className="max-h-[400px]">
-              {formData.items.length === 0 ? (
-                <div className="py-10 text-center text-gray-500">
-                  No items added yet. Click "Add Item" to get started.
-                </div>
-              ) : (
-                <div>
-                  <div className="px-5 py-3 bg-slate-100 border-b font-semibold text-sm grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center">
-                    <div>Item</div>
-                    <div>Quantity</div>
-                    <div>Value</div>
-                    <div>Total</div>
-                    <div className="text-center">Actions</div>
-                  </div>
-                  <div className="divide-y">
-                    {formData.items.map((item) => (
-                      <div key={item.id} className="px-5 py-4 grid grid-cols-[3fr_1fr_1.5fr_1.5fr_120px] gap-4 items-center hover:bg-slate-50">
-                        <div>
-                          <div className="font-semibold">{item.categoryName || item.type}</div>
-                          {item.brandName && <div className="text-sm text-gray-600">Brand: {item.brandName}</div>}
-                          {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
-                        </div>
-                        <div className="text-sm">{item.quantity || 1}</div>
-                        <div className="text-sm">${Number(item.amount || 0).toFixed(2)}</div>
-                        <div className="font-semibold">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</div>
-                        <div className="flex gap-3 justify-center items-center">
+            {formData.items.length === 0 ? (
+              <div className="py-10 text-center text-gray-500">
+                No items added yet. Click "Add Item" to get started.
+              </div>
+            ) : (
+              <Table stickyHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead sticky className="w-[300px] bg-white z-20">Item</TableHead>
+                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
+                    <TableHead sticky className="bg-white z-20">Value</TableHead>
+                    <TableHead sticky className="bg-white z-20">Total</TableHead>
+                    <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.items.map((item) => (
+                    <TableRow
+                      key={item.id}
+                    >
+                      <TableCell><div>
+                        <div className="font-semibold">{item.categoryName || item.type}</div>
+                        {item.brandName && <div className="text-sm text-gray-600">Brand: {item.brandName}</div>}
+                        {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
+                      </div></TableCell>
+                      <TableCell>{item.quantity || 1}</TableCell>
+                      <TableCell>${Number(item.amount || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex gap-2 justify-center items-center">
                           {isViewMode ? (
                             <button
                               type="button"
@@ -332,27 +337,27 @@ export function PawnTicketForm({
                                 type="button"
                                 onClick={() => handleEditItem(item)}
                                 disabled={disabled}
-                                className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                                className="cursor-pointer hover:opacity-70 disabled:opacity-30 !p-0"
                               >
-                                <img src={editIcon} alt="Edit" className="w-5 h-5" />
+                                <img src={editIcon} alt="Edit" className="w-6 h-6" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveItem(item.id!)}
                                 disabled={disabled}
-                                className="cursor-pointer hover:opacity-70 disabled:opacity-30"
+                                className="cursor-pointer hover:opacity-70 disabled:opacity-30 !p-0"
                               >
-                                <img src={deleteIcon} alt="Delete" className="w-5 h-5" />
+                                <img src={deleteIcon} alt="Delete" className="w-6 h-6" />
                               </button>
                             </>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </ScrollArea>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 

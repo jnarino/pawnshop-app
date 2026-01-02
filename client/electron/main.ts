@@ -41,6 +41,10 @@ function buildMenu() {
             label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:pawn-maintain'),
           },
+          {
+            label: 'Forfeit (Pull)',
+            click: () => mainWindow?.webContents.send('menu:forfeit-pull'),
+          },
         ],
       },
       {
