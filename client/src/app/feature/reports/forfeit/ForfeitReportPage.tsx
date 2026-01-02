@@ -17,7 +17,7 @@ export const ForfeitReportPage = () => {
     const form = useForm({
         defaultValues: {
             dateRange: {
-                from: localToday,
+                from: '1990-01-01',
                 to: localToday
             },
         }
@@ -109,7 +109,6 @@ export const ForfeitReportPage = () => {
                             name="dateRange"
                             render={({ field }) => (
                                 <RangeDatePicker
-                                    withTime
                                     value={field.value}
                                     onChange={field.onChange}
                                 />

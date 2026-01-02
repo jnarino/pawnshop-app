@@ -38,41 +38,65 @@ export const reportsApi = {
   },
 
   forfeitReport: async (payload: CreatePoliceReportPayload): Promise<any> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = (await http(`/api/pawn-ticket/date-range?from=${payload.from}&to=${payload.to}`)) as {
+        transactionType: string;
+        controlNumber: string;
+        transactionDate: string;
+        defaultDate: string;
+        amountFinanced?: number;
+        purchaseTradeValue?: number;
+        customer?: { firstName: string; lastName: string };
+        items: { itemDescription: string; priceAmount: number }[];
+      }[];
 
-    // Mock Data
-    const mockItem = {
-      controlNumber: '12345',
-      dateIn: '2025-12-01T10:00:00Z',
-      dateOut: '2025-12-31T15:00:00Z',
-      customer: 'John Doe',
-      phone: '555-0123',
-      redemptionRatio: '0.8',
-      emp: 'JN',
-      lastPaid: '2025-12-15T10:00:00Z',
-      note: 'Good condition',
-      cost: 200.00, // Top level cost (sum)
-      items: [
-        { itemDescription: 'Gold Ring 14k', cost: 150.00 },
-        { itemDescription: 'Small Diamond', cost: 50.00 }
-      ]
-    };
+      const buys: any[] = [];
+      const pawns: any[] = [];
+      let buysCosts = 0;
+      let pawnsCosts = 0;
 
-    const buys = Array(50).fill(mockItem).map((item, i) => ({ ...item, controlNumber: `B-${i + 1000}` }));
-    const pawns = Array(50).fill(mockItem).map((item, i) => ({ ...item, controlNumber: `P-${i + 2000}` }));
+      response.forEach(t => {
+        const itemCostTotal = t.transactionType === 'PAWN'
+          ? (t.amountFinanced || 0)
+          : (t.purchaseTradeValue || 0);
 
-    return {
-      buys,
-      pawns,
-      buysCosts: 10000.00,
-      pawnsCosts: 10000.00,
-      total: 20000.00
-    };
+        const forfeitItem = {
+          controlNumber: t.controlNumber,
+          dateIn: t.transactionDate,
+          dateOut: t.defaultDate,
+          customer: t.customer ? `${t.customer.firstName} ${t.customer.lastName}` : '',
+          phone: '', // Not available in API response yet
+          redemptionRatio: '',
+          emp: '',
+          lastPaid: '',
+          note: '',
+          cost: itemCostTotal,
+          items: t.items.map(i => ({
+            itemDescription: i.itemDescription || '',
+            cost: i.priceAmount || 0
+          }))
+        };
 
-    /* return http(`/api/reports/forfeit/daily?startDate=${payload.from}&endDate=${payload.to}`, {
-      method: 'GET',
-    }); */
+        if (t.transactionType === 'PURCHASE') {
+          buys.push(forfeitItem);
+          buysCosts += itemCostTotal;
+        } else if (t.transactionType === 'PAWN') {
+          pawns.push(forfeitItem);
+          pawnsCosts += itemCostTotal;
+        }
+      });
+
+      return {
+        buys,
+        pawns,
+        buysCosts,
+        pawnsCosts,
+        total: buysCosts + pawnsCosts
+      };
+    } catch (error) {
+      console.error("Failed to fetch forfeit report data", error);
+      throw error;
+    }
   },
 
 };
