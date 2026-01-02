@@ -1,3 +1,4 @@
+import { CashDrawerDetailWithSummaryResponseDto } from '../dto/CashDrawerReportDto';
 import { http } from './http';
 
 
@@ -98,5 +99,9 @@ export const reportsApi = {
       throw error;
     }
   },
-
+  cashDrawerDetailReport: async (payload: CreatePoliceReportPayload): Promise<CashDrawerDetailWithSummaryResponseDto> => {
+    return http(`/api/reports/cash-drawer/detail?startDate=${payload.from}&endDate=${payload.to}`, {
+      method: 'GET',
+    });
+  },
 };
