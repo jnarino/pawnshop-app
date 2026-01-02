@@ -73,12 +73,12 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
           </Alert>
 
           <div className="border rounded-md">
-            <Table>
+            <Table stickyHeader>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px]"># Labels</TableHead>
-                  <TableHead className="w-[100px]">Quantity</TableHead>
-                  <TableHead>Description of Item</TableHead>
+                  <TableHead sticky className="w-[120px]"># Labels</TableHead>
+                  <TableHead sticky className="w-[100px]">Quantity</TableHead>
+                  <TableHead sticky>Description of Item</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -89,8 +89,12 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
                         type="number"
                         min="0"
                         max="99"
-                        value={labelCounts[item.id] || 1}
-                        onChange={(e) => updateLabelCount(item.id, Number.parseInt(e.target.value) || 0)}
+                        value={labelCounts[item.id] ?? 1}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const numVal = val === '' ? 0 : parseInt(val);
+                          updateLabelCount(item.id, isNaN(numVal) ? 0 : numVal);
+                        }}
                         className="w-20 h-8 text-center"
                       />
                     </TableCell>
@@ -109,26 +113,26 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
               Total Labels: <strong className="text-lg">{getTotalLabels()}</strong>
             </div>
             <div className="flex gap-2">
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
               >
                 Reset
               </Button>
-              
-              <Button 
-                type="button" 
+
+              <Button
+                type="button"
                 variant="secondary"
                 size="sm"
                 onClick={onCancel}
               >
                 Skip Labels
               </Button>
-              
-              <Button 
-                type="button" 
+
+              <Button
+                type="button"
                 onClick={handlePrint}
                 disabled={getTotalLabels() === 0}
                 size="sm"
