@@ -566,8 +566,9 @@ def migrate_inventory():
                     # Fallback for old format (just text)
                     # else: color_uuid = None
                 
-                # Dates
-                created_at = row['DateItemEntered'] or None
+                # Dates: keep null if source is null/empty; otherwise pass through as-is
+                raw_created_at = row.get('DateItemEntered')
+                created_at = raw_created_at if raw_created_at not in (None, '', ' ') else None
                 
                 updated_at = datetime.utcnow()
                 

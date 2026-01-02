@@ -19,13 +19,14 @@ export class FindCustomerUseCase {
         const dob = parseDateOrNull(dto.dateOfBirth);
 
 
+        // Normalize to uppercase before querying repository
         const criteria = {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
+            firstName: dto.firstName ? dto.firstName.toUpperCase() : undefined,
+            lastName: dto.lastName ? dto.lastName.toUpperCase() : undefined,
             dateOfBirth: dob === null ? undefined : dob,
-            idType: dto.idType,
-            idNumber: dto.idNumber,
-            idState: dto.idState
+            idType: dto.idType ? dto.idType.toUpperCase() : undefined,
+            idNumber: dto.idNumber ? dto.idNumber.toUpperCase() : undefined,
+            idState: dto.idState ? dto.idState.toUpperCase() : undefined
         };
 
         const customers = await this.customerRepo.findCustomer(criteria);
