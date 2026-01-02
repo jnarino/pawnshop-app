@@ -38,7 +38,7 @@ describe('FindCustomerUseCase', () => {
     const result = await useCase.execute({ lastName: 'Doe' });
 
     expect(repo.findCustomer).toHaveBeenCalledWith(
-      expect.objectContaining({ lastName: 'Doe' })
+      expect.objectContaining({ lastName: 'DOE' })
     );
     expect(result).toHaveLength(2);
   });
@@ -65,8 +65,8 @@ describe('FindCustomerUseCase', () => {
 
     expect(repo.findCustomer).toHaveBeenCalledWith(
       expect.objectContaining({ 
-        firstName: 'John',
-        lastName: 'Smith'
+        firstName: 'JOHN',
+        lastName: 'SMITH'
       })
     );
     expect(result).toHaveLength(1);

@@ -1,15 +1,14 @@
-import { string, date } from "zod";
 import { CashDrawerRecord } from "../../../../../domains/reports/cashDrawer/CashDrawerRecord";
 import { CashDrawerReportRepository } from "../../../../../domains/reports/cashDrawer/CashDrawerReportRepository";
 import { NotFoundError } from "../../../../common/errors";
-import { CashDrawerDetailResponseDto } from "../../../../dto/reports/cashDrawer/query/CashDrawerDetailResponseDto";
+import { CashDrawerDetailWithSummaryResponseDto } from "../../../../dto/reports/cashDrawer/query/CashDrawerDetailWithSummaryResponseDto";
 import { GetCashDrawerDetailRequestDto, getCashDrawerDetailRequestSchema } from "../../../../dto/reports/cashDrawer/query/GetCashDrawerDetailRequestDto";
 import { toCashDrawerDetailDto } from "../../../../mapping/reports/cashDrawer/cashDrawerMapper";
 
 export class GenerateCashDrawerDetailUseCase {
     constructor(private readonly repo: CashDrawerReportRepository) { }
 
-    async execute(input: unknown): Promise<CashDrawerDetailResponseDto[]> {
+    async execute(input: unknown): Promise<CashDrawerDetailWithSummaryResponseDto> {
         const dto: GetCashDrawerDetailRequestDto = getCashDrawerDetailRequestSchema.parse(input);
 
         const { start, end } = this.resolveDateRange(dto.startDate, dto.endDate);
@@ -25,7 +24,140 @@ export class GenerateCashDrawerDetailUseCase {
         // Recalculate running balance based on grouped transactions
         const withRecalculatedBalance = this.recalculateRunningBalance(grouped);
 
-        return withRecalculatedBalance.map(toCashDrawerDetailDto);
+        // Map to DTOs
+        const transactionDtos = withRecalculatedBalance.map(toCashDrawerDetailDto);
+
+        // Calculate all summaries
+        const startingBalance = withRecalculatedBalance.length > 0 
+            ? withRecalculatedBalance[0].balance - withRecalculatedBalance[0].amount
+            : 0;
+        const endingBalance = withRecalculatedBalance.length > 0 
+            ? withRecalculatedBalance[withRecalculatedBalance.length - 1].balance
+            : 0;
+
+        return {
+            transactions: transactionDtos,
+            salesSummary: this.calculateSalesSummary(withRecalculatedBalance),
+            cashAdded: this.calculateCashAdded(withRecalculatedBalance),
+            pawnsBuys: this.calculatePawnsBuys(withRecalculatedBalance),
+            cashOut: this.calculateCashOut(withRecalculatedBalance),
+            summary: {
+                startingBalance,
+                totalSales: this.calculateSalesSummary(withRecalculatedBalance).totalSales,
+                totalPawnsBuys: this.calculatePawnsBuys(withRecalculatedBalance).totalPawnsBuys,
+                totalCashAdded: this.calculateCashAdded(withRecalculatedBalance).totalCashAdded,
+                totalCashOut: this.calculateCashOut(withRecalculatedBalance).totalCashOut,
+                customerCredits: 0, // TODO: Calculate from actual data if available
+                cashOverShort: 0, // TODO: Calculate from actual data if available
+                endingBalance,
+            }
+        };
+    }
+
+    private calculateSalesSummary(records: CashDrawerRecord[]) {
+        let sales = 0;
+        let creditSales = 0;
+        let layaways = 0;
+        let repairs = 0;
+
+        for (const record of records) {
+            const type = record.transactionType.toUpperCase();
+            
+            if (type === 'RETAIL SALE' || type === 'SALE') {
+                sales += record.amount;
+            } else if (type.includes('LAYAWAY')) {
+                layaways += record.amount;
+            } else if (type.includes('REPAIR')) {
+                repairs += record.amount;
+            } else if (type.includes('CREDIT')) {
+                creditSales += record.amount;
+            }
+        }
+
+        const totalSales = sales + creditSales + layaways + repairs;
+
+        return { sales, creditSales, layaways, repairs, totalSales };
+    }
+
+    private calculateCashAdded(records: CashDrawerRecord[]) {
+        let cashAdded = 0;
+        let cashAddedFromBank = 0;
+        let fromEmployeeDrawers = 0;
+        let fromMainDrawer = 0;
+
+        for (const record of records) {
+            const type = record.transactionType.toUpperCase();
+
+            if (type.includes('CASH ADDED') || type.includes('BALANCE')) {
+                if (type.includes('BANK')) {
+                    cashAddedFromBank += record.amount;
+                } else if (type.includes('EMPLOYEE')) {
+                    fromEmployeeDrawers += record.amount;
+                } else if (type.includes('MAIN')) {
+                    fromMainDrawer += record.amount;
+                } else {
+                    cashAdded += record.amount;
+                }
+            }
+        }
+
+        const totalCashAdded = cashAdded + cashAddedFromBank + fromEmployeeDrawers + fromMainDrawer;
+
+        return { cashAdded, cashAddedFromBank, fromEmployeeDrawers, fromMainDrawer, totalCashAdded };
+    }
+
+    private calculatePawnsBuys(records: CashDrawerRecord[]) {
+        let buys = 0;
+        let pawns = 0;
+        let pawnPayments = 0;
+        let pawnRedeems = 0;
+
+        for (const record of records) {
+            const type = record.transactionType.toUpperCase();
+
+            if (type.includes('BUY')) {
+                buys += record.amount;
+            } else if (type.includes('PAWN (')) {
+                pawns += record.amount;
+            } else if (type.includes('PAWN PAYMENT')) {
+                pawnPayments += record.amount;
+            } else if (type.includes('REDEMPTION')) {
+                pawnRedeems += record.amount;
+            }
+        }
+
+        const totalPawnsBuys = buys + pawns + pawnPayments + pawnRedeems;
+
+        return { buys, pawns, pawnPayments, pawnRedeems, totalPawnsBuys };
+    }
+
+    private calculateCashOut(records: CashDrawerRecord[]) {
+        let cashRemoved = 0;
+        let depositToBank = 0;
+        let toEmployeeDrawers = 0;
+        let toMainDrawer = 0;
+
+        for (const record of records) {
+            const type = record.transactionType.toUpperCase();
+
+            if (type.includes('CASH OUT') || type.includes('CASH REMOVED')) {
+                if (record.remarks && record.remarks.toUpperCase().includes('BANK')) {
+                    depositToBank += record.amount;
+                } else {
+                    cashRemoved += record.amount;
+                }
+            } else if (type.includes('DEPOSIT') && type.includes('BANK')) {
+                depositToBank += record.amount;
+            } else if (type.includes('TO EMPLOYEE')) {
+                toEmployeeDrawers += record.amount;
+            } else if (type.includes('DEPOSIT') && type.includes('MAIN')) {
+                toMainDrawer += record.amount;
+            }
+        }
+
+        const totalCashOut = cashRemoved + depositToBank + toEmployeeDrawers + toMainDrawer;
+
+        return { cashRemoved, depositToBank, toEmployeeDrawers, toMainDrawer, totalCashOut };
     }
 
     private groupByTransaction(records: CashDrawerRecord[]): CashDrawerRecord[] {
@@ -95,24 +227,24 @@ export class GenerateCashDrawerDetailUseCase {
 
     private resolveDateRange(startDate?: string, endDate?: string): { start: Date; end: Date } {
         if (startDate || endDate) {
-            const start = startDate ? new Date(startDate) : this.startOfDay(new Date());
-            const end = endDate ? new Date(endDate) : this.endOfDay(new Date(start));
-            return { start: this.startOfDay(start), end: this.endOfDay(end) };
+            const start = startDate ? new Date(startDate) : this.startOfDayUTC(new Date());
+            const end = endDate ? new Date(endDate) : this.endOfDayUTC(new Date(start));
+            return { start: this.startOfDayUTC(start), end: this.endOfDayUTC(end) };
         }
 
         const today = new Date();
-        return { start: this.startOfDay(today), end: this.endOfDay(today) };
+        return { start: this.startOfDayUTC(today), end: this.endOfDayUTC(today) };
     }
 
-    private startOfDay(date: Date): Date {
+    private startOfDayUTC(date: Date): Date {
         const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
+        d.setUTCHours(0, 0, 0, 0);
         return d;
     }
 
-    private endOfDay(date: Date): Date {
+    private endOfDayUTC(date: Date): Date {
         const d = new Date(date);
-        d.setHours(23, 59, 59, 999);
+        d.setUTCHours(23, 59, 59, 999);
         return d;
     }
 }

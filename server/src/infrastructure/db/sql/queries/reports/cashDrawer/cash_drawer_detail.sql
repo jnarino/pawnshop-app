@@ -1,13 +1,17 @@
--- $1: start_date (timestamp)
--- $2: end_date (timestamp)
-WITH initial_balance AS (
+WITH params AS (
+  SELECT
+    date_trunc('day', $1::timestamptz) AS start_ts,
+    date_trunc('day', $2::timestamptz) + interval '1 day' AS end_ts
+),
+initial_balance AS (
   SELECT COALESCE((
     SELECT ttt.amount
     FROM store_transaction st
     JOIN store_transaction_type sttype ON sttype.id = st.type_id
     JOIN store_transaction_tender ttt ON ttt.store_transaction_id = st.id
+    CROSS JOIN params p
     WHERE sttype.name = 'MAIN BALANCE (admin)'
-      AND st.occurred_at < $1
+      AND st.occurred_at < p.start_ts
     ORDER BY st.occurred_at DESC
     LIMIT 1
   ), 0) AS amount
@@ -32,9 +36,10 @@ filtered AS (
     ON tttender.store_transaction_id = st.id
   JOIN tender_type AS ttype
     ON ttype.id = tttender.tender_type_id
-  WHERE st.occurred_at >= $1
-    AND st.occurred_at < $2
-    AND sttype.code NOT IN ('EB','MA','MB','T')
+  CROSS JOIN params p
+  WHERE st.occurred_at >= p.start_ts
+    AND st.occurred_at <  p.end_ts
+    AND sttype.code NOT IN ('T')
 )
 SELECT
   f.occurred_at,
@@ -45,10 +50,10 @@ SELECT
   f.tender_change,
   f.remarks,
   f.payment_method,
-  initial_balance.amount + SUM(f.amount) OVER (
+  ib.amount + SUM(f.amount) OVER (
     ORDER BY f.occurred_at, f.store_transaction_id
     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
   ) AS balance
 FROM filtered f
-CROSS JOIN initial_balance
+CROSS JOIN initial_balance ib
 ORDER BY f.occurred_at ASC, f.store_transaction_id ASC;
