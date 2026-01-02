@@ -39,9 +39,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:pawn-maintain', handler);
     },
 
-    onForfeit: (cb: () => void) => {
-        const handler = () => cb();
-        ipcRenderer.on('menu:forfeit-pull', handler);
-        return () => ipcRenderer.removeListener('menu:forfeit-pull', handler);
-    },
 });
