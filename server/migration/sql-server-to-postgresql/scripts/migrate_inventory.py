@@ -595,11 +595,11 @@ def migrate_inventory():
                     row.get('storagefee'),
                     json.dumps(extra_data),
                     json.dumps(attributes),
-                    safe_str(row['INVNUM']), # legacy_inventory_number
+                    safe_str(row['INVNUM']).strip(), # legacy_inventory_number
                     safe_str(row['Items_ID']),   # legacy_item_guid (Using Items_ID as proxy)
                     None, # legacy_category_description
                     safe_str(row['DESCRIPT2']), # legacy_brand_color_description
-                    safe_str(row['INVNUM']), # inventory_number
+                    safe_str(row['INVNUM']).strip(), # inventory_number
                     user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
                     updated_at
