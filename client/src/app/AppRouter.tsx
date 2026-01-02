@@ -12,6 +12,7 @@ import PawnsMaintainWorkspace from './feature/pawns/maintain/PawnsMaintainWorksp
 import ForfeitWorkspace from './feature/pawns/forfeit/ForfeitWorkspace';
 import { PoliceReportPage } from './feature/reports/police/PoliceReportPage';
 import { DailyReportPage } from './feature/reports/dailly/DailyReportPage';
+import { ForfeitReportPage } from './feature/reports/forfeit/ForfeitReportPage';
 
 export default function AppRouter() {
   return (
@@ -35,6 +36,7 @@ export default function AppRouter() {
       <Route path="/reports" element={<Protected><ReportsPage /></Protected>} />
       <Route path="/reports/daily" element={<Protected><DailyReportPage /></Protected>} />
       <Route path="/reports/police" element={<Protected><PoliceReportPage /></Protected>} />
+      <Route path="/reports/forfeit" element={<Protected><ForfeitReportPage /></Protected>} />
 
       {/* ✅ Add other main menu routes for consistency */}
       <Route path="/pawn-tickets/new" element={<Protected><PawnsWorkspace /></Protected>} />

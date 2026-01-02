@@ -37,4 +37,42 @@ export const reportsApi = {
     }); */
   },
 
+  forfeitReport: async (payload: CreatePoliceReportPayload): Promise<any> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Mock Data
+    const mockItem = {
+      controlNumber: '12345',
+      dateIn: '2025-12-01T10:00:00Z',
+      dateOut: '2025-12-31T15:00:00Z',
+      customer: 'John Doe',
+      phone: '555-0123',
+      redemptionRatio: '0.8',
+      emp: 'JN',
+      lastPaid: '2025-12-15T10:00:00Z',
+      note: 'Good condition',
+      cost: 200.00, // Top level cost (sum)
+      items: [
+        { itemDescription: 'Gold Ring 14k', cost: 150.00 },
+        { itemDescription: 'Small Diamond', cost: 50.00 }
+      ]
+    };
+
+    const buys = Array(50).fill(mockItem).map((item, i) => ({ ...item, controlNumber: `B-${i + 1000}` }));
+    const pawns = Array(50).fill(mockItem).map((item, i) => ({ ...item, controlNumber: `P-${i + 2000}` }));
+
+    return {
+      buys,
+      pawns,
+      buysCosts: 10000.00,
+      pawnsCosts: 10000.00,
+      total: 20000.00
+    };
+
+    /* return http(`/api/reports/forfeit/daily?startDate=${payload.from}&endDate=${payload.to}`, {
+      method: 'GET',
+    }); */
+  },
+
 };

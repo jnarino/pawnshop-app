@@ -1,0 +1,138 @@
+import { CancelButton } from "@/app/shared/components/CancelButton";
+import { FieldLegend, FieldSet } from "@/components/ui/field";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { Button } from '@/components/ui/button';
+import { RangeDatePicker } from "@/components/ui/range-date-picker";
+import { reportsApi } from "@/app/core/api/reportsApi";
+import { Loader2, Printer, Download } from "lucide-react";
+import { generateForfeitPdf, ForfeitReportData } from "./generateForfeitPdf";
+
+export const ForfeitReportPage = () => {
+    const today = new Date();
+    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    const [loading, setLoading] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+    const form = useForm({
+        defaultValues: {
+            dateRange: {
+                from: localToday,
+                to: localToday
+            },
+        }
+    });
+
+    const submit = async (data: { dateRange: { from: string; to: string } }) => {
+        setLoading(true);
+        setPdfUrl(null);
+        try {
+            const { from, to } = data.dateRange;
+            if (from && to) {
+                const result = await reportsApi.forfeitReport({
+                    from: new Date(from).toISOString(),
+                    to: new Date(to).toISOString()
+                }) as ForfeitReportData;
+
+                if (!result || (result.buys?.length === 0 && result.pawns?.length === 0)) {
+                    alert("No forfeit report records found.");
+                    return;
+                }
+
+                const pdfBlob = await generateForfeitPdf(result, { from, to });
+                const url = window.URL.createObjectURL(pdfBlob);
+                setPdfUrl(url);
+
+            } else {
+                alert('Please select a date range.');
+            }
+        } catch (error) {
+            console.error(error);
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                alert('An error occurred while generating the report.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePrint = () => {
+        const iframe = document.getElementById('report-frame') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.print();
+        }
+    };
+
+    const handleDownload = () => {
+        if (!pdfUrl) return;
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        const { from, to } = form.getValues().dateRange;
+        link.setAttribute(
+            'download',
+            `ForfeitReport_${from.split('T')[0]}_${to.split('T')[0]}.pdf`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+    };
+
+    return (
+        <div className="flex flex-col h-[calc(100vh-100px)] pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-extrabold">Forfeit (Pull) Report</h1>
+                <div className="flex items-center gap-2">
+                    {pdfUrl && (
+                        <>
+                            <Button onClick={handlePrint} variant="outline" size="sm">
+                                <Printer className="w-4 h-4 mr-2" />
+                                Print
+                            </Button>
+                            <Button onClick={handleDownload} variant="outline" size="sm">
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                            </Button>
+                        </>
+                    )}
+                    <CancelButton />
+                </div>
+            </div>
+
+            <form onSubmit={form.handleSubmit(submit)} className="">
+                <FieldSet className="card section">
+                    <FieldLegend className="mb-2 text-sm">Select a date range</FieldLegend>
+                    <div className="flex items-end gap-2">
+                        <Controller
+                            control={form.control}
+                            name="dateRange"
+                            render={({ field }) => (
+                                <RangeDatePicker
+                                    withTime
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                />
+                            )}
+                        />
+                        <Button type="submit" disabled={loading}>
+                            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Generate Preview
+                        </Button>
+                    </div>
+                </FieldSet>
+            </form>
+
+            {pdfUrl && (
+                <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100">
+                    <iframe
+                        id="report-frame"
+                        src={pdfUrl}
+                        className="w-full h-full"
+                        title="Report Preview"
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
