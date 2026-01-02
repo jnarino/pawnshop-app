@@ -144,7 +144,12 @@ export class GenerateCashDrawerDetailUseCase {
             } else if (type.includes('PAWN PAYMENT')) {
                 pawnPayments += record.amount;
             } else if (type.includes('REDEMPTION')) {
-                pawnRedeems += record.amount;
+                // Split redemption into principal (pawnRedeems) and interest/fees (pawnPayments) when available
+                const principal = record.principalComponent ?? record.amount;
+                const interest = record.interestComponent ?? 0;
+
+                pawnRedeems += principal;
+                pawnPayments += interest;
             }
         }
 
@@ -233,6 +238,8 @@ export class GenerateCashDrawerDetailUseCase {
                         remarks: existing.remarks,
                         paymentMethod: paymentMethods,
                         balance: existing.balance, // Temporary; will be recalculated
+                        principalComponent: (existing.principalComponent ?? existing.amount) + (record.principalComponent ?? record.amount),
+                        interestComponent: (existing.interestComponent ?? 0) + (record.interestComponent ?? 0),
                     })
                 );
             }
@@ -263,6 +270,8 @@ export class GenerateCashDrawerDetailUseCase {
                 remarks: record.remarks,
                 paymentMethod: record.paymentMethod,
                 balance: runningBalance,
+                principalComponent: record.principalComponent,
+                interestComponent: record.interestComponent,
             });
         });
     }

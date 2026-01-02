@@ -8,6 +8,9 @@ export type CashDrawerRecordProps = {
   remarks: string | null;
   paymentMethod: string | null;
   balance: number;
+  // Optional breakdown for redemption payments: principal and interest components
+  principalComponent?: number;
+  interestComponent?: number;
 };
 
 export class CashDrawerRecord {
@@ -20,6 +23,8 @@ export class CashDrawerRecord {
   readonly remarks: string | null;
   readonly paymentMethod: string | null;
   readonly balance: number;
+  readonly principalComponent?: number;
+  readonly interestComponent?: number;
 
   constructor(props: CashDrawerRecordProps) {
     this.occurredAt = props.occurredAt;
@@ -31,5 +36,7 @@ export class CashDrawerRecord {
     this.remarks = props.remarks;
     this.paymentMethod = props.paymentMethod;
     this.balance = props.balance;
+    this.principalComponent = props.principalComponent;
+    this.interestComponent = props.interestComponent;
   }
 }

@@ -26,7 +26,15 @@ filtered AS (
     (COALESCE(st.amount, 0) + COALESCE(st.state_tax, 0)) AS amount,
     COALESCE(st.tender_change, 0) AS tender_change,
     st.note AS remarks,
-    ttype.name AS payment_method
+    ttype.name AS payment_method,
+    CASE
+      WHEN sttype.code = 'PPU' THEN COALESCE(pt.amount_financed, 0)
+      ELSE 0
+    END AS principal_component,
+    CASE
+      WHEN sttype.code = 'PPU' THEN (COALESCE(st.amount, 0) + COALESCE(st.state_tax, 0)) - COALESCE(pt.amount_financed, 0)
+      ELSE 0
+    END AS interest_component
   FROM store_transaction AS st
   JOIN app_user AS au
     ON au.id = st.clerk_user_id
@@ -36,6 +44,9 @@ filtered AS (
     ON tttender.store_transaction_id = st.id
   JOIN tender_type AS ttype
     ON ttype.id = tttender.tender_type_id
+  LEFT JOIN pawn_ticket AS pt
+    ON sttype.code = 'PPU'
+   AND pt.control_number = st.legacy_ticketnum
   CROSS JOIN params p
   WHERE st.occurred_at >= p.start_ts
     AND st.occurred_at <  p.end_ts
@@ -50,6 +61,8 @@ SELECT
   f.tender_change,
   f.remarks,
   f.payment_method,
+  f.principal_component,
+  f.interest_component,
   ib.amount + SUM(f.amount) OVER (
     ORDER BY f.occurred_at, f.store_transaction_id
     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
