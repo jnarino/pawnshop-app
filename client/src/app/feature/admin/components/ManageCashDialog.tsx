@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DollarInput } from '@/components/ui/dollar-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { tenderTypeApi, TenderType } from '@/app/core/api/tenderTypeApi';
 import { salesApi } from '@/app/core/api/salesApi';
 import { useAuthStore } from '@/app/core/store/useAuthStore';
@@ -32,6 +33,7 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
   const [loading, setLoading] = useState(false);
   const [availableMethods, setAvailableMethods] = useState<TenderType[]>([]);
   const [loadingMethods, setLoadingMethods] = useState(false);
+  const [isFromBank, setIsFromBank] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -96,18 +98,34 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
 
       // TODO: Implement API call for 'add' cash if needed
       const selectedMethod = availableMethods.find(m => m.id.toString() === paymentMethod);
-      console.log('Adding cash (Mock):', {
-        action,
-        tenderTypeId: paymentMethod,
-        tenderTypeName: selectedMethod?.name,
-        reason,
-        amount
-      });
 
-      // Reset form and close dialog on success
-      resetForm();
-      onOpenChange(false);
-      toast.success('Cash added successfully');
+      if (action === 'add') {
+        const now = new Date();
+        const miamiFormatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/New_York',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hourCycle: 'h23'
+        });
+        const parts = miamiFormatter.formatToParts(now);
+        const findPart = (p: string) => parts.find(part => part.type === p)?.value;
+        const localIsoString = `${findPart('year')}-${findPart('month')}-${findPart('day')}T${findPart('hour')}:${findPart('minute')}:${findPart('second')}.000Z`;
+
+        const payload = {
+          amount: parseFloat(amount),
+          transactionTenderName: selectedMethod?.name || 'CASH',
+          isFromBank,
+          note: reason,
+          occurredAt: localIsoString
+        };
+
+        await salesApi.addMoneyToMainDrawer(payload);
+
+        toast.success('Cash added successfully');
+        resetForm();
+        onOpenChange(false);
+        return;
+      }
     } catch (error) {
       console.error('Failed to manage cash:', error);
       toast.error(error instanceof Error ? error.message : 'An error occurred');
@@ -125,6 +143,7 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
     }
     setReason('');
     setAmount('');
+    setIsFromBank(false);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -204,6 +223,23 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
               placeholder="0.00"
             />
           </div>
+
+          {/* Add from Bank Checkbox */}
+          {action === 'add' && (
+            <div className="flex items-center space-x-2 py-2">
+              <Checkbox
+                id="from-bank"
+                checked={isFromBank}
+                onCheckedChange={(checked) => setIsFromBank(checked as boolean)}
+              />
+              <Label
+                htmlFor="from-bank"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Adding money from Bank
+              </Label>
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

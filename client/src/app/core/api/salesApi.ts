@@ -35,5 +35,18 @@ export const salesApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         });
+    },
+
+    addMoneyToMainDrawer: async (payload: {
+        amount: number;
+        transactionTenderName: string;
+        isFromBank: boolean;
+        note: string;
+        occurredAt: string
+    }): Promise<any> => {
+        return http('/api/store-transaction/add-money-to-main-drawer', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
     }
 };
