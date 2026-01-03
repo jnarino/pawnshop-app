@@ -26,7 +26,7 @@ export class RemoveCashFromMainDrawerUseCase {
       sequence: 1,
       tenderTypeId: CASH_TENDER_TYPE_ID,
       amount: amount,
-      createdAt: new Date()
+      createdAt: occurredAt
     });
 
     const tx = new StoreTransaction({
@@ -44,8 +44,8 @@ export class RemoveCashFromMainDrawerUseCase {
       note: dto.note ?? null,
       tenders: [tender],
       items: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: occurredAt,
+      updatedAt: occurredAt
     });
 
     return this.storeTransactionRepository.create(tx);
