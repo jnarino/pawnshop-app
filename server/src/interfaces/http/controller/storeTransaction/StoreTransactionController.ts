@@ -6,13 +6,15 @@ import { Actor } from '../../../../application/common/Actor';
 import { ListStoreTransactionsByCustomerUseCase } from '../../../../application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
 import { ListStoreTransactionsByDateRangeUseCase } from '../../../../application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { RemoveCashFromMainDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
+import { AddMoneyToMainDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 
 export class StoreTransactionController {
   constructor(
     private readonly listByCustomerUseCase: ListStoreTransactionsByCustomerUseCase,
     private readonly listByDateRangeUseCase: ListStoreTransactionsByDateRangeUseCase,
     private readonly createStoreTransactionUseCase: CreateStoreTransactionUseCase,
-    private readonly removeCashFromMainDrawerUseCase: RemoveCashFromMainDrawerUseCase
+    private readonly removeCashFromMainDrawerUseCase: RemoveCashFromMainDrawerUseCase,
+    private readonly addMoneyToMainDrawerUseCase: AddMoneyToMainDrawerUseCase
   ) { }
 
   /**
@@ -77,6 +79,16 @@ export class StoreTransactionController {
     try {
       const actor = this.getActor(req);
       const result = await this.removeCashFromMainDrawerUseCase.execute(req.body, actor.id);
+      return res.status(201).json(result);
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  addMoneyToMainDrawer = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const actor = this.getActor(req);
+      const result = await this.addMoneyToMainDrawerUseCase.execute(req.body, actor.id);
       return res.status(201).json(result);
     } catch (error) {
       return next(error);

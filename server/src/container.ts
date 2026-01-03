@@ -71,6 +71,7 @@ import { PgCashDrawerReportRepository } from './infrastructure/persistence/repor
 import { GenerateCashDrawerDetailUseCase } from './application/use-case/reports/cashDrawer/query/GenerateCashDrawerDetailUseCase';
 import { CashDrawerReportController } from './interfaces/http/controller/reports/cashDrawer/CashDrawerReportController';
 import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
+import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 
 
 
@@ -151,6 +152,7 @@ export async function createApp() {
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
   const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
+  const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
 
   // Tender Type use-cases
   const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
@@ -228,7 +230,8 @@ export async function createApp() {
     listStoreTransactionsByCustomerUseCase,
     listStoreTransactionsByDateRangeUseCase,
     createStoreTransactionUseCase,
-    removeCashFromMainDrawerUseCase
+    removeCashFromMainDrawerUseCase,
+    addMoneyToMainDrawerUseCase
   );
 
   const policeReportController = new PoliceReportController(

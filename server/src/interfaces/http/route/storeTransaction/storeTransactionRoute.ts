@@ -124,6 +124,53 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/add-money-to-main-drawer:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Add money to main drawer
+     *     description: Records adding money to the main drawer, either from bank (type 26) or other sources (type 24). If from bank, only CASH tender is allowed.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               amount:
+     *                 type: number
+     *                 description: Positive amount to add to the main drawer
+     *               transactionTenderName:
+     *                 type: string
+     *                 description: Tender type name (e.g., CASH, CHECK)
+     *               isFromBank:
+     *                 type: boolean
+     *                 description: Whether the money is from bank (if true, only CASH allowed)
+     *               note:
+     *                 type: string
+     *                 description: Optional note
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: Optional timestamp; defaults to current time
+     *             required:
+     *               - amount
+     *               - transactionTenderName
+     *               - isFromBank
+     *     responses:
+     *       201:
+     *         description: Money added successfully
+     *       400:
+     *         description: Invalid input or non-CASH tender for bank withdrawal
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/add-money-to-main-drawer', auth, controller.addMoneyToMainDrawer);
+
+    /**
+     * @openapi
      * /api/store-transaction:
      *   post:
      *     tags:
