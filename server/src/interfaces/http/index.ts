@@ -60,7 +60,7 @@ export function createExpressApp(
   app.use('/api/inventory/attributes', createInventoryAttributeRouter(deps.inventoryAttributeController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketRouter(deps.pawnTicketController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketPaymentRouter(deps.pawnTicketController, deps.jwtSecret));
-  app.use('/api/sales', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
+  app.use('/api/store-transaction', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
   app.use('/api/tender-types', createTenderTypeRouter(deps.tenderTypeController, deps.jwtSecret));
   app.use('/api/reports/police', createPoliceReportRouter(deps.policeReportController, deps.jwtSecret));
   app.use('/api/reports/cash-drawer', createCashDrawerReportRouter(deps.cashDrawerReportController, deps.jwtSecret));

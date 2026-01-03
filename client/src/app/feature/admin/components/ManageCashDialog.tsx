@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { DollarInput } from '@/components/ui/dollar-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { tenderTypeApi, TenderType } from '@/app/core/api/tenderTypeApi';
+import { salesApi } from '@/app/core/api/salesApi';
+import { useAuthStore } from '@/app/core/store/useAuthStore';
+import { toast } from 'sonner';
 
 type CashAction = 'add' | 'remove';
 
@@ -62,11 +65,38 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
 
     setLoading(true);
     try {
-      // Find the selected method for logging or API call if needed
-      const selectedMethod = availableMethods.find(m => m.id.toString() === paymentMethod);
+      if (action === 'remove') {
+        const now = new Date();
+        const miamiFormatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/New_York',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hourCycle: 'h23'
+        });
+        const parts = miamiFormatter.formatToParts(now);
+        const findPart = (p: string) => parts.find(part => part.type === p)?.value;
+        const localIsoString = `${findPart('year')}-${findPart('month')}-${findPart('day')}T${findPart('hour')}:${findPart('minute')}:${findPart('second')}.000Z`;
 
-      // TODO: Implement API call to manage cash
-      console.log('Managing cash:', {
+        const payload = {
+          amount: parseFloat(amount),
+          note: reason,
+          occurredAt: localIsoString
+        };
+
+        await salesApi.removeCashFromMainDrawer(payload);
+
+        // Success dialog
+        alert("Money removed successfully");
+
+        // Close dialog and finish session
+        onOpenChange(false);
+        useAuthStore.getState().clearUser();
+        return;
+      }
+
+      // TODO: Implement API call for 'add' cash if needed
+      const selectedMethod = availableMethods.find(m => m.id.toString() === paymentMethod);
+      console.log('Adding cash (Mock):', {
         action,
         tenderTypeId: paymentMethod,
         tenderTypeName: selectedMethod?.name,
@@ -77,8 +107,10 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
       // Reset form and close dialog on success
       resetForm();
       onOpenChange(false);
+      toast.success('Cash added successfully');
     } catch (error) {
       console.error('Failed to manage cash:', error);
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
