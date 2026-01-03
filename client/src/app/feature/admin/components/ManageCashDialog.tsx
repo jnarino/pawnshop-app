@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,37 +12,68 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DollarInput } from '@/components/ui/dollar-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { tenderTypeApi, TenderType } from '@/app/core/api/tenderTypeApi';
 
 type CashAction = 'add' | 'remove';
-type PaymentMethod = 'cash' | 'debit' | 'discover' | 'visa';
 
 interface ManageCashDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'debit', label: 'Debit' },
-  { value: 'discover', label: 'Discover' },
-  { value: 'visa', label: 'Visa' },
-];
-
 export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialogProps) {
   const [action, setAction] = useState<CashAction>('add');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [availableMethods, setAvailableMethods] = useState<TenderType[]>([]);
+  const [loadingMethods, setLoadingMethods] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      loadPaymentMethods();
+    }
+  }, [open]);
+
+  const loadPaymentMethods = async () => {
+    setLoadingMethods(true);
+    try {
+      const types = await tenderTypeApi.list();
+      const activeTypes = types.filter(t => t.active);
+      setAvailableMethods(activeTypes);
+
+      // Set default to CASH if found
+      const cashType = activeTypes.find(t => t.name === 'CASH');
+      if (cashType) {
+        setPaymentMethod(cashType.id.toString());
+      } else if (activeTypes.length > 0) {
+        setPaymentMethod(activeTypes[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Failed to load payment methods:', error);
+    } finally {
+      setLoadingMethods(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!reason.trim() || !amount) return;
 
     setLoading(true);
     try {
+      // Find the selected method for logging or API call if needed
+      const selectedMethod = availableMethods.find(m => m.id.toString() === paymentMethod);
+
       // TODO: Implement API call to manage cash
-      console.log('Managing cash:', { action, paymentMethod, reason, amount });
-      
+      console.log('Managing cash:', {
+        action,
+        tenderTypeId: paymentMethod,
+        tenderTypeName: selectedMethod?.name,
+        reason,
+        amount
+      });
+
       // Reset form and close dialog on success
       resetForm();
       onOpenChange(false);
@@ -55,7 +86,11 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
 
   const resetForm = () => {
     setAction('add');
-    setPaymentMethod('cash');
+    // Keep current payment method or reset to CASH if available
+    const cashType = availableMethods.find(t => t.name === 'CASH');
+    if (cashType) {
+      setPaymentMethod(cashType.id.toString());
+    }
     setReason('');
     setAmount('');
   };
@@ -102,14 +137,14 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
           {/* Payment Method Selection */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Payment Method</Label>
-            <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger>
-                <SelectValue placeholder="Select payment method..." />
+                <SelectValue placeholder={loadingMethods ? "Loading methods..." : "Select payment method..."} />
               </SelectTrigger>
               <SelectContent>
-                {PAYMENT_METHODS.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
+                {availableMethods.map((method) => (
+                  <SelectItem key={method.id} value={method.id.toString()}>
+                    {method.name}
                   </SelectItem>
                 ))}
               </SelectContent>

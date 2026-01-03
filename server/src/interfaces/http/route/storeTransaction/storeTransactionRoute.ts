@@ -85,6 +85,45 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/remove-cash-from-main-drawer:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Remove cash from main drawer
+     *     description: Records a cash-out movement from the store drawer to the main drawer using store_transaction_type 25 and CASH tender.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               amount:
+     *                 type: number
+     *                 description: Positive amount to remove from the main drawer
+     *               note:
+     *                 type: string
+     *                 description: Optional note for the cash-out
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: Optional timestamp; defaults to current time
+     *             required:
+     *               - amount
+     *     responses:
+     *       201:
+     *         description: Cash removal recorded
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/remove-cash-from-main-drawer', auth, controller.removeCashFromMainDrawer);
+
+    /**
+     * @openapi
      * /api/store-transaction:
      *   post:
      *     tags:
