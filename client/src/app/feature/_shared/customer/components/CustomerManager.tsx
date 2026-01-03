@@ -9,21 +9,22 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 import { recordToDto } from '../mappers';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface CustomerManagerProps {
   // Estado
   customer: Customer | null;
   onCustomerChange: (customer: Customer | null) => void;
-  
+
   // Callbacks opcionales
   onCustomerSelected?: (id: string) => void;
   onCustomerSaved?: (customer: Customer) => void;
   onFindByTicket?: () => void;
-  
+
   // Configuración UI
   workflowMode?: 'pawn' | 'payment';
   showAlertWhenEmpty?: boolean;
-  
+
   // Acciones personalizadas (render prop para acciones customizadas)
   renderLeftActions?: (state: {
     editingNew: boolean;
@@ -31,13 +32,13 @@ export interface CustomerManagerProps {
     loading: boolean;
     saving: boolean;
   }) => React.ReactNode;
-  
+
   // Ocultar acciones por defecto
   hideDefaultActions?: boolean;
-  
+
   // Estilos
   className?: string;
-  
+
   // Accordion config
   defaultOpenSections?: string[];
 }
@@ -87,7 +88,7 @@ export default function CustomerManager({
 
   const handleCustomerChange = useCallback((c: Customer | null) => {
     onCustomerChange(c);
-    
+
     // If clearing customer (Cancel button), close additional-info section
     if (!c) {
       setAccordionValue(prev => prev.filter(section => section !== 'additional-info'));
@@ -118,8 +119,8 @@ export default function CustomerManager({
   const displayCustomer = customer || (editMode === 'create' ? draftCustomer : null);
 
   return (
-    <div className={`h-full w-full flex flex-col ${className}`}>
-      <div className="flex-1 overflow-y-auto min-h-0">
+    <div className={`h-[calc(100vh-100px)] w-full flex flex-col ${className}`}>
+      <ScrollArea className="flex-1 max-h-[calc(100vh-200px)]">
         {showAlertWhenEmpty && editMode === 'search' && (
           <div className="px-4 pt-1">
             <Alert variant="info">
@@ -135,7 +136,7 @@ export default function CustomerManager({
               Customer Information
             </AccordionTrigger>
             <AccordionContent className="px-4">
-              <CustomerPicker 
+              <CustomerPicker
                 ref={pickerRef}
                 value={customer}
                 onChange={handleCustomerChange}
@@ -147,7 +148,7 @@ export default function CustomerManager({
           </AccordionItem>
 
           <AccordionItem value="additional-info">
-            <AccordionTrigger 
+            <AccordionTrigger
               disabled={editMode === 'search'}
               className="px-4 text-base font-semibold"
             >
@@ -155,7 +156,7 @@ export default function CustomerManager({
             </AccordionTrigger>
             <AccordionContent className="px-4">
               <div className="grid grid-cols-2 gap-4">
-                <EmployerInfoSection 
+                <EmployerInfoSection
                   employerName={displayCustomer?.employerName}
                   employerAddress={displayCustomer?.employerAddress}
                   employerCity={displayCustomer?.employerCity}
@@ -164,8 +165,8 @@ export default function CustomerManager({
                   employerPhoneNumber={displayCustomer?.employerPhoneNumber}
                   onUpdate={handleUpdate}
                 />
-                
-                <ComplianceSection 
+
+                <ComplianceSection
                   fflNumber={displayCustomer?.fflNumber}
                   fflExpireDate={displayCustomer?.fflExpireDate}
                   taxId={displayCustomer?.taxId}
@@ -178,103 +179,103 @@ export default function CustomerManager({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      </div>
 
-      {!hideDefaultActions && (
-        <div className="border-t px-4 py-2 flex items-center justify-between gap-4 flex-shrink-0">
-          <div className="flex-1">
-            {renderLeftActions?.(pickerState)}
-          </div>
+        {!hideDefaultActions && (
+          <div className="border-t px-4 py-2 flex items-center justify-between gap-4 flex-shrink-0">
+            <div className="flex-1">
+              {renderLeftActions?.(pickerState)}
+            </div>
 
-          <div className="flex gap-2 items-center">
-            {editMode === 'search' && (
-              <>
-                {workflowMode === 'pawn' && (
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    onClick={() => pickerRef.current?.handleAddNew()} 
+            <div className="flex gap-2 items-center">
+              {editMode === 'search' && (
+                <>
+                  {workflowMode === 'pawn' && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => pickerRef.current?.handleAddNew()}
+                      disabled={pickerState.loading}
+                    >
+                      Add New
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => pickerRef.current?.handleScanId()}
+                  >
+                    Scan ID
+                  </Button>
+                  {workflowMode === 'payment' && onFindByTicket && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={onFindByTicket}
+                    >
+                      Find by Ticket
+                    </Button>
+                  )}
+                  <Separator orientation="vertical" className="h-8" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => pickerRef.current?.handleClearAll()}
                     disabled={pickerState.loading}
                   >
-                    Add New
+                    Clear
                   </Button>
-                )}
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => pickerRef.current?.handleScanId()}
-                >
-                  Scan ID
-                </Button>
-                {workflowMode === 'payment' && onFindByTicket && (
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    onClick={onFindByTicket}
+                  <Button
+                    type="submit"
+                    form="customer-search-form"
+                    disabled={pickerState.disableSearch || pickerState.loading}
+                    className="w-24"
                   >
-                    Find by Ticket
+                    {pickerState.loading ? 'Searching…' : 'Find'}
                   </Button>
-                )}
-                <Separator orientation="vertical" className="h-8" />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => pickerRef.current?.handleClearAll()} 
-                  disabled={pickerState.loading}
-                >
-                  Clear
-                </Button>
-                <Button 
-                  type="submit" 
-                  form="customer-search-form"
-                  disabled={pickerState.disableSearch || pickerState.loading}
-                  className="w-24"
-                >
-                  {pickerState.loading ? 'Searching…' : 'Find'}
-                </Button>
-              </>
-            )}
-            {editMode === 'create' && (
-              <>
-                <Button 
-                  type="submit" 
-                  form="customer-search-form"
-                  disabled={pickerState.saving}
-                >
-                  {pickerState.saving ? 'Saving…' : 'Save Customer'}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => pickerRef.current?.handleClearAll()} 
-                  disabled={pickerState.saving}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-            {editMode === 'update' && (
-              <>
-                <Button 
-                  type="submit" 
-                  form="customer-search-form"
-                  disabled={pickerState.saving}
-                >
-                  {pickerState.saving ? 'Updating…' : 'Update Customer'}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => pickerRef.current?.handleClearAll()} 
-                  disabled={pickerState.saving}
-                >
-                  Change Customer
-                </Button>
-              </>
-            )}
+                </>
+              )}
+              {editMode === 'create' && (
+                <>
+                  <Button
+                    type="submit"
+                    form="customer-search-form"
+                    disabled={pickerState.saving}
+                  >
+                    {pickerState.saving ? 'Saving…' : 'Save Customer'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => pickerRef.current?.handleClearAll()}
+                    disabled={pickerState.saving}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+              {editMode === 'update' && (
+                <>
+                  <Button
+                    type="submit"
+                    form="customer-search-form"
+                    disabled={pickerState.saving}
+                  >
+                    {pickerState.saving ? 'Updating…' : 'Update Customer'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => pickerRef.current?.handleClearAll()}
+                    disabled={pickerState.saving}
+                  >
+                    Change Customer
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </ScrollArea>
     </div>
   );
 }
