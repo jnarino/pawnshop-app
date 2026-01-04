@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DatePicker } from '@/components/ui/date-picker';
+import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 
 interface DueDatePeriod {
   period: number;
@@ -59,7 +60,7 @@ export function DueDateCalculatorModal({
     const selectedDateTime = new Date(calculatedDate).getTime();
     const startDateTime = new Date(transactionDate).getTime();
     const daysDiff = Math.ceil((selectedDateTime - startDateTime) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDiff < 0) {
       setServiceCharges(null);
       setRedemptionAmount(null);
@@ -69,24 +70,11 @@ export function DueDateCalculatorModal({
 
     const periodNumber = Math.max(1, Math.ceil(daysDiff / 30));
     const selectedPeriod = periods.find(p => p.period === periodNumber) || periods[periods.length - 1];
-    
+
     setServiceCharges(selectedPeriod.serviceCharge);
     setRedemptionAmount(selectedPeriod.redemption);
     setSelectedDate(selectedPeriod.date);
   }, [calculatedDate, periods, transactionDate]);
-
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
-    });
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -94,7 +82,7 @@ export function DueDateCalculatorModal({
         <DialogHeader>
           <DialogTitle>View Due Dates</DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Payment Schedule</h3>
@@ -122,8 +110,8 @@ export function DueDateCalculatorModal({
                     >
                       <TableCell>{period.period}</TableCell>
                       <TableCell>{formatDate(period.date)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(period.serviceCharge)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(period.redemption)}</TableCell>
+                      <TableCell className="text-right">{formatMoney(period.serviceCharge)}</TableCell>
+                      <TableCell className="text-right">{formatMoney(period.redemption)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -133,11 +121,11 @@ export function DueDateCalculatorModal({
 
           <div className="space-y-6">
             <h3 className="font-semibold text-lg">Calculator</h3>
-            
+
             <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
               <div className="space-y-2">
                 <Label>Pawn Amount</Label>
-                <div className="text-2xl font-bold">{formatCurrency(pawnAmount)}</div>
+                <div className="text-2xl font-bold">{formatMoney(pawnAmount)}</div>
               </div>
 
               <div className="space-y-2">
@@ -149,7 +137,7 @@ export function DueDateCalculatorModal({
                 />
               </div>
 
-              <Button 
+              <Button
                 onClick={handleCalculate}
                 className="w-full"
                 size="lg"
@@ -161,14 +149,14 @@ export function DueDateCalculatorModal({
                 <div className="flex justify-between items-center">
                   <Label className="text-base">Service Charges:</Label>
                   <span className="text-xl font-semibold">
-                    {serviceCharges !== null ? formatCurrency(serviceCharges) : '-'}
+                    {serviceCharges !== null ? formatMoney(serviceCharges) : '-'}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t">
                   <Label className="text-base">Redemption Amount:</Label>
                   <span className="text-2xl font-bold text-primary">
-                    {redemptionAmount !== null ? formatCurrency(redemptionAmount) : '-'}
+                    {redemptionAmount !== null ? formatMoney(redemptionAmount) : '-'}
                   </span>
                 </div>
               </div>

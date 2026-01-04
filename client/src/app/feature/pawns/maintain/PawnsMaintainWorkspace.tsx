@@ -13,6 +13,7 @@ import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/cus
 import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
 import { PawnTicketForm } from './PawnTicketForm';
 import { CancelButton } from '@/app/shared/components/CancelButton';
+import { formatDate } from '@/lib/utils';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
 type ScopeFilter = 'all' | 'active';
@@ -30,10 +31,7 @@ const extractId = (value: unknown): string => {
 };
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toISOString().split('T')[0];
-  };
+
 
   const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
     if (!brand) return '';

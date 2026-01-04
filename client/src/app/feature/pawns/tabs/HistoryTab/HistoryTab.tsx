@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePawnHistory } from '../../hooks/usePawnHistory';
+import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 
 export default function HistoryTab() {
   const { history, loading, error, refreshHistory } = usePawnHistory();
@@ -9,13 +10,13 @@ export default function HistoryTab() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
   const filteredHistory = history.filter(item => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       item.controlNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesType = selectedType === 'all' || item.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
-    
+
     let matchesDate = true;
     if (dateRange.start && dateRange.end) {
       const itemDate = new Date(item.completedDate);
@@ -23,26 +24,9 @@ export default function HistoryTab() {
       const endDate = new Date(dateRange.end);
       matchesDate = itemDate >= startDate && itemDate <= endDate;
     }
-    
+
     return matchesSearch && matchesType && matchesStatus && matchesDate;
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <div className="tab-content">
@@ -389,11 +373,11 @@ export default function HistoryTab() {
                 <td>{formatDate(item.transactionDate)}</td>
                 <td>{formatDate(item.completedDate)}</td>
                 <td>
-                  <span className="currency">{formatCurrency(item.amount)}</span>
+                  <span className="currency">{formatMoney(item.amount)}</span>
                 </td>
                 <td>
                   {item.finalAmount ? (
-                    <span className="currency">{formatCurrency(item.finalAmount)}</span>
+                    <span className="currency">{formatMoney(item.finalAmount)}</span>
                   ) : (
                     <span style={{ color: '#9ca3af' }}>—</span>
                   )}

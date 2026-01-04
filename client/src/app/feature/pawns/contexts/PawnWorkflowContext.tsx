@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
-
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+import { formatDate } from '@/lib/utils';
 export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'customerPerformance' | 'history';
 
 export interface PawnDraftState {
@@ -35,8 +35,6 @@ function createInitialDraft(): PawnDraftState {
   const expirationDate = new Date(today);
   expirationDate.setDate(expirationDate.getDate() + 60);
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
-
   return {
     type: 'PAWN',
     periodicRate: '25',
@@ -46,9 +44,6 @@ function createInitialDraft(): PawnDraftState {
     items: []
   };
 }
-
-// Import moved up to top-level normally, but here just ensure it's available
-import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -64,8 +59,6 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
   });
 
   const [pawnDraft, setPawnDraft] = useState<PawnDraftState>(createInitialDraft);
-
-  const navigate = useNavigate();
 
   const updatePawnDraft = useCallback((updates: Partial<PawnDraftState>) => {
     setPawnDraft(prev => ({ ...prev, ...updates }));

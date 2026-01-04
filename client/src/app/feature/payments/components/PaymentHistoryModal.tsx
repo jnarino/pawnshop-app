@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { formatDate, formatCurrency } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -51,21 +52,7 @@ export function PaymentHistoryModal({ open, onClose, pawnTicketId }: PaymentHist
     }
   }, [open, loadPayments]);
 
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return 'Invalid Date';
-    }
-  };
 
-  const formatMoney = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -111,7 +98,7 @@ export function PaymentHistoryModal({ open, onClose, pawnTicketId }: PaymentHist
                   payments.map((payment, index) => (
                     <TableRow key={`${payment.pawnTicketId}-${index}`}>
                       <TableCell className="font-medium">
-                        {formatMoney(payment.principalPaid)}
+                        {formatCurrency(payment.principalPaid)}
                       </TableCell>
                       <TableCell>
                         {payment.clerkUserId || 'N/A'}

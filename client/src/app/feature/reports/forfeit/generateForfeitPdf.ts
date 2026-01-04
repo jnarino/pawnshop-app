@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-
+import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 export interface ForfeitItem {
     controlNumber: string;
     dateIn: string;
@@ -22,19 +22,6 @@ export interface ForfeitReportData {
     pawnsCosts: number;
     total: number;
 }
-
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
-};
-
-const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? dateStr : date.toLocaleDateString();
-};
 
 export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { from: string; to: string }): Promise<Blob> {
     const pdfDoc = await PDFDocument.create();
@@ -214,7 +201,7 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
                 page.drawText(displayLine2, { x, y: subY, size: fontSize, font });
 
                 // Col 5: Cost (Right Aligned)
-                const costVal = formatCurrency(subItem.cost);
+                const costVal = formatMoney(subItem.cost);
                 const costWidth = font.widthOfTextAtSize(costVal, fontSize);
                 page.drawText(costVal, { x: pageWidth - margin - costWidth - 5, y: subY, size: fontSize, font });
 
@@ -241,7 +228,7 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
         });
         y -= 15;
         page.drawText(`${title} Total:`, { x: pageWidth - margin - 150, y, size: 10, font: fontBold });
-        page.drawText(formatCurrency(totalCost), { x: pageWidth - margin - 50, y, size: 10, font: fontBold });
+        page.drawText(formatMoney(totalCost), { x: pageWidth - margin - 50, y, size: 10, font: fontBold });
         y -= 25;
     };
 
@@ -256,7 +243,7 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
     checkPageBreak(2);
     y -= 10;
     page.drawText('Grand Total:', { x: pageWidth - margin - 150, y, size: 12, font: fontBold });
-    page.drawText(formatCurrency(data.total), { x: pageWidth - margin - 50, y, size: 12, font: fontBold });
+    page.drawText(formatMoney(data.total), { x: pageWidth - margin - 50, y, size: 12, font: fontBold });
 
     // Add Page Numbers
     const pages = pdfDoc.getPages();

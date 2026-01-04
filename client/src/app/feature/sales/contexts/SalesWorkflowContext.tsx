@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
+import { formatDate } from '@/lib/utils';
+import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 export type TabKey = 'customer' | 'additional' | 'newSale';
 
@@ -33,7 +35,6 @@ function createInitialDraft(): SaleDraftState {
   const expirationDate = new Date(today);
   expirationDate.setDate(expirationDate.getDate() + 60);
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
   return {
     type: 'PAWN',
@@ -44,8 +45,6 @@ function createInitialDraft(): SaleDraftState {
     items: []
   };
 }
-
-import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);

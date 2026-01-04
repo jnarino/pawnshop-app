@@ -1,4 +1,5 @@
 import { useCallback, useState, useMemo } from 'react';
+import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -155,25 +156,6 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
             applyFilter();
         }
     }, [applyFilter]);
-
-    const formatDate = (dateStr: string) => {
-        try {
-            return new Date(dateStr).toLocaleDateString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric'
-            });
-        } catch {
-            return 'Invalid Date';
-        }
-    };
-
-    const formatMoney = (amount?: number | string | null) => {
-        if (!amount) return '$0.00';
-        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-        return Number.isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
-    };
-
 
     const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
         const normalizedStatus = (status || '').toLowerCase().replace('_', ' ');
