@@ -1,13 +1,13 @@
 import { CancelButton } from "@/app/shared/components/CancelButton";
 import { FieldLegend, FieldSet } from "@/components/ui/field";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from '@/components/ui/button';
 import { RangeDatePicker } from "@/components/ui/range-date-picker";
 import { reportsApi } from "@/app/core/api/reportsApi";
-import { Loader2, Printer } from "lucide-react";
+import { Loader2, Printer, Download } from "lucide-react";
 import { CashDrawerDetailWithSummaryResponseDto } from "@/app/core/dto/CashDrawerReportDto";
-import { DailyReportPrintable } from "./components/DailyReportPrintable";
+import { generateDailyReportPdf } from "./generateDailyReportPdf";
 
 export const DailyReportPage = () => {
     const today = new Date();
@@ -15,8 +15,7 @@ export const DailyReportPage = () => {
     const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
 
     const [loading, setLoading] = useState(false);
-    const [reportData, setReportData] = useState<CashDrawerDetailWithSummaryResponseDto | null>(null);
-    const reportRef = useRef<HTMLDivElement>(null);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
     const form = useForm({
         defaultValues: {
@@ -29,7 +28,7 @@ export const DailyReportPage = () => {
 
     const submit = async (data: { dateRange: { from: string; to: string } }) => {
         setLoading(true);
-        setReportData(null);
+        setPdfUrl(null);
         try {
             const { from, to } = data.dateRange;
             if (from && to) {
@@ -47,7 +46,9 @@ export const DailyReportPage = () => {
                     return;
                 }
 
-                setReportData(result);
+                const pdfBlob = await generateDailyReportPdf(result, { from, to });
+                const url = window.URL.createObjectURL(pdfBlob);
+                setPdfUrl(url);
             } else {
                 alert('Please select a date range.');
             }
@@ -64,36 +65,24 @@ export const DailyReportPage = () => {
     };
 
     const handlePrint = () => {
-        if (!reportRef.current) return;
-
-        const printContent = reportRef.current.innerHTML;
-        const printWindow = window.open('', '_blank');
-
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Daily Report</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
-                        <style>
-                            @media print {
-                                body { margin: 0; padding: 0; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${printContent}
-                        <script>
-                            window.onload = () => {
-                                window.print();
-                                window.close();
-                            };
-                        </script>
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
+        const iframe = document.getElementById('report-frame') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.print();
         }
+    };
+
+    const handleDownload = () => {
+        if (!pdfUrl) return;
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        const { from, to } = form.getValues().dateRange;
+        link.setAttribute(
+            'download',
+            `DailyReport_${from}_${to}.pdf`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
     };
 
     return (
@@ -101,11 +90,17 @@ export const DailyReportPage = () => {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-extrabold text-foreground">Daily Cash Drawer Detail</h1>
                 <div className="flex items-center gap-2">
-                    {reportData && (
-                        <Button onClick={handlePrint} variant="outline" size="sm">
-                            <Printer className="w-4 h-4 mr-2" />
-                            Print
-                        </Button>
+                    {pdfUrl && (
+                        <>
+                            <Button onClick={handlePrint} variant="outline" size="sm">
+                                <Printer className="w-4 h-4 mr-2" />
+                                Print
+                            </Button>
+                            <Button onClick={handleDownload} variant="outline" size="sm">
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                            </Button>
+                        </>
                     )}
                     <CancelButton />
                 </div>
@@ -133,21 +128,21 @@ export const DailyReportPage = () => {
                 </FieldSet>
             </form>
 
-            <div className="flex-1 border rounded-lg overflow-hidden bg-muted/30 shadow-inner p-4 overflow-y-auto">
-                {reportData ? (
-                    <div ref={reportRef} className="bg-white shadow-sm mx-auto">
-                        <DailyReportPrintable
-                            data={reportData}
-                            dateRange={form.getValues().dateRange}
-                        />
-                    </div>
-                ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-2">
-                        <div className="text-lg font-medium">No report generated</div>
-                        <div className="text-sm">Select a date range and click generate to view the report preview</div>
-                    </div>
-                )}
-            </div>
+            {pdfUrl ? (
+                <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100">
+                    <iframe
+                        id="report-frame"
+                        src={pdfUrl}
+                        className="w-full h-full"
+                        title="Report Preview"
+                    />
+                </div>
+            ) : (
+                <div className="flex-1 border rounded-lg bg-muted/30 shadow-inner p-4 flex items-center justify-center text-muted-foreground flex-col gap-2">
+                    <div className="text-lg font-medium">No report generated</div>
+                    <div className="text-sm">Select a date range and click generate to view the report preview</div>
+                </div>
+            )}
         </div>
     );
 };

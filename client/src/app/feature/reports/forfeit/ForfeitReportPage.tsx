@@ -122,7 +122,7 @@ export const ForfeitReportPage = () => {
                 </FieldSet>
             </form>
 
-            {pdfUrl && (
+            {pdfUrl ? (
                 <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100">
                     <iframe
                         id="report-frame"
@@ -130,6 +130,11 @@ export const ForfeitReportPage = () => {
                         className="w-full h-full"
                         title="Report Preview"
                     />
+                </div>
+            ) : (
+                <div className="flex-1 border rounded-lg bg-muted/30 shadow-inner p-4 flex items-center justify-center text-muted-foreground flex-col gap-2">
+                    <div className="text-lg font-medium">No report generated</div>
+                    <div className="text-sm">Select a date range and click generate to view the report preview</div>
                 </div>
             )}
         </div>

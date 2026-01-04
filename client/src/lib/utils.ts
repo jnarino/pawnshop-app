@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(dateStr: string | Date | null | undefined, withTime: boolean = false): string {
-  if (!dateStr) return 'Invalid Date';
+  if (!dateStr) return '';
   try {
     const options: Intl.DateTimeFormatOptions = {
       month: '2-digit',
@@ -21,7 +21,8 @@ export function formatDate(dateStr: string | Date | null | undefined, withTime: 
       })
     };
     return new Date(dateStr).toLocaleDateString('en-US', options);
-  } catch {
+  } catch (e) {
+    console.error('Error formatting date:', e);
     return 'Invalid Date';
   }
 }

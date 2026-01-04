@@ -1,5 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
+import { drawPdfHeader, drawStoreInfo, addPageNumbers } from '@/lib/pdfUtils';
+
 export interface ForfeitItem {
     controlNumber: string;
     dateIn: string;
@@ -38,40 +40,41 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
     let page = pdfDoc.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
-    const drawHeader = () => {
-        y = pageHeight - margin;
-        page.drawText(`Forfeit List From: ${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`, { x: margin, y, size: 10, font });
-        y -= 15;
-        page.drawText('All item Types', { x: margin, y, size: 10, font });
-        y -= 15;
-        page.drawText(`Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, { x: margin, y, size: 10, font });
-        y -= 25;
+    const renderHeader = (title: string) => {
+        y = drawPdfHeader({
+            page,
+            title,
+            dateRange,
+            pageWidth,
+            pageHeight,
+            margin,
+            font,
+            fontBold
+        });
     };
 
-    const drawStoreInfo = () => {
-        y = pageHeight - margin;
-        let x = pageWidth - 210;
-        page.drawText('LARRY\'S ESTATE JEWELRY & PAWN', { x, y, size: 10, font });
-        y -= 15;
-        page.drawText('3316 CLEVELAND AVE.', { x, y, size: 10, font });
-        y -= 15;
-        page.drawText('FORT MYERS, FL 33901', { x, y, size: 10, font });
-        y -= 15;
-        page.drawText('(239) 939-3633', { x, y, size: 10, font });
-        y -= 15;
+    const renderStoreInfo = () => {
+        drawStoreInfo({
+            page,
+            pageWidth,
+            pageHeight,
+            margin,
+            font,
+            fontBold
+        });
     };
 
     const checkPageBreak = (neededLines: number = 1) => {
         if (y - (neededLines * lineHeight) < margin) {
             page = pdfDoc.addPage([pageWidth, pageHeight]);
-            drawHeader();
+            renderHeader('Forfeit List');
             return true;
         }
         return false;
     };
 
-    drawStoreInfo();
-    drawHeader();
+    renderStoreInfo();
+    renderHeader('Forfeit List');
 
     // Column Config - Custom Multi-line Layout
     const colWidths = {
@@ -157,10 +160,10 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
 
             // Col 2: Date In / Out / Customer
             x += colWidths.col1;
-            const dateIn = formatDate(item.dateIn).padEnd(12, ' ');
-            const dateOut = formatDate(item.dateOut).padEnd(12, ' ');
+            const dateIn = formatDate(item.dateIn);
+            const dateOut = formatDate(item.dateOut);
             const customer = item.customer || '';
-            const line1Text = `${dateIn}${dateOut}${customer}`;
+            const line1Text = `${dateIn}\t${dateOut}\t${customer}`;
             const displayLine1 = line1Text.length > 55 ? line1Text.substring(0, 52) + '...' : line1Text;
             page.drawText(displayLine1, { x, y: itemY, size: fontSize, font });
 
@@ -188,6 +191,7 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
 
                 // Col 1: Last Paid (Only on first item line)
                 if (index === 0) {
+                    console.log({ lastPaid: item.lastPaid, format: formatDate(item.lastPaid) })
                     page.drawText(formatDate(item.lastPaid), { x, y: subY, size: fontSize, font });
                 }
                 x += colWidths.col1;
@@ -245,18 +249,12 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
     page.drawText('Grand Total:', { x: pageWidth - margin - 150, y, size: 12, font: fontBold });
     page.drawText(formatMoney(data.total), { x: pageWidth - margin - 50, y, size: 12, font: fontBold });
 
-    // Add Page Numbers
-    const pages = pdfDoc.getPages();
-    const totalPages = pages.length;
-    pages.forEach((p, idx) => {
-        const text = `Page: ${idx + 1} of ${totalPages}`;
-        const textWidth = font.widthOfTextAtSize(text, fontSize);
-        p.drawText(text, {
-            x: pageWidth - margin - textWidth, // Right align in footer
-            y: 15,
-            size: fontSize,
-            font: font
-        });
+    addPageNumbers({
+        pdfDoc,
+        pageWidth,
+        margin,
+        fontSize: 6,
+        font
     });
 
     const pdfBytes = await pdfDoc.save();
