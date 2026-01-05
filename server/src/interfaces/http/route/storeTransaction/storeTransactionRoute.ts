@@ -218,6 +218,85 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/close-balance:
+     *   put:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Close cash drawer balance
+     *     description: |
+     *       Records the closing balance for the cash drawer.
+     *       Creates DEPOSIT FROM MAIN transactions (type 22) for each tender deposited,
+     *       and a MAIN BALANCE transaction (type 23) with the final cash balance.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - cashBalance
+     *               - tenderAmounts
+     *             properties:
+     *               cashBalance:
+     *                 type: number
+     *                 description: Final cash balance to record
+     *                 example: 10333.35
+     *               tenderAmounts:
+     *                 type: object
+     *                 description: Amount deposited for each tender type
+     *                 properties:
+     *                   cash:
+     *                     type: number
+     *                     example: 10333.35
+     *                   americanExpress:
+     *                     type: number
+     *                     example: 230.00
+     *                   debit:
+     *                     type: number
+     *                     example: 3048.80
+     *                   discover:
+     *                     type: number
+     *                     example: 0
+     *                   masterCard:
+     *                     type: number
+     *                     example: 63.90
+     *                   visa:
+     *                     type: number
+     *                     example: 105.00
+     *                   check:
+     *                     type: number
+     *                     example: 0
+     *                   cashPass:
+     *                     type: number
+     *                     example: 0
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: When the close occurred (defaults to now)
+     *               note:
+     *                 type: string
+     *                 description: Optional note for the close
+     *     responses:
+     *       201:
+     *         description: Balance closed successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 description: Created store transactions
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.put('/close-balance', auth, controller.closeBalanceCashDrawer);
+
+    /**
+     * @openapi
      * /api/store-transaction:
      *   post:
      *     tags:
