@@ -24,7 +24,7 @@ export interface SaleResponse {
 
 export const salesApi = {
     create: async (payload: CreateSalePayload): Promise<SaleResponse> => {
-        return http('/api/store-transactions', {
+        return http('/api/store-transaction', {
             method: 'POST',
             body: JSON.stringify(payload)
         });
