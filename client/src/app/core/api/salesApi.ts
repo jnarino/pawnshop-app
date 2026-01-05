@@ -48,5 +48,27 @@ export const salesApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         });
+    },
+
+    getDrawerBalance: async (): Promise<{
+        lastCloseOccurredAt: string;
+        lastCloseBalance: number;
+        currentBalance: number;
+        mainDrawerBalance: Record<string, number>;
+        asOf: string;
+    }> => {
+        return http('/api/store-transaction/balance');
+    },
+
+    closeDrawerBalance: async (payload: {
+        cashBalance: number;
+        tenderAmounts: Record<string, number>;
+        occurredAt: string;
+        note: string;
+    }): Promise<any> => {
+        return http('/api/store-transaction/close-balance', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
     }
 };
