@@ -1,153 +1,225 @@
 import { CloseBalanceCashDrawerUseCase } from '../../../../../../src/application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
 import { StoreTransactionRepository } from '../../../../../../src/domains/storeTransaction/StoreTransactionRepository';
 import { TenderTypeRepository } from '../../../../../../src/domains/tenderType/TenderTypeRepository';
+import { StoreTransaction } from '../../../../../../src/domains/storeTransaction/StoreTransaction';
 
 describe('CloseBalanceCashDrawerUseCase', () => {
-  let storeTransactionRepo: jest.Mocked<StoreTransactionRepository>;
-  let tenderTypeRepo: jest.Mocked<TenderTypeRepository>;
   let useCase: CloseBalanceCashDrawerUseCase;
+  let mockStoreTransactionRepo: jest.Mocked<StoreTransactionRepository>;
+  let mockTenderTypeRepo: jest.Mocked<TenderTypeRepository>;
 
   beforeEach(() => {
-    storeTransactionRepo = {
-      create: jest.fn().mockImplementation((tx) => Promise.resolve({
+    mockStoreTransactionRepo = {
+      create: jest.fn(),
+      getLastClose: jest.fn(),
+      getActivitySinceClose: jest.fn()
+    } as any;
+
+    mockTenderTypeRepo = {} as any;
+
+    useCase = new CloseBalanceCashDrawerUseCase(
+      mockStoreTransactionRepo,
+      mockTenderTypeRepo
+    );
+  });
+
+  /**
+   * Simplified reconciliation test:
+   * Last close: $1000
+   * CASH activity: +500 (sales) - 300 (payouts) = +200 net
+   * DEBIT activity: +400
+   * 
+   * Close deposits should be:
+   * - CASH: $1200 (what we're taking from drawer, since 1000 + 200 - 1200 = 0)
+   * - DEBIT: $400 (what we're taking, since 0 + 400 - 400 = 0)
+   * 
+   * Final CASH balance: $1200
+   */
+  it('should reconcile real transaction data and create deposits with final balance', async () => {
+    const clerkUserId = 'clerk-123';
+    
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue({
+      id: 'last-close-id',
+      occurredAt: new Date('2025-12-12T08:00:00Z'),
+      amount: 1000
+    } as any);
+
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([
+      // CASH activity: +500 (sales) - 300 (payouts) = +200 net
+      { id: 'tx-1', occurredAt: new Date(), tenderTypeId: 1, tenderTypeName: 'CASH', amount: 500 },
+      { id: 'tx-2', occurredAt: new Date(), tenderTypeId: 1, tenderTypeName: 'CASH', amount: -300 },
+      
+      // DEBIT activity: +400
+      { id: 'tx-3', occurredAt: new Date(), tenderTypeId: 3, tenderTypeName: 'DEBIT', amount: 400 }
+    ]);
+
+    mockStoreTransactionRepo.create.mockImplementation((tx: StoreTransaction) => 
+      Promise.resolve(new StoreTransaction({
         ...tx,
+        id: tx.id,
         tenders: tx.tenders || [],
         items: tx.items || []
       }))
-    } as any;
+    );
 
-    tenderTypeRepo = {} as any;
-
-    useCase = new CloseBalanceCashDrawerUseCase(storeTransactionRepo, tenderTypeRepo);
-  });
-
-  it('creates DEPOSIT FROM MAIN (type 22) transactions for each tender with amount', async () => {
-    storeTransactionRepo.create.mockImplementation((tx) => Promise.resolve({
-      ...tx,
-      tenders: tx.tenders || [],
-      items: tx.items || []
-    } as any));
-
-    await useCase.execute({
-      cashBalance: 10333.35,
-      tenderAmounts: {
-        cash: 10333.35,
-        americanExpress: 230.00,
-        debit: 3048.80
-      }
-    }, 'clerk-1');
-
-    // Should create 4 transactions:
-    // 1. DEPOSIT FROM MAIN for cash (-10333.35)
-    // 2. DEPOSIT FROM MAIN for AMEX (-230.00)
-    // 3. DEPOSIT FROM MAIN for debit (-3048.80)
-    // 4. MAIN BALANCE (10333.35)
-    expect(storeTransactionRepo.create).toHaveBeenCalledTimes(4);
-    
-    // Check first call (cash deposit)
-    const firstCall = storeTransactionRepo.create.mock.calls[0][0];
-    expect(firstCall.typeId).toBe(22); // DEPOSIT FROM MAIN
-    expect(firstCall.amount).toBe(-10333.35);
-    expect(firstCall.tenders).toHaveLength(1);
-    expect(firstCall.tenders[0].tenderTypeId).toBe(1); // CASH
-    await useCase.execute({
-      cashBalance: 10333.35,
-      tenderAmounts: {
-        cash: 10333.35
-      }
-    }, 'clerk-1');
-
-    // Last call should be MAIN BALANCE
-    const lastCallIndex = storeTransactionRepo.create.mock.calls.length - 1;
-    const lastCall = storeTransactionRepo.create.mock.calls[lastCallIndex][0];
-    
-    expect(lastCall.typeId).toBe(23); // MAIN BALANCE
-    expect(lastCall.amount).toBe(10333.35);
-    expect(lastCall.tenders).toHaveLength(0);
-  });
-
-  it('forces negative amounts for DEPOSIT FROM MAIN transactions', async () => {
-    await useCase.execute({
-      cashBalance: 1000,
-      tenderAmounts: {
-        cash: 500, // Positive input
-        visa: -200 // Already negative
-      }
-    }, 'clerk-1');
-
-    // First deposit (cash)
-    const firstCall = storeTransactionRepo.create.mock.calls[0][0];
-    expect(firstCall.amount).toBe(-500); // Should be negative
-    
-    // Second deposit (visa)
-    const secondCall = storeTransactionRepo.create.mock.calls[1][0];
-    expect(secondCall.amount).toBe(-200); // Should still be negative
-  });
-
-  it('skips tender types with zero or undefined amounts', async () => {
-    await useCase.execute({
-      cashBalance: 1000,
-      tenderAmounts: {
-        cash: 1000,
-        americanExpress: 0,
-        debit: undefined,
-        visa: 100
-      }
-    }, 'clerk-1');
-
-    // Should create 3 transactions:
-    // 1. DEPOSIT for cash
-    // 2. DEPOSIT for visa
-    // 3. MAIN BALANCE
-    expect(storeTransactionRepo.create).toHaveBeenCalledTimes(3);
-  });
-
-  it('uses provided occurredAt timestamp for all transactions', async () => {
-    const occurredAt = '2025-12-31T18:00:54Z';
-
-    await useCase.execute({
-      cashBalance: 1000,
-      tenderAmounts: {
-        cash: 1000
-      },
-      occurredAt
-    }, 'clerk-1');
-
-    // Check all transactions use the same timestamp
-    for (const call of storeTransactionRepo.create.mock.calls) {
-      const transaction = call[0];
-      expect(transaction.occurredAt).toEqual(new Date(occurredAt));
-      expect(transaction.createdAt).toEqual(new Date(occurredAt));
-      expect(transaction.updatedAt).toEqual(new Date(occurredAt));
-    }
-  });
-
-  it('includes note in all transactions', async () => {
-    await useCase.execute({
-      cashBalance: 1000,
-      tenderAmounts: {
-        cash: 1000
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 1200,           // Last (1000) + Activity (200) = 1200, deposit 1200 → reconciles to 0
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 400,           // Activity (400), deposit 400 → reconciles to 0
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0,
+        'CHECK': 0,
+        'CASH PASS': 0
       },
       note: 'End of day close'
-    }, 'clerk-1');
+    };
 
-    // Check all transactions have the note
-    for (const call of storeTransactionRepo.create.mock.calls) {
-      const transaction = call[0];
-      expect(transaction.note).toBe('End of day close');
-    }
+    const result = await useCase.execute(input, clerkUserId);
+
+    // Should create 2 DEPOSIT transactions (CASH + DEBIT) + 1 MAIN BALANCE
+    expect(result).toHaveLength(3);
+    expect(mockStoreTransactionRepo.create).toHaveBeenCalledTimes(3);
+
+    // Verify DEPOSIT transactions
+    const depositCalls = mockStoreTransactionRepo.create.mock.calls.slice(0, 2);
+    depositCalls.forEach(([tx]) => {
+      expect(tx.typeId).toBe(22); // DEPOSIT FROM MAIN
+      expect(tx.amount).toBeLessThan(0); // All negative
+    });
+
+    // Verify MAIN BALANCE
+    const balanceCall = mockStoreTransactionRepo.create.mock.calls[2][0];
+    expect(balanceCall.typeId).toBe(23);
   });
 
-  it('returns array of created transactions', async () => {
-    const result = await useCase.execute({
-      cashBalance: 1000,
-      tenderAmounts: {
-        cash: 1000
-      }
-    }, 'clerk-1');
+  it('should throw ValidationError when reconciliation fails - cash mismatch', async () => {
+    const clerkUserId = 'clerk-123';
+    
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue({
+      id: 'last-close-id',
+      occurredAt: new Date(),
+      amount: 1000
+    } as any);
 
-    expect(result).toHaveLength(2); // 1 deposit + 1 balance
-    expect(result[0].typeId).toBe(22);
-    expect(result[1].typeId).toBe(23);
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([
+      { id: 'tx-1', occurredAt: new Date(), tenderTypeId: 1, tenderTypeName: 'CASH', amount: 500 }
+    ]);
+
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 1000, // Wrong! Should be 500 (1000 + 500 - 1000 should = 0)
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 0,
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0,
+        'CHECK': 0,
+        'CASH PASS': 0
+      }
+    };
+
+    await expect(useCase.execute(input, clerkUserId)).rejects.toThrow('reconciliation failed');
+  });
+
+  it('should throw ValidationError when activity exists but no deposit recorded', async () => {
+    const clerkUserId = 'clerk-123';
+    
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue(null);
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([
+      { id: 'tx-1', occurredAt: new Date(), tenderTypeId: 6, tenderTypeName: 'VISA', amount: 200 }
+    ]);
+
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 0,
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 0,
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0, // Activity exists but not depositing anything
+        'CHECK': 0,
+        'CASH PASS': 0
+      }
+    };
+
+    await expect(useCase.execute(input, clerkUserId)).rejects.toThrow('activity but no deposit');
+  });
+
+  it('should create only MAIN BALANCE when starting fresh with no prior balance', async () => {
+    const clerkUserId = 'clerk-123';
+    
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue(null);
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([]);
+
+    mockStoreTransactionRepo.create.mockImplementation((tx: StoreTransaction) => 
+      Promise.resolve(new StoreTransaction({
+        ...tx,
+        id: tx.id,
+        tenders: tx.tenders || [],
+        items: tx.items || []
+      }))
+    );
+
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 0,
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 0,
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0,
+        'CHECK': 0,
+        'CASH PASS': 0
+      }
+    };
+
+    const result = await useCase.execute(input, clerkUserId);
+
+    // Only MAIN BALANCE created (no deposits if all amounts are 0)
+    expect(result).toHaveLength(1);
+    expect(result[0].typeId).toBe(23);
+  });
+
+  it('should use custom occurredAt timestamp for all transactions', async () => {
+    const clerkUserId = 'clerk-123';
+    const customDate = '2025-12-12T18:00:00.000Z';
+    
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue(null);
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([]);
+
+    mockStoreTransactionRepo.create.mockImplementation((tx: StoreTransaction) => 
+      Promise.resolve(new StoreTransaction({
+        ...tx,
+        id: tx.id,
+        tenders: tx.tenders || [],
+        items: tx.items || []
+      }))
+    );
+
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 0,
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 0,
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0,
+        'CHECK': 0,
+        'CASH PASS': 0
+      },
+      occurredAt: customDate,
+      note: 'Test close'
+    };
+
+    await useCase.execute(input, clerkUserId);
+
+    // All transactions should use the custom timestamp
+    mockStoreTransactionRepo.create.mock.calls.forEach(([tx]) => {
+      expect(tx.occurredAt).toEqual(new Date(customDate));
+      expect(tx.note).toBe('Test close');
+    });
   });
 });
+

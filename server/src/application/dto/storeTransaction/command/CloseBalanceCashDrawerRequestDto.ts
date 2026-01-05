@@ -1,19 +1,16 @@
 import { z } from 'zod';
 
 export const closeBalanceCashDrawerRequestSchema = z.object({
-  // The balance to record for the close
-  cashBalance: z.number(),
-  
-  // Individual tender amounts to deposit (will create negative DEPOSIT FROM MAIN transactions)
-  tenderAmounts: z.object({
-    cash: z.number().optional(),
-    americanExpress: z.number().optional(),
-    debit: z.number().optional(),
-    discover: z.number().optional(),
-    masterCard: z.number().optional(),
-    visa: z.number().optional(),
-    check: z.number().optional(),
-    cashPass: z.number().optional()
+  // Main drawer balance with all tender types (positive amounts from frontend)
+  mainDrawerBalance: z.object({
+    CASH: z.number().min(0),
+    'AMERICAN EXPRESS': z.number().min(0).optional().default(0),
+    DEBIT: z.number().min(0).optional().default(0),
+    DISCOVER: z.number().min(0).optional().default(0),
+    'MASTER CARD': z.number().min(0).optional().default(0),
+    VISA: z.number().min(0).optional().default(0),
+    CHECK: z.number().min(0).optional().default(0),
+    'CASH PASS': z.number().min(0).optional().default(0)
   }),
   
   // Optional timestamp (defaults to now)
