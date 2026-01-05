@@ -72,6 +72,7 @@ import { GenerateCashDrawerDetailUseCase } from './application/use-case/reports/
 import { CashDrawerReportController } from './interfaces/http/controller/reports/cashDrawer/CashDrawerReportController';
 import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
+import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
 
 
 
@@ -153,6 +154,7 @@ export async function createApp() {
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
   const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
   const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
+  const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);
 
   // Tender Type use-cases
   const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
@@ -231,7 +233,8 @@ export async function createApp() {
     listStoreTransactionsByDateRangeUseCase,
     createStoreTransactionUseCase,
     removeCashFromMainDrawerUseCase,
-    addMoneyToMainDrawerUseCase
+    addMoneyToMainDrawerUseCase,
+    listBalanceCashDrawerUseCase
   );
 
   const policeReportController = new PoliceReportController(

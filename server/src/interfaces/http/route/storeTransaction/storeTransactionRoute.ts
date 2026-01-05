@@ -171,6 +171,53 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/balance:
+     *   get:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Get cash drawer balance
+     *     description: Returns current cash drawer balance with last close information and tender type breakdown
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Cash drawer balance summary
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 lastCloseOccurredAt:
+     *                   type: string
+     *                   format: date-time
+     *                   description: Timestamp of last drawer close
+     *                 lastCloseBalance:
+     *                   type: number
+     *                   description: Balance at last close
+     *                 currentBalance:
+     *                   type: number
+     *                   description: Current accumulated balance
+     *                 tenderBreakdown:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     properties:
+     *                       tenderTypeId:
+     *                         type: number
+     *                       tenderTypeName:
+     *                         type: string
+     *                       totalSinceLastClose:
+     *                         type: number
+     *                 asOf:
+     *                   type: string
+     *                   format: date-time
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/balance', auth, controller.listBalanceCashDrawer);
+
+    /**
+     * @openapi
      * /api/store-transaction:
      *   post:
      *     tags:

@@ -40,6 +40,14 @@ const SQL_ITEMS_BY_TX_IDS = loadSql(
     'queries',
     'storeTransaction/store_transaction_items_by_tx_ids'
 );
+const SQL_CASH_DRAWER_BALANCE = loadSql(
+    'queries',
+    'storeTransaction/cash_drawer_balance'
+);
+const SQL_CASH_DRAWER_ACTIVITY = loadSql(
+    'queries',
+    'storeTransaction/cash_drawer_activity_since_close'
+);
 
 function mapRowToStoreTransactionHeader(row: any): {
     id: string;
@@ -322,5 +330,51 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                     items: itemsByTx.get(h.id) ?? [],
                 })
         );
+    }
+
+    /**
+     * Get the last MAIN BALANCE (close) transaction
+     */
+    async getLastClose(): Promise<{
+        id: string;
+        occurredAt: Date;
+        amount: number;
+    } | null> {
+        const result = await this.pool.query(SQL_CASH_DRAWER_BALANCE);
+
+        if (result.rows.length === 0) {
+            return null;
+        }
+
+        return {
+            id: result.rows[0].id,
+            occurredAt: new Date(result.rows[0].occurred_at),
+            amount: Number(result.rows[0].amount)
+        };
+    }
+
+    /**
+     * Get all store transactions and tenders since the last close
+     */
+    async getActivitySinceClose(): Promise<Array<{
+        id: string;
+        occurredAt: Date;
+        tenderTypeId: number;
+        tenderTypeName: string;
+        amount: number;
+    }>> {
+        const result = await this.pool.query(SQL_CASH_DRAWER_ACTIVITY);
+
+        if (result.rows.length === 0) {
+            return [];
+        }
+
+        return result.rows.map((row: any) => ({
+            id: row.id,
+            occurredAt: new Date(row.occurred_at),
+            tenderTypeId: row.tender_type_id,
+            tenderTypeName: row.tender_type_name,
+            amount: Number(row.amount)
+        }));
     }
 }
