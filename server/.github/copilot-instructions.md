@@ -763,6 +763,8 @@ describe('GetCustomerByIdUseCase', () => {
 });
 ```
 
+- When you add a new service/use case, also add a unit test under `tests/unit/application/use-case/...` that covers the happy path and validation failures.
+
 ---
 
 ## Checklist for New Endpoint

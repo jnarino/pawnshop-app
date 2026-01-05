@@ -1,3 +1,4 @@
+import { CashDrawerDetailWithSummaryResponseDto } from '../dto/CashDrawerReportDto';
 import { http } from './http';
 
 
@@ -37,4 +38,70 @@ export const reportsApi = {
     }); */
   },
 
+  forfeitReport: async (payload: CreatePoliceReportPayload): Promise<any> => {
+    try {
+      const response = (await http(`/api/pawn-ticket/date-range?from=${payload.from}&to=${payload.to}`)) as {
+        transactionType: string;
+        controlNumber: string;
+        transactionDate: string;
+        defaultDate: string;
+        amountFinanced?: number;
+        purchaseTradeValue?: number;
+        customer?: { firstName: string; lastName: string };
+        items: { itemDescription: string; priceAmount: number }[];
+      }[];
+
+      const buys: any[] = [];
+      const pawns: any[] = [];
+      let buysCosts = 0;
+      let pawnsCosts = 0;
+
+      response.forEach(t => {
+        const itemCostTotal = t.transactionType === 'PAWN'
+          ? (t.amountFinanced || 0)
+          : (t.purchaseTradeValue || 0);
+
+        const forfeitItem = {
+          controlNumber: t.controlNumber,
+          dateIn: t.transactionDate,
+          dateOut: t.defaultDate,
+          customer: t.customer ? `${t.customer.firstName} ${t.customer.lastName}` : '',
+          phone: '', // Not available in API response yet
+          redemptionRatio: '',
+          emp: '',
+          lastPaid: '',
+          note: '',
+          cost: itemCostTotal,
+          items: t.items.map(i => ({
+            itemDescription: i.itemDescription || '',
+            cost: i.priceAmount || 0
+          }))
+        };
+
+        if (t.transactionType === 'PURCHASE') {
+          buys.push(forfeitItem);
+          buysCosts += itemCostTotal;
+        } else if (t.transactionType === 'PAWN') {
+          pawns.push(forfeitItem);
+          pawnsCosts += itemCostTotal;
+        }
+      });
+
+      return {
+        buys,
+        pawns,
+        buysCosts,
+        pawnsCosts,
+        total: buysCosts + pawnsCosts
+      };
+    } catch (error) {
+      console.error("Failed to fetch forfeit report data", error);
+      throw error;
+    }
+  },
+  cashDrawerDetailReport: async (payload: CreatePoliceReportPayload): Promise<CashDrawerDetailWithSummaryResponseDto> => {
+    return http(`/api/reports/cash-drawer/detail?startDate=${payload.from}&endDate=${payload.to}`, {
+      method: 'GET',
+    });
+  },
 };

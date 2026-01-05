@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import ManageCashDialog from '@/app/feature/admin/components/ManageCashDialog';
+import DrawerBalanceDialog from '@/app/feature/admin/components/DrawerBalanceDialog';
 import { FindByInputModal, InventoryItemModal } from '@/app/feature/_shared/inventory-item';
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
@@ -148,6 +149,7 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
 
 export default function ElectronMenuBridge() {
   const [cashDialogOpen, setCashDialogOpen] = useState(false);
+  const [drawerBalanceDialogOpen, setDrawerBalanceDialogOpen] = useState(false);
   const [findInventoryOpen, setFindInventoryOpen] = useState(false);
   const [findInventoryLoading, setFindInventoryLoading] = useState(false);
   const [findInventoryError, setFindInventoryError] = useState<string | null>(null);
@@ -160,6 +162,13 @@ export default function ElectronMenuBridge() {
     const api = globalThis.electronAPI;
     if (!api?.onManageCash) return;
     const dispose = api.onManageCash(() => setCashDialogOpen(true));
+    return () => dispose?.();
+  }, []);
+
+  useEffect(() => {
+    const api = globalThis.electronAPI;
+    if (!api?.onBalanceDrawer) return;
+    const dispose = api.onBalanceDrawer(() => setDrawerBalanceDialogOpen(true));
     return () => dispose?.();
   }, []);
 
@@ -247,6 +256,7 @@ export default function ElectronMenuBridge() {
   return (
     <>
       <ManageCashDialog open={cashDialogOpen} onOpenChange={setCashDialogOpen} />
+      <DrawerBalanceDialog open={drawerBalanceDialogOpen} onOpenChange={setDrawerBalanceDialogOpen} />
 
       <FindByInputModal
         open={findInventoryOpen}

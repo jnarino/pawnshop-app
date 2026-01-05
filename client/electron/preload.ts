@@ -44,4 +44,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('menu:forfeit-pull', handler);
         return () => ipcRenderer.removeListener('menu:forfeit-pull', handler);
     },
+
+    onBalanceDrawer: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:balance-drawer', handler);
+        return () => ipcRenderer.removeListener('menu:balance-drawer', handler);
+    },
 });

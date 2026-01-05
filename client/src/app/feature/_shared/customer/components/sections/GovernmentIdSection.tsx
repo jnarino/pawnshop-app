@@ -21,7 +21,7 @@ interface GovernmentIdSectionProps {
   readonly loading?: boolean;
 }
 
-export const GovernmentIdSection = memo(function GovernmentIdSection({ 
+export const GovernmentIdSection = memo(function GovernmentIdSection({
   idType,
   idNumber,
   idState,
@@ -30,9 +30,9 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
   idAddress,
   idCity,
   idZip,
-  update, 
-  editing, 
-  loading 
+  update,
+  editing,
+  loading
 }: GovernmentIdSectionProps) {
   return (
     <FieldSet className="card section">
@@ -53,27 +53,29 @@ export const GovernmentIdSection = memo(function GovernmentIdSection({
             <FieldLabel>ID Number</FieldLabel>
             <Input value={idNumber || ''} onChange={e => update('idNumber', e.target.value)} disabled={loading || !editing} />
           </Field>
-          <Field className="w-32">
+        </div>
+        <div className="flex gap-2 items-end">
+          <Field className="flex-1">
             <FieldLabel>Issuing State</FieldLabel>
-            <StateSelect 
-              value={idState} 
-              onValueChange={(value) => update('idState', value)} 
+            <StateSelect
+              value={idState}
+              onValueChange={(value) => update('idState', value)}
               disabled={!editing}
             />
           </Field>
-          <Field className="w-36">
+          <Field className="flex-1">
             <FieldLabel>ID Issue Date</FieldLabel>
-            <DatePicker 
-              value={idIssueDate || undefined} 
-              onChange={(value) => update('idIssueDate', value)} 
+            <DatePicker
+              value={idIssueDate || undefined}
+              onChange={(value) => update('idIssueDate', value)}
               disabled={!editing}
             />
           </Field>
-          <Field className="w-36">
+          <Field className="flex-1">
             <FieldLabel>ID Expiration</FieldLabel>
-            <DatePicker 
-              value={idExpiration || undefined} 
-              onChange={(value) => update('idExpiration', value)} 
+            <DatePicker
+              value={idExpiration || undefined}
+              onChange={(value) => update('idExpiration', value)}
               disabled={!editing}
             />
           </Field>

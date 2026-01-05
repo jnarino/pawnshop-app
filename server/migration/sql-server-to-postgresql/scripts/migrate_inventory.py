@@ -566,8 +566,9 @@ def migrate_inventory():
                     # Fallback for old format (just text)
                     # else: color_uuid = None
                 
-                # Dates
-                created_at = row['DateItemEntered'] or None
+                # Dates: keep null if source is null/empty; otherwise pass through as-is
+                raw_created_at = row.get('DateItemEntered')
+                created_at = raw_created_at if raw_created_at not in (None, '', ' ') else None
                 
                 updated_at = datetime.utcnow()
                 
@@ -595,11 +596,11 @@ def migrate_inventory():
                     row.get('storagefee'),
                     json.dumps(extra_data),
                     json.dumps(attributes),
-                    safe_str(row['INVNUM']), # legacy_inventory_number
+                    safe_str(row['INVNUM']).strip(), # legacy_inventory_number
                     safe_str(row['Items_ID']),   # legacy_item_guid (Using Items_ID as proxy)
                     None, # legacy_category_description
                     safe_str(row['DESCRIPT2']), # legacy_brand_color_description
-                    safe_str(row['INVNUM']), # inventory_number
+                    safe_str(row['INVNUM']).strip(), # inventory_number
                     user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
                     updated_at

@@ -44,7 +44,7 @@ export function useIdScanHandler({
     }
 
     console.log('[IDScan] 🔍 Searching for customer:', {
-      idType: 'Driver License',
+      idType: 'DRIVERS LICENSE',
       idState: d.stateUs,
       idNumber: d.idNumber
     });
@@ -52,7 +52,7 @@ export function useIdScanHandler({
     try {
       // Search by Driver License + State + ID Number
       const params = new URLSearchParams();
-      params.set('idType', 'Driver License');
+      params.set('idType', 'DRIVERS LICENSE');
       if (d.stateUs) params.set('idState', d.stateUs);
       if (d.idNumber) params.set('idNumber', d.idNumber);
       params.set('limit', '10');
@@ -72,7 +72,7 @@ export function useIdScanHandler({
 
       // Find exact match by idType, idState, and idNumber
       const idMatch = customers.find((c: any) => {
-        const typeMatch = c.idType?.toUpperCase().trim() === 'DRIVER LICENSE';
+        const typeMatch = c.idType?.toUpperCase().trim() === 'DRIVERS LICENSE';
         const stateMatch = c.idState?.toUpperCase().trim() === d.stateUs?.toUpperCase().trim();
         const numberMatch = c.idNumber?.toUpperCase().trim() === d.idNumber?.toUpperCase().trim();
         return typeMatch && stateMatch && numberMatch;
@@ -132,7 +132,7 @@ export function useIdScanHandler({
       setIdConflictModalOpen(false);
       setIdConflictData(null);
       setStatusMessage('ID number updated successfully.');
-      
+
       console.log('[IDScan] ✅ ID number updated');
     } catch (err: any) {
       setError(err.message || 'Unable to update ID number');

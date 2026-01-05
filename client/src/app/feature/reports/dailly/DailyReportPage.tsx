@@ -6,10 +6,14 @@ import { Button } from '@/components/ui/button';
 import { RangeDatePicker } from "@/components/ui/range-date-picker";
 import { reportsApi } from "@/app/core/api/reportsApi";
 import { Loader2, Printer, Download } from "lucide-react";
+import { CashDrawerDetailWithSummaryResponseDto } from "@/app/core/dto/CashDrawerReportDto";
+import { generateDailyReportPdf } from "./generateDailyReportPdf";
 
 export const DailyReportPage = () => {
     const today = new Date();
-    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    // Format to YYYY-MM-DD for local date
+    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+
     const [loading, setLoading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
@@ -24,23 +28,26 @@ export const DailyReportPage = () => {
 
     const submit = async (data: { dateRange: { from: string; to: string } }) => {
         setLoading(true);
-        setPdfUrl(null); // Clear previous report
+        setPdfUrl(null);
         try {
             const { from, to } = data.dateRange;
             if (from && to) {
-                const result = await reportsApi.dailyReport({
-                    from: new Date(from).toISOString(),
-                    to: new Date(to).toISOString()
+                // Formatting dates as required: 2025-12-12T00:00:00Z
+                const startDate = `${from}T00:00:00Z`;
+                const endDate = `${to}T00:00:00Z`;
+
+                const result = await reportsApi.cashDrawerDetailReport({
+                    from: startDate,
+                    to: endDate
                 });
 
-                if (!result) {
+                if (!result || !result.transactions) {
                     alert("No daily report records found.");
                     return;
                 }
 
-                const url = window.URL.createObjectURL(
-                    new Blob([result], { type: 'application/pdf' })
-                );
+                const pdfBlob = await generateDailyReportPdf(result, { from, to });
+                const url = window.URL.createObjectURL(pdfBlob);
                 setPdfUrl(url);
             } else {
                 alert('Please select a date range.');
@@ -71,7 +78,7 @@ export const DailyReportPage = () => {
         const { from, to } = form.getValues().dateRange;
         link.setAttribute(
             'download',
-            `DailyReport_${from.split('T')[0]}_${to.split('T')[0]}.pdf`,
+            `DailyReport_${from}_${to}.pdf`,
         );
         document.body.appendChild(link);
         link.click();
@@ -81,7 +88,7 @@ export const DailyReportPage = () => {
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] pt-4 space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-extrabold">Daily Report</h1>
+                <h1 className="text-2xl font-extrabold text-foreground">Daily Cash Drawer Detail</h1>
                 <div className="flex items-center gap-2">
                     {pdfUrl && (
                         <>
@@ -99,16 +106,15 @@ export const DailyReportPage = () => {
                 </div>
             </div>
 
-            <form onSubmit={form.handleSubmit(submit)} className="">
+            <form onSubmit={form.handleSubmit(submit)} className="shrink-0">
                 <FieldSet className="card section">
-                    <FieldLegend className="mb-2 text-sm">Select a date range</FieldLegend>
+                    <FieldLegend className="mb-2 text-sm text-foreground/70">Select Report Date</FieldLegend>
                     <div className="flex items-end gap-2">
                         <Controller
                             control={form.control}
                             name="dateRange"
                             render={({ field }) => (
                                 <RangeDatePicker
-                                    withTime
                                     value={field.value}
                                     onChange={field.onChange}
                                 />
@@ -116,13 +122,13 @@ export const DailyReportPage = () => {
                         />
                         <Button type="submit" disabled={loading}>
                             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            Generate Preview
+                            Generate Report
                         </Button>
                     </div>
                 </FieldSet>
             </form>
 
-            {pdfUrl && (
+            {pdfUrl ? (
                 <div className="flex-1 border rounded-lg overflow-hidden bg-gray-100">
                     <iframe
                         id="report-frame"
@@ -130,6 +136,11 @@ export const DailyReportPage = () => {
                         className="w-full h-full"
                         title="Report Preview"
                     />
+                </div>
+            ) : (
+                <div className="flex-1 border rounded-lg bg-muted/30 shadow-inner p-4 flex items-center justify-center text-muted-foreground flex-col gap-2">
+                    <div className="text-lg font-medium">No report generated</div>
+                    <div className="text-sm">Select a date range and click generate to view the report preview</div>
                 </div>
             )}
         </div>

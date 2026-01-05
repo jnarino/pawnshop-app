@@ -882,7 +882,7 @@ CREATE TABLE IF NOT EXISTS hold_item (
   jurisdiction TEXT, -- jurisdict
   legacy_hcn_id UUID, -- HCN_id
   updated_by UUID REFERENCES app_user(id) ON DELETE SET NULL, -- LastUpdatedUSR_ID
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -895,6 +895,6 @@ CREATE TABLE IF NOT EXISTS hold_item_inventory (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hold_item_id UUID NOT NULL REFERENCES hold_item(id) ON DELETE CASCADE,
   inventory_item_id UUID NOT NULL REFERENCES inventory_item(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ,
   UNIQUE(hold_item_id, inventory_item_id)
 );

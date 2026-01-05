@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useActivePawns } from '../../hooks/useActivePawns';
+import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 
 export default function ActivePawnTab() {
   const { pawns, loading, error, refreshPawns } = useActivePawns();
@@ -7,29 +8,14 @@ export default function ActivePawnTab() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const filteredPawns = pawns.filter(pawn => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       pawn.controlNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pawn.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = selectedStatus === 'all' || pawn.status === selectedStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   return (
     <div className="tab-content">
@@ -232,7 +218,7 @@ export default function ActivePawnTab() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        
+
         <select
           className="status-select"
           value={selectedStatus}
@@ -293,10 +279,10 @@ export default function ActivePawnTab() {
                 <td>{formatDate(pawn.transactionDate)}</td>
                 <td>{formatDate(pawn.maturityDate)}</td>
                 <td>
-                  <span className="currency">{formatCurrency(pawn.amountFinanced)}</span>
+                  <span className="currency">{formatMoney(pawn.amountFinanced)}</span>
                 </td>
                 <td>
-                  <span className="currency">{formatCurrency(pawn.totalOfPayments)}</span>
+                  <span className="currency">{formatMoney(pawn.totalOfPayments)}</span>
                 </td>
                 <td>{pawn.itemCount} items</td>
                 <td>

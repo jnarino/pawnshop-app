@@ -6,7 +6,7 @@ export default function CustomerPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="flex-1 overflow-hidden">
         <CustomerManager
           customer={customer}

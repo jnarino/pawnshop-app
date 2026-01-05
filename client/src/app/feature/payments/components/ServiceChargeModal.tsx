@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './ServiceChargeModal.css';
+import { formatDate } from '@/lib/utils';
 
 interface Props {
     open: boolean;
@@ -21,24 +22,7 @@ export default function ServiceChargeModal({ open, ticketNumber, pawnTicket, onC
     const [amountLeft, setAmountLeft] = useState('0.00');
     const [selectedPeriod, setSelectedPeriod] = useState(2);
 
-    // Calculate actual dates from pawn ticket data
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return 'N/A';
-        try {
-            const date = new Date(dateStr);
-            // ✅ Check if date is valid before formatting
-            if (isNaN(date.getTime())) {
-                return 'Invalid Date';
-            }
-            return date.toLocaleDateString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric'
-            });
-        } catch {
-            return 'Invalid Date';
-        }
-    };
+
 
     // ✅ Safe date creation helper
     const createSafeDate = (dateStr?: string): Date | null => {
@@ -84,7 +68,7 @@ export default function ServiceChargeModal({ open, ticketNumber, pawnTicket, onC
         // Next period (30 days from maturity)
         const nextPeriodDate = new Date(maturityDate.getTime());
         nextPeriodDate.setDate(nextPeriodDate.getDate() + 30);
-        
+
         // ✅ Use safe date formatting instead of toISOString()
         periods.push({
             period: '2',

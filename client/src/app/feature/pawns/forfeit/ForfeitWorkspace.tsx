@@ -1,14 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { FieldLegend, FieldSet } from '@/components/ui/field';
 import { CancelButton } from '@/app/shared/components/CancelButton';
+import { PrintLabelsModal } from '@/app/feature/_shared/pawn-ticket/components/PrintLabelsModal';
 import { PawnList } from './PawnList';
 import { PawnItemList } from './PawnItemList';
 import { ForfeitSearchBar } from './ForfeitSearchBar';
 import { useForfeitStore } from './stores/forfeitStore';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function ForfeitWorkspaceContent() {
-  const { submitForfeit, selectedItems, reset } = useForfeitStore();
+  const { submitForfeit, selectedItems, reset, createdItems, closePrintModal, selectedPawn, loadingProcessPull, submitError } = useForfeitStore();
 
+
+  console.log(submitError)
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">Forfeit (Pull)</h1>
@@ -40,7 +45,29 @@ function ForfeitWorkspaceContent() {
             >
               Process Pull
             </Button>
+
+            {loadingProcessPull && (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            )}
           </div>
+        )}
+
+        <PrintLabelsModal
+          open={createdItems.length > 0}
+          controlNumber={selectedPawn?.controlNumber || ''}
+          items={createdItems}
+          onPrint={(counts) => {
+            console.log('Printing labels:', counts);
+            closePrintModal();
+          }}
+          onCancel={closePrintModal}
+        />
+
+        {(submitError) && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
         )}
       </div>
     </>

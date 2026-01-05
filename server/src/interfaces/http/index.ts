@@ -26,6 +26,8 @@ import { TenderTypeController } from './controller/tenderType/TenderTypeControll
 import { createTenderTypeRouter } from './route/tenderType/tenderTypeRoute';
 import { PoliceReportController } from './controller/reports/police/PoliceReportController';
 import { createPoliceReportRouter } from './route/reports/police/policeReportRoute';
+import { CashDrawerReportController } from './controller/reports/cashDrawer/CashDrawerReportController';
+import { createCashDrawerReportRouter } from './route/reports/cashDrawer/cashDrawerReportRoute';
 
 export function createExpressApp(
   deps: {
@@ -40,6 +42,7 @@ export function createExpressApp(
     storeTransactionController: StoreTransactionController;
     tenderTypeController: TenderTypeController;
     policeReportController: PoliceReportController;
+    cashDrawerReportController: CashDrawerReportController;
   }
 ) {
   const app = express();
@@ -57,9 +60,10 @@ export function createExpressApp(
   app.use('/api/inventory/attributes', createInventoryAttributeRouter(deps.inventoryAttributeController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketRouter(deps.pawnTicketController, deps.jwtSecret));
   app.use('/api/pawn-ticket', createPawnTicketPaymentRouter(deps.pawnTicketController, deps.jwtSecret));
-  app.use('/api/sales', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
+  app.use('/api/store-transaction', createStoreTransactionRouter(deps.storeTransactionController, deps.jwtSecret));
   app.use('/api/tender-types', createTenderTypeRouter(deps.tenderTypeController, deps.jwtSecret));
   app.use('/api/reports/police', createPoliceReportRouter(deps.policeReportController, deps.jwtSecret));
+  app.use('/api/reports/cash-drawer', createCashDrawerReportRouter(deps.cashDrawerReportController, deps.jwtSecret));
 
   app.use(errorMiddleware);
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { DueDateCalculatorModal } from './DueDateCalculatorModal';
 import { PaymentHistoryModal } from './PaymentHistoryModal';
+import { formatDate } from '@/lib/utils';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
@@ -25,10 +26,6 @@ const extractId = (value: unknown): string => {
 };
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toISOString().split('T')[0];
-  };
 
   const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
     if (!brand) return '';

@@ -85,6 +85,218 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/remove-cash-from-main-drawer:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Remove cash from main drawer
+     *     description: Records a cash-out movement from the store drawer to the main drawer using store_transaction_type 25 and CASH tender.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               amount:
+     *                 type: number
+     *                 description: Positive amount to remove from the main drawer
+     *               note:
+     *                 type: string
+     *                 description: Optional note for the cash-out
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: Optional timestamp; defaults to current time
+     *             required:
+     *               - amount
+     *     responses:
+     *       201:
+     *         description: Cash removal recorded
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/remove-cash-from-main-drawer', auth, controller.removeCashFromMainDrawer);
+
+    /**
+     * @openapi
+     * /api/store-transaction/add-money-to-main-drawer:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Add money to main drawer
+     *     description: Records adding money to the main drawer, either from bank (type 26) or other sources (type 24). If from bank, only CASH tender is allowed.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               amount:
+     *                 type: number
+     *                 description: Positive amount to add to the main drawer
+     *               transactionTenderName:
+     *                 type: string
+     *                 description: Tender type name (e.g., CASH, CHECK)
+     *               isFromBank:
+     *                 type: boolean
+     *                 description: Whether the money is from bank (if true, only CASH allowed)
+     *               note:
+     *                 type: string
+     *                 description: Optional note
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: Optional timestamp; defaults to current time
+     *             required:
+     *               - amount
+     *               - transactionTenderName
+     *               - isFromBank
+     *     responses:
+     *       201:
+     *         description: Money added successfully
+     *       400:
+     *         description: Invalid input or non-CASH tender for bank withdrawal
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/add-money-to-main-drawer', auth, controller.addMoneyToMainDrawer);
+
+    /**
+     * @openapi
+     * /api/store-transaction/balance:
+     *   get:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Get cash drawer balance
+     *     description: Returns current cash drawer balance with last close information and tender type breakdown
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Cash drawer balance summary
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 lastCloseOccurredAt:
+     *                   type: string
+     *                   format: date-time
+     *                   description: Timestamp of last drawer close
+     *                 lastCloseBalance:
+     *                   type: number
+     *                   description: Balance at last close
+     *                 currentBalance:
+     *                   type: number
+     *                   description: Current accumulated balance
+     *                 tenderBreakdown:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     properties:
+     *                       tenderTypeId:
+     *                         type: number
+     *                       tenderTypeName:
+     *                         type: string
+     *                       totalSinceLastClose:
+     *                         type: number
+     *                 asOf:
+     *                   type: string
+     *                   format: date-time
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/balance', auth, controller.listBalanceCashDrawer);
+
+    /**
+     * @openapi
+     * /api/store-transaction/close-balance:
+     *   put:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Close cash drawer balance
+     *     description: |
+     *       Records the closing balance for the cash drawer.
+     *       Creates DEPOSIT FROM MAIN transactions (type 22) for each tender deposited,
+     *       and a MAIN BALANCE transaction (type 23) with the final cash balance.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - cashBalance
+     *               - tenderAmounts
+     *             properties:
+     *               cashBalance:
+     *                 type: number
+     *                 description: Final cash balance to record
+     *                 example: 10333.35
+     *               tenderAmounts:
+     *                 type: object
+     *                 description: Amount deposited for each tender type
+     *                 properties:
+     *                   cash:
+     *                     type: number
+     *                     example: 10333.35
+     *                   americanExpress:
+     *                     type: number
+     *                     example: 230.00
+     *                   debit:
+     *                     type: number
+     *                     example: 3048.80
+     *                   discover:
+     *                     type: number
+     *                     example: 0
+     *                   masterCard:
+     *                     type: number
+     *                     example: 63.90
+     *                   visa:
+     *                     type: number
+     *                     example: 105.00
+     *                   check:
+     *                     type: number
+     *                     example: 0
+     *                   cashPass:
+     *                     type: number
+     *                     example: 0
+     *               occurredAt:
+     *                 type: string
+     *                 format: date-time
+     *                 description: When the close occurred (defaults to now)
+     *               note:
+     *                 type: string
+     *                 description: Optional note for the close
+     *     responses:
+     *       201:
+     *         description: Balance closed successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 description: Created store transactions
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.put('/close-balance', auth, controller.closeBalanceCashDrawer);
+
+    /**
+     * @openapi
      * /api/store-transaction:
      *   post:
      *     tags:

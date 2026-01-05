@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CustomerRecord } from '../mappers';
+import { formatDate } from '@/lib/utils';
 
 interface SearchResultsModalProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function SearchResultsModal({
                     r.zipCode
                   ].filter(Boolean);
                   const fullAddress = addressParts.join(', ');
-                  
+
                   return (
                     <tr
                       key={r.id}
@@ -82,7 +83,7 @@ export function SearchResultsModal({
                       onClick={() => r.id && onSelect(r.id, r)}
                     >
                       <td className="p-2">{r.lastName}, {r.firstName}</td>
-                      <td className="p-2">{r.dateOfBirth || ''}</td>
+                      <td className="p-2">{formatDate(r.dateOfBirth || '')}</td>
                       <td className="p-2">{fullAddress}</td>
                     </tr>
                   );

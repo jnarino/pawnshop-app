@@ -57,6 +57,10 @@ function buildMenu() {
                 label: 'Remove / Add cash',
                 click: () => mainWindow?.webContents.send('menu:manage-cash'),
               },
+              {
+                label: 'Balance',
+                click: () => mainWindow?.webContents.send('menu:balance-drawer'),
+              },
             ],
           },
         ],

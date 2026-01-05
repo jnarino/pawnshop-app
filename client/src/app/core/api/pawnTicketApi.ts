@@ -164,6 +164,13 @@ export const pawnTicketApi = {
     return http(`/api/pawn-ticket/customer/${customerId}/active`);
   },
 
+  pullToInventory: async (payload: any): Promise<{ id: string; inventoryNumber: string }[]> => {
+    return http(`/api/pawn-ticket/pull-to-inventory`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   searchByControlNumber: async (
     customerId: string,
     controlNumber: string
