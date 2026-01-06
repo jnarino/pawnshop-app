@@ -108,7 +108,7 @@ export class GenerateCashDrawerDetailUseCase {
 
             if (this.shouldIgnoreForTotals(type)) continue;
 
-            if (type.includes('CASH ADDED') || type.includes('BALANCE')) {
+            if (type.includes('CASH ADDED') || type.includes('BALANCE') || type.includes('WITHDRAWAL FROM BANK')) {
                 if (type.includes('BANK')) {
                     cashAddedFromBank += record.amount;
                 } else if (type.includes('EMPLOYEE')) {

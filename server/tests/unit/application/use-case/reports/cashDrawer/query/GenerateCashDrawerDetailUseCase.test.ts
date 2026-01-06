@@ -101,4 +101,25 @@ describe('GenerateCashDrawerDetailUseCase', () => {
     expect(result.cashAdded.totalCashAdded).toBeCloseTo(10, 2);
     expect(result.summary.endingBalance).toBeCloseTo(4462.99, 2);
   });
+
+  it('properly categorizes WITHDRAWAL FROM BANK as cashAddedFromBank', async () => {
+    const records: CashDrawerRecord[] = [
+      makeRecord('2026-01-05T09:00:00Z', '117943', 'CDC', 'PAWN (loan cash out)', -100, 0, null, 'CASH', 1073.99, 0, 0),
+      makeRecord('2026-01-05T11:24:28Z', null, 'CDC', 'WITHDRAWAL FROM BANK (to drawer)', 15000, 0, 'CASH FROM BANK', 'CASH', 16073.99, 0, 0),
+      makeRecord('2026-01-05T11:35:23Z', '117951', 'CAZ', 'PAWN (loan cash out)', -60, 0, null, 'CASH', 16013.99, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-05T00:00:00.000Z',
+      endDate: '2026-01-05T23:59:59.999Z',
+    });
+
+    expect(result.cashAdded.cashAddedFromBank).toBe(15000);
+    expect(result.cashAdded.totalCashAdded).toBe(15000);
+    expect(result.cashAdded.cashAdded).toBe(0);
+    expect(result.cashAdded.fromEmployeeDrawers).toBe(0);
+    expect(result.cashAdded.fromMainDrawer).toBe(0);
+  });
 });
