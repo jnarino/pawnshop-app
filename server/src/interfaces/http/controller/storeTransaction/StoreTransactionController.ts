@@ -9,6 +9,7 @@ import { RemoveCashFromMainDrawerUseCase } from '../../../../application/use-cas
 import { AddMoneyToMainDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from '../../../../application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
 import { CloseBalanceCashDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
+import { ValidationError } from '../../../../application/common/errors';
 
 export class StoreTransactionController {
   constructor(
@@ -104,6 +105,9 @@ export class StoreTransactionController {
       const result = await this.listBalanceCashDrawerUseCase.execute(req.query);
       return res.json(result);
     } catch (error) {
+      if (error instanceof ValidationError && error.message === 'There are no more transactions after the last close.') {
+        return res.status(204).json({ message: error.message });
+      }
       return next(error);
     }
   }

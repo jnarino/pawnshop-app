@@ -147,6 +147,33 @@ describe('CloseBalanceCashDrawerUseCase', () => {
     await expect(useCase.execute(input, clerkUserId)).rejects.toThrow('activity but no deposit');
   });
 
+  it('should throw when no activity exists after the last close', async () => {
+    const clerkUserId = 'clerk-123';
+
+    mockStoreTransactionRepo.getLastClose.mockResolvedValue({
+      id: 'last-close-id',
+      occurredAt: new Date('2026-01-05T18:28:14Z'),
+      amount: 7048.98
+    } as any);
+
+    mockStoreTransactionRepo.getActivitySinceClose.mockResolvedValue([]);
+
+    const input = {
+      mainDrawerBalance: {
+        'CASH': 7048.98,
+        'AMERICAN EXPRESS': 0,
+        'DEBIT': 0,
+        'DISCOVER': 0,
+        'MASTER CARD': 0,
+        'VISA': 0,
+        'CHECK': 0,
+        'CASH PASS': 0
+      }
+    };
+
+    await expect(useCase.execute(input, clerkUserId)).rejects.toThrow('There are no more transactions after the last close.');
+  });
+
   it('should create only MAIN BALANCE when starting fresh with no prior balance', async () => {
     const clerkUserId = 'clerk-123';
     
