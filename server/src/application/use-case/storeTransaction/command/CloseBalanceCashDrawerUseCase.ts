@@ -112,8 +112,9 @@ export class CloseBalanceCashDrawerUseCase {
     
     for (const [tenderTypeId, amount] of depositsByTender.entries()) {
       if (amount > 0) {
+        const transactionId = crypto.randomUUID();
         const transaction = new StoreTransaction({
-          id: crypto.randomUUID(),
+          id: transactionId,
           customerId: null,
           clerkUserId,
           typeId: TYPE_DEPOSIT_FROM_MAIN,
@@ -130,7 +131,7 @@ export class CloseBalanceCashDrawerUseCase {
           tenders: [
             new StoreTransactionTender({
               id: crypto.randomUUID(),
-              storeTransactionId: '',
+              storeTransactionId: transactionId,
               tenderTypeId,
               amount: -amount,
               createdAt: occurredAt
