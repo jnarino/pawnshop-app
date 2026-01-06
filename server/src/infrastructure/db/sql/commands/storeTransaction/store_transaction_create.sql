@@ -1,5 +1,6 @@
 INSERT INTO store_transaction (
   id,
+  legacy_ticketnum,
   customer_id,
   clerk_user_id,
   type_id,
@@ -7,13 +8,13 @@ INSERT INTO store_transaction (
   amount,
   tax_sales,
   tax_exempt_used,
-  tax_exempt_certificate,
   state_tax,
   tender_change,
   gun_proc_fee,
   note
 ) VALUES (
   $1,  -- id
+  get_next_store_sale_control_number(),  -- legacy_ticketnum (auto-generated)
   $2,  -- customer_id
   $3,  -- clerk_user_id
   $4,  -- type_id
@@ -21,10 +22,9 @@ INSERT INTO store_transaction (
   $6,  -- amount
   $7,  -- tax_sales
   $8,  -- tax_exempt_used
-  $9,  -- tax_exempt_certificate
-  $10, -- state_tax
-  $11, -- tender_change
-  $12, -- gun_proc_fee
-  $13  -- note
+  $9,  -- state_tax
+  $10, -- tender_change
+  $11, -- gun_proc_fee
+  $12  -- note
 )
 RETURNING *;

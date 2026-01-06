@@ -13,13 +13,25 @@ export interface InventoryItemRepository {
   findByInventoryNumber(inventoryNumber: string): Promise<InventoryItem | null>;
 
   /**
+   * Lookup by inventory number, but only if the item is on inventory (status = 'I').
+   * Used for pawn transactions to ensure item is available.
+   */
+  findAvailableByInventoryNumber(inventoryNumber: string): Promise<InventoryItem | null>;
+
+  /**
    * Lookup by serial number (for firearms, electronics, etc.).
    * DB-side we will enforce uniqueness where appropriate.
    */
   findBySerialNumber(serialNumber: string): Promise<InventoryItem | null>;
 
   /**
-   * Later we can add search methods (by category, description, etc.)
-   * once we know exactly how the UI will search items.
+ * Set status for all inventory items linked to a pawn ticket.
+ */
+  setStatusByPawnTicket(pawnTicketId: string, status: string): Promise<void>;
+
+  /**
+   * Find multiple inventory items by their inventory numbers.
+   * Returns inventory_number and item_description only.
    */
+  findByInventoryNumbers(inventoryNumbers: string[]): Promise<Array<{ inventoryNumber: string; itemDescription: string | null }>>;
 }

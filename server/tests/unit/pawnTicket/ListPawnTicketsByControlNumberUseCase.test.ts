@@ -1,12 +1,20 @@
-import { PawnTicketRepository } from '../../../src/domains/pawnTicket/PawnTicketRepository';
-import { PawnTicket } from '../../../src/domains/pawnTicket/PawnTicket';
-import { ListPawnTicketsByControlNumberUseCase } from '../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
+import { ListPawnTicketsByControlNumberUseCase } from "../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase";
+import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
+import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
+  addPayment = jest.fn();
+  setStatus = jest.fn();
+  updateMarkings = jest.fn();
+  findStatusIdByCode = jest.fn();
+  setStatusByCode = jest.fn();
   create = jest.fn();
   listByControlNumber = jest.fn();
   findByCustomer = jest.fn();
+  findByDateRange = jest.fn();
   listActiveByCustomer = jest.fn();
+  updatePaymentFields = jest.fn();
+  findById = jest.fn(async (id: string) => null);
 }
 
 describe('ListPawnTicketsByControlNumberUseCase', () => {
@@ -18,13 +26,19 @@ describe('ListPawnTicketsByControlNumberUseCase', () => {
         controlNumber: 'CTL-001',
         transactionType: 'PAWN',
         customerId: 'cust-123',
+        clerkUserId: 'user-1',
         amountFinanced: 500,
+        originalPawnAmount: 500,
+        periodicRate: 0.25,
+        apr: 25,
         purchaseTradeValue: null,
         transactionDate: new Date(),
         maturityDate: new Date(),
         defaultDate: new Date(),
-        pawnStatus: 'active',
-        itemIds: ['item-1']
+        createdDate: new Date(),
+        pawnStatus: 'P',
+        itemIds: ['item-1'],
+        tenders: [{ tenderTypeId: 1, amount: 500 }]
       })
     ];
     repo.listByControlNumber.mockResolvedValue(tickets);

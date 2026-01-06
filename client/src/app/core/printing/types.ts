@@ -63,6 +63,8 @@ export interface ItemPrintData {
   length?: string;
   modelNumber?: string;
   serialNumber?: string;
+  subcategory?: string;
+  color?: string;
   quantity?: number;
 }
 

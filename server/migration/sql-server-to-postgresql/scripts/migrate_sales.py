@@ -1,4 +1,3 @@
-
 import pymssql
 import psycopg2
 from psycopg2.extras import execute_values
@@ -32,7 +31,16 @@ def migrate_sales():
         # Get Transaction Types
         pg_cursor.execute("SELECT id, code FROM store_transaction_type")
         tx_types = {row[1]: str(row[0]) for row in pg_cursor.fetchall()}
-        RETAIL_SALE_ID = tx_types.get('RETAIL_SALE', '00000000-0000-0000-0000-000000000000')
+        # IDs for all relevant types
+        SALE_TYPE_CODES = ['SL', 'SLD', 'SLP', 'SLU', 'SS', 'SSV', 'SLV']
+        SALE_TYPE_IDS = [tx_types.get(code) for code in SALE_TYPE_CODES if tx_types.get(code)]
+        if not SALE_TYPE_IDS:
+            print("⚠ No valid store sale/layaway type IDs found! Control number update will fail.")
+        # For legacy logic, keep RETAIL_SALE_ID for downstream use
+        RETAIL_SALE_ID = tx_types.get('SS')
+        if not RETAIL_SALE_ID:
+            print("⚠ RETAIL_SALE type (SS) not found! sales will fail.")
+            RETAIL_SALE_ID = '10'
         
         # Get Tender Types (Assuming mapped by name or legacy code)
         pg_cursor.execute("SELECT id, name FROM tender_type")
@@ -69,41 +77,89 @@ def migrate_sales():
         
         errors = 0
         
+        # Pre-fetch existing transactions (legacy_ticketnum -> id)
+        print("Fetching existing transactions map...")
+        pg_cursor.execute("SELECT legacy_ticketnum, id FROM store_transaction WHERE legacy_ticketnum IS NOT NULL")
+        tx_map = {str(row[0]).strip(): str(row[1]) for row in pg_cursor.fetchall()}
+        print(f"Loaded {len(tx_map)} existing transactions")
+        
+        # Load Inventory Map (inventory_number -> {id, status})
+        print("Fetching Inventory Map (inventory_number -> {id, status})...")
+        pg_cursor.execute("SELECT inventory_number, id, status FROM inventory_item WHERE inventory_number IS NOT NULL")
+        inv_map = {str(row[0]).strip(): {'id': str(row[1]), 'status': row[2]} for row in pg_cursor.fetchall()}
+        print(f"Loaded {len(inv_map)} inventory items")
+
+        batch_size = 1000
+        batch_tx = []
+        batch_items = []
+        batch_tenders = [] 
+        
+        errors = 0
+        
         for row in tqdm(sales_rows):
             try:
                 # IDs
-                # Use Sold_pk (int) for legacy_acct_pk (BigInt)
                 legacy_int_pk = row.get('Sold_pk')
-                # SLD_id is UUID, unused for legacy_acct_pk
+                ticket_num = str(row.get('TICKETNUM')).strip()
                 
-                tx_id = str(uuid.uuid4())
+                # Check if Transaction already migrated (via Acct table)
+                existing_tx_id = tx_map.get(ticket_num)
                 
-                customer_pk = str(row.get('CUS_FK'))
-                customer_id = customer_map.get(customer_pk)
-                if customer_id: customer_id = str(customer_id)
-                
-                # Filter Types? If Status='L', skip (Layaway handled separately)
-                # Double check status if needed, but TRANS filter handles specific types.
-
-                # Map Header
-                batch_tx.append((
-                    tx_id,
-                    legacy_int_pk, # Mapped to legacy_acct_pk (BigInt)
-                    customer_id,
-                    RETAIL_SALE_ID,
-                    row.get('DATEin'), 
-                    row.get('SaleAmt'), 
-                    row.get('TAX'),
-                    safe_str(row.get('NOTE'))
-                ))
+                if existing_tx_id:
+                     tx_id = existing_tx_id
+                     # Do not insert Header or Tender (Accet has correct split)
+                     # ONLY insert Items
+                else:
+                    # Phantom Sale (No Acct record?)
+                    # Create new Header
+                    tx_id = str(uuid.uuid4())
+                    
+                    customer_pk = str(row.get('CUS_FK'))
+                    customer_id = customer_map.get(customer_pk)
+                    if customer_id: customer_id = str(customer_id)
+                    
+                    batch_tx.append((
+                        tx_id,
+                        legacy_int_pk, # Mapped to legacy_acct_pk (BigInt)
+                        customer_id,
+                        RETAIL_SALE_ID,
+                        row.get('DATEin'), 
+                        row.get('SaleAmt'), 
+                        row.get('TAX'),
+                        safe_str(row.get('NOTE')),
+                        ticket_num
+                    ))
+                    
+                    # Map Tender (Assume Cash since Acct missing)
+                    batch_tenders.append((
+                        str(uuid.uuid4()),
+                        tx_id,
+                        1,
+                        CASH_ID,
+                        row.get('SaleAmt') 
+                    ))
                 
                 # Map Items
                 # Use TICKETNUM for lookup
-                lookup_key = str(row.get('TICKETNUM')).strip()
+                lookup_key = ticket_num
                                 
                 if lookup_key in items_map:
                     seq = 1
                     for item in items_map[lookup_key]:
+                         invnum = str(item.get('INVNUM') or '').strip()
+                         inv_data = inv_map.get(invnum)
+                         inv_uuid = inv_data['id'] if inv_data else None
+                         
+                         # Status priority: sitems.Status (Historical) -> Inventory Status (Current) -> 'S' (Default)
+                         sitems_status = str(item.get('Status') or '').strip()
+                         
+                         if sitems_status:
+                             status = sitems_status
+                         elif inv_data and inv_data.get('status'):
+                             status = inv_data['status']
+                         else:
+                             status = 'S'
+
                          batch_items.append((
                              str(uuid.uuid4()),
                              tx_id,
@@ -112,19 +168,12 @@ def migrate_sales():
                              float(item.get('QTY') or 1),
                              item.get('AMOUNT'), 
                              item.get('COST'),
-                             safe_str(item.get('Items_FK'))
+                             safe_str(item.get('Items_FK')),
+                             inv_uuid,
+                             status
                          ))
                          seq += 1
                 
-                # Map Tender
-                batch_tenders.append((
-                    str(uuid.uuid4()),
-                    tx_id,
-                    1,
-                    CASH_ID,
-                    row.get('SaleAmt') # Updated from AMOUNT
-                ))
-
                 if len(batch_tx) >= batch_size:
                     _flush_batches(pg_cursor, batch_tx, batch_items, batch_tenders)
                     pg_conn.commit()
@@ -136,11 +185,38 @@ def migrate_sales():
                 if errors < 10:
                     print(f"❌ Error processing sale {row.get('SLD_id')}: {e}")
         
-        if batch_tx:
+        if batch_tx or batch_items:
             _flush_batches(pg_cursor, batch_tx, batch_items, batch_tenders)
             pg_conn.commit()
             
         print(f"✅ Sales Migration Completed! Errors: {errors}")
+        
+        # Update app_settings for next control numbers (store_sale_control_number_next)
+        try:
+            if SALE_TYPE_IDS:
+                # Build a tuple for SQL IN clause
+                sql_in = ','.join(['%s'] * len(SALE_TYPE_IDS))
+                # Use regex to ensure only numeric ticketnums are considered
+                pg_cursor.execute(f'''
+                    SELECT MAX(legacy_ticketnum::integer) FROM store_transaction 
+                    WHERE type_id IN ({sql_in}) AND legacy_ticketnum ~ '^[0-9]+$'
+                ''', SALE_TYPE_IDS)
+                max_store_sale_control = pg_cursor.fetchone()[0]
+                if max_store_sale_control is not None:
+                    next_control = str(int(max_store_sale_control) + 1)
+                    pg_cursor.execute("""
+                        UPDATE app_settings 
+                        SET value = %s, updated_at = NOW() 
+                        WHERE key = 'store_sale_control_number_next'
+                    """, (next_control,))
+                    print(f"   Set store_sale_control_number_next to {next_control}")
+                else:
+                    print("   No valid store sale control number found; app_settings not updated.")
+            else:
+                print("   No sale/layaway type IDs found; app_settings not updated.")
+        except Exception as e:
+            print(f"   Error updating store_sale_control_number_next: {e}")
+        pg_conn.commit()
         
     except Exception as e:
         print(f"❌ Sales Migration Failed: {e}")
@@ -154,13 +230,13 @@ def _flush_batches(cursor, txs, items, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note
+                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note, legacy_ticketnum
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     if items:
          execute_values(cursor, """
             INSERT INTO store_transaction_item (
-                id, store_transaction_id, sequence, description, quantity, line_amount, line_cost, legacy_items_pk
+                id, store_transaction_id, sequence, description, quantity, line_amount, line_cost, legacy_items_pk, inventory_item_id, status
             ) VALUES %s ON CONFLICT DO NOTHING
         """, items)
     if tenders:

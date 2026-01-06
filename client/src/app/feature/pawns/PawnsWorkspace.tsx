@@ -1,35 +1,29 @@
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
-import CustomerInfoTab from './tabs/CustomerInfoTab';
+import CustomerInfoTab from '@/app/shared/components/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
-import type { Customer } from '@/app/feature/customer';
 import './pawns.css';
+import { CancelButton } from '@/app/shared/components/CancelButton';
 
 function PawnsWorkspaceContent() {
-  const { activeTab, setActiveTab, openCancelModal } = usePawnWorkflow();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-
-  const customerId = customer?.id || null;
-
-  const canNavigateToTab = (tab: TabKey) => {
-    // Customer tab is always accessible
-    if (tab === 'customer') return true;
-    // Other tabs require a customer to be selected
-    return !!customerId;
-  };
+  const {
+    activeTab,
+    setActiveTab,
+    customer,
+    setCustomer,
+    canNavigateToTab,
+    navigateToTab
+  } = usePawnWorkflow();
 
   const handleTabChange = (tab: string) => {
     const tabKey = tab as TabKey;
-    if (canNavigateToTab(tabKey)) {
-      setActiveTab(tabKey);
-    }
+    navigateToTab(tabKey);
   };
 
   return (
-    <div className="pawn-flow">
+    <>
+      <h1 className="text-2xl font-extrabold mb-2.5">Pawn / Buy</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-5">
@@ -49,42 +43,40 @@ function PawnsWorkspaceContent() {
               History
             </TabsTrigger>
           </TabsList>
-          <Button variant="destructive" onClick={openCancelModal}>
-            Cancel Transaction
-          </Button>
+          <CancelButton />
         </div>
 
-        <TabsContent value="customer" className="flex-1 min-h-0 pt-4">
-          <CustomerInfoTab 
+        <TabsContent value="customer" keepMounted className="flex-1 min-h-0 pt-4">
+          <CustomerInfoTab
             customer={customer}
             onCustomerChange={setCustomer}
-            onCustomerSelected={(id: string) => setActiveTab('newPawn')}
+            onCustomerSelected={() => setActiveTab('newPawn')}
           />
         </TabsContent>
 
-        <TabsContent value="newPawn" className="flex-1 min-h-0 pt-4">
-          <NewPawnTab 
+        <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
+          <NewPawnTab
             customer={customer}
           />
         </TabsContent>
 
-        <TabsContent value="previousItems" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="previousItems" keepMounted className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             Previous Items - Coming Soon
           </div>
         </TabsContent>
 
-        <TabsContent value="customerPerformance" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
           <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
-        <TabsContent value="history" className="flex-1 min-h-0 pt-4">
+        <TabsContent value="history" keepMounted className="flex-1 min-h-0 pt-4">
           <div className="flex items-center justify-center h-full text-muted-foreground">
             History - Coming Soon
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
 

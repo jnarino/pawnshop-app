@@ -34,54 +34,111 @@ def migrate_layaway():
         lid_row = pg_cursor.fetchone()
         LAYAWAY_DEPOSIT_ID = str(lid_row[0]) if lid_row else '00000000-0000-0000-0000-000000000000'
         
-        print("Fetching Layaways (from sold table)...")
-        # Source from sold where TRANS = 'L'
-        query = "SELECT * FROM dbo.sold WHERE TRANS = 'L' ORDER BY DATEin"
-        mssql_cursor.execute(query)
-        lay_rows = mssql_cursor.fetchall()
-        print(f"Found {len(lay_rows)} layaway records")
+        # Pre-fetch existing transactions (legacy_ticketnum -> id)
+        # print("Fetching existing transactions map...")
+        pg_cursor.execute("SELECT legacy_ticketnum, id FROM store_transaction WHERE legacy_ticketnum IS NOT NULL")
+        tx_map = {str(row[0]).strip(): str(row[1]) for row in pg_cursor.fetchall()}
+
+        # Fetch Sales Items (sitems) into memory map (Shared logic with sales)
+        # print("Fetching Sales Items (sitems table)...")
+        mssql_cursor.execute("SELECT * FROM dbo.sitems")
+        items_rows = mssql_cursor.fetchall()
+        
+        items_map = {}
+        for item in items_rows:
+            key = str(item.get('TICKETNUM')).strip()
+            if key and key != 'None':
+                if key not in items_map: items_map[key] = []
+                items_map[key].append(item)
+
+        # Load Inventory Map (inventory_number -> {id, status})
+        # print("Fetching Inventory Map...")
+        pg_cursor.execute("SELECT inventory_number, id, status FROM inventory_item WHERE inventory_number IS NOT NULL")
+        inv_map = {str(row[0]).strip(): {'id': str(row[1]), 'status': row[2]} for row in pg_cursor.fetchall()}
         
         batch_size = 1000
-        batch_agreements = []
         batch_deposits = [] 
+        batch_agreements = []
+        batch_items = []
+
+        # Fetch Layaway Data
+        # print("Fetching Layaway data from SQL Server...")
+        mssql_cursor.execute("SELECT * FROM dbo.Sold WHERE TRANS = 'L' AND DATEin > '1980-01-01'")
+        lay_rows = mssql_cursor.fetchall()
+        # print(f"Found {len(lay_rows)} layaway records")
         
         for row in tqdm(lay_rows):
             try:
                 # IDs
                 # Use Sold_pk (int) for legacy_acct_pk (BigInt)
                 legacy_int_pk = row.get('Sold_pk')
-                # SLD_id (UUID) unused for legacy_acct_pk
+                ticket_num = str(row.get('TICKETNUM')).strip()
                 
-                # We still need a unique ID for the Agreement description if strictly needed, 
-                # but 'legacy_pk' variable was mostly used for that.
+                # Check for existing transaction
+                existing_tx_id = tx_map.get(ticket_num)
                 
-                agreement_id = str(uuid.uuid4())
-                deposit_tx_id = str(uuid.uuid4())
-                
-                customer_pk = str(row.get('CUS_FK'))
-                customer_id = customer_map.get(customer_pk)
-                if customer_id: customer_id = str(customer_id)
-                
-                date = row.get('DATEin') 
-                amount = row.get('SaleAmt') 
-                deposit = row.get('DEPOSIT') or 0 
-                
-                # 1. Create Store Transaction for the Deposit
-                batch_deposits.append((
-                    deposit_tx_id,
-                    legacy_int_pk, # Mapped to legacy_acct_pk (BigInt)
-                    customer_id,
-                    LAYAWAY_DEPOSIT_ID,
-                    date,
-                    deposit, 
-                    0, 
-                    f"Layaway Deposit for Agreement {legacy_int_pk}"
-                ))
+                if existing_tx_id:
+                    deposit_tx_id = existing_tx_id
+                    # Don't create new deposit transaction
+                else:
+                    # Phantom
+                    deposit_tx_id = str(uuid.uuid4())
+                    customer_pk = str(row.get('CUS_FK'))
+                    customer_id = customer_map.get(customer_pk)
+                    if customer_id: customer_id = str(customer_id)
+                    
+                    batch_deposits.append((
+                        deposit_tx_id,
+                        legacy_int_pk, 
+                        customer_id,
+                        LAYAWAY_DEPOSIT_ID,
+                        row.get('DATEin'),
+                        row.get('DEPOSIT') or 0, 
+                        0, 
+                        f"Layaway Deposit for Agreement {legacy_int_pk}",
+                        ticket_num
+                    ))
 
-                # 2. Create Layaway Agreement
+                # Process Items for this Layaway
+                if ticket_num in items_map:
+                    seq = 1
+                    for item in items_map[ticket_num]:
+                         invnum = str(item.get('INVNUM') or '').strip()
+                         inv_data = inv_map.get(invnum)
+                         inv_uuid = inv_data['id'] if inv_data else None
+                         
+                         # Status priority: sitems.Status -> Inventory Status -> 'L' (Default for Layaway)
+                         sitems_status = str(item.get('Status') or '').strip()
+                         
+                         if sitems_status:
+                             status = sitems_status
+                         elif inv_data and inv_data.get('status'):
+                             status = inv_data['status']
+                         else:
+                             status = 'L'
+
+                         batch_items.append((
+                             str(uuid.uuid4()),
+                             deposit_tx_id,
+                             seq,
+                             safe_str(item.get('DESCRIPT')),
+                             float(item.get('QTY') or 1),
+                             item.get('AMOUNT'), 
+                             item.get('COST'),
+                             safe_str(item.get('Items_FK')),
+                             inv_uuid,
+                             status
+                         ))
+                         seq += 1
+
+                # Still need Agreement ID
+                agreement_id = str(uuid.uuid4())
+                
+                # ... Status logic ...
                 status = 'active' 
                 if safe_str(row.get('STATUS')) == 'C': status = 'completed'
                 if safe_str(row.get('STATUS')) == 'V': status = 'voided'
+                if safe_str(row.get('STATUS')) == 'D': status = 'defaulted'
 
                 batch_agreements.append((
                    agreement_id,
@@ -90,7 +147,7 @@ def migrate_layaway():
                    0, 
                    0, 
                    0, 
-                   deposit,
+                   row.get('DEPOSIT') or 0,
                    30, 
                    row.get('Laylate'), 
                    row.get('sld_Message'),
@@ -99,9 +156,9 @@ def migrate_layaway():
                 ))
                 
                 if len(batch_agreements) >= batch_size:
-                    _flush_layaways(pg_cursor, batch_deposits, batch_agreements)
+                    _flush_layaways(pg_cursor, batch_deposits, batch_agreements, batch_items)
                     pg_conn.commit()
-                    batch_deposits, batch_agreements = [], []
+                    batch_deposits, batch_agreements, batch_items = [], [], []
 
             except Exception as e:
                 pg_conn.rollback()
@@ -109,7 +166,7 @@ def migrate_layaway():
                 print(f"❌ Error processing layaway {row.get('SLD_id')}: {e}")
         
         if batch_agreements:
-            _flush_layaways(pg_cursor, batch_deposits, batch_agreements)
+            _flush_layaways(pg_cursor, batch_deposits, batch_agreements, batch_items)
             pg_conn.commit()
 
         print("✅ Layaway Migration Completed!")
@@ -122,12 +179,12 @@ def migrate_layaway():
         if 'mssql_conn' in locals(): mssql_conn.close()
         if 'pg_conn' in locals(): pg_conn.close()
 
-def _flush_layaways(cursor, deposits, agreements):
+def _flush_layaways(cursor, deposits, agreements, items):
     # Insert Deposit Transaction first (Required by FK)
     if deposits:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note
+                id, legacy_acct_pk, customer_id, type_id, occurred_at, amount, tax_sales, note, legacy_ticketnum
             ) VALUES %s ON CONFLICT DO NOTHING
         """, deposits)
     
@@ -139,6 +196,14 @@ def _flush_layaways(cursor, deposits, agreements):
                 service_charge_amount, deposit, period_days, late_fee, message, reminder, county_taxable
             ) VALUES %s ON CONFLICT DO NOTHING
         """, agreements)
+
+    # Insert Items
+    if items:
+         execute_values(cursor, """
+            INSERT INTO store_transaction_item (
+                id, store_transaction_id, sequence, description, quantity, line_amount, line_cost, legacy_items_pk, inventory_item_id, status
+            ) VALUES %s ON CONFLICT DO NOTHING
+        """, items)
 
 if __name__ == "__main__":
     migrate_layaway()

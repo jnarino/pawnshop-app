@@ -5,14 +5,77 @@ import { CreatePawnTicketWithItemsUseCase } from '../../../../application/use-ca
 import { ListPawnTicketsByControlNumberUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { ListPawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
+import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
+import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
+import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
+import { PullPawnTicketItemsToInventoryUseCase } from '../../../../application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
+
+import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
 
 export class PawnTicketController {
     constructor(
         private readonly createPawnTicketWithItemsUseCase: CreatePawnTicketWithItemsUseCase,
         private readonly listByControlNumberUseCase: ListPawnTicketsByControlNumberUseCase,
         private readonly listByCustomerUseCase: ListPawnTicketsByCustomerUseCase,
-        private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase
+        private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
+        private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
+        private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
+        private readonly payPawnTicketUseCase: PayPawnTicketUseCase,
+        private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase,
+        private readonly pullPawnTicketItemsToInventoryUseCase: PullPawnTicketItemsToInventoryUseCase
     ) { }
+
+    /**
+     * GET /api/pawn-ticket/date-range
+     */
+    listByDateRange = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { from, to } = req.query;
+            const result = await this.listByDateRangeUseCase.execute({ from, to });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * POST /api/pawn-ticket/pull-to-inventory
+     * Marks ticket status and updates linked items (including scrap handling) in a single transaction.
+     */
+    pullToInventory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id,
+            };
+            const result = await this.pullPawnTicketItemsToInventoryUseCase.execute(payload);
+            return res.status(200).json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * POST /api/pawn-ticket/payment
+     * Accepts payments or redemptions for pawn tickets.
+     */
+    payOnTicket = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id,
+            };
+            await this.payPawnTicketUseCase.execute(payload);
+            return res.status(200).json({ message: 'Payment processed' });
+        } catch (err) {
+            return next(err);
+        }
+    };
+
 
     /**
      * Create a pawn ticket + items in a single transaction.
@@ -20,15 +83,20 @@ export class PawnTicketController {
      *
      * Body:
      * {
-     *   "pawn": { ...pawn fields, without itemIds },
-     *   "items": [ { ...inventory item create DTO } ],   // optional
-     *   "itemIds": [ "existing-item-uuid" ]              // optional
+     *   "pawn": { ...pawn fields },
+     *   "items": [ { ...inventory item create DTO } ]  // required, min 1 item
      * }
-     * At least one of items[] or itemIds[] is required.
      */
     create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
-            const result = await this.createPawnTicketWithItemsUseCase.execute(req.body);
+            const payload = {
+                ...req.body,
+                pawn: {
+                    ...req.body.pawn,
+                    clerkUserId: req.user?.id,
+                },
+            };
+            const result = await this.createPawnTicketWithItemsUseCase.execute(payload);
             return res.status(201).json(result);
         } catch (err) {
             return next(err);
@@ -88,4 +156,41 @@ export class PawnTicketController {
             return next(err);
         }
     };
+
+    /**
+     * Get all payments for a pawn ticket.
+     * GET /api/pawn-ticket/:pawnTicketId/payments
+     */
+    getPayments = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const pawnTicketId = req.params.pawnTicketId;
+            const result = await this.getPawnTicketPaymentsUseCase.execute({ pawnTicketId });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get current charges, pawn amount, periods behind, and redemption amount for a pawn ticket.
+     * GET /api/pawn-ticket/:controlNumber/current-charges
+     */
+    getCurrentCharges = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const controlNumber = req.params.controlNumber;
+            const result = await this.getPawnTicketCurrentChargesUseCase.execute({ controlNumber });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
 }

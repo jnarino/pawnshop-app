@@ -14,6 +14,9 @@ class MockCustomerRepository implements CustomerRepository {
 }
 
 describe('UpdateCustomerUseCase', () => {
+  const customerId = '550e8400-e29b-41d4-a716-446655440004';
+  const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+
   it('should throw NotFoundError if customer does not exist', async () => {
     const repo = new MockCustomerRepository();
     repo.findById.mockResolvedValue(null);
@@ -21,7 +24,7 @@ describe('UpdateCustomerUseCase', () => {
 
     await expect(
       useCase.execute({
-        id: '999',
+        id: nonExistentId,
         firstName: 'Updated',
         lastName: 'Name'
       })
@@ -31,7 +34,7 @@ describe('UpdateCustomerUseCase', () => {
   it('should update existing customer', async () => {
     const repo = new MockCustomerRepository();
     const existingCustomer = new Customer({
-      id: '123',
+      id: customerId,
       firstName: 'Old',
       lastName: 'Name',
       createdAt: new Date(),
@@ -42,13 +45,13 @@ describe('UpdateCustomerUseCase', () => {
     const useCase = new UpdateCustomerUseCase(repo);
 
     const result = await useCase.execute({
-      id: '123',
+      id: customerId,
       firstName: 'Updated',
       lastName: 'NewName',
       city: 'New City'
     });
 
-    expect(repo.findById).toHaveBeenCalledWith('123');
+    expect(repo.findById).toHaveBeenCalledWith(customerId);
     expect(repo.update).toHaveBeenCalled();
     expect(result.firstName).toBe('Updated');
     expect(result.lastName).toBe('NewName');
@@ -57,7 +60,7 @@ describe('UpdateCustomerUseCase', () => {
   it('should preserve fields not included in update', async () => {
     const repo = new MockCustomerRepository();
     const existingCustomer = new Customer({
-      id: '123',
+      id: customerId,
       firstName: 'John',
       lastName: 'Doe',
       phoneNumber: '555-1234',
@@ -69,9 +72,10 @@ describe('UpdateCustomerUseCase', () => {
     const useCase = new UpdateCustomerUseCase(repo);
 
     await useCase.execute({
-      id: '123',
+      id: customerId,
       firstName: 'John',
-      lastName: 'Smith'
+      lastName: 'Smith',
+      phoneNumber: '555-1234'  // Include phoneNumber to preserve it
     });
 
     expect(repo.update).toHaveBeenCalled();

@@ -1,17 +1,13 @@
 import { InventoryCategory } from '../../../domains/inventory/InventoryCategory';
-import { InventoryCategoryTreeItemResponseDto } from '../../dto/inventory/query/InventoryCategoryTreeItemResponseDto';
+import { InventoryCategoryResponseDto } from '../../dto/inventory/query/InventoryCategoryResponseDto';
 
 export class InventoryCategoryMapper {
-  static toTreeItemDto(
+  static toCategoryDto(
     category: InventoryCategory
-  ): InventoryCategoryTreeItemResponseDto {
+  ): InventoryCategoryResponseDto {
     return {
       id: category.id,
-      name: category.name,
-      code: category.code,
-      parentId: category.parentId,
-      path: category.path,
-      depth: category.depth
+      name: category.name
     };
   }
 }

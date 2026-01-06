@@ -1,18 +1,24 @@
 import type { TransactionPrintData, PrintResult } from './types';
+import JsBarcode from 'jsbarcode';
 
 export interface LabelPrintData {
-  inventoryNumber: string;
-  description: string;
-  amount: string;
   controlNumber: string;
-  itemId?: string;
-  labelIndex?: number;
-  totalLabels?: number;
+  customerName: string;
+  transactionType: string;
+  transactionDate: string;
+  labelIndex: number;
+  totalLabels: number;
+  category?: string;
+  subcategory?: string;
+  description: string;
+  model?: string;
+  serialNumber?: string;
+  barcodeDataUrl?: string;
 }
 
 export class LabelPrinter {
   /**
-   * Print item labels to GoDEX thermal printer (1.51" x 1.30")
+   * Print item labels to GoDEX thermal printer (2.5in x 1.0in)
    */
   async print(data: TransactionPrintData): Promise<PrintResult> {
     try {
@@ -24,18 +30,18 @@ export class LabelPrinter {
       if (window.electronAPI?.printLabels) {
         return await window.electronAPI.printLabels(data.items);
       }
-      
+
       // Browser: Generate HTML for testing
       const html = this.generateHTML(data);
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         throw new Error('Failed to open print window');
       }
-      
+
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.print();
-      
+
       return { success: true, count: data.items.length };
     } catch (error) {
       return {
@@ -51,234 +57,171 @@ export class LabelPrinter {
   async printMultiple(labels: LabelPrintData[]): Promise<{ success: boolean; error?: string }> {
     try {
       console.log(`[LabelPrinter] Printing ${labels.length} labels`);
-      
-      // Electron: Send to GoDEX printer via IPC
-      if (window.electronAPI?.printLabels) {
-        // Convert to format expected by Electron API
-        const electronLabels = labels.map(label => ({
-          inventoryNumber: label.inventoryNumber,
-          description: label.description,
-          amount: label.amount,
-          controlNumber: label.controlNumber
-        }));
-        const result = await window.electronAPI.printLabels(electronLabels);
-        return { success: result.success, error: result.error };
-      }
 
-      // Browser: Generate HTML for each label
       const html = this.generateMultipleLabelsHTML(labels);
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         throw new Error('Failed to open print window');
       }
-      
+
       printWindow.document.write(html);
       printWindow.document.close();
-      printWindow.print();
-      
+
       return { success: true };
     } catch (error) {
       console.error('[LabelPrinter] Print failed:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Print failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Print failed'
       };
     }
   }
 
   private generateHTML(data: TransactionPrintData): string {
     const typeCode = data.ticketType === 'PAWN' ? 'P' : 'B';
-    const txnDate = new Date(data.transactionDate).toLocaleDateString();
-    const customerLine = `${(data.customerLastName ?? '').toUpperCase()}, ${(data.customerFirst ?? '').toUpperCase()}${data.customerMiddleInitial ? ' ' + data.customerMiddleInitial.toUpperCase() + '.' : ''}`.trim();
+    const d = new Date(data.transactionDate);
+    const txnDate = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+    const customerName = `${(data.customerLastName ?? '').toUpperCase()}, ${(data.customerFirst ?? '').toUpperCase()}`;
 
-    const upper = (value: string | undefined, max = 40) =>
-      (value ?? '').toUpperCase().substring(0, max);
+    const labels: LabelPrintData[] = data.items.map((item, idx) => ({
+      controlNumber: data.controlNumber,
+      customerName,
+      transactionType: typeCode,
+      transactionDate: txnDate,
+      labelIndex: idx + 1,
+      totalLabels: data.items.length,
+      category: item.category,
+      subcategory: item.subcategory,
+      description: item.description,
+      model: item.modelNumber,
+      serialNumber: item.serialNumber,
+      barcodeDataUrl: data.controlNumber ? this.generateBarcodeBase64(data.controlNumber) : undefined,
+    }));
 
-    const sanitizeNumber = (value?: string | number): string =>
-      value == null || value === '' ? '' : String(value);
-
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Item Labels - ${data.controlNumber}</title>
-  <style>
-    @page { size: 1.51in 1.30in; margin: 0; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    .label {
-      width: 1.51in;
-      height: 1.30in;
-      padding: 0.05in;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-      page-break-after: always;
-      font-size: 7pt;
-      line-height: 1.1;
-      border: 1px solid #ccc; /* ✅ Visual border for testing */
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1px;
-    }
-    .row.top { font-weight: bold; font-size: 8pt; }
-    .row.mid { font-size: 7pt; }
-    .row.desc { font-size: 6.5pt; }
-    .row.code { font-size: 6pt; color: #555; margin-bottom: 2px; }
-    .row.footer { margin-top: auto; flex-direction: column; align-items: center; }
-    .control-number { font-family: 'Courier New', monospace; font-size: 11pt; letter-spacing: 1px; font-weight: bold; }
-    .barcode { font-family: 'Libre Barcode 39', 'Courier New', monospace; font-size: 18pt; line-height: 1; }
-    .sequence { font-size: 6pt; font-weight: bold; margin-top: 1px; }
-  </style>
-</head>
-<body>
-  ${data.items.map((item, idx) => {
-    const specsLeft = upper(item.categoryLabel ?? item.category ?? item.brand ?? '', 26);
-    const specsRightParts = [
-      sanitizeNumber(item.quantity) && Number(item.quantity) > 1 ? `${item.quantity}` : '',
-      upper(item.karat, 6),
-      upper(item.length ? `${item.length}"` : '', 6)
-    ].filter(Boolean);
-
-    const detailRightParts = [
-      item.weight ? `${item.weight}${item.weightUnit ?? ''}`.toUpperCase() : '',
-      upper(item.typeCode, 8)
-    ].filter(Boolean);
-
-    const description = upper(item.description, 70);
-    const descriptionLeft = description.substring(0, 32);
-    const descriptionRight = description.length > 32 ? description.substring(32, 60) : '';
-
-    return `
-    <div class="label">
-      <div class="row top">
-        <span>${upper(customerLine, 26)}</span>
-        <span>${typeCode} ${txnDate}</span>
-      </div>
-      <div class="row mid">
-        <span>${specsLeft}</span>
-        <span>${specsRightParts.join(' ')}</span>
-      </div>
-      <div class="row desc">
-        <span>${descriptionLeft}</span>
-        <span>${detailRightParts.join(' ')}</span>
-      </div>
-      <div class="row desc">
-        <span>${descriptionRight}</span>
-        <span></span>
-      </div>
-      <div class="row code">
-        <span>CODE: ___</span>
-        <span>${item.amount ? `$${parseFloat(item.amount).toFixed(2)}` : ''}</span>
-      </div>
-      <div class="row footer">
-        <div class="control-number">${data.controlNumber}</div>
-        <div class="barcode">*${item.inventoryNumber}*</div>
-        <div class="sequence">${idx + 1} of ${data.items.length}</div>
-      </div>
-    </div>`;
-  }).join('')}
-  <script>window.print();</script>
-</body>
-</html>`;
+    return this.renderLabels(labels);
   }
 
   private generateMultipleLabelsHTML(labels: LabelPrintData[]): string {
+    const updatedLabels = labels.map((label, idx) => ({
+      ...label,
+      labelIndex: idx + 1,
+      totalLabels: labels.length,
+      barcodeDataUrl: label.controlNumber ? this.generateBarcodeBase64(label.controlNumber) : label.barcodeDataUrl
+    }));
+    return this.renderLabels(updatedLabels);
+  }
+
+  private generateBarcodeBase64(value: string): string {
+    if (!value) return '';
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, value, {
+        format: 'CODE39',
+        displayValue: false,
+        height: 60,
+        margin: 0,
+        width: 2,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      console.error('Barcode generation failed:', e);
+      return '';
+    }
+  }
+
+  private renderLabels(labels: LabelPrintData[]): string {
+    const noneIfEmpty = (val?: string) => (!val || val.trim() === '' ? 'NONE' : val);
+
     return `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Pawn Labels</title>
   <style>
-    @page { size: 1.51in 1.30in; margin: 0; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    @page { size: 2.5in 1.0in; margin: 0; }
+    body { margin: 0; padding: 0; font-family: monospace; }
     .label {
-      width: 1.51in;
-      height: 1.30in;
-      padding: 0.05in;
+      width: 2.5in;
+      height: 1.0in;
+      padding: 0.05in 0.15in;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
       page-break-after: always;
-      font-size: 7pt;
+      font-size: 8pt;
       line-height: 1.1;
-      border: 1px solid #ccc; /* ✅ Visual border for testing */
+      overflow: hidden;
     }
     .row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 1px;
+      white-space: nowrap;
+      width: 100%;
+      text-transform: uppercase;
+      gap: 0.1in;
     }
-    .row.top { font-weight: bold; font-size: 8pt; }
-    .row.desc { font-size: 6.5pt; }
-    .row.code { font-size: 6pt; color: #555; margin-bottom: 2px; }
-    .row.footer { margin-top: auto; flex-direction: column; align-items: center; }
-    .control-number { font-family: 'Courier New', monospace; font-size: 11pt; letter-spacing: 1px; font-weight: bold; }
-    .barcode { font-family: 'Libre Barcode 39', 'Courier New', monospace; font-size: 18pt; line-height: 1; }
-    .sequence { font-size: 6pt; font-weight: bold; margin-top: 1px; }
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      text-align: left;
+    }
+    .date-type {
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .barcode-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: auto;
+      width: 100%;
+      min-height: 0.3in;
+    }
+    .barcode {
+      height: 0.35in;
+      width: auto;
+      max-width: 100%;
+      display: block;
+      margin: 0 auto;
+    }
+    .bold { font-weight: bold; }
+    .sequence { font-size: 7.5pt; font-weight: bold; flex-shrink: 0; }
+    .description {
+      font-size: 7.5pt;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
   </style>
 </head>
 <body>
-  ${labels.map((label, idx) => {
-    const description = (label.description || 'NO DESCRIPTION').toUpperCase().substring(0, 70);
-    const descriptionLeft = description.substring(0, 32);
-    const descriptionRight = description.length > 32 ? description.substring(32, 60) : '';
-
-    return `
+  ${labels.map((label) => `
     <div class="label">
-      <div class="row top">
-        <span>PAWN LABEL</span>
-        <span>${new Date().toLocaleDateString()}</span>
+      <div class="row">
+        <span class="name">${label.customerName}</span>
+        <span class="date-type">${label.transactionType} ${label.transactionDate}</span>
       </div>
-      <div class="row desc">
-        <span>${descriptionLeft}</span>
-        <span></span>
+      <div class="row">
+        <span>${label.subcategory || ''}${label.category ? ', ' + label.category : ''}</span>
       </div>
-      <div class="row desc">
-        <span>${descriptionRight}</span>
-        <span></span>
+      <div class="row">
+        <span class="description">${label.description}</span>
       </div>
-      <div class="row code">
-        <span>CONTROL: ${label.controlNumber}</span>
-        <span>${label.amount ? `$${parseFloat(label.amount).toFixed(2)}` : ''}</span>
+      <div class="row">
+        <span>MODEL: ${noneIfEmpty(label.model)}</span>
+        <span>SN: ${noneIfEmpty(label.serialNumber)}</span>
       </div>
-      <div class="row footer">
-        <div class="control-number">${label.inventoryNumber}</div>
-        <div class="barcode">*${label.inventoryNumber}*</div>
-        <div class="sequence">Label ${idx + 1} of ${labels.length}</div>
+      <div class="row">
+        <span class="bold">${label.controlNumber}</span>
+        <span class="sequence">${label.labelIndex} OF ${label.totalLabels}</span>
       </div>
-    </div>`;
-  }).join('')}
+      <div class="barcode-container">
+        ${label.barcodeDataUrl ? `<img src="${label.barcodeDataUrl}" class="barcode" />` : ''}
+      </div>
+    </div>`).join('')}
   <script>window.print();</script>
 </body>
 </html>`;
-  }
-
-  private async printSingleLabel(label: LabelPrintData): Promise<void> {
-    console.log('[LabelPrinter] Printing label:', {
-      controlNumber: label.controlNumber,
-      inventoryNumber: label.inventoryNumber,
-      description: label.description,
-      amount: label.amount
-    });
-
-    // ✅ Here's where you'd send to your actual thermal printer
-    // The label would include:
-    // - Control Number: ${label.controlNumber}
-    // - Inventory Number: ${label.inventoryNumber}  
-    // - Description: ${label.description}
-    // - Amount: ${label.amount}
-    
-    // Example GoDEX printer command might look like:
-    // await printerAPI.print({
-    //   template: 'pawn-label',
-    //   data: {
-    //     controlNumber: label.controlNumber,
-    //     inventoryNumber: label.inventoryNumber,
-    //     description: label.description,
-    //     amount: label.amount
-    //   }
-    // });
   }
 }

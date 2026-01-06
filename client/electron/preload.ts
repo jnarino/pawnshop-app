@@ -20,4 +20,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     printDocument: (html: string) => ipcRenderer.invoke('print-document', html),
     getApiConfig: () => ipcRenderer.invoke('get-api-config'),
+
+    // Menu-driven actions
+    onManageCash: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:manage-cash', handler);
+        return () => ipcRenderer.removeListener('menu:manage-cash', handler);
+    },
+
+    onInventoryMaintain: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:inventory-maintain', handler);
+        return () => ipcRenderer.removeListener('menu:inventory-maintain', handler);
+    },
+
+    onPawnMaintain: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:pawn-maintain', handler);
+        return () => ipcRenderer.removeListener('menu:pawn-maintain', handler);
+    },
+
+    onForfeit: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:forfeit-pull', handler);
+        return () => ipcRenderer.removeListener('menu:forfeit-pull', handler);
+    },
+
+    onBalanceDrawer: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:balance-drawer', handler);
+        return () => ipcRenderer.removeListener('menu:balance-drawer', handler);
+    },
 });

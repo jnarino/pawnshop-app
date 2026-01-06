@@ -1,17 +1,29 @@
 import { http } from './http';
+import type { PawnTicketData, PawnTicketItem } from '@/app/feature/_shared/types/pawnTicket';
+
+export interface CustomerActivePawnTicket extends PawnTicketData {
+  totalOfPayments?: number;
+  items: PawnTicketItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  periodsBehind?: number;
+}
 
 export interface PawnData {
   customerId: string;
   transactionType: 'PAWN' | 'PURCHASE';
+  clerkUserId?: string;
   amountFinanced?: number;
   purchaseTradeValue?: number;
+  periodicRate?: number;
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
+  createdDate: string;
 }
 
 export interface PawnItem {
-  categoryId: string;
+  inventorySubcategoryId: string;
   status: string;
   quantity: number;
   priceAmount: number;
@@ -34,7 +46,12 @@ export interface CreatePawnTicketPayload {
   items: Partial<PawnItem>[];
 }
 
-export interface PawnTicketCreateResponse {
+export interface PawnTicketResponse {
+  id: string;
+  controlNumber: string;
+}
+
+export interface TicketByControlNumber {
   id: string;
   controlNumber: string;
   transactionType: 'PAWN' | 'PURCHASE';
@@ -46,13 +63,124 @@ export interface PawnTicketCreateResponse {
   defaultDate: string;
   pawnStatus: string;
   itemIds: string[];
+  customer?: {
+    firstName: string;
+    lastName: string;
+  };
+  items: InventoryItem[]
+}
+
+export type Lookup = {
+  id: string;
+  name: string;
+};
+
+export type Stone = {
+  type: Lookup | null;
+  color: Lookup | null;
+  shape: Lookup | null;
+  width?: number;
+  quantity?: number;
+  [key: string]: unknown;
+};
+
+export type Extra = {
+  stones?: Stone[];
+  [key: string]: unknown;
+};
+
+export type Attributes = {
+  karat?: Lookup | null;
+  metal?: Lookup | null;
+  style?: Lookup | null;
+  gender?: Lookup | null;
+  sizeLength?: Lookup | null;
+  [key: string]: unknown;
+};
+
+export type InventoryItem = {
+  id: string;
+
+  inventorySubcategory: Lookup;
+  inventoryCategory: Lookup;
+  status: string;
+  quantity: number;
+
+  brand: Lookup | null;
+  model: string | null;
+  serialNumber: string | null;
+  colorId: Lookup | null;
+  itemCondition: string | null;
+  ownerMark: string | null;
+  itemDescription: string | null;
+
+  priceAmount: number | null;
+  resale: number | null;
+  minResale: number | null;
+  itemReplace: number | null;
+
+  extra: Extra;
+  attributes: Attributes;
+
+  legacyInventoryNumber: string | null;
+  legacyItemGuid: string | null;
+  legacyCategoryDescription: string | null;
+  legacyBrandColorDescription: string | null;
+
+  inventoryNumber: string | null;
+  lastUpdatedUserId: string | null;
+
+  createdAt: string | null;
+  updatedAt: string;
+};
+
+
+export interface PawnTicketCharges {
+  pawnTicketId: string;
+  currentCharges: number;
+  pawnAmount: number;
+  periodsBehind: number;
+  redemptionAmount: number;
 }
 
 export const pawnTicketApi = {
-  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketCreateResponse> => {
+
+  create: async (payload: CreatePawnTicketPayload): Promise<PawnTicketResponse> => {
     return http('/api/pawn-ticket', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  findByControlNumber: async (controlNumber: string): Promise<TicketByControlNumber[]> => {
+    return http(`/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`);
+  },
+
+  getByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}`);
+  },
+
+  getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}/active`);
+  },
+
+  pullToInventory: async (payload: any): Promise<{ id: string; inventoryNumber: string }[]> => {
+    return http(`/api/pawn-ticket/pull-to-inventory`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  searchByControlNumber: async (
+    customerId: string,
+    controlNumber: string
+  ): Promise<CustomerActivePawnTicket[]> => {
+    return http(
+      `/api/pawn-ticket/customer/${customerId}/active?controlNumber=${encodeURIComponent(controlNumber)}`
+    );
+  },
+
+  findByDateRange: async (from: string, to: string): Promise<TicketByControlNumber[]> => {
+    return http(`/api/pawn-ticket/date-range?from=${from}&to=${to}`);
   },
 };

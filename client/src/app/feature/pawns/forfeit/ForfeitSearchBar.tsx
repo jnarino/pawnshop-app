@@ -1,0 +1,47 @@
+import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { RangeDatePicker } from '@/components/ui/range-date-picker';
+import { useForfeitStore } from './stores/forfeitStore';
+
+export const ForfeitSearchBar = () => {
+    const { searchCriteria, setSearchCriteria, searchPawns, loading } = useForfeitStore();
+
+    const handleSearch = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        searchPawns();
+    };
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="flex items-end gap-2">
+                <RangeDatePicker
+                    value={{ from: searchCriteria.from, to: searchCriteria.to }}
+                    onChange={(range) => setSearchCriteria({
+                        from: range?.from ? (range.from instanceof Date ? range.from.toISOString().split('T')[0] : range.from) : '',
+                        to: range?.to ? (range.to instanceof Date ? range.to.toISOString().split('T')[0] : range.to) : ''
+                    })}
+                />
+                <Button type="button" onClick={() => handleSearch()} disabled={loading}>
+                    {loading ? 'Searching...' : 'Search'}
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-2">
+                <Field>
+                    <FieldLabel>Ticket #</FieldLabel>
+                    <Input
+                        value={searchCriteria.ticketNumber}
+                        onChange={(e) => setSearchCriteria({ ticketNumber: e.target.value })}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSearch();
+                            }
+                        }}
+                        placeholder="Enter ticket number"
+                    />
+                </Field>
+            </div>
+        </div>
+    );
+};

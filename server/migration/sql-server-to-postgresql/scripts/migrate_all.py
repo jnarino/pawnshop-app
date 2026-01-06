@@ -28,8 +28,10 @@ def run_migration():
     print("\n📦 PHASE 1: Reference Data (Lookup_C)")
     migrate_lookup()
     
-    # Phase 2: Customers
-    print("\n👥 PHASE 2: Master Data (Customers)")
+    # Phase 2: Users & Customers
+    print("\n👥 PHASE 2: Users & Customers")
+    from migrate_users import migrate_users
+    migrate_users()
     migrate_customers()
     
     # Phase 2.5: Categories
@@ -52,17 +54,33 @@ def run_migration():
     print("\n🎫 PHASE 4: Pawn Tickets")
     migrate_pawn_tickets()
 
-    # Phase 4.5: Sales, Layaway, Pawn Payments
-    print("\n💰 PHASE 4.5: Sales & Transactions")
+    # Phase 4.5: Transactions & Sales
+    print("\n💰 PHASE 4.5: Transactions (Base Headers)")
+    from migrate_transactions import migrate_transactions
+    migrate_transactions()
+    
+    print("\n💰 PHASE 4.6: Sales (Line Items)")
     migrate_sales()
-    print("\n🗓 PHASE 4.6: Layaway")
+
+    print("\n🗓 PHASE 4.7: Layaway")
     migrate_layaway()
-    print("\n💸 PHASE 4.7: Pawn Payments")
-    migrate_pawn_payments()
+    
+    # print("\n💸 PHASE 4.7: Pawn Payments (Transactions)")
+    # migrate_pawn_payments() # Replaced by migrate_transactions
     
     # Phase 5: Gun Log
     print("\n🔫 PHASE 5: Gun Log")
     migrate_gunlog()
+    
+    # Phase 6: Police Holds
+    print("\n👮 PHASE 6: Police Holds")
+    from migrate_holds import migrate_holds
+    migrate_holds()
+    
+    # Phase 6.5: Hold Items Inventory
+    print("\n🔗 PHASE 6.5: Hold Items Inventory (Link)")
+    from migrate_hold_items import migrate_hold_items
+    migrate_hold_items()
     
     end_total = time.time()
     duration = end_total - start_total

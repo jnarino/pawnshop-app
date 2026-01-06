@@ -10,9 +10,11 @@
     "build:server": "node scripts/build-server.cjs",
     "build:renderer": "vite build",
     "build": "npm run build:main && npm run build:server && npm run build:renderer",
-    "start:electron": "npm run build:main && npm run build:server && electron dist-electron/main.js",
-    "start:dev": "concurrently -k \"npm run start:react\" \"wait-on http://localhost:5173 && npm run start:electron\"",
-    "package": "npm run build && electron-builder"
+    "start:electron": "npm run build:main && cross-env NODE_ENV=development electron dist-electron/main.js",
+    "start:dev": "concurrently -k \"npm run start:react\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development npm run start:electron\"",
+    "package": "npm run build && electron-builder",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "build": {
     "appId": "com.pawnshop.app",
@@ -78,7 +80,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@reduxjs/toolkit": "^2.8.2",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "argon2": "^0.41.1",
     "chalk": "^5.6.2",
     "class-variance-authority": "^0.7.1",
@@ -90,13 +92,15 @@
     "execa": "^9.6.1",
     "express": "^4.21.2",
     "fix-path": "^5.0.0",
+    "jsbarcode": "^3.12.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.553.0",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.13.1",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.1.0",
-    "react-redux": "^9.2.0",
+    "react-hook-form": "^7.69.0",
     "react-router-dom": "^7.7.1",
     "sonner": "^2.0.7",
     "swagger-jsdoc": "^6.2.8",
@@ -105,7 +109,8 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^13.0.0",
     "wait-on": "^8.0.4",
-    "zod": "^4.0.17"
+    "zod": "^4.0.17",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
@@ -113,6 +118,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
     "electron": "^37.2.5",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.27.1",

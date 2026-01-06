@@ -16,7 +16,7 @@ export class InventoryItem {
   readonly id: string;
 
   // Required
-  categoryId: string;
+  inventorySubcategoryId: string;
   status: InventoryStatusCode;
   quantity: number;
 
@@ -49,13 +49,13 @@ export class InventoryItem {
   inventoryNumber: string | null;
   lastUpdatedUserId: string | null;
 
-  createdAt: Date;
+  createdAt: Date | null;
   updatedAt: Date;
 
   constructor(params: {
     id: string;
 
-    categoryId: string;
+    inventorySubcategoryId: string;
     status: InventoryStatusCode;
     quantity: number;
 
@@ -83,12 +83,12 @@ export class InventoryItem {
     inventoryNumber?: string | null;
     lastUpdatedUserId?: string | null;
 
-    createdAt: Date;
+    createdAt: Date | null;
     updatedAt: Date;
   }) {
     this.id = params.id;
 
-    this.categoryId = params.categoryId;
+    this.inventorySubcategoryId = params.inventorySubcategoryId;
     this.status = params.status;
     this.quantity = params.quantity;
 

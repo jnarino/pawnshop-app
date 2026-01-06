@@ -1,6 +1,7 @@
 import { pool, runMigrations } from './infrastructure/db';
 import { env } from './config/env';
 import { AuthService } from './application/service/AuthService';
+import { ItemAttributeMapper } from './application/service/ItemAttributeMapper';
 import { CreateAppUserUseCase } from './application/use-case/appUser/command/CreateAppUserUseCase';
 import { DeleteAppUserUseCase } from './application/use-case/appUser/command/DeleteAppUserUseCase';
 import { UpdateAppUserUseCase } from './application/use-case/appUser/command/UpdateAppUserUseCase';
@@ -22,28 +23,57 @@ import { AuthController } from './interfaces/http/controller/auth/AuthController
 import { CustomerController } from './interfaces/http/controller/customer/CustomerController';
 import { PgInventoryItemRepository } from './infrastructure/persistence/inventory/PgInventoryItemRepository';
 import { GetInventoryItemBySerialNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
+import { GetItemOnInventoryUseCase } from './application/use-case/inventory/query/GetItemOnInventoryUseCase';
 import { CreateInventoryItemUseCase } from './application/use-case/inventory/command/CreateInventoryItemUseCase';
 import { DeleteInventoryItemUseCase } from './application/use-case/inventory/command/DeleteInventoryItemUseCase';
 import { UpdateInventoryItemUseCase } from './application/use-case/inventory/command/UpdateInventoryItemUseCase';
-import { GetInventoryItemByIdUseCase } from './application/use-case/inventory/query/GetInventoryItemByIdUseCase';
+
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
+import { GetScrapInventoryNumbersUseCase } from './application/use-case/inventory/query/GetScrapInventoryNumbersUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
-import { CreateInventoryCategoryUseCase } from './application/use-case/inventory/command/CreateInventoryCategoryUseCase';
-import { GetInventoryCategoryTreeUseCase } from './application/use-case/inventory/query/GetInventoryCategoryTreeUseCase';
 import { InventoryCategoryController } from './interfaces/http/controller/inventory/InventoryCategoryController';
 import { PgPawnTicketRepository } from './infrastructure/persistence/pawnTicket/PgPawnTicketRepository';
+import { PgPawnTicketPaymentRepository } from './infrastructure/persistence/pawnTicketPayment/PgPawnTicketPaymentRepository';
 import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWork';
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
-import { CreatePawnTicketUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
+import { GetPawnTicketPaymentsUseCase } from './application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
+
+import { PayPawnTicketUseCase } from './application/use-case/pawnTicket/command/PayPawnTicketUseCase';
+import { PullPawnTicketItemsToInventoryUseCase } from './application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
+import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
+import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
+import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
+import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
-import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
-import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
+import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
+import { ListPawnTicketsByDateRangeUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
+import { PgControlNumberRepository } from './infrastructure/persistence/controlNumber/PgControlNumberRepository';
+import { PgInventoryAttributeRepository } from './infrastructure/persistence/inventory/PgInventoryAttributeRepository';
+import { PgStoreTransactionRepository } from './infrastructure/persistence/storeTransaction/PgStoreTransactionRepository';
+import { InventoryAttributeController } from './interfaces/http/controller/inventory/InventoryAttributeController';
 import { StoreTransactionController } from './interfaces/http/controller/storeTransaction/StoreTransactionController';
+import { CreateStoreTransactionUseCase } from './application/use-case/storeTransaction/command/CreateStoreTransactionUseCase';
+import { GetPawnTicketCurrentChargesUseCase } from './application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
+import { ListTenderTypesUseCase } from './application/use-case/tenderType/query/ListTenderTypesUseCase';
+import { PgTenderTypeRepository } from './infrastructure/persistence/tenderType/PgTenderTypeRepository';
+import { TenderTypeController } from './interfaces/http/controller/tenderType/TenderTypeController';
+import { PgPoliceReportRepository } from './infrastructure/persistence/reports/police/PgPoliceReportRepository';
+import { GenerateDailyPoliceReportUseCase } from './application/use-case/reports/police/query/GenerateDailyPoliceReportUseCase';
+import { PoliceReportFixedWidthService } from './application/service/reports/PoliceReportFixedWidthService';
+import { PoliceReportController } from './interfaces/http/controller/reports/police/PoliceReportController';
+import { PgCashDrawerReportRepository } from './infrastructure/persistence/reports/cashDrawer/PgCashDrawerReportRepository';
+import { GenerateCashDrawerDetailUseCase } from './application/use-case/reports/cashDrawer/query/GenerateCashDrawerDetailUseCase';
+import { CashDrawerReportController } from './interfaces/http/controller/reports/cashDrawer/CashDrawerReportController';
+import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
+import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
+import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
+import { CloseBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
 
 
 
@@ -56,12 +86,20 @@ export async function createApp() {
   const customerRepo = new PgCustomerRepository(pool);
   const inventoryItemRepo = new PgInventoryItemRepository(pool);
   const inventoryCategoryRepo = new PgInventoryCategoryRepository(pool);
+  const inventoryAttributeRepo = new PgInventoryAttributeRepository(pool);
   const pawnTicketRepo = new PgPawnTicketRepository(pool);
+  const pawnTicketPaymentRepo = new PgPawnTicketPaymentRepository(pool);
   const pawnTicketUnitOfWork = new PgPawnTicketUnitOfWork(pool);
   const storeTransactionRepo = new PgStoreTransactionRepository(pool);
+  const controlNumberRepository = new PgControlNumberRepository(pool);
+  const tenderTypeRepository = new PgTenderTypeRepository(pool);
+  const policeReportRepo = new PgPoliceReportRepository(pool);
+  const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
+  const itemAttributeMapper = new ItemAttributeMapper(inventoryCategoryRepo);
+  const policeReportFixedWidthService = new PoliceReportFixedWidthService();
 
 
   // Auth use-cases
@@ -83,26 +121,50 @@ export async function createApp() {
   const getCustomerByIdUseCase = new GetCustomerByIdUseCase(customerRepo);
 
   // Inventory Item use-cases
-  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo);
+  const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo, itemAttributeMapper);
   const updateInventoryItemUseCase = new UpdateInventoryItemUseCase(inventoryItemRepo);
   const deleteInventoryItemUseCase = new DeleteInventoryItemUseCase(inventoryItemRepo);
-  const getInventoryItemByIdUseCase = new GetInventoryItemByIdUseCase(inventoryItemRepo);
   const getInventoryItemByInventoryNumberUseCase = new GetInventoryItemByInventoryNumberUseCase(inventoryItemRepo);
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
+  const getItemOnInventoryUseCase = new GetItemOnInventoryUseCase(inventoryItemRepo);
+  const getScrapInventoryNumbersUseCase = new GetScrapInventoryNumbersUseCase(inventoryItemRepo);
 
-  // Inventory Category use-cases
-  const createInventoryCategoryUseCase = new CreateInventoryCategoryUseCase(inventoryCategoryRepo);
-  const getInventoryCategoryTreeUseCase = new GetInventoryCategoryTreeUseCase(inventoryCategoryRepo);
+  // Inventory Category use-cases 
+  const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
+  const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
+  const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
+
+  // Inventory Attribute use-cases
+  const getAllInventoryAttributeTypesUseCase = new GetAllInventoryAttributeTypesUseCase(inventoryAttributeRepo);
+  const getInventoryAttributeValuesByTypeUseCase = new GetInventoryAttributeValuesByTypeUseCase(inventoryAttributeRepo);
+
 
   // Pawn Ticket use-cases  
-  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork);
+  const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper, controlNumberRepository);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
-  const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo);
+  const getPawnTicketPaymentsUseCase = new GetPawnTicketPaymentsUseCase(pawnTicketPaymentRepo);
+  const getPawnTicketCurrentChargesUseCase = new GetPawnTicketCurrentChargesUseCase(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase)
+  const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
+  const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo);
+
 
   // Store Transaction use-cases
+  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
+  const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
+  const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
+  const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);
+  const closeBalanceCashDrawerUseCase = new CloseBalanceCashDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
+
+  // Tender Type use-cases
+  const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
+
+  // Police Report use-cases
+  const generateDailyPoliceReportUseCase = new GenerateDailyPoliceReportUseCase(policeReportRepo, policeReportFixedWidthService);
+  // Cash Drawer Report use-cases
+  const generateCashDrawerDetailUseCase = new GenerateCashDrawerDetailUseCase(cashDrawerReportRepo);
 
   // Controllers
   const authController = new AuthController(
@@ -111,6 +173,9 @@ export async function createApp() {
     logoutUseCase
   );
 
+  const tenderTypeController = new TenderTypeController(
+    listTenderTypesUseCase
+  );
   const appUserController = new AppUserController(
     listAppUserUseCase,
     createAppUserUseCase,
@@ -130,26 +195,56 @@ export async function createApp() {
     createInventoryItemUseCase,
     updateInventoryItemUseCase,
     deleteInventoryItemUseCase,
-    getInventoryItemByIdUseCase,
     getInventoryItemByInventoryNumberUseCase,
-    getInventoryItemBySerialNumberUseCase
+    getInventoryItemBySerialNumberUseCase,
+    getItemOnInventoryUseCase,
+    getScrapInventoryNumbersUseCase
   );
 
   const inventoryCategoryController = new InventoryCategoryController(
-    createInventoryCategoryUseCase,
-    getInventoryCategoryTreeUseCase
+    getRootCategoriesUseCase,
+    getSubcategoriesByCategoryUseCase,
+    getBrandsByCategoryRootUseCase
   );
+
+  const inventoryAttributeController = new InventoryAttributeController(
+    getAllInventoryAttributeTypesUseCase,
+    getInventoryAttributeValuesByTypeUseCase
+  );
+
+  const payPawnTicketUseCase = new PayPawnTicketUseCase(
+    pawnTicketUnitOfWork,
+    getPawnTicketCurrentChargesUseCase
+  );
+  const pullPawnTicketItemsToInventoryUseCase = new PullPawnTicketItemsToInventoryUseCase(pawnTicketUnitOfWork);
 
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
     listPawnTicketsByControlNumberUseCase,
     listPawnTicketsByCustomerUseCase,
-    listActivePawnTicketsByCustomerUseCase
+    listActivePawnTicketsByCustomerUseCase,
+    getPawnTicketPaymentsUseCase,
+    getPawnTicketCurrentChargesUseCase,
+    payPawnTicketUseCase,
+    listPawnTicketsByDateRangeUseCase,
+    pullPawnTicketItemsToInventoryUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
-    listStoreTransactionsByDateRangeUseCase
+    listStoreTransactionsByDateRangeUseCase,
+    createStoreTransactionUseCase,
+    removeCashFromMainDrawerUseCase,
+    addMoneyToMainDrawerUseCase,
+    listBalanceCashDrawerUseCase,
+    closeBalanceCashDrawerUseCase
+  );
+
+  const policeReportController = new PoliceReportController(
+    generateDailyPoliceReportUseCase
+  );
+  const cashDrawerReportController = new CashDrawerReportController(
+    generateCashDrawerDetailUseCase
   );
 
   const app = createExpressApp({
@@ -158,8 +253,12 @@ export async function createApp() {
     customerController,
     inventoryItemController,
     inventoryCategoryController,
+    inventoryAttributeController,
     pawnTicketController,
     storeTransactionController,
+    tenderTypeController,
+    policeReportController,
+    cashDrawerReportController,
     jwtSecret: env.jwtSecret
   });
 

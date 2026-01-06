@@ -1,15 +1,33 @@
 import { InventoryCategory } from './InventoryCategory';
 
 export interface InventoryCategoryRepository {
-  /**
-   * Insert a new category row.
-   * Mostly for future admin UI – seeds come from migrations.
-   */
-  create(category: InventoryCategory): Promise<InventoryCategory>;
 
   /**
-   * Returns the full category tree as a flat list.
-   * UI uses parentId / path / depth to build hierarchy.
+   * Get all root categories (those with no parent).      
+   * 
+   * @returns A list of root categories.
    */
-  getAllAsTree(): Promise<InventoryCategory[]>;
+  getRootCategories(): Promise<InventoryCategory[]>;
+
+  /**
+   * Get all subcategories for a given category.
+   *  
+   * @returns A list of subcategories for the given category.
+   */
+  getSubcategoriesGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]>;
+
+  /**
+   * Get brands for a given category.
+   * 
+   * @returns A list of brands for the given category.
+   */
+  getBrandsGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]>;
+
+  /**
+   * Get the parent category for a given subcategory.
+   * 
+   * @param subcategoryId The subcategory ID
+   * @returns The parent category or null if not found
+   */
+  getCategoryBySubcategoryId(subcategoryId: string): Promise<InventoryCategory | null>;
 }

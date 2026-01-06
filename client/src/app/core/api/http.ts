@@ -5,7 +5,7 @@ const requestCache = new Map<string, { promise: Promise<any>; timestamp: number 
 const CACHE_DURATION = 1000; // 1 second
 
 // ✅ Base URL configuration with fallback
-let BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+let BASE_URL = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_API_PORT}`;
 let isConfigLoaded = false;
 
 // Initialize config from Electron if available
@@ -28,7 +28,7 @@ async function initConfig() {
 
 export async function http(
   path: string,
-  options: RequestInit = {}
+  options: CustomRequestInit = {}
 ): Promise<any> {
   // Ensure config is loaded before first request
   if (!isConfigLoaded) {
@@ -58,7 +58,11 @@ export async function http(
   return requestPromise;
 }
 
-async function makeRequest(path: string, options: RequestInit = {}): Promise<any> {
+interface CustomRequestInit extends RequestInit {
+  responseType?: 'json' | 'blob' | 'text';
+}
+
+async function makeRequest(path: string, options: CustomRequestInit = {}): Promise<any> {
   try {
     // ✅ Ensure we have a fresh access token
     const hasValidToken = await ensureFreshAccessToken();
@@ -72,7 +76,7 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
     const fullUrl = path.startsWith('/') ? path : `/${path}`;
     const absoluteUrl = path.startsWith('http') ? path : `${BASE_URL}${fullUrl}`;
 
-    console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
+    //console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
 
     const response = await fetch(absoluteUrl, {
       ...options,
@@ -83,7 +87,11 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
       },
     });
 
-    console.log(`📥 Response: ${response.status} ${response.statusText}`);
+    // console.log(`📥 Response: ${response.status} ${response.statusText}`);
+
+    if (response.status === 204) {
+      return null;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -103,11 +111,27 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
         });
       }
 
-      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        // Not JSON
+      }
+
+      const errorMessage = errorData?.message || errorData?.error || errorText || response.statusText;
+      throw new Error(errorMessage);
+    }
+
+    if (options.responseType === 'blob') {
+      return response.blob();
+    }
+
+    if (options.responseType === 'text') {
+      return response.text();
     }
 
     const data = await response.json();
-    console.log(`✅ Success:`, data);
+    // console.log(`✅ Success:`, data);
     return data;
 
   } catch (error) {
@@ -115,9 +139,10 @@ async function makeRequest(path: string, options: RequestInit = {}): Promise<any
 
     // ✅ Network connection errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Cannot connect to server. Please check if the server is running on http://localhost:3000');
+      throw new Error(`Cannot connect to server. Please check if the server is running on ${BASE_URL}`);
     }
 
     throw error;
   }
 }
+

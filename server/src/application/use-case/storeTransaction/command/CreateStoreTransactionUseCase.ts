@@ -1,84 +1,124 @@
-import { randomUUID } from 'crypto';
-
-import { StoreTransactionRepository } from '../../../../domains/storeTransaction/StoreTransactionRepository';
 import { StoreTransaction } from '../../../../domains/storeTransaction/StoreTransaction';
+import { StoreTransactionRepository } from '../../../../domains/storeTransaction/StoreTransactionRepository';
 import { StoreTransactionTender } from '../../../../domains/storeTransaction/StoreTransactionTender';
 import { StoreTransactionItem } from '../../../../domains/storeTransaction/StoreTransactionItem';
-
-import {
-    createStoreTransactionRequestSchema,
-    CreateStoreTransactionRequestDto,
-} from '../../../dto/storeTransaction/command/CreateStoreTransactionRequestDto';
-
-import { StoreTransactionResponseDto } from '../../../dto/storeTransaction/query/StoreTransactionResponseDto';
-import { toStoreTransactionResponseDto } from '../../../mapping/storeTransaction/storeTransactionMapper';
+import { CreateStoreTransactionDto } from '../../../dto/storeTransaction/CreateStoreTransactionDto';
+import { InventoryItemRepository } from '../../../../domains/inventory/InventoryItemRepository';
 
 export class CreateStoreTransactionUseCase {
     constructor(
-        private readonly storeTransactionRepository: StoreTransactionRepository
+        private readonly storeTransactionRepository: StoreTransactionRepository,
+        private readonly inventoryItemRepository: InventoryItemRepository
     ) { }
 
-    async execute(input: unknown): Promise<StoreTransactionResponseDto> {
-        const dto: CreateStoreTransactionRequestDto =
-            createStoreTransactionRequestSchema.parse(input);
+    async execute(input: CreateStoreTransactionDto, clerkUserId: string): Promise<StoreTransaction> {
+        // 1. Calculate totals
+        let subtotal = 0;
+        const items: StoreTransactionItem[] = [];
+        const inventoryUpdates: { id: string, quantity: number }[] = [];
 
-        const now = new Date();
-        const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : now;
+        const transactionId = crypto.randomUUID();
 
-        const txId = randomUUID();
+        for (const [index, itemDto] of input.items.entries()) {
+            const lineAmount = itemDto.quantity * itemDto.price;
+            subtotal += lineAmount;
 
-        const tenders = dto.tenders.map(
-            (t, index) =>
-                new StoreTransactionTender({
-                    id: randomUUID(),
-                    storeTransactionId: txId,
-                    sequence: t.sequence ?? index + 1,
-                    tenderTypeId: t.tenderTypeId,
-                    amount: t.amount,
-                    createdAt: now,
-                })
-        );
+            let inventoryItemId: string | null = null;
+            let cost = 0;
 
-        const items = (dto.items ?? []).map(
-            (i, index) =>
-                new StoreTransactionItem({
-                    id: randomUUID(),
-                    storeTransactionId: txId,
-                    sequence: i.sequence ?? index + 1,
-                    inventoryItemId: i.inventoryItemId ?? null,
-                    description: i.description ?? null,
-                    quantity: i.quantity ?? 1,
-                    lineAmount: i.lineAmount ?? null,
-                    lineCost: i.lineCost ?? null,
-                    taxExempt: i.taxExempt ?? null,
-                    countyTaxExempt: i.countyTaxExempt ?? null,
-                    returned: i.returned ?? null,
-                    status: i.status ?? null,
-                    createdAt: now,
-                })
-        );
+            if (itemDto.inventoryItemId) {
+                const inventoryItem = await this.inventoryItemRepository.findById(itemDto.inventoryItemId);
+                if (inventoryItem) {
+                    inventoryItemId = inventoryItem.id;
+                    if (inventoryItem.priceAmount) {
+                        cost = Number(inventoryItem.priceAmount) * itemDto.quantity;
+                    }
 
+                    inventoryUpdates.push({
+                        id: inventoryItem.id,
+                        quantity: itemDto.quantity
+                    });
+                }
+            }
+
+            items.push(new StoreTransactionItem({
+                id: crypto.randomUUID(),
+                storeTransactionId: transactionId,
+                sequence: index + 1,
+                inventoryItemId: inventoryItemId,
+                description: itemDto.description,
+                quantity: itemDto.quantity,
+                lineAmount: lineAmount,
+                lineCost: cost > 0 ? cost : null, // If no inventory item, no cost tracked for now
+                taxExempt: itemDto.taxExempt ?? false,
+                countyTaxExempt: false, // Default
+                returned: false,
+                status: 'S', // Sold
+                createdAt: new Date()
+            }));
+        }
+
+        // Calculate tax and amount only if not tax exempt
+        let taxSales = 0;
+        let totalAmount = subtotal;
+        if (!input.taxExemptUsed) {
+            const taxRate = 0.065; // 6.5% sales tax
+            for (const item of items) {
+                if (!item.taxExempt) {
+                    taxSales += (item.lineAmount || 0) * taxRate;
+                }
+            }
+            taxSales = Math.round(taxSales * 100) / 100;
+            totalAmount = subtotal + taxSales;
+        }
+
+        // Tenders
+        const tenders: StoreTransactionTender[] = [];
+        let tenderTotal = 0;
+
+        // Validation: If no tenders, force CASH for total (Assumption from plan)
+        const finalTenders = (input.tenders && input.tenders.length > 0)
+            ? input.tenders
+            : [{ tenderTypeId: 1, amount: totalAmount }]; // Default to Cash
+
+        for (const [index, tenderDto] of finalTenders.entries()) {
+            tenders.push(new StoreTransactionTender({
+                id: crypto.randomUUID(),
+                storeTransactionId: transactionId,
+                sequence: index + 1,
+                tenderTypeId: tenderDto.tenderTypeId,
+                amount: tenderDto.amount,
+                createdAt: new Date()
+            }));
+            tenderTotal += tenderDto.amount;
+        }
+
+        const tenderChange = tenderTotal - totalAmount;
+
+        // Ensure customerId is null if not provided or empty
+        const customerId = input.customerId && input.customerId.trim() !== '' ? input.customerId : null;
+
+        // Construct Transaction
         const tx = new StoreTransaction({
-            id: txId,
-            customerId: dto.customerId ?? null,
-            clerkUserId: dto.clerkUserId,
-            typeId: dto.typeId,
-            occurredAt,
-            amount: dto.amount ?? null,
-            taxSales: dto.taxSales ?? null,
-            stateTax: dto.stateTax ?? null,
-            taxExemptUsed: dto.taxExemptUsed ?? false,
-            taxExemptCertificate: dto.taxExemptCertificate ?? null,
-            tenderChange: dto.tenderChange ?? null,
-            gunProcFee: dto.gunProcFee ?? null,
-            note: dto.note ?? null,
-            tenders,
-            items,
-            createdAt: now,
-            updatedAt: now,
+            id: transactionId,
+            customerId: customerId,
+            clerkUserId: clerkUserId,
+            typeId: 10, // Retail Sale
+            occurredAt: new Date(),
+            amount: totalAmount,
+            taxSales: taxSales,
+            stateTax: taxSales,
+            taxExemptUsed: input.taxExemptUsed,
+            tenderChange: tenderChange > 0 ? tenderChange : 0,
+            gunProcFee: 0,
+            note: input.note,
+            tenders: tenders,
+            items: items,
+            createdAt: new Date(),
+            updatedAt: new Date()
         });
 
-        const saved = await this.storeTransactionRepository.create(tx);
-        return toStoreTransactionResponseDto(saved);
+        // Persist
+        return this.storeTransactionRepository.create(tx, inventoryUpdates);
     }
 }

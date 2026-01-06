@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import type { Customer } from '@/app/feature/customer';
+import type { Customer } from '@/app/feature/_shared/customer';
 
 interface CustomerPerformanceTabProps {
   customer: Customer | null;

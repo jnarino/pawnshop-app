@@ -4,12 +4,15 @@ import { NotFoundError } from '../../../src/application/common/errors';
 import { GetInventoryItemByInventoryNumberUseCase } from '../../../src/application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
 
 class MockInventoryItemRepository implements InventoryItemRepository {
+  setStatusByPawnTicket = jest.fn();
   create = jest.fn();
   update = jest.fn();
   delete = jest.fn();
   findById = jest.fn();
   findByInventoryNumber = jest.fn();
+  findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
+  findByInventoryNumbers = jest.fn();
 }
 
 describe('GetInventoryItemByInventoryNumberUseCase', () => {
@@ -27,7 +30,7 @@ describe('GetInventoryItemByInventoryNumberUseCase', () => {
     const repo = new MockInventoryItemRepository();
     const item = new InventoryItem({
       id: '123',
-      categoryId: 'cat-123',
+      inventorySubcategoryId: 'cat-123',
       status: 'I',
       quantity: 1,
       inventoryNumber: 'INV-001',

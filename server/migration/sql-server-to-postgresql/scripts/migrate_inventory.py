@@ -4,27 +4,284 @@ from psycopg2.extras import execute_values
 import json
 import uuid
 import os
+from datetime import datetime
 from tqdm import tqdm
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 
 def safe_str(value):
-    """Safely convert value to string, strip whitespace and NUL bytes"""
+    """Return string value or None if input is None"""
     if value is None:
         return None
-    # Convert to string, remove NUL bytes, then strip whitespace
-    return str(value).replace('\x00', '').strip() if value else None
+    # Replace NUL characters which break SQL literals
+    return str(value).replace('\x00', '')
+
+def parse_composit3_jewelry(composit3_str, attr_lookup):
+    """
+    Parse Composit3 field for JEWELRY and return dict of attribute IDs
+    Format: METAL;METAL;CODE;KARAT;KARAT;KARAT;GENDER;GENDER;CODE;STYLE;STYLE;CODE;SIZE;SIZE;SIZE;WEIGHT UNIT;
+    Example: WHITE GOLD;WHITE GOLD;W;14KT;14KT;14KT;WOMAN'S;WOMAN'S;W;ENGAGEMENT RING;ENGAGEMENT RING;X;5 3/4;5 3/4;5 3/4;5.80 GRM;
+    """
+    if not composit3_str:
+        return {}
+        
+    parts = composit3_str.split(';')
+    if len(parts) < 16:
+        return {}  # Not enough parts
+        
+    result = {}
+    
+    try:
+        # Metal (positions 0-2, use first non-empty)
+        metal_val = (parts[0] or parts[1] or '').strip().upper()
+        if metal_val and 'METAL' in attr_lookup:
+            metal_id = attr_lookup['METAL'].get(metal_val)
+            if metal_id:
+                result['metal'] = metal_id
+        
+        # Karat (positions 3-5, use first non-empty)
+        karat_val = (parts[3] or parts[4] or parts[5] or '').strip().upper()
+        if karat_val and 'KARAT' in attr_lookup:
+            karat_id = attr_lookup['KARAT'].get(karat_val)
+            if karat_id:
+                result['karat'] = karat_id
+        
+        # Gender (positions 6-8, use first non-empty)
+        gender_val = (parts[6] or parts[7] or '').strip().upper()
+        if gender_val and 'GENDER' in attr_lookup:
+            gender_id = attr_lookup['GENDER'].get(gender_val)
+            if gender_id:
+                result['gender'] = gender_id
+        
+        # Style (positions 9-11, use first non-empty)
+        style_val = (parts[9] or parts[10] or '').strip().upper()
+        if style_val and 'STYLE' in attr_lookup:
+            style_id = attr_lookup['STYLE'].get(style_val)
+            if style_id:
+                result['style'] = style_id
+        
+        # Size/Length (positions 12-14, use first non-empty)
+        size_val = (parts[12] or parts[13] or parts[14] or '').strip()
+        if size_val and 'SIZE' in attr_lookup:
+            size_id = attr_lookup['SIZE'].get(size_val.upper())
+            if size_id:
+                result['sizeLength'] = size_id
+        
+        # Weight (position 15, format: "5.80 GRM")
+        if len(parts) > 15 and parts[15]:
+            weight_str = parts[15].strip()
+            # Extract numeric part
+            import re
+            weight_match = re.search(r'([\d.]+)\s*(\w+)?', weight_str)
+            if weight_match:
+                weight_num = weight_match.group(1)
+                weight_unit = weight_match.group(2) or 'GRM'
+                result['weight'] = weight_num
+                result['weightUnit'] = weight_unit
+                
+    except (IndexError, ValueError) as e:
+        # Silently ignore parsing errors for individual items
+        pass
+        
+    return result
+
+def parse_composit3_firearm(composit3_str, attr_lookup):
+    """
+    Parse Composit3 field for FIREARMS and return dict of attribute IDs
+    Format: ACTION;ACTION;CODE;CALIBER;CALIBER;CALIBER;COLOR;COLOR;CODE;BARREL;BARREL;CODE;IMPORTER;IMPORTER;IMPORTER;BARREL_LENGTH;CONDITION;
+    Example: SEMI-AUTO;SEMI-AUTO;SEMI-AUTO;9 MM;9 MM;9 MM;BLACK;BLACK;X;SINGLE BARREL;SINGLE BARREL;1;USA;USA;USA;3.7";USED;
+    """
+    if not composit3_str:
+        return {}
+        
+    parts = composit3_str.split(';')
+    if len(parts) < 15:
+        return {}  # Not enough parts
+        
+    result = {}
+    
+    try:
+        # Action (positions 0-2, use first non-empty)
+        action_val = (parts[0] or parts[1] or parts[2] or '').strip().upper()
+        if action_val and 'ACTION' in attr_lookup:
+            action_id = attr_lookup['ACTION'].get(action_val)
+            if action_id:
+                result['action'] = action_id
+        
+        # Caliber (positions 3-5, use first non-empty)
+        caliber_val = (parts[3] or parts[4] or parts[5] or '').strip().upper()
+        if caliber_val and 'CALIBER' in attr_lookup:
+            caliber_id = attr_lookup['CALIBER'].get(caliber_val)
+            if caliber_id:
+                result['caliber'] = caliber_id
+        
+        # Finish (positions 6-8, use first non-empty)
+        finish_val = (parts[6] or parts[7] or '').strip().upper()
+        if finish_val and 'FINISH' in attr_lookup:
+            finish_id = attr_lookup['FINISH'].get(finish_val)
+            if finish_id:
+                result['finish'] = finish_id
+        
+        # Barrel (positions 9-11, use first non-empty)
+        barrel_val = (parts[9] or parts[10] or '').strip().upper()
+        if barrel_val and 'BARREL' in attr_lookup:
+            barrel_id = attr_lookup['BARREL'].get(barrel_val)
+            if barrel_id:
+                result['barrel'] = barrel_id
+        
+        # Importer (positions 12-14, use first non-empty)
+        importer_val = (parts[12] or parts[13] or parts[14] or '').strip().upper()
+        if importer_val and 'IMPORTER' in attr_lookup:
+            importer_id = attr_lookup['IMPORTER'].get(importer_val)
+            if importer_id:
+                result['importer'] = importer_id
+        
+        # Barrel Length (position 15, format: 3.7")
+        if len(parts) > 15 and parts[15]:
+            barrel_length_str = parts[15].strip()
+            # Extract numeric part
+            import re
+            length_match = re.search(r'([\d.]+)', barrel_length_str)
+            if length_match:
+                result['barrelLength'] = length_match.group(1)
+        
+        # Condition (position 16)
+        if len(parts) > 16 and parts[16]:
+            condition_val = parts[16].strip().upper()
+            if condition_val and 'CONDITION' in attr_lookup:
+                condition_id = attr_lookup['CONDITION'].get(condition_val)
+                if condition_id:
+                    result['condition'] = condition_id
+                
+    except (IndexError, ValueError) as e:
+        # Silently ignore parsing errors for individual items
+        pass
+        
+    return result
+
+def parse_composit4_stones(composit4_str, attr_lookup):
+    """
+    Parse Composit4 field for stone details and return array of stone objects
+    Format: Each stone has 17 fields: QTY;CARAT;LENGTH;WIDTH;WEIGHT;TYPE;TYPE;TYPE;SHAPE;SHAPE;SHAPE;COLOR;COLOR;COLOR;CLARITY;CLARITY;CLARITY;
+    Example: 1;0.00;0.00;0.00;0.00;TANZANITE;TANZANITE;TANZANITE;SQUARE;SQUARE;SQUARE;;;;;;;38;0.00;0.00;0.00;0.00;DIAMOND;DIAMOND;DIAMOND;;;;;;;;;;
+    """
+    if not composit4_str:
+        return []
+        
+    parts = composit4_str.split(';')
+    stones = []
+    
+    # Each stone entry has 17 fields
+    fields_per_stone = 17
+    i = 0
+    
+    while i + fields_per_stone <= len(parts):
+        try:
+            stone_parts = parts[i:i+fields_per_stone]
+            
+            # Extract values
+            quantity = stone_parts[0].strip()
+            carat = stone_parts[2].strip()
+            length = stone_parts[3].strip()
+            width = stone_parts[4].strip()
+            weight = stone_parts[1].strip()
+            
+            # Type (positions 5-7, use first non-empty)
+            type_val = (stone_parts[5] or stone_parts[6] or stone_parts[7] or '').strip().upper()
+            
+            # Shape (positions 8-10, use first non-empty)
+            shape_val = (stone_parts[8] or stone_parts[9] or stone_parts[10] or '').strip().upper()
+            
+            # Color (positions 11-13, use first non-empty)
+            color_val = (stone_parts[11] or stone_parts[12] or stone_parts[13] or '').strip().upper()
+            
+            # Clarity (positions 14-16, use first non-empty)
+            clarity_val = (stone_parts[14] or stone_parts[15] or stone_parts[16] or '').strip().upper()
+            
+            # Skip empty stone entries (all key fields empty)
+            if not quantity or quantity == '0' or not type_val:
+                i += fields_per_stone
+                continue
+            
+            stone = {}
+            
+            # Quantity (always include)
+            try:
+                stone['quantity'] = int(quantity)
+            except ValueError:
+                stone['quantity'] = 1
+            
+            # Numeric values (add before UUIDs for consistent ordering)
+            if carat and carat != '0.00':
+                try:
+                    stone['carat'] = float(carat)
+                except ValueError:
+                    pass
+            
+            if length and length != '0.00':
+                try:
+                    stone['length'] = float(length)
+                except ValueError:
+                    pass
+            
+            if width and width != '0.00':
+                try:
+                    stone['width'] = float(width)
+                except ValueError:
+                    pass
+            
+            if weight and weight != '0.00':
+                try:
+                    stone['weight'] = float(weight)
+                except ValueError:
+                    pass
+            
+            # Map type to UUID
+            if type_val and 'TYPE' in attr_lookup:
+                type_id = attr_lookup['TYPE'].get(type_val)
+                if type_id:
+                    stone['type'] = type_id
+            
+            # Map shape to UUID
+            if shape_val and 'SHAPE' in attr_lookup:
+                shape_id = attr_lookup['SHAPE'].get(shape_val)
+                if shape_id:
+                    stone['shape'] = shape_id
+            
+            # Map color to UUID
+            if color_val and 'COLOR' in attr_lookup:
+                color_id = attr_lookup['COLOR'].get(color_val)
+                if color_id:
+                    stone['color'] = color_id
+            
+            # Map clarity to UUID
+            if clarity_val and 'CLARITY' in attr_lookup:
+                clarity_id = attr_lookup['CLARITY'].get(clarity_val)
+                if clarity_id:
+                    stone['clarity'] = clarity_id
+            
+            # Only add stone if it has meaningful data
+            if len(stone) > 1:  # More than just quantity
+                stones.append(stone)
+                
+        except (IndexError, ValueError) as e:
+            # Skip malformed stone entries
+            pass
+        
+        i += fields_per_stone
+    
+    return stones
 
 def migrate_inventory():
-    print("🚀 Starting Inventory Migration...")
+    print("🚀 Starting Inventory Migration (Split Schema: Subcategory + Brand)...")
     
-    # Load Lookup Map
+    # Load User Map
     try:
-        with open('lookup_map.json', 'r') as f:
-            lookup_map = json.load(f)
-    except FileNotFoundError:
-        print("❌ lookup_map.json not found. Run migrate_lookup.py first.")
-        return
-    
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        print("⚠️ user_map.json not found. owner_id will be null.")
+        user_map = {}
+
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
         mssql_cursor = mssql_conn.cursor(as_dict=True)
@@ -32,149 +289,321 @@ def migrate_inventory():
         pg_conn = psycopg2.connect(**POSTGRES_CONFIG)
         pg_cursor = pg_conn.cursor()
         
-        # Get or create Unknown category for orphaned items
-        pg_cursor.execute("SELECT id FROM inventory_category WHERE code = 'UNKNOWN'")
-        unknown_cat = pg_cursor.fetchone()
-        if not unknown_cat:
-            import uuid as uuid_lib
-            unknown_id = str(uuid_lib.uuid4())
-            pg_cursor.execute("""
-                INSERT INTO inventory_category (id, name, code, parent_id)
-                VALUES (%s, 'Unknown/Uncategorized', 'UNKNOWN', NULL)
-                RETURNING id
-            """, (unknown_id,))
-            unknown_cat_id = pg_cursor.fetchone()[0]
-            pg_conn.commit()
+        # ==================================
+        # 1. Build Lookup Maps
+        # ==================================
+        print("Building Lookup Maps...")
+        
+        # L1 Map: PK -> UUID
+        l1_map = {}
+        mssql_cursor.execute("SELECT lv1_pk, lv1_ID FROM dbo.Level1")
+        for r in mssql_cursor.fetchall():
+            l1_map[r['lv1_pk']] = str(r['lv1_ID'])
+            
+        # L2 Map: PK -> UUID
+        l2_map = {}
+        mssql_cursor.execute("SELECT lv2_pk, lv2_ID FROM dbo.Level2")
+        for r in mssql_cursor.fetchall():
+            l2_map[r['lv2_pk']] = str(r['lv2_ID'])
+            
+        # L5 Info: PK -> {Code, Name}
+        l5_info = {}
+        mssql_cursor.execute("SELECT lv5_PK, DESCRIPT FROM dbo.Level5") # Fixed Keys
+        for r in mssql_cursor.fetchall():
+            l5_info[r['lv5_PK']] = {
+                'name': r['DESCRIPT']
+            }
+            
+        # Postgres Brand Map: (CatID, BrandCode) -> BrandID
+        # We need this because Brand IDs are generated UUIDs in Postgres
+        print("Fetching Postgres Brand Map...")
+        pg_cursor.execute("SELECT id, inventory_category_id, code FROM inventory_brand")
+        pg_brands = pg_cursor.fetchall()
+        pg_brand_map = {} # (cat_id, code) -> brand_id
+        for r in pg_brands:
+            pg_brand_map[(str(r[1]), str(r[2]))] = str(r[0])
+            
+        # Verify valid Subcategories in PG
+        pg_cursor.execute("SELECT id FROM inventory_subcategory")
+        valid_subcats = set(str(r[0]) for r in pg_cursor.fetchall())
+        
+        print(f"Loaded {len(pg_brand_map)} Brands and {len(valid_subcats)} Subcategories from PG.")
+        
+        # Ensure Uncategorized Category exists
+        uncat_cat_id = str(uuid.uuid4())
+        uncategorized_sub_id = str(uuid.uuid4())
+        
+        pg_cursor.execute("SELECT id FROM inventory_category WHERE name = 'Uncategorized'")
+        res = pg_cursor.fetchone()
+        if res:
+             uncat_cat_id = res[0]
         else:
-            unknown_cat_id = str(unknown_cat[0])
+             pg_cursor.execute(
+                 "INSERT INTO inventory_category (id, name, code, is_active) VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                 (uncat_cat_id, 'Uncategorized', 'UNC', True)
+             )
+             pg_conn.commit()
+             print("Created 'Uncategorized' Category.")
+             
+        # Ensure Uncategorized Subcategory exists
+        pg_cursor.execute("SELECT id FROM inventory_subcategory WHERE name = 'Uncategorized'")
+        res = pg_cursor.fetchone()
+        if res:
+            uncategorized_sub_id = res[0]
+        else:
+            pg_cursor.execute(
+                "INSERT INTO inventory_subcategory (id, inventory_category_id, name, code, is_active) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                (uncategorized_sub_id, uncat_cat_id, 'Uncategorized', 'UNC', True)
+            )
+            pg_conn.commit()
+            print("Created 'Uncategorized' Subcategory.")
+            
+        valid_subcats.add(str(uncategorized_sub_id))
         
-        print(f"Using fallback category: {unknown_cat_id}")
-        
-        # Fetch inventory items
-        print("Fetching inventory items from SQL Server...")
-        mssql_cursor.execute("""
-            SELECT * FROM dbo.items 
-            WHERE DateItemEntered > '1980-01-01'
-            ORDER BY DateItemEntered
+        # Load Lookup Map from migrate_lookup.py output
+        # This contains: values (lc_pk -> {value, id}), types (lb_pk -> name), type_ids (name -> uuid)
+        try:
+            with open('lookup_map.json', 'r') as f:
+                lookup_data = json.load(f)
+                lookup_map = lookup_data.get('values', {})
+                type_map = lookup_data.get('types', {})
+                type_ids = lookup_data.get('type_ids', {})
+        except:
+            print("⚠️ lookup_map.json not found. Color and attribute mapping will be limited.")
+            lookup_map = {}
+            type_map = {}
+            type_ids = {}
+            
+        # Build reverse lookup: attribute_type -> (value_text -> value_id)
+        # This helps find attribute IDs by type name and value text
+        pg_cursor.execute("""
+            SELECT av.id, av.value, at.name as type_name
+            FROM item_attribute_value av
+            JOIN item_attribute_type at ON at.id = av.attribute_type_id
         """)
+        attr_lookup = {}  # {type_name: {value_text: value_id}}
+        for row in pg_cursor.fetchall():
+            val_id, val_text, type_name = str(row[0]), row[1], row[2]
+            if type_name not in attr_lookup:
+                attr_lookup[type_name] = {}
+            attr_lookup[type_name][val_text.upper().strip()] = val_id
         
+        # Build category map to identify firearms
+        pg_cursor.execute("SELECT id, code, name FROM inventory_category")
+        firearm_category_ids = set()
+        for row in pg_cursor.fetchall():
+            cat_id, code, name = str(row[0]), row[1], row[2]
+            # Identify firearm categories by code or name
+            if code and ('GUN' in code.upper() or 'FIREARM' in code.upper()):
+                firearm_category_ids.add(cat_id)
+            elif name and ('GUN' in name.upper() or 'FIREARM' in name.upper()):
+                firearm_category_ids.add(cat_id)
+
+        # ==================================
+        # 2. Fetch Inventory Items
+        # ==================================
+        print("Fetching items from SQL Server...")
+        mssql_cursor.execute("""
+           SELECT 
+              i.ITEMS_PK, i.Items_ID, i.usr_fk,
+              i.LEVEL1_FK, i.LEVEL2_FK, i.LEVEL5_FK,
+              i.STATUS, i.MODELNUM, i.SERIALNUM, i.Color, i.Condition,
+              i.OnHand, i.AMOUNT, i.RESALEAMT, i.LOWSLPRICE, i.INSREPCOST,
+              i.DateItemEntered, i.INVNUM, i.OWNERNUM,
+              i.DESCRIPT, i.DESCRIPT2, i.BIN, i.Composit3, i.Composit4, i.storagefee
+           FROM dbo.items i
+           WHERE (i.DateItemEntered >= '1900-01-01' OR i.DateItemEntered IS NULL)
+        """)
         items = mssql_cursor.fetchall()
-        print(f"Found {len(items)} items to migrate")
         
-        # Fetch Details (Jewelry & Guns) and Stones into memory maps for speed
-        print("Fetching Jewelry Details...")
+        # Fetch Details
         mssql_cursor.execute("SELECT * FROM Detail_J")
         jewelry_details = {row['Items_FK']: row for row in mssql_cursor.fetchall()}
         
-        print("Fetching Gun Details...")
-        mssql_cursor.execute("SELECT * FROM Detail_G")
+        mssql_cursor.execute("SELECT * FROM dbo.Detail_G")
         gun_details = {row['Items_FK']: row for row in mssql_cursor.fetchall()}
         
-        print("Fetching Stones...")
         mssql_cursor.execute("SELECT * FROM dbo.stones")
         stones_rows = mssql_cursor.fetchall()
-        # Group stones by JDT_FK (Jewelry Detail FK)
         stones_map = {}
-        for row in stones_rows:
-            jdt_fk = row['JDT_FK']
-            if jdt_fk not in stones_map:
-                stones_map[jdt_fk] = []
-            stones_map[jdt_fk].append(row)
-        
-        # Helper to get lookup value
-        lookup_values = lookup_map.get('values', {})
-        def get_val(lc_pk):
-            return lookup_values.get(str(lc_pk))
-        
+        for s in stones_rows:
+            fk = s['JDT_FK']
+            if fk not in stones_map: stones_map[fk] = []
+            stones_map[fk].append(s)
+
+        # ==================================
+        # 3. Migrate Items
+        # ==================================
         batch_size = 1000
         batch_data = []
         errors = 0
         
-        print("Migrating...")
+        # print("Migrating...")
         for row in tqdm(items):
             try:
+                # 1. Resolve Subcategory (Mandatory)
+                # Items must have L2 -> Subcategory
+                l2_fk = row['LEVEL2_FK']
+                if not l2_fk:
+                    # Fallback to Uncategorized
+                    subcat_uuid = uncategorized_sub_id
+                else:
+                    subcat_uuid = l2_map.get(l2_fk)
+                    if not subcat_uuid or subcat_uuid not in valid_subcats:
+                        subcat_uuid = uncategorized_sub_id
+                
+                # 2. Resolve Brand (Optional)
+                brand_uuid = None
+                l1_fk = row['LEVEL1_FK']
+                l5_fk = row['LEVEL5_FK']
+                
+                if l1_fk and l5_fk:
+                    cat_uuid = l1_map.get(l1_fk)
+                    brand_info = l5_info.get(l5_fk)
+                    if cat_uuid and brand_info:
+                        # Reconstruct Code logic
+                        b_name = (brand_info['name'] or 'Unknown').strip()
+                        b_code = b_name[:3].strip().upper() # Derived Code
+                        
+                        brand_uuid = pg_brand_map.get((cat_uuid, b_code))
+
+                # 3. Attributes & Other Fields
                 item_pk = row['ITEMS_PK']
+                item_uuid = str(row['Items_ID']) if row.get('Items_ID') else str(uuid.uuid4())
                 
-                # Use source UUID if available, otherwise generate
-                item_id = str(row['Items_ID']) if row.get('Items_ID') else str(uuid.uuid4())
+                status_char = str(row['STATUS']).strip()
+                status_code = status_char if len(status_char) == 1 else 'I'
                 
-                # Category: Use most specific level available (5 > 4 > 3 > 2 > 1)
-                category_id = None
-                for level_col in ['lv5_ID', 'lv4_ID', 'lv3_ID', 'lv2_ID', 'lv1_ID']:
-                    if row.get(level_col):
-                        potential_cat_id = str(row[level_col])
-                        # Verify category exists in PostgreSQL
-                        pg_cursor.execute("SELECT 1 FROM inventory_category WHERE id = %s", (potential_cat_id,))
-                        if pg_cursor.fetchone():
-                            category_id = potential_cat_id
-                            break
-                
-                # Use fallback if no valid category found
-                if not category_id: category_id = unknown_cat_id
-                
-                # Color removed - now stored in attributes JSONB
-                
-                # Attributes & Extra
+                # Define helper for lookup resolution
+                def resolve_lookup(fk):
+                    if not fk:
+                        return None
+                    data = lookup_map.get(fk)
+                    if isinstance(data, dict):
+                        return data.get('value')
+                    return data  # Fallback for old format
+
+                # Details
+                extra_data = {}
                 attributes = {}
-                extra = {}
                 
-                # Jewelry Attributes
+                # Determine if item is firearm based on category
+                cat_uuid = l1_map.get(l1_fk) if l1_fk else None
+                is_firearm = cat_uuid in firearm_category_ids if cat_uuid else False
+                
+                # Parse Composit3 field if available
+                composit3_str = safe_str(row.get('Composit3'))
+                if composit3_str:
+                    if is_firearm:
+                        composit3_attrs = parse_composit3_firearm(composit3_str, attr_lookup)
+                    else:
+                        composit3_attrs = parse_composit3_jewelry(composit3_str, attr_lookup)
+                    attributes.update(composit3_attrs)
+                
+                # Jewelry
                 if item_pk in jewelry_details:
                     jd = jewelry_details[item_pk]
-                    if jd.get('Metal_FK'): attributes['Metal'] = get_val(jd['Metal_FK'])
-                    if jd.get('Karat_FK'): attributes['Karat'] = get_val(jd['Karat_FK'])
-                    if jd.get('Gender_FK'): attributes['Gender'] = get_val(jd['Gender_FK'])
-                    if jd.get('Style_FK'): attributes['Style'] = get_val(jd['Style_FK'])
-                    if jd.get('Sizelen_FK'): attributes['Size'] = get_val(jd['Sizelen_FK']) # Or is it a value?
-                    if jd.get('Weight'): attributes['Weight'] = float(jd['Weight'])
                     
-                    # Stones
-                    jdt_pk = jd['JDT_PK']
-                    if jdt_pk in stones_map:
-                        stones_list = []
-                        for s in stones_map[jdt_pk]:
-                            stone_data = {
-                                "type": get_val(s.get('TYPSTONEFK')),
-                                "shape": get_val(s.get('SHAPE_FK')),
-                                "color": get_val(s.get('COLOR_FK')),
-                                "clarity": get_val(s.get('TRANSLUCFK')),
-                                "quantity": int(s.get('NUMSTONE') or 0),
-                                "weight": float(s.get('WEIGHT') or 0),
-                                "carat": float(s.get('CARAT') or 0)
-                            }
-                            # Remove None values
-                            stones_list.append({k: v for k, v in stone_data.items() if v is not None})
-                        extra['stones'] = stones_list
-
-                # Gun Attributes
+                    gender = resolve_lookup(jd.get('Gender_FK'))
+                    if gender: extra_data['gender'] = gender
+                    
+                    size_len = resolve_lookup(jd.get('Sizelen_FK'))
+                    if size_len: extra_data['size'] = size_len
+                    
+                    metal = resolve_lookup(jd.get('Metal_FK'))
+                    if metal: attributes['metal'] = metal
+                    
+                    style = resolve_lookup(jd.get('Style_FK'))
+                    if style: attributes['style'] = style
+                    
+                    karat = resolve_lookup(jd.get('Karat_FK'))
+                    if karat: attributes['karat'] = karat
+                    
+                    # Weights (direct values)
+                    # Convert Decimal to float for JSON serialization
+                    weight = jd.get('Weight')
+                    if weight is not None:
+                        extra_data['weight'] = float(weight)
+                
+                # Parse Composit4 field for stones (takes precedence over stones table)
+                composit4_str = safe_str(row.get('Composit4'))
+                if composit4_str:
+                    composit4_stones = parse_composit4_stones(composit4_str, attr_lookup)
+                    if composit4_stones:
+                        extra_data['stones'] = composit4_stones
+                
+                # Guns
                 if item_pk in gun_details:
                     gd = gun_details[item_pk]
-                    if gd.get('Action_FK'): attributes['Action'] = get_val(gd['Action_FK'])
-                    if gd.get('Caliber_FK'): attributes['Caliber'] = get_val(gd['Caliber_FK'])
-                    if gd.get('Finish_FK'): attributes['Finish'] = get_val(gd['Finish_FK'])
-                    if gd.get('Barrel_FK'): attributes['Barrel'] = get_val(gd['Barrel_FK'])
-                    if gd.get('ImporterFK'): attributes['Importer'] = get_val(gd['ImporterFK'])
-                    if gd.get('Condition'): attributes['Condition'] = safe_str(gd['Condition'])
-
-                # Construct Batch
+                    # resolve_lookup is already defined above
+                        
+                    action = resolve_lookup(gd.get('Action_FK'))
+                    if action: attributes['action'] = action
+                    
+                    caliber = resolve_lookup(gd.get('Caliber_FK'))
+                    if caliber: attributes['caliber'] = caliber
+                    
+                    finish = resolve_lookup(gd.get('Finish_FK'))
+                    if finish: attributes['finish'] = finish
+                    
+                    barrel = resolve_lookup(gd.get('Barrel_FK'))
+                    if barrel: attributes['barrel'] = barrel
+                    
+                    condition = resolve_lookup(gd.get('Condition_FK'))
+                    if condition: attributes['condition'] = condition
+                    
+                    importer = resolve_lookup(gd.get('ImporterFK'))
+                    if importer: extra_data['importer'] = importer
+                
+                # Color - Get UUID from item_attribute_value
+                color_uuid = None
+                color_fk = row['Color']
+                if color_fk and str(color_fk) in lookup_map:
+                    color_data = lookup_map[str(color_fk)]
+                    # lookup_map[lc_pk] = {"value": text, "id": uuid}
+                    if isinstance(color_data, dict):
+                        color_uuid = color_data.get('id')
+                    # Fallback for old format (just text)
+                    # else: color_uuid = None
+                
+                # Dates: keep null if source is null/empty; otherwise pass through as-is
+                raw_created_at = row.get('DateItemEntered')
+                created_at = raw_created_at if raw_created_at not in (None, '', ' ') else None
+                
+                updated_at = datetime.utcnow()
+                
+                # Legacy Columns
+                # CAT_DESC and BRAND_COLOR_DESC were removed from query as they were invalid
+                # We can populate legacy fields with available data
+                
                 batch_data.append((
-                    str(row['Items_ID']) if row.get('Items_ID') else str(uuid.uuid4()),
-                    category_id,
-                    'I', # Status (Default to Inventory, logic can be improved)
-                    safe_str(row.get('MODELNUM')), # Model
-                    safe_str(row.get('SERIALNUM')), # Serial
-                    safe_str(row.get('Condition')), # Condition
-                    max(int(row.get('OnHand', 1)), 1), # Quantity
-                    row.get('AMOUNT'), # Price/Pawn Amount?
-                    row.get('RESALEAMT'), # Resale
-                    row.get('INSREPCOST'), # Replace
-                    safe_str(row.get('OWNERNUM')), # Owner
-                    safe_str(row.get('DESCRIPT')), # Description
-                    json.dumps(extra),
+                    item_uuid,
+                    subcat_uuid,
+                    brand_uuid,
+                    status_code,
+                    safe_str(row['MODELNUM']),
+                    safe_str(row['SERIALNUM']),
+                    color_uuid,
+                    safe_str(row['Condition']),
+                    int(float(row['OnHand'] or 0)), # Allow quantity to be 0 or more
+                    row['AMOUNT'],
+                    row['RESALEAMT'],
+                    row['LOWSLPRICE'],
+                    row['INSREPCOST'],
+                    safe_str(row['OWNERNUM']),# owner_mark
+                    safe_str(row['DESCRIPT']), # Item Description
+                    safe_str(row['BIN']), # Bin Location
+                    row.get('storagefee'),
+                    json.dumps(extra_data),
                     json.dumps(attributes),
-                    safe_str(row.get('INVNUM')), # Inventory Number
-                    safe_str(row.get('BIN')), # Bin Location
-                    row.get('storagefee') # Storage Fee
+                    safe_str(row['INVNUM']).strip(), # legacy_inventory_number
+                    safe_str(row['Items_ID']),   # legacy_item_guid (Using Items_ID as proxy)
+                    None, # legacy_category_description
+                    safe_str(row['DESCRIPT2']), # legacy_brand_color_description
+                    safe_str(row['INVNUM']).strip(), # inventory_number
+                    user_map.get(str(row['usr_fk'])), # last_updated_user_id
+                    created_at,
+                    updated_at
                 ))
                 
                 if len(batch_data) >= batch_size:
@@ -183,15 +612,17 @@ def migrate_inventory():
                     batch_data = []
                     
             except Exception as e:
+                pg_conn.rollback()
                 errors += 1
-                if errors < 10:
+                # Silent fail for individual items
+                if errors < 10: # Keep original behavior of printing first few errors
                     print(f"  Error processing item {row.get('ITEMS_PK')}: {e}")
 
         if batch_data:
             _insert_batch(pg_cursor, batch_data)
             pg_conn.commit()
             
-        print(f"✅ Inventory Migration Completed! Errors: {errors}")
+        print(f"✅ Inventory Migration Completed! ({errors} errors/skipped)")
         
     except Exception as e:
         pg_conn.rollback()
@@ -205,13 +636,38 @@ def migrate_inventory():
 def _insert_batch(cursor, data):
     sql = """
         INSERT INTO inventory_item (
-            id, category_id, status, 
-            model, serial_number, item_condition, 
-            quantity, price_amount, resale, item_replace, owner_mark, 
-            item_description, extra, attributes, inventory_number,
-            bin_location, storage_fee
+            id, 
+            inventory_subcategory_id, 
+            inventory_brand_id,
+            status, 
+            model, 
+            serial_number, 
+            color, 
+            item_condition, 
+            quantity, 
+            price_amount, 
+            resale, 
+            min_resale, 
+            item_replace, 
+            owner_mark,
+            item_description, 
+            bin_location, 
+            storage_fee, 
+            extra, 
+            attributes, 
+            legacy_inventory_number,
+            legacy_item_guid,
+            legacy_category_description,
+            legacy_brand_color_description,
+            inventory_number,
+            last_updated_user_id,
+            created_at, 
+            updated_at
         ) VALUES %s
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT (id) DO UPDATE SET
+            last_updated_user_id = EXCLUDED.last_updated_user_id,
+            created_at = EXCLUDED.created_at,
+            updated_at = EXCLUDED.updated_at
     """
     execute_values(cursor, sql, data)
 

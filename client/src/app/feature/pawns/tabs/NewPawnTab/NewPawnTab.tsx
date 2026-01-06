@@ -1,27 +1,73 @@
 import { useCallback, useState } from 'react';
-import PawnTicketForm from './components/PawnTicketForm';
-import type { InventoryItemDraft } from './components/InventoryItemModal';
+import { useNavigate } from 'react-router-dom';
+import { PawnTicketForm, PrintLabelsModal, type InventoryItemDraft, type PawnFormDraftState } from '@/app/feature/_shared/pawn-ticket';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Customer } from '@/app/feature/customer';
+import type { Customer } from '@/app/feature/_shared/customer';
 import { useCreatePawnTicket } from '../../hooks/useCreatePawnTicket';
+import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
-import { PrintLabelsModal } from './components/PrintLabelsModal';
+import { useAuth } from '@/app/core/hooks/useAuth';
+import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 interface NewPawnTabProps {
-  customer: Customer | null;
-  onTicketCreated?: (ticketId: string) => void;
+  readonly customer: Customer | null;
+  readonly onTicketCreated?: (ticketId: string) => void;
+}
+
+interface PrintState {
+  showLabelModal: boolean;
+  controlNumber: string;
+  printItems: PrintItem[];
+  formDataItems: FormDataItem[];
+  ticketData: TicketByControlNumber | null;
 }
 
 export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
-  const { printTransactionForm, printLabels, buildPrintItems, formError } = usePawnPrint();
+  const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
+  const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
   const customerId = customer?.id;
 
-  const [showLabelsModal, setShowLabelsModal] = useState(false);
-  const [pendingPrintData, setPendingPrintData] = useState<{
-    controlNumber: string;
-    items: PrintItem[];
-  } | null>(null);
+  const [printState, setPrintState] = useState<PrintState>({
+    showLabelModal: false,
+    controlNumber: '',
+    printItems: [],
+    formDataItems: [],
+    ticketData: null,
+  });
+
+  const handleDraftChange = useCallback((draft: PawnFormDraftState) => {
+    updatePawnDraft(draft);
+  }, [updatePawnDraft]);
+
+  const handleLogoutAfterPrint = useCallback(async () => {
+    try {
+      await logout();
+      if (globalThis.electronAPI?.authChanged) {
+        globalThis.electronAPI.authChanged(false);
+      }
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  }, [logout, navigate]);
+
+  const handleLabelPrint = useCallback(async (labelCounts: Record<string, number>) => {
+    if (!printState.ticketData || !customer) return;
+    const success = await printLabels(printState.ticketData, customer, printState.printItems, labelCounts);
+    if (success) {
+      setPrintState(prev => ({ ...prev, showLabelModal: false }));
+      resetPawnDraft();
+      handleLogoutAfterPrint();
+    }
+  }, [printState.ticketData, customer, printState.printItems, printLabels, resetPawnDraft, handleLogoutAfterPrint]);
+
+  const handleLabelCancel = useCallback(() => {
+    setPrintState(prev => ({ ...prev, showLabelModal: false }));
+    resetPawnDraft();
+    handleLogoutAfterPrint();
+  }, [resetPawnDraft, handleLogoutAfterPrint]);
 
   const handleSubmit = useCallback(async (formData: {
     customerId: string;
@@ -50,6 +96,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       transactionType: formData.type,
       amountFinanced: formData.type === 'PAWN' ? formData.amountFinanced : undefined,
       purchaseTradeValue: formData.type === 'PURCHASE' ? formData.purchaseTradeValue : undefined,
+      periodicRate: formData.periodicRate ? formData.periodicRate / 100 : undefined,
       transactionDate: toISOString(formData.transactionDate),
       maturityDate: toISOString(formData.maturityDate),
       defaultDate: toISOString(formData.expirationDate),
@@ -73,10 +120,29 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           capacity: item.capacity,
         });
 
+        // Build stones array for backend (convert string values to numbers where needed)
+        const stones = item.stones?.map(stone => removeNullish({
+          quantity: Number(stone.quantity) || 1,
+          type: stone.type || undefined,
+          shape: stone.shape || undefined,
+          carat: stone.carat ? Number(stone.carat) : undefined,
+          color: stone.color || undefined,
+          weight: stone.weight ? Number(stone.weight) : undefined,
+          length: stone.length ? Number(stone.length) : undefined,
+          width: stone.width ? Number(stone.width) : undefined,
+          clarity: stone.clarity || undefined,
+        }));
+
+        const extra = removeNullish({
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          stones: stones && stones.length > 0 ? stones : undefined,
+        });
+
         return removeNullish({
-          categoryId: item.type,
+          inventorySubcategoryId: item.subcategoryId,
           quantity: Number(item.quantity) || 1,
-          brand: item.brand,
+          brand: item.brandId,
           model: item.model,
           serialNumber: item.serial,
           itemDescription: item.description,
@@ -87,57 +153,72 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           ownerMark: item.ownerNumber,
           colorId: item.color,
           itemCondition: item.condition,
-          extra: Object.keys({}).length > 0 ? {} : undefined,
+          extra: Object.keys(extra).length > 0 ? extra : undefined,
           attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
         });
       }),
     };
 
-    const result = await createTicket(payload);
-    
-    if (customer) {
-      const printFormItems: FormDataItem[] = formData.items.map(item => ({
-        type: item.type,
-        brand: item.brand,
+    const ticketResponse = await createTicket(payload);
+    if (ticketResponse && customer) {
+      onTicketCreated?.(ticketResponse.id);
+
+      const ticketData: TicketByControlNumber = {
+        id: ticketResponse.id,
+        controlNumber: ticketResponse.controlNumber,
+        transactionType: formData.type,
+        customerId: customerId || formData.customerId,
+        amountFinanced: formData.amountFinanced || null,
+        purchaseTradeValue: formData.purchaseTradeValue || null,
+        transactionDate: toISOString(formData.transactionDate),
+        maturityDate: toISOString(formData.maturityDate),
+        defaultDate: toISOString(formData.expirationDate),
+        pawnStatus: 'P',
+        itemIds: formData.items.map((_, idx) => `item-${idx}`),
+        items: [],
+      };
+
+      const rate = formData.periodicRate ? Number(formData.periodicRate) : 0;
+      const amountFinanced = formData.amountFinanced || 0;
+      const financeCharge = amountFinanced * (rate / 100);
+      const totalOfPayments = amountFinanced + financeCharge;
+      // APR = (Monthly Rate / 30) * 365
+      const annualRate = (rate / 30) * 365;
+
+      const formDataItems: FormDataItem[] = formData.items.map(item => ({
+        type: item.subcategoryName || item.type || '',
+        brand: item.brandName || item.brand || '',
         model: item.model,
         serial: item.serial,
         description: item.description,
         amount: item.amount,
         quantity: item.quantity,
         ownerNumber: item.ownerNumber,
+        categoryName: item.categoryName,
+        subcategoryName: item.subcategoryName,
+        colorName: item.colorName,
       }));
 
       await printTransactionForm({
-        ticket: result,
+        ticket: ticketData,
         customer,
-        items: printFormItems,
+        items: formDataItems,
+        financeCharge,
+        totalOfPayments,
+        annualRate,
       });
 
-      const printItems = buildPrintItems(result, printFormItems);
-      setPendingPrintData({
-        controlNumber: result.controlNumber,
-        items: printItems,
+      const printItems = buildPrintItems(ticketData, formDataItems);
+
+      setPrintState({
+        showLabelModal: true,
+        controlNumber: ticketResponse.controlNumber,
+        printItems,
+        formDataItems,
+        ticketData,
       });
-      setShowLabelsModal(true);
     }
-
-    if (onTicketCreated) {
-      onTicketCreated(result.id);
-    }
-  }, [customerId, customer, createTicket, onTicketCreated, printTransactionForm, buildPrintItems]);
-
-  const handlePrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
-    if (pendingPrintData) {
-      await printLabels(pendingPrintData.controlNumber, pendingPrintData.items, labelCounts);
-    }
-    setShowLabelsModal(false);
-    setPendingPrintData(null);
-  }, [pendingPrintData, printLabels]);
-
-  const handleCancelLabels = useCallback(() => {
-    setShowLabelsModal(false);
-    setPendingPrintData(null);
-  }, []);
+  }, [customerId, createTicket, onTicketCreated, customer, printTransactionForm, buildPrintItems]);
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">
@@ -149,18 +230,24 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         </Alert>
       )}
 
-      {error && (
+      {(error || formError || labelsError) && (
         <Alert variant="destructive" className="mb-6">
-          <AlertDescription className="flex items-center gap-2">
-            <span className="text-lg">❌</span> {error}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {formError && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription className="flex items-center gap-2">
-            <span className="text-lg">🖨️</span> Print error: {formError}
+          <AlertDescription className="flex flex-col gap-2">
+            {error && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">❌</span> {error}
+              </div>
+            )}
+            {formError && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🖨️</span> <strong>Print Error:</strong> {formError}
+              </div>
+            )}
+            {labelsError && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏷️</span> <strong>Label Error:</strong> {labelsError}
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -172,20 +259,20 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
+          externalDraft={pawnDraft}
+          onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
           disabled={isLoading}
         />
       </div>
 
-      {pendingPrintData && (
-        <PrintLabelsModal
-          open={showLabelsModal}
-          controlNumber={pendingPrintData.controlNumber}
-          items={pendingPrintData.items}
-          onPrint={handlePrintLabels}
-          onCancel={handleCancelLabels}
-        />
-      )}
+      <PrintLabelsModal
+        open={printState.showLabelModal}
+        controlNumber={printState.controlNumber}
+        items={printState.printItems}
+        onPrint={handleLabelPrint}
+        onCancel={handleLabelCancel}
+      />
     </div>
   );
 }

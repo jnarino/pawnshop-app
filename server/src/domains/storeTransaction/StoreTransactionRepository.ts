@@ -5,7 +5,19 @@ export interface StoreTransactionRepository {
      * Persist a store transaction along with its tenders and items
      * in a single database transaction.
      */
-    create(tx: StoreTransaction): Promise<StoreTransaction>;
+    create(tx: StoreTransaction, tempInventoryUpdates?: { id: string, quantity: number }[]): Promise<StoreTransaction>;
+
+    /**
+     * Create a payment/redemption store transaction (minimal fields).
+     */
+    createPayment(params: {
+        pawnTicketId: string;
+        controlNumber: string;
+        clerkUserId: string;
+        typeId: number;
+        amount: number;
+        tenders: { tenderTypeId: number; amount: number }[];
+    }): Promise<void>;
 
     /**
      * All store transactions for a given customer, ordered newest first.
@@ -23,4 +35,25 @@ export interface StoreTransactionRepository {
         from: Date;
         to: Date;
     }): Promise<StoreTransaction[]>;
+
+    /**
+     * Get the last MAIN BALANCE (close) transaction.
+     * Returns null if no close has been recorded.
+     */
+    getLastClose(): Promise<{
+        id: string;
+        occurredAt: Date;
+        amount: number;
+    } | null>;
+
+    /**
+     * Get all store transactions and their tender details since the last close.
+     */
+    getActivitySinceClose(): Promise<Array<{
+        id: string;
+        occurredAt: Date;
+        tenderTypeId: number;
+        tenderTypeName: string;
+        amount: number;
+    }>>;
 }

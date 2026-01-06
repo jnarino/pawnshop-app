@@ -21,6 +21,6 @@ export class ListPawnTicketsByCustomerUseCase {
             dto.customerId
         );
 
-        return tickets.map(PawnTicketMapper.toResponseDto);
+        return tickets.map(ticket => PawnTicketMapper.toResponseDto(ticket));
     }
 }

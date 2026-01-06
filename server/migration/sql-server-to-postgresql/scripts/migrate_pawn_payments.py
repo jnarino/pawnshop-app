@@ -10,13 +10,20 @@ from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 def migrate_pawn_payments():
     print("🚀 Starting Pawn Payments Migration (from 'pawn' table)...")
     
-    # Load Customer Map? Not strictly needed if we link to Ticket which has Customer.
-    # But Store Transaction needs Customer ID.
+    # Load Customer Map
     try:
         with open('customer_map.json', 'r') as f:
             customer_map = json.load(f)
     except:
         customer_map = {}
+
+    # Load User Map
+    try:
+        with open('user_map.json', 'r') as f:
+            user_map = json.load(f)
+    except:
+        print("⚠️ user_map.json not found, clerk_user_id will be NULL")
+        user_map = {}
 
     try:
         mssql_conn = pymssql.connect(**SQLSERVER_CONFIG)
@@ -43,8 +50,9 @@ def migrate_pawn_payments():
         print("Fetching Pawn Payments (pawn table where PAIDAMT > 0)...")
         # Source from pawn table
         # We need ticket (PWN_id), Customer (CUS_FK), Amount (PAIDAMT), Date (PdDate or DATEOUT)
+        # Added LastUpdatedUSR_ID for clerk mapping
         query = """
-            SELECT PWN_id, CUS_FK, PAIDAMT, PawnAMT, PdDate, DATEOUT, TICKETNUM 
+            SELECT PWN_id, CUS_FK, PAIDAMT, PawnAMT, PdDate, DATEOUT, TICKETNUM, LastUpdatedUSR_ID, usr_fk
             FROM dbo.pawn 
             WHERE PAIDAMT > 0 AND DATEIN > '1980-01-01'
         """
@@ -54,7 +62,8 @@ def migrate_pawn_payments():
         
         batch_size = 1000
         batch_tx = []
-        batch_payments = []
+        batch_size = 1000
+        batch_tx = []
         batch_tenders = []
         
         errors = 0
@@ -100,28 +109,39 @@ def migrate_pawn_payments():
                 customer_id = customer_map.get(customer_pk)
                 # If no customer, store_transaction.customer_id can be NULL
                 
+                # Clerk / User Mapping
+                clerk_id = None
+                legacy_user_uuid = str(row.get('LastUpdatedUSR_ID')) if row.get('LastUpdatedUSR_ID') else None
+                legacy_user_int = str(row.get('usr_fk')) if row.get('usr_fk') else None
+                
+                # Try UUID map first (user_map has both)
+                if legacy_user_uuid:
+                    clerk_id = user_map.get(legacy_user_uuid)
+                
+                # Fallback to int map
+                if not clerk_id and legacy_user_int:
+                    clerk_id = user_map.get(legacy_user_int)
+
                 # 2. Store Transaction (Header)
                 batch_tx.append((
                     tx_id,
                     customer_id,
+                    clerk_id, # clerk_user_id
                     REDEMPTION_ID,
                     payment_date,
                     amount, 
                     0, # Tax
-                    f"Redemption for Ticket {row.get('TICKETNUM')}"
-                ))
-
-                # 3. Pawn Ticket Payment
-                batch_payments.append((
-                    str(uuid.uuid4()),
+                    amount, 
+                    0,
+                    f"Redemption for Ticket {row.get('TICKETNUM')}",
+                    None,
                     ticket_id,
-                    tx_id,
-                    payment_date,
                     interest_paid,
                     principal_paid,
-                    0, # Fees (included in principal/interest for now or separate if we had data)
-                    None # Note
+                    0
                 ))
+
+
                 
                 # 4. Tender (Cash assumption)
                 batch_tenders.append((
@@ -134,7 +154,7 @@ def migrate_pawn_payments():
 
                 if len(batch_tx) >= batch_size:
                     try:
-                        _flush_batches(pg_cursor, batch_tx, batch_payments, batch_tenders)
+                        _flush_batches(pg_cursor, batch_tx, batch_tenders)
                         pg_conn.commit()
                     except Exception as e:
                         pg_conn.rollback()
@@ -144,7 +164,7 @@ def migrate_pawn_payments():
                         # For now, just drop to avoid stalling.
                         pass
                     finally:
-                        batch_tx, batch_payments, batch_tenders = [], [], []
+                        batch_tx, batch_tenders = [], []
 
             except Exception as e:
                 # Row level error (e.g. data conversion)
@@ -152,7 +172,7 @@ def migrate_pawn_payments():
         
         if batch_tx:
             try:
-                _flush_batches(pg_cursor, batch_tx, batch_payments, batch_tenders)
+                _flush_batches(pg_cursor, batch_tx, batch_tenders)
                 pg_conn.commit()
             except Exception as e:
                 pg_conn.rollback()
@@ -169,34 +189,16 @@ def migrate_pawn_payments():
         if 'mssql_conn' in locals(): mssql_conn.close()
         if 'pg_conn' in locals(): pg_conn.close()
 
-def _flush_batches(cursor, txs, payments, tenders):
+def _flush_batches(cursor, txs, tenders):
     if txs:
         execute_values(cursor, """
             INSERT INTO store_transaction (
-                id, customer_id, type_id, occurred_at, amount, tax_sales, note
+                id, customer_id, clerk_user_id, type_id, occurred_at, amount, tax_sales, note,
+                pawn_ticket_id, interest_amount, principal_amount, fees_amount
             ) VALUES %s ON CONFLICT DO NOTHING
         """, txs)
     
-    if payments:
-        # Note: pawn_ticket_payment references pawn_ticket(id). 
-        # If ticket not found (e.g. filtered out), this insert will fail (referential integrity).
-        # We must handle that.
-        # But we used execute_values. 
-        # To be safe against missing tickets, we could use INSERT IGNORE logic or check existence.
-        # Postgres ON CONFLICT DO NOTHING handles PK conflicts, but not FK errors.
-        # FK errors will abort the transaction.
-        # We should use ON CONFLICT DO NOTHING ? No, FK failure raises error.
-        # We should append "ON CONFLICT DO NOTHING" but that doesn't help FK.
-        # Best approach: Ensure tickets exist OR use a relaxed insert (INSERT ... SELECT verified).
-        # Given volume, maybe just try? 
-        # Actually, let's wrap in try/except or use Safe Insert.
-        # For now, let's assume tickets migrated (since we source from same table/filter).
-         execute_values(cursor, """
-            INSERT INTO pawn_ticket_payment (
-                id, pawn_ticket_id, store_transaction_id, payment_date, 
-                interest_paid, principal_paid, fees_paid, note
-            ) VALUES %s ON CONFLICT DO NOTHING
-        """, payments)
+
         
     if tenders:
          execute_values(cursor, """

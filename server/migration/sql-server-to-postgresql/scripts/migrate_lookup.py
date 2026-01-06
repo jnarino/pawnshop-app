@@ -58,12 +58,9 @@ def migrate_lookup():
         values = mssql_cursor.fetchall()
         
         value_count = 0
-        # Map lc_pk to value (or id if we need it, but we mostly need the value string for JSON)
-        # Actually, for the JSON attributes, we just need the text value.
-        # But we populate the table for the dropdowns.
-        
-        # We also need a map for the inventory migration: lc_pk -> value text
-        lookup_value_map = {} 
+        # Map lc_pk to both value text and UUID
+        # This is needed because color field needs the UUID reference
+        lookup_value_map = {}  # lc_pk -> {"value": text, "id": uuid}
         
         for row in values:
             lb_fk = row['LB_FK']
@@ -75,14 +72,16 @@ def migrate_lookup():
                 
             type_id = group_map[lb_fk]
             
-            # Insert into item_attribute_value
+            # Insert into item_attribute_value and get the ID
             pg_cursor.execute("""
                 INSERT INTO item_attribute_value (attribute_type_id, value)
                 VALUES (%s, %s)
-                ON CONFLICT (attribute_type_id, value) DO NOTHING
+                ON CONFLICT (attribute_type_id, value) DO UPDATE SET value = EXCLUDED.value
+                RETURNING id
             """, (type_id, val_text))
             
-            lookup_value_map[lc_pk] = val_text
+            value_id = pg_cursor.fetchone()[0]
+            lookup_value_map[lc_pk] = {"value": val_text, "id": str(value_id)}
             value_count += 1
             
         pg_conn.commit()
@@ -90,18 +89,23 @@ def migrate_lookup():
         
         # Save map for inventory migration
         # We need:
-        # 1. Map of lc_pk -> value text (for simple lookups)
+        # 1. Map of lc_pk -> {value, id} (for color field UUID reference)
         # 2. Map of lb_pk -> attribute name (to know what key to use in JSON)
+        # 3. Map of attribute type name -> type_id (to find COLOR type)
         
-        # Reverse group map to get names
+        # Reverse group map to get names and IDs
         group_name_map = {}
+        type_name_to_id = {}
         for row in groups:
             if row['lb_pk'] in group_map:
-                group_name_map[row['lb_pk']] = safe_str(row['lb_descript'])
+                name = safe_str(row['lb_descript'])
+                group_name_map[row['lb_pk']] = name
+                type_name_to_id[name] = group_map[row['lb_pk']]
 
         final_map = {
             "values": lookup_value_map,
-            "types": group_name_map
+            "types": group_name_map,
+            "type_ids": type_name_to_id
         }
         
         with open('lookup_map.json', 'w') as f:

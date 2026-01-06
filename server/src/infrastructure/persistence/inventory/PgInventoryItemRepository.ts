@@ -5,28 +5,34 @@ import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
 type DbClient = Pool | PoolClient;
 
+const SQL_SET_STATUS_BY_PAWN_TICKET = loadSql('commands', 'inventory/inventory_item_set_status_by_pawn_ticket');
 const SQL_CREATE = loadSql('commands', 'inventory/inventory_item_create');
 const SQL_UPDATE = loadSql('commands', 'inventory/inventory_item_update');
 const SQL_DELETE = loadSql('commands', 'inventory/inventory_item_delete');
 const SQL_FIND_BY_ID = loadSql('queries', 'inventory/inventory_item_find_by_id');
 const SQL_FIND_BY_INVENTORY_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_inventory_number');
+const SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER = loadSql(
+    'queries', 'inventory/inventory_item_find_available_by_inventory_number');
 const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_serial_number'
 );
+const SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS = loadSql(
+    'queries', 'inventory/inventory_item_find_by_scrap_inventory_numbers'
+);
 
 function mapRowToInventoryItem(row: any): InventoryItem {
-    return new InventoryItem({
+    const item = new InventoryItem({
         id: row.id,
 
-        categoryId: row.category_id,
+        inventorySubcategoryId: row.inventory_subcategory_id,
         status: row.status,
         quantity: row.quantity,
 
-        brand: row.brand,
+        brand: row.inventory_brand_id,
         model: row.model,
         serialNumber: row.serial_number,
-        colorId: row.color_id,
+        colorId: row.color,
         itemCondition: row.item_condition,
         ownerMark: row.owner_mark,
         itemDescription: row.item_description,
@@ -50,15 +56,33 @@ function mapRowToInventoryItem(row: any): InventoryItem {
         createdAt: row.created_at,
         updatedAt: row.updated_at
     });
+
+    // Attach enriched lookup data for the mapper
+    (item as any)._enrichedData = {
+        inventorySubcategory: {
+            id: row.subcategory_id || row.inventory_subcategory_id,
+            name: row.subcategory_name || ''
+        },
+        inventoryCategory: {
+            id: row.category_id || '',
+            name: row.category_name || ''
+        },
+        brand: row.brand_id ? { id: row.brand_id, name: row.brand_name || '' } : (row.inventory_brand_id ? { id: row.inventory_brand_id, name: '' } : null)
+    };
+
+    return item;
 }
 
 export class PgInventoryItemRepository implements InventoryItemRepository {
     constructor(private readonly db: DbClient) { }
+    async setStatusByPawnTicket(pawnTicketId: string, status: string): Promise<void> {
+        await this.db.query(SQL_SET_STATUS_BY_PAWN_TICKET, [pawnTicketId, status]);
+    }
 
     async create(item: InventoryItem): Promise<InventoryItem> {
         const result = await this.db.query(SQL_CREATE, [
             item.id,
-            item.categoryId,
+            item.inventorySubcategoryId,
             item.status,
             item.brand,
             item.model,
@@ -90,7 +114,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
     async update(item: InventoryItem): Promise<InventoryItem> {
         const result = await this.db.query(SQL_UPDATE, [
             item.id,
-            item.categoryId,
+            item.inventorySubcategoryId,
             item.status,
             item.brand,
             item.model,
@@ -112,6 +136,7 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
             item.legacyBrandColorDescription,
             item.inventoryNumber,
             item.lastUpdatedUserId,
+            item.createdAt,
             item.updatedAt
         ]);
 
@@ -142,6 +167,16 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         return mapRowToInventoryItem(result.rows[0]);
     }
 
+    async findAvailableByInventoryNumber(
+        inventoryNumber: string
+    ): Promise<InventoryItem | null> {
+        const result = await this.db.query(SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER, [
+            inventoryNumber
+        ]);
+        if (result.rows.length === 0) return null;
+        return mapRowToInventoryItem(result.rows[0]);
+    }
+
     async findBySerialNumber(
         serialNumber: string
     ): Promise<InventoryItem | null> {
@@ -150,5 +185,15 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         ]);
         if (result.rows.length === 0) return null;
         return mapRowToInventoryItem(result.rows[0]);
+    }
+
+    async findByInventoryNumbers(
+        inventoryNumbers: string[]
+    ): Promise<Array<{ inventoryNumber: string; itemDescription: string | null }>> {
+        const result = await this.db.query(SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS);
+        return result.rows.map((row: any) => ({
+            inventoryNumber: row.inventory_number,
+            itemDescription: row.item_description
+        }));
     }
 }
