@@ -115,6 +115,10 @@ function buildMenu() {
             label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:inventory-maintain'),
           },
+          {
+            label: 'New',
+            click: () => mainWindow?.webContents.send('menu:inventory-new'),
+          },
         ],
       }
     );

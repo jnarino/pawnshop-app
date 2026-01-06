@@ -82,7 +82,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     amount: String(item.priceAmount || 0),
     resale: String(item.resale || 0),
     replace: String(item.itemReplace || 0),
-    ownerNumber: item.inventoryNumber || '',
+    ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
     metal: extractId(item.attributes?.metal),
     karat: extractId(item.attributes?.karat),

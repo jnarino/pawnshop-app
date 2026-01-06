@@ -31,6 +31,7 @@ interface InventoryItemModalProps {
 export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
   const isViewMode = mode === ViewMode.VIEW;
   const isPullMode = mode === ViewMode.PULL;
+  const isCreateMode = mode === ViewMode.CREATE;
 
   const {
     draft,
@@ -222,24 +223,26 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
           {(!isViewMode && !isPullMode) && (
             <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
               <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant={barcodeMode ? "destructive" : "secondary"}
-                  size="sm"
-                  onClick={() => setBarcodeMode(!barcodeMode)}
-                  className="text-xs"
-                >
-                  {!barcodeMode && <img src={barcodeReaderIcon} alt="Barcode" className="w-4 h-4 mr-1" />}
-                  {barcodeMode ? 'Stop Scanner' : 'Scan Barcode'}
-                </Button>
-                {barcodeMode && (
-                  <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
-                    <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />{' '}
-                    Scanner active - scan barcode now
-                  </span>
+                {!isCreateMode && (
+                  <>
+                    <Button
+                      type="button"
+                      variant={barcodeMode ? "destructive" : "secondary"}
+                      size="sm"
+                      onClick={() => setBarcodeMode(!barcodeMode)}
+                      className="text-xs"
+                    >
+                      {!barcodeMode && <img src={barcodeReaderIcon} alt="Barcode" className="w-4 h-4 mr-1" />}
+                      {barcodeMode ? 'Stop Scanner' : 'Scan Barcode'}
+                    </Button>
+                    {barcodeMode && (
+                      <span className="text-green-600 text-[10px] font-medium flex items-center gap-1">
+                        <img src={barcodeScannerIcon} alt="Scanner active" className="w-4 h-4 brightness-0 saturate-100" style={{ filter: 'brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(500%) hue-rotate(86deg) brightness(96%) contrast(85%)' }} />{' '}
+                        Scanner active - scan barcode now
+                      </span>
+                    )}</>
                 )}
               </div>
-
               <div className="flex gap-3">
                 <Button
                   type="button"

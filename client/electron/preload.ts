@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:inventory-maintain', handler);
     },
 
+    onNewInventoryItem: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:inventory-new', handler);
+        return () => ipcRenderer.removeListener('menu:inventory-new', handler);
+    },
+
     onPawnMaintain: (cb: () => void) => {
         const handler = () => cb();
         ipcRenderer.on('menu:pawn-maintain', handler);

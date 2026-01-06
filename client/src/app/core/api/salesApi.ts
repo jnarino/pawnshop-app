@@ -61,8 +61,7 @@ export const salesApi = {
     },
 
     closeDrawerBalance: async (payload: {
-        cashBalance: number;
-        tenderAmounts: Record<string, number>;
+        mainDrawerBalance: Record<string, number>;
         occurredAt: string;
         note: string;
     }): Promise<any> => {
