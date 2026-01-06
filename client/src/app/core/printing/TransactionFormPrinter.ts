@@ -114,9 +114,9 @@ type TemplateDefinition = {
 
 const STORE = {
     name: import.meta?.env?.VITE_STORE_NAME ?? "LARRY'S ESTATE JEWELRY & PAWN",
-    address1: import.meta?.env?.VITE_STORE_ADDRESS1 ?? '3316 CLEVELAND AVE.',
-    address2: import.meta?.env?.VITE_STORE_ADDRESS2 ?? 'FORT MYERS, FL 33901',
-    phone: import.meta?.env?.VITE_STORE_PHONE ?? '(239) 399-3633',
+    address1: import.meta?.env?.VITE_STORE_ADDRESS1 ?? '1726 CAPE CORAL PKWY',
+    address2: import.meta?.env?.VITE_STORE_ADDRESS2 ?? 'CAPE CORAL, FL 33904',
+    phone: import.meta?.env?.VITE_STORE_PHONE ?? '(239) 594-8881',
 };
 
 const LS_KEY = 'fl_pawn_form_adjust_v2';

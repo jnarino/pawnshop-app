@@ -67,13 +67,13 @@ export function drawStoreInfo({
     page.drawText('LARRY\'S ESTATE JEWELRY & PAWN', { x, y, size: 10, font: fontBold });
     y -= 15;
 
-    page.drawText('3316 CLEVELAND AVE.', { x, y, size: 10, font });
+    page.drawText('1726 CAPE CORAL PKWY', { x, y, size: 10, font });
     y -= 15;
 
-    page.drawText('FORT MYERS, FL 33901', { x, y, size: 10, font });
+    page.drawText('CAPE CORAL, FL 33904', { x, y, size: 10, font });
     y -= 15;
 
-    page.drawText('(239) 939-3633', { x, y, size: 10, font });
+    page.drawText('(239) 594-8881', { x, y, size: 10, font });
     y -= 15;
 
     return y;

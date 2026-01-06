@@ -46,12 +46,11 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
                     id: crypto.randomUUID(),
                     controlNumber: row.control_number || '',
                     storeName: 'LARRY\'S ESTATE JEWELRY & PAWN', // From config or database
-                    storeAddress: '3316 CLEVELAND AVE.',
-                    storeCity: 'FORT MYERS',
+                    storeAddress: '1726 CAPE CORAL PKWY',
+                    storeCity: 'CAPE CORAL',
                     storeState: 'FL',
-                    storeZip: '33901-',
-                    storePhone: '(239) 939-3633',
-
+                    storeZip: '33904',
+                    storePhone: '(239) 594-8881',
                     transactionDate,
                     transactionTime,
                     transactionType: (row.transaction_type || 'P') as 'P' | 'B' | 'L',
