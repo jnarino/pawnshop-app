@@ -82,14 +82,14 @@ export default function DrawerBalanceDialog({ open, onOpenChange }: DrawerBalanc
         try {
             // Map tender names to camelCase for the API
             const nameMapping: Record<string, string> = {
-                'CASH': 'cash',
-                'AMERICAN EXPRESS': 'americanExpress',
-                'DEBIT': 'debit',
-                'DISCOVER': 'discover',
-                'MASTER CARD': 'masterCard',
-                'VISA': 'visa',
-                'CHECK': 'check',
-                'CASH PASS': 'cashPass'
+                'CASH': 'CASH',
+                'AMERICAN EXPRESS': 'AMERICAN EXPRESS',
+                'DEBIT': 'DEBIT',
+                'DISCOVER': 'DISCOVER',
+                'MASTER CARD': 'MASTER CARD',
+                'VISA': 'VISA',
+                'CHECK': 'CHECK',
+                'CASH PASS': 'CASH PASS'
             };
 
             const tenderAmounts: Record<string, number> = {};
@@ -114,8 +114,7 @@ export default function DrawerBalanceDialog({ open, onOpenChange }: DrawerBalanc
             const miamiIso = `${f('year')}-${f('month')}-${f('day')}T${f('hour')}:${f('minute')}:${f('second')}.000Z`;
 
             await salesApi.closeDrawerBalance({
-                cashBalance: parseFloat(leaveInDrawer) || 0,
-                tenderAmounts,
+                mainDrawerBalance: tenderAmounts,
                 occurredAt: miamiIso,
                 note: 'Drawer Balance'
             });
