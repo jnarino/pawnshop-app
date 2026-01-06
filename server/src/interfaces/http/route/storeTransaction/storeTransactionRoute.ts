@@ -236,39 +236,34 @@ export function createStoreTransactionRouter(
      *           schema:
      *             type: object
      *             required:
-     *               - cashBalance
-     *               - tenderAmounts
+     *               - mainDrawerBalance
      *             properties:
-     *               cashBalance:
-     *                 type: number
-     *                 description: Final cash balance to record
-     *                 example: 10333.35
-     *               tenderAmounts:
+     *               mainDrawerBalance:
      *                 type: object
-     *                 description: Amount deposited for each tender type
+     *                 description: Amount for each tender type in the main drawer
      *                 properties:
-     *                   cash:
+     *                   CASH:
      *                     type: number
-     *                     example: 10333.35
-     *                   americanExpress:
-     *                     type: number
-     *                     example: 230.00
-     *                   debit:
-     *                     type: number
-     *                     example: 3048.80
-     *                   discover:
+     *                     example: 15508.35
+     *                   AMERICAN EXPRESS:
      *                     type: number
      *                     example: 0
-     *                   masterCard:
-     *                     type: number
-     *                     example: 63.90
-     *                   visa:
-     *                     type: number
-     *                     example: 105.00
-     *                   check:
+     *                   DEBIT:
      *                     type: number
      *                     example: 0
-     *                   cashPass:
+     *                   DISCOVER:
+     *                     type: number
+     *                     example: 0
+     *                   MASTER CARD:
+     *                     type: number
+     *                     example: 0
+     *                   VISA:
+     *                     type: number
+     *                     example: 0
+     *                   CHECK:
+     *                     type: number
+     *                     example: 0
+     *                   CASH PASS:
      *                     type: number
      *                     example: 0
      *               occurredAt:
