@@ -76,6 +76,13 @@ export async function getByInventoryNumber(inventoryNumber: string): Promise<Inv
   return http(`/api/inventory-items/by-inventory-number/${encoded}`);
 }
 
+export async function createInventoryItem(payload: Omit<UpdateInventoryItemPayload, 'id'>): Promise<InventoryItemApiResponse> {
+  return http('/api/inventory-items', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function updateInventoryItem(id: string, payload: Omit<UpdateInventoryItemPayload, 'id'>): Promise<InventoryItemApiResponse> {
   return http(`/api/inventory-items/${id}`, {
     method: 'PUT',

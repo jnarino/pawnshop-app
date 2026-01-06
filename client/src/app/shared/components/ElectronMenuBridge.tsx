@@ -4,7 +4,7 @@ import ManageCashDialog from '@/app/feature/admin/components/ManageCashDialog';
 import DrawerBalanceDialog from '@/app/feature/admin/components/DrawerBalanceDialog';
 import { FindByInputModal, InventoryItemModal } from '@/app/feature/_shared/inventory-item';
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
-import { getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
+import { createInventoryItem, getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import { useNavigate } from 'react-router-dom';
 
@@ -155,6 +155,8 @@ export default function ElectronMenuBridge() {
   const [findInventoryError, setFindInventoryError] = useState<string | null>(null);
   const [inventoryItem, setInventoryItem] = useState<InventoryItemDraft | null>(null);
   const [inventoryItemModalOpen, setInventoryItemModalOpen] = useState(false);
+  const [showNewInventoryItem, setShowNewInventoryItem] = useState(false);
+
   const navigate = useNavigate();
 
   // Open cash dialog on menu signal
@@ -175,12 +177,28 @@ export default function ElectronMenuBridge() {
   // Open inventory maintain flow on menu signal
   useEffect(() => {
     const api = globalThis.electronAPI;
-    if (!api?.onInventoryMaintain) return;
-    const dispose = api.onInventoryMaintain(() => {
-      setFindInventoryError(null);
-      setFindInventoryOpen(true);
-    });
-    return () => dispose?.();
+    if (!api) return;
+
+    const unsubscribes: Array<() => void> = [];
+
+    if (api.onInventoryMaintain) {
+      const dispose = api.onInventoryMaintain(() => {
+        setFindInventoryError(null);
+        setFindInventoryOpen(true);
+      });
+      if (dispose) unsubscribes.push(dispose);
+    }
+
+    if (api.onNewInventoryItem) {
+      const dispose = api.onNewInventoryItem(() => {
+        setShowNewInventoryItem(true);
+      });
+      if (dispose) unsubscribes.push(dispose);
+    }
+
+    return () => {
+      unsubscribes.forEach((fn) => fn());
+    };
   }, []);
 
   useEffect(() => {
@@ -224,7 +242,7 @@ export default function ElectronMenuBridge() {
     }
   }, []);
 
-  const handleSaveInventoryItem = useCallback(async (draft: InventoryItemDraft) => {
+  const handleSaveInventoryItem = useCallback(async (draft: InventoryItemDraft, isCreate: boolean = false) => {
     if (!draft.id) {
       console.error('Cannot update item without ID');
       return;
@@ -232,7 +250,11 @@ export default function ElectronMenuBridge() {
 
     try {
       const payload = mapDraftToUpdatePayload(draft);
-      await updateInventoryItem(draft.id, payload);
+      if (isCreate) {
+        await createInventoryItem(payload);
+      } else {
+        await updateInventoryItem(draft.id, payload);
+      }
       toast.success('Inventory item updated successfully!');
       setInventoryItemModalOpen(false);
       setInventoryItem(null);
@@ -250,6 +272,7 @@ export default function ElectronMenuBridge() {
 
   const handleCloseInventoryItem = useCallback(() => {
     setInventoryItemModalOpen(false);
+    setShowNewInventoryItem(false);
     setInventoryItem(null);
   }, []);
 
@@ -277,6 +300,14 @@ export default function ElectronMenuBridge() {
         initial={inventoryItem}
         onCancel={handleCloseInventoryItem}
         onSave={handleSaveInventoryItem}
+      />
+
+      <InventoryItemModal
+        mode={ViewMode.CREATE}
+        open={showNewInventoryItem}
+        initial={inventoryItem}
+        onCancel={handleCloseInventoryItem}
+        onSave={(editingItem) => handleSaveInventoryItem(editingItem, true)}
       />
     </>
   );
