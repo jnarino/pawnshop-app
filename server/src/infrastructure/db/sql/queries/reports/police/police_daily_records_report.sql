@@ -41,7 +41,6 @@ SELECT
   c.weight,
   c.eye_color,
   c.hair_color,
-
   ii.serial_number,
   ii.owner_mark,
   isub.name AS subcategory_name,
