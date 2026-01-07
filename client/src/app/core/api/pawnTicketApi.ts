@@ -72,6 +72,7 @@ export interface TicketByControlNumber {
   redemptionAmount?: number;
   apr?: number;
   originalPawnAmount?: number;
+  periodicRate?: number;
 }
 
 export type Lookup = {

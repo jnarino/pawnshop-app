@@ -155,6 +155,8 @@ export function usePawnPrint(): UsePawnPrintResult {
 
           const cleanSerial = (s?: string) => (s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s) ? undefined : s);
 
+          const ticketItem = ticket.items.find((i) => i.id === item.id);
+
           return {
             serialNumber: cleanSerial(item.serial) || undefined,
             ownerAppliedNumber: cleanSerial(item.ownerNumber) || undefined,
@@ -162,12 +164,12 @@ export function usePawnPrint(): UsePawnPrintResult {
             modelNumber: clean(item.subcategoryName, item.model, 'NONE'),
             description: descWithColor,
             amount: item.amount,
-            itemType: clean(item.categoryName, item.type, 'MISC'),
+            itemType: ticketItem?.inventorySubcategory.name || 'MISC',
           };
         }),
 
         amountFinanced: ticket.amountFinanced ?? undefined,
-        financeCharge: ticket.currentCharges ?? params.financeCharge ?? undefined,
+        financeCharge: ticket.amountFinanced && ticket.periodicRate ? (ticket.amountFinanced * ticket.periodicRate) : undefined,
         totalOfPayments: ticket.redemptionAmount ?? params.totalOfPayments ?? undefined,
         annualRate: ticket.apr ?? params.annualRate ?? undefined,
       };

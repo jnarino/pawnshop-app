@@ -204,7 +204,8 @@ export function PawnTicketForm({
         description: item.description,
         amount: item.amount,
         quantity: item.quantity,
-        ownerNumber: item.ownerNumber
+        ownerNumber: item.ownerNumber,
+        id: item.id,
       }));
 
       await printTransactionForm({
