@@ -1,8 +1,9 @@
 // electron/main.ts
 import { app, BrowserWindow, Menu, dialog, ipcMain, screen } from 'electron'
-import { join, dirname } from 'path'
+import { join, dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { fork, ChildProcess } from 'node:child_process'
+import { fork, ChildProcess } from 'child_process'
+import { readFileSync, existsSync } from 'fs'
 import { DockerManager } from './docker-manager.js'
 import dotenv from 'dotenv'
 
@@ -15,8 +16,50 @@ const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'http://localhost';
 const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
 
 let mainWindow: BrowserWindow
-let serverProcess: ChildProcess | null = null;
-let isAuthed = false;
+let serverProcess: ChildProcess | null = null; // Reference to server process
+let isAuthed = false; // retained for possible future use, no longer required for menu rendering
+let appConfig = {
+  mode: 'server', // 'server' (default) or 'client'
+  serverUrl: 'http://localhost:3001'
+};
+
+function loadConfig() {
+  try {
+    // Check next to the executable (portable mode friendly)
+    const exeDir = dirname(app.getPath('exe'));
+    const localConfigPath = join(exeDir, 'config.json');
+
+    // Check in userData (standard install friendly)
+    const userDataConfigPath = join(app.getPath('userData'), 'config.json');
+
+    // Check in resources (bundled with installer)
+    // In dev: process.resourcesPath is usually node_modules/electron/dist/resources (not useful)
+    // In prod: it's inside the app bundle or next to it
+    const resourcesConfigPath = join(process.resourcesPath, 'config.json');
+
+    let configPath = '';
+
+    if (existsSync(localConfigPath)) {
+      configPath = localConfigPath;
+    } else if (existsSync(userDataConfigPath)) {
+      configPath = userDataConfigPath;
+    } else if (existsSync(resourcesConfigPath)) {
+      configPath = resourcesConfigPath;
+    }
+
+    if (configPath) {
+      console.log('[Electron] Loading config from:', configPath);
+      const data = readFileSync(configPath, 'utf-8');
+      const json = JSON.parse(data);
+      if (json.mode) appConfig.mode = json.mode;
+      if (json.serverUrl) appConfig.serverUrl = json.serverUrl;
+    } else {
+      console.log('[Electron] No config.json found, using defaults:', appConfig);
+    }
+  } catch (err) {
+    console.error('[Electron] Failed to load config:', err);
+  }
+}
 
 function buildMenu() {
   if (!mainWindow) return;
@@ -209,22 +252,26 @@ ipcMain.handle('print-document', async (event, html: string) => {
 
 
 app.whenReady().then(async () => {
-  // Ensure Database is running
-  const env = app.isPackaged ? 'prod' : 'dev';
-  console.log(`[Electron] Ensuring database container for ${env}...`);
-  const dbResult = await DockerManager.ensureDatabase(env);
+  loadConfig();
 
-  if (!dbResult.success) {
-    dialog.showErrorBox('Database Error', dbResult.message || 'Unknown database error');
-    app.quit();
-    return;
-  }
+  // ONLY start Database/Server if in SERVER mode
+  if (appConfig.mode === 'server') {
+    // Ensure Database is running
+    const env = app.isPackaged ? 'prod' : 'dev';
+    console.log(`[Electron] Ensuring database container for ${env}...`);
+    const dbResult = await DockerManager.ensureDatabase(env);
 
-  if (app.isPackaged) {
+    if (!dbResult.success) {
+      dialog.showErrorBox('Database Error', dbResult.message || 'Unknown database error');
+      app.quit();
+      return;
+    }
+
     startServer();
   } else {
-    console.log('[Electron] Dev mode detected. Skipping embedded server start. Ensure backend is running externally.');
+    console.log(`[Electron] Running in CLIENT mode. Connecting to: ${appConfig.serverUrl}`);
   }
+
   createMainWindow();
 })
 
@@ -247,4 +294,8 @@ ipcMain.on('auth-changed', (_evt, authed: boolean) => {
 // Renderer can explicitly request a menu rebuild (e.g., after hot reload)
 ipcMain.on('refresh-menu', () => {
   buildMenu();
+});
+
+ipcMain.handle('get-api-config', () => {
+  return appConfig;
 });

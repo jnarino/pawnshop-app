@@ -101,4 +101,93 @@ describe('GenerateCashDrawerDetailUseCase', () => {
     expect(result.cashAdded.totalCashAdded).toBeCloseTo(10, 2);
     expect(result.summary.endingBalance).toBeCloseTo(4462.99, 2);
   });
+
+  it('properly categorizes WITHDRAWAL FROM BANK as cashAddedFromBank', async () => {
+    const records: CashDrawerRecord[] = [
+      makeRecord('2026-01-05T09:00:00Z', '117943', 'CDC', 'PAWN (loan cash out)', -100, 0, null, 'CASH', 1073.99, 0, 0),
+      makeRecord('2026-01-05T11:24:28Z', null, 'CDC', 'WITHDRAWAL FROM BANK (to drawer)', 15000, 0, 'CASH FROM BANK', 'CASH', 16073.99, 0, 0),
+      makeRecord('2026-01-05T11:35:23Z', '117951', 'CAZ', 'PAWN (loan cash out)', -60, 0, null, 'CASH', 16013.99, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-05T00:00:00.000Z',
+      endDate: '2026-01-05T23:59:59.999Z',
+    });
+
+    expect(result.cashAdded.cashAddedFromBank).toBe(15000);
+    expect(result.cashAdded.totalCashAdded).toBe(15000);
+    expect(result.cashAdded.cashAdded).toBe(0);
+    expect(result.cashAdded.fromEmployeeDrawers).toBe(0);
+    expect(result.cashAdded.fromMainDrawer).toBe(0);
+  });
+
+  it('keeps per-tender lines but adds balance once for same transaction', async () => {
+    const records: CashDrawerRecord[] = [
+      // First transaction establishes initial balance baseline
+      makeRecord('2026-01-06T15:20:00Z', 'AAAA', 'EMP', 'RETAIL SALE', 100, 0, null, 'CASH', 1000, 0, 0),
+      // Multi-tender single transaction (same occurredAt, ticket, employee, type)
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'CASH', 0, 0, 0),
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'DEBIT', 0, 0, 0),
+      // A following transaction to verify running balance continues correctly
+      makeRecord('2026-01-06T15:40:00Z', 'BBBB', 'EMP', 'PAWN (loan cash out)', -50, 0, null, 'CASH', 0, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-06T00:00:00.000Z',
+      endDate: '2026-01-06T23:59:59.999Z',
+    });
+
+    expect(result.transactions).toHaveLength(4);
+
+    // Initial record: 900 + 100 => 1000
+    expect(result.transactions[0].balance).toBeCloseTo(1000, 2);
+
+    // For the multi-tender transaction: both tender lines should have the same balance
+    // and the balance should reflect adding 1100 only once across the pair
+    const tx1 = result.transactions[1];
+    const tx2 = result.transactions[2];
+    expect(tx1.ticketNumber).toBe('111306');
+    expect(tx2.ticketNumber).toBe('111306');
+    expect(tx1.paymentMethod).toBe('CASH');
+    expect(tx2.paymentMethod).toBe('DEBIT');
+    expect(tx1.balance).toBeCloseTo(tx2.balance, 6);
+    // After applying the pair: 1000 + 1100 = 2100
+    expect(tx1.balance).toBeCloseTo(2100, 2);
+    expect(tx2.balance).toBeCloseTo(2100, 2);
+
+    // Final transaction reduces by 50 => 2050
+    expect(result.summary.endingBalance).toBeCloseTo(2050, 2);
+  });
+
+  it('counts multi-tender sales only once in sales totals', async () => {
+    const records: CashDrawerRecord[] = [
+      // Single-tender sale
+      makeRecord('2026-01-06T10:00:00Z', '111300', 'EMP', 'RETAIL SALE', 500, 0, null, 'CASH', 5500, 0, 0),
+      // Multi-tender sale (CASH + DEBIT for same transaction)
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'CASH', 6600, 0, 0),
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'DEBIT', 7700, 0, 0),
+      // Another single-tender sale
+      makeRecord('2026-01-06T16:00:00Z', '111307', 'CPK', 'RETAIL SALE', 200, 0, null, 'CHECK', 7900, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-06T00:00:00.000Z',
+      endDate: '2026-01-06T23:59:59.999Z',
+    });
+
+    // Verify sales summary counts 111306 only once
+    // Expected: 500 + 1100 (counted once) + 200 = 1800
+    // If bug existed: 500 + 1100 + 1100 + 200 = 2900
+    expect(result.salesSummary.sales).toBeCloseTo(1800, 2);
+    expect(result.salesSummary.totalSales).toBeCloseTo(1800, 2);
+
+    // Verify all 4 transaction lines are still present in output
+    expect(result.transactions).toHaveLength(4);
+  });
 });

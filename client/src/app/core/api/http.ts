@@ -4,15 +4,38 @@ import { getAccessToken, ensureFreshAccessToken } from '../auth/authService';
 const requestCache = new Map<string, { promise: Promise<any>; timestamp: number }>();
 const CACHE_DURATION = 1000; // 1 second
 
-// ✅ Base URL configuration
-const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_API_PORT}`;
+// ✅ Base URL configuration with fallback
+let BASE_URL = `${import.meta.env.VITE_API_BASE_URL}:${import.meta.env.VITE_API_PORT}`;
+let isConfigLoaded = false;
+
+// Initialize config from Electron if available
+async function initConfig() {
+  if (isConfigLoaded) return;
+
+  if (window.electronAPI?.getApiConfig) {
+    try {
+      const config = await window.electronAPI.getApiConfig();
+      if (config?.serverUrl) {
+        console.log(`[HTTP] Configuring API URL from Electron: ${config.serverUrl}`);
+        BASE_URL = config.serverUrl;
+      }
+    } catch (err) {
+      console.error('[HTTP] Failed to load config from Electron:', err);
+    }
+  }
+  isConfigLoaded = true;
+}
 
 export async function http(
   path: string,
   options: CustomRequestInit = {}
 ): Promise<any> {
+  // Ensure config is loaded before first request
+  if (!isConfigLoaded) {
+    await initConfig();
+  }
 
-  // console.log(`🌐 Making request to: ${path}`);
+  console.log(`🌐 Making request to: ${path}`);
 
   // ✅ Check for duplicate requests
   const cacheKey = `${options.method || 'GET'}:${path}`;

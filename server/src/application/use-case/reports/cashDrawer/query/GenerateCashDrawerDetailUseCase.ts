@@ -60,19 +60,20 @@ export class GenerateCashDrawerDetailUseCase {
         let creditSales = 0;
         let layaways = 0;
         let repairs = 0;
-        let depositToBank = 0;
-        let cashRemoved = 0;
-        let toEmployeeDrawers = 0;
-        let toMainDrawer = 0;
-        let amt = 0;
-        let pm = '';
+
+        const seenTx = new Set<string>();
 
         for (const record of records) {
             const type = record.transactionType.toUpperCase();
             if (this.shouldIgnoreForTotals(type)) continue;
 
-            pm = (record.paymentMethod || '').toUpperCase();
-            amt = record.amount;
+            const txKey = `${record.occurredAt.getTime()}_${record.ticketNumber}_${record.employee}_${record.transactionType}`;
+            if (seenTx.has(txKey)) {
+                continue; // only count once per transaction (ignore multi-tender duplicates)
+            }
+            seenTx.add(txKey);
+
+            const amt = record.amount;
 
             if (type === 'RETAIL SALE' || type === 'SALE') {
                 sales += amt;
@@ -81,15 +82,7 @@ export class GenerateCashDrawerDetailUseCase {
             } else if (type.includes('REPAIR')) {
                 repairs += amt;
             } else if (type.includes('DEPOSIT') && type.includes('BANK')) {
-                depositToBank += amt;
                 creditSales += amt;
-            } else if (type.includes('TO EMPLOYEE')) {
-                toEmployeeDrawers += amt;
-            } else if (type.includes('DEPOSIT') && type.includes('MAIN')) {
-                toMainDrawer += amt;
-            } else if (amt < 0 && !pm.includes('CASH')) {
-                // Any other negative non-cash entry counts toward deposit to bank
-                depositToBank += amt;
             }
         }
         const totalSales = sales + creditSales + layaways + repairs;
@@ -108,7 +101,7 @@ export class GenerateCashDrawerDetailUseCase {
 
             if (this.shouldIgnoreForTotals(type)) continue;
 
-            if (type.includes('CASH ADDED') || type.includes('BALANCE')) {
+            if (type.includes('CASH ADDED') || type.includes('BALANCE') || type.includes('WITHDRAWAL FROM BANK')) {
                 if (type.includes('BANK')) {
                     cashAddedFromBank += record.amount;
                 } else if (type.includes('EMPLOYEE')) {
@@ -258,8 +251,46 @@ export class GenerateCashDrawerDetailUseCase {
         const initialBalance = records[0].balance - records[0].amount;
         let runningBalance = initialBalance;
 
+        // Ensure we only apply the transaction amount once per unique transaction
+        // while still emitting one line per tender for visibility. Use a transaction
+        // key that ignores `paymentMethod` to detect multiple tender lines for
+        // the same transaction.
+        const seenTransactions = new Set<string>();
+
         return records.map((record) => {
-            runningBalance += record.amount;
+            const txKey = `${record.occurredAt.getTime()}_${record.ticketNumber}_${record.employee}_${record.transactionType}`;
+
+            if (!seenTransactions.has(txKey)) {
+                // Gather all lines for this transaction (ignore paymentMethod in key)
+                const group = records.filter(
+                    (r) => `${r.occurredAt.getTime()}_${r.ticketNumber}_${r.employee}_${r.transactionType}` === txKey
+                );
+
+                // Determine if multi-tender (different payment methods)
+                const methods = new Set(
+                    group.map((g) => (g.paymentMethod ? g.paymentMethod.toUpperCase() : ''))
+                );
+
+                let effectiveAmount: number;
+                if (methods.size > 1) {
+                    const typeUpper = record.transactionType.toUpperCase();
+                    if (typeUpper.startsWith('DEPOSIT FROM MAIN')) {
+                        // For DEPOSIT FROM MAIN, apply the full transaction impact (sum all tenders)
+                        effectiveAmount = group.reduce((s, g) => s + (g.amount ?? 0), 0);
+                    } else {
+                        // For typical multi-tender sales/payments, entries duplicate the full amount per tender.
+                        // Apply the transaction effect once using the first occurrence amount.
+                        effectiveAmount = group[0].amount;
+                    }
+                } else {
+                    // Single tender (or duplicates of same method): sum amounts
+                    effectiveAmount = group.reduce((s, g) => s + (g.amount ?? 0), 0);
+                }
+
+                runningBalance += effectiveAmount;
+                seenTransactions.add(txKey);
+            }
+
             return new CashDrawerRecord({
                 occurredAt: record.occurredAt,
                 ticketNumber: record.ticketNumber,

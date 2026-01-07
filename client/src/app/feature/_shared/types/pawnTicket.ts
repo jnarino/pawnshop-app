@@ -39,6 +39,10 @@ export interface PawnTicketData {
   pawnStatus: string;
   itemIds: string[];
   items: PawnTicketItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  apr?: number;
+  originalPawnAmount?: number;
 }
 
 export interface CustomerData {
@@ -53,4 +57,14 @@ export interface CustomerData {
   readonly streetAddress?: string | null;
   readonly city?: string | null;
   readonly zipCode?: string | null;
+  readonly stateUs?: string | null;
+  readonly idState?: string | null;
+  readonly dateOfBirth?: string | null;
+  readonly sex?: string | null;
+  readonly race?: string | null;
+  readonly height?: string | null;
+  readonly weight?: string | null;
+  readonly eyeColor?: string | null;
+  readonly hairColor?: string | null;
+  readonly employerName?: string | null;
 }

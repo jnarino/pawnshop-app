@@ -27,10 +27,13 @@ export interface FormDataItem {
   description?: string;
   amount?: string;
   quantity?: string;
-  ownerNumber?: string;
-  categoryName?: string;
   subcategoryName?: string;
   colorName?: string;
+  categoryName?: string;
+  brandName?: string;
+  ownerNumber?: string;
+  id?: string;
+  inventoryNumber?: string;
 }
 
 interface PrintFormParams {
@@ -81,18 +84,23 @@ export function usePawnPrint(): UsePawnPrintResult {
     ticket: TicketByControlNumber,
     items: FormDataItem[]
   ): PrintItem[] => {
-    return items.map((item, index) => ({
-      id: ticket.itemIds[index] || `item-${index}`,
-      inventoryNumber: `${ticket.controlNumber}-${index + 1}`,
-      description: item.description || `${item.brand || ''} ${item.model || ''}`.trim() || 'Item',
-      amount: formatMoney(item.amount),
-      quantity: item.quantity ? parseInt(item.quantity, 10) : 1,
-      category: item.categoryName,
-      subcategory: item.subcategoryName,
-      color: item.colorName,
-      model: item.model,
-      serialNumber: item.serial,
-    }));
+    return items.map((item, index) => {
+      const baseDescription = item.description || `${item.brandName || item.brand || ''} ${item.model || ''}`.trim() || 'Item';
+      const fullDescription = item.colorName ? `${item.colorName} ${baseDescription}`.trim() : baseDescription;
+
+      return {
+        id: item.id || ticket.itemIds[index] || `item-${index}`,
+        inventoryNumber: item.inventoryNumber || `${ticket.controlNumber}-${index + 1}`,
+        description: fullDescription,
+        amount: formatMoney(item.amount),
+        quantity: item.quantity ? parseInt(item.quantity, 10) : 1,
+        category: item.categoryName,
+        subcategory: item.subcategoryName,
+        color: item.colorName,
+        model: item.model,
+        serialNumber: item.serial,
+      };
+    });
   }, []);
 
   const printTransactionForm = useCallback(async (params: PrintFormParams): Promise<boolean> => {
@@ -133,20 +141,37 @@ export function usePawnPrint(): UsePawnPrintResult {
         customerEyes: customer.eyeColor || undefined,
         customerHair: customer.hairColor || undefined,
 
-        items: items.map((item) => ({
-          serialNumber: item.serial || undefined,
-          ownerAppliedNumber: item.ownerNumber || undefined,
-          brand: item.brand || undefined,
-          modelNumber: item.model || undefined,
-          description: item.description || '',
-          amount: formatMoney(item.amount),
-          itemType: item.type,
-        })),
+        items: items.map((item) => {
+          const baseDesc = item.description || '';
+          const descWithColor = item.colorName ? `${item.colorName} ${baseDesc}`.trim() : baseDesc;
 
-        amountFinanced: formatMoney(ticket.amountFinanced),
-        financeCharge: formatMoney(params.financeCharge),
-        totalOfPayments: formatMoney(params.totalOfPayments),
-        annualRate: params.annualRate,
+          // Helper for clean printing (prioritize name, avoid UUIDs)
+          const clean = (preferred?: string, fallback?: string, defaultVal = 'NONE') => {
+            const isUUID = (s?: string) => s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s);
+            if (preferred && !isUUID(preferred)) return preferred;
+            if (fallback && !isUUID(fallback)) return fallback;
+            return defaultVal;
+          };
+
+          const cleanSerial = (s?: string) => (s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s) ? undefined : s);
+
+          const ticketItem = ticket.items.find((i) => i.id === item.id);
+
+          return {
+            serialNumber: cleanSerial(item.serial) || undefined,
+            ownerAppliedNumber: cleanSerial(item.ownerNumber) || undefined,
+            brand: clean(item.brandName, item.brand, 'NONE'),
+            modelNumber: clean(item.subcategoryName, item.model, 'NONE'),
+            description: descWithColor,
+            amount: item.amount,
+            itemType: ticketItem?.inventorySubcategory.name || 'MISC',
+          };
+        }),
+
+        amountFinanced: ticket.amountFinanced ?? undefined,
+        financeCharge: ticket.amountFinanced && ticket.periodicRate ? (ticket.amountFinanced * ticket.periodicRate) : undefined,
+        totalOfPayments: ticket.redemptionAmount ?? params.totalOfPayments ?? undefined,
+        annualRate: ticket.apr ?? params.annualRate ?? undefined,
       };
 
       const printer = new TransactionFormPrinter();

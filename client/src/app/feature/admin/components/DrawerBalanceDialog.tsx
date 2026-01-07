@@ -42,6 +42,10 @@ export default function DrawerBalanceDialog({ open, onOpenChange }: DrawerBalanc
         setLoading(true);
         try {
             const data = await salesApi.getDrawerBalance();
+            if (!data) {
+                setTenders([]);
+                return;
+            }
             const initialTenders = Object.entries(data.mainDrawerBalance).map(([name, amount]) => ({
                 name,
                 available: amount,
@@ -157,6 +161,12 @@ export default function DrawerBalanceDialog({ open, onOpenChange }: DrawerBalanc
                                             <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                                         </TableCell>
                                     </TableRow>
+                                ) : tenders.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                            There are no more transactions since the last balance
+                                        </TableCell>
+                                    </TableRow>
                                 ) : tenders.map((t, i) => (
                                     <TableRow key={t.name}>
                                         <TableCell className="font-medium uppercase">{t.name}</TableCell>
@@ -204,7 +214,7 @@ export default function DrawerBalanceDialog({ open, onOpenChange }: DrawerBalanc
                             Cancel
                         </Button>
                         <Button
-                            disabled={loading || submitting}
+                            disabled={loading || submitting || tenders.length === 0}
                             onClick={handleSubmit}
                         >
                             {submitting ? (

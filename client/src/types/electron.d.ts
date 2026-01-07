@@ -21,6 +21,9 @@ declare global {
       }>) => Promise<{ success: boolean; count?: number; error?: string }>;
 
       printDocument?: (html: string) => Promise<{ success: boolean; error?: string }>;
+
+      // ✅ Config
+      getApiConfig?: () => Promise<{ mode?: 'server' | 'client'; serverUrl?: string }>;
     };
   }
 }

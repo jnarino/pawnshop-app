@@ -2,6 +2,7 @@
 // Florida Pawnbroker Transaction Form (layout per user's spec)
 // Print settings: Letter 8.5"x11", Scale 100%, Margins None/0, no "Fit to page".
 
+import { formatDate } from '@/lib/utils';
 import templateDef from './templates/floridapawn.template.json';
 import JsBarcode from 'jsbarcode';
 
@@ -39,9 +40,9 @@ export type TransactionItemPrint = {
 
 export type TransactionPrintData = {
     // basics
-    transactionDate: string | number | Date;
-    maturityDate?: string | number | Date;
-    defaultDate?: string | number | Date;
+    transactionDate: string | Date;
+    maturityDate?: string | Date;
+    defaultDate?: string | Date;
     controlNumber?: string;
     ticketType: TicketType;
 
@@ -251,8 +252,8 @@ export class TransactionFormPrinter {
         }
 
         const txnDate = new Date(data.transactionDate);
-        const maturityDate = data.maturityDate ? new Date(data.maturityDate) : undefined;
-        const defaultDate = data.defaultDate ? new Date(data.defaultDate) : undefined;
+        const maturityDate = data.maturityDate ? formatDate(data.maturityDate || '') : undefined;
+        const defaultDate = data.defaultDate ? formatDate(data.defaultDate || '') : undefined;
         const timeStr = txnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         const businessMatch = STORE.address2?.match(CITY_STATE_ZIP);
@@ -305,10 +306,10 @@ export class TransactionFormPrinter {
             hairColor: data.customerHair ?? '',
             amountFinanced: fmtMoney(data.amountFinanced),
             financeCharge: fmtMoney(data.financeCharge),
-            redeemPrice: fmtMoney(data.totalOfPayments),
+            redeemPrice: fmtMoney(amountFinancedNum + financeChargeNum),
             annualPercentageRate: typeof data.annualRate === 'number' ? data.annualRate.toFixed(2) : (data.annualRate?.toString() ?? ''),
-            maturityDate: maturityDate ? maturityDate.toLocaleDateString() : '',
-            pawnDefaultDate: defaultDate ? defaultDate.toLocaleDateString() : '',
+            maturityDate: maturityDate ?? '',
+            pawnDefaultDate: defaultDate ?? '',
             amountWith2MonthsInterest: twoMonthAmount,
         };
 

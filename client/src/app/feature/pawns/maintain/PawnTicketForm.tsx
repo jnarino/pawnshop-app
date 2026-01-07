@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { InventoryItemModal, type InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { PrintLabelsModal } from '../../_shared/pawn-ticket/components/PrintLabelsModal';
 import { TransactionDetails } from '../../_shared/pawn-ticket/components/TransactionDetails';
@@ -26,15 +26,6 @@ import visibilityIcon from '@/assets/icons/visibility.svg';
 import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-export interface PawnFormDraftState {
-  type: 'PAWN' | 'PURCHASE';
-  periodicRate: string;
-  transactionDate: string;
-  maturityDate: string;
-  expirationDate: string;
-  items: InventoryItemDraft[];
-}
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -89,7 +80,7 @@ export function PawnTicketForm({
   const isViewMode = mode === 'VIEW';
   const isEditMode = mode === 'MODIFY';
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
-  const { printTransactionForm, printLabels } = usePawnPrint();
+  const { printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
 
@@ -102,6 +93,21 @@ export function PawnTicketForm({
     expirationDate: initialData?.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
     items: initialData?.items || [] as InventoryItemDraft[]
   });
+
+  // Keep local state in sync with initialData when it changes (e.g. after search)
+  useEffect(() => {
+    if (initialData) {
+      setLocalFormData({
+        customerId: initialData.customerId || 'temp-customer',
+        type: initialData.type || 'PAWN',
+        periodicRate: initialData.periodicRate || '25',
+        transactionDate: initialData.transactionDate || format(new Date(), 'yyyy-MM-dd'),
+        maturityDate: initialData.maturityDate || format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+        expirationDate: initialData.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
+        items: initialData.items || []
+      });
+    }
+  }, [initialData]);
 
   const formData = isControlled ? {
     customerId: initialData?.customerId || 'temp-customer',
@@ -186,24 +192,10 @@ export function PawnTicketForm({
   }, [formData.items, updateFormData]);
 
   const handlePrintTicket = useCallback(async () => {
-    if (!controlNumber || !customer || !pawnTicket) return;
+    if (!customer || !pawnTicket) return;
 
     setIsPrinting(true);
     try {
-      const customerData = {
-        id: customer.id,
-        firstName: customer.firstName,
-        middleName: customer.middleName || '',
-        lastName: customer.lastName,
-        secondLastName: customer.secondLastName || '',
-        idType: customer.idType || '',
-        idNumber: customer.idNumber || '',
-        phoneNumber: customer.phoneNumber || '',
-        address: customer.streetAddress || '',
-        city: customer.city || '',
-        zipCode: customer.zipCode || ''
-      };
-
       const items = formData.items.map(item => ({
         type: item.type,
         brand: item.brandName,
@@ -212,35 +204,52 @@ export function PawnTicketForm({
         description: item.description,
         amount: item.amount,
         quantity: item.quantity,
-        ownerNumber: item.ownerNumber
+        ownerNumber: item.ownerNumber,
+        id: item.id,
       }));
 
-      await printTransactionForm({ ticket: pawnTicket, customer: customerData, items });
+      await printTransactionForm({
+        ticket: pawnTicket as any,
+        customer: customer as any,
+        items
+      });
     } finally {
       setIsPrinting(false);
     }
-  }, [controlNumber, customer, pawnTicket, formData.items, printTransactionForm]);
+  }, [customer, pawnTicket, formData.items, printTransactionForm]);
 
   const handlePrintLabels = useCallback(() => {
     setShowLabelModal(true);
   }, []);
 
   const handleConfirmPrintLabels = useCallback(async (labelCounts: Record<string, number>) => {
-    if (!controlNumber) return;
+    if (!pawnTicket || !customer) return;
+
+    const items = formData.items.map(item => ({
+      type: item.type,
+      brand: item.brandName,
+      model: item.model,
+      serial: item.serial,
+      description: item.description,
+      amount: item.amount,
+      quantity: item.quantity,
+      ownerNumber: item.ownerNumber,
+      categoryName: item.categoryName,
+      subcategoryName: item.subcategoryName,
+      id: item.id,
+      inventoryNumber: item.ownerNumber || (item as any).inventoryNumber
+    }));
+
+    const printItems = buildPrintItems(pawnTicket as any, items as any);
 
     await printLabels(
-      controlNumber,
-      formData.items.map(item => ({
-        id: item.id || '',
-        inventoryNumber: item.ownerNumber || '',
-        description: item.description || `${item.brandName || ''} ${item.model || ''}`.trim(),
-        amount: item.amount || '0',
-        quantity: Number(item.quantity) || 1
-      })),
+      pawnTicket as any,
+      customer as any,
+      printItems,
       labelCounts
     );
     setShowLabelModal(false);
-  }, [controlNumber, formData.items, printLabels]);
+  }, [pawnTicket, customer, formData.items, printLabels, buildPrintItems]);
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
