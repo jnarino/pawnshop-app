@@ -258,8 +258,42 @@ export class GenerateCashDrawerDetailUseCase {
         const initialBalance = records[0].balance - records[0].amount;
         let runningBalance = initialBalance;
 
+        // Ensure we only apply the transaction amount once per unique transaction
+        // while still emitting one line per tender for visibility. Use a transaction
+        // key that ignores `paymentMethod` to detect multiple tender lines for
+        // the same transaction.
+        const seenTransactions = new Set<string>();
+
         return records.map((record) => {
-            runningBalance += record.amount;
+            const txKey = `${record.occurredAt.getTime()}_${record.ticketNumber}_${record.employee}_${record.transactionType}`;
+
+            if (!seenTransactions.has(txKey)) {
+                // Gather all lines for this transaction (ignore paymentMethod in key)
+                const group = records.filter(
+                    (r) => `${r.occurredAt.getTime()}_${r.ticketNumber}_${r.employee}_${r.transactionType}` === txKey
+                );
+
+                // Determine if multi-tender (different payment methods)
+                const methods = new Set(
+                    group.map((g) => (g.paymentMethod ? g.paymentMethod.toUpperCase() : ''))
+                );
+
+                let effectiveAmount: number;
+                if (methods.size > 1) {
+                    // Multi-tender: apply only the cash-affecting portion once
+                    const cashLine = group.find(
+                        (g) => (g.paymentMethod || '').toUpperCase().includes('CASH')
+                    );
+                    effectiveAmount = cashLine ? cashLine.amount : group[0].amount;
+                } else {
+                    // Single tender (or duplicates of same method): sum amounts
+                    effectiveAmount = group.reduce((s, g) => s + (g.amount ?? 0), 0);
+                }
+
+                runningBalance += effectiveAmount;
+                seenTransactions.add(txKey);
+            }
+
             return new CashDrawerRecord({
                 occurredAt: record.occurredAt,
                 ticketNumber: record.ticketNumber,

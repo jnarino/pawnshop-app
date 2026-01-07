@@ -122,4 +122,44 @@ describe('GenerateCashDrawerDetailUseCase', () => {
     expect(result.cashAdded.fromEmployeeDrawers).toBe(0);
     expect(result.cashAdded.fromMainDrawer).toBe(0);
   });
+
+  it('keeps per-tender lines but adds balance once for same transaction', async () => {
+    const records: CashDrawerRecord[] = [
+      // First transaction establishes initial balance baseline
+      makeRecord('2026-01-06T15:20:00Z', 'AAAA', 'EMP', 'RETAIL SALE', 100, 0, null, 'CASH', 1000, 0, 0),
+      // Multi-tender single transaction (same occurredAt, ticket, employee, type)
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'CASH', 0, 0, 0),
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'DEBIT', 0, 0, 0),
+      // A following transaction to verify running balance continues correctly
+      makeRecord('2026-01-06T15:40:00Z', 'BBBB', 'EMP', 'PAWN (loan cash out)', -50, 0, null, 'CASH', 0, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-06T00:00:00.000Z',
+      endDate: '2026-01-06T23:59:59.999Z',
+    });
+
+    expect(result.transactions).toHaveLength(4);
+
+    // Initial record: 900 + 100 => 1000
+    expect(result.transactions[0].balance).toBeCloseTo(1000, 2);
+
+    // For the multi-tender transaction: both tender lines should have the same balance
+    // and the balance should reflect adding 1100 only once across the pair
+    const tx1 = result.transactions[1];
+    const tx2 = result.transactions[2];
+    expect(tx1.ticketNumber).toBe('111306');
+    expect(tx2.ticketNumber).toBe('111306');
+    expect(tx1.paymentMethod).toBe('CASH');
+    expect(tx2.paymentMethod).toBe('DEBIT');
+    expect(tx1.balance).toBeCloseTo(tx2.balance, 6);
+    // After applying the pair: 1000 + 1100 = 2100
+    expect(tx1.balance).toBeCloseTo(2100, 2);
+    expect(tx2.balance).toBeCloseTo(2100, 2);
+
+    // Final transaction reduces by 50 => 2050
+    expect(result.summary.endingBalance).toBeCloseTo(2050, 2);
+  });
 });
