@@ -7,6 +7,11 @@ export function toInventoryItemResponseDto(
 ): InventoryItemResponseDto {
   const enrichedData = (item as any)._enrichedData;
 
+  // Helper to trim string fields
+  const trimString = (str: string | null | undefined): string | null => {
+    return typeof str === 'string' ? str.trim() : (str ?? null);
+  };
+
   return {
     id: item.id,
 
@@ -22,8 +27,8 @@ export function toInventoryItemResponseDto(
     quantity: item.quantity,
 
     brand: enrichedData?.brand || (item.brand ? { id: item.brand, name: '' } : null),
-    model: item.model,
-    serialNumber: item.serialNumber,
+    model: trimString(item.model),
+    serialNumber: trimString(item.serialNumber),
     colorId:
       item.colorId && typeof item.colorId === 'object' && 'id' in item.colorId && 'name' in item.colorId
         ? item.colorId
@@ -31,8 +36,8 @@ export function toInventoryItemResponseDto(
           ? { id: item.colorId, name: '' }
           : null),
     itemCondition: item.itemCondition,
-    ownerMark: item.ownerMark,
-    itemDescription: item.itemDescription,
+    ownerMark: trimString(item.ownerMark),
+    itemDescription: trimString(item.itemDescription),
 
     priceAmount: item.priceAmount,
     resale: item.resale,
@@ -42,12 +47,12 @@ export function toInventoryItemResponseDto(
     extra: item.extra,
     attributes: item.attributes,
 
-    legacyInventoryNumber: item.legacyInventoryNumber,
-    legacyItemGuid: item.legacyItemGuid,
-    legacyCategoryDescription: item.legacyCategoryDescription,
-    legacyBrandColorDescription: item.legacyBrandColorDescription,
+    legacyInventoryNumber: trimString(item.legacyInventoryNumber),
+    legacyItemGuid: trimString(item.legacyItemGuid),
+    legacyCategoryDescription: trimString(item.legacyCategoryDescription),
+    legacyBrandColorDescription: trimString(item.legacyBrandColorDescription),
 
-    inventoryNumber: item.inventoryNumber,
+    inventoryNumber: trimString(item.inventoryNumber),
     lastUpdatedUserId: item.lastUpdatedUserId,
 
     createdAt: item.createdAt ? item.createdAt.toISOString() : null,

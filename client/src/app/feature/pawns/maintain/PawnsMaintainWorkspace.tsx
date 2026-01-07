@@ -10,7 +10,7 @@ import { Loader2, Pencil } from 'lucide-react';
 import { pawnTicketApi, type CustomerActivePawnTicket, type TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
-import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
+import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { PawnTicketForm } from './PawnTicketForm';
 import { CancelButton } from '@/app/shared/components/CancelButton';
 import { formatDate } from '@/lib/utils';
@@ -77,6 +77,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     model: item.model || '',
     serial: item.serialNumber || '',
     color: extractId(item.colorId),
+    colorName: (item.colorId as any)?.name || '',
     condition: item.itemCondition || '',
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
@@ -120,6 +121,7 @@ function PawnsMaintainWorkspaceContent() {
 
   const [ticketNumber, setTicketNumber] = useState('');
   const [ticketResults, setTicketResults] = useState<TicketResult[]>([]);
+  const [currentCustomer, setCurrentCustomer] = useState<CustomerData | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -177,6 +179,32 @@ function PawnsMaintainWorkspaceContent() {
         : await pawnTicketApi.getByCustomer(customer.id || '');
       setTicketResults(tickets);
       setSelectedCustomer(customer);
+
+      // Convert CustomerRecord to CustomerData for the form print logic
+      setCurrentCustomer({
+        id: customer.id || '',
+        firstName: customer.firstName,
+        middleName: customer.middleName,
+        lastName: customer.lastName,
+        secondLastName: (customer as any).secondLastName,
+        idType: customer.idType,
+        idNumber: customer.idNumber,
+        phoneNumber: customer.phoneNumber,
+        streetAddress: customer.streetAddress,
+        city: customer.city,
+        zipCode: customer.zipCode,
+        stateUs: customer.stateUs,
+        idState: (customer as any).idState,
+        dateOfBirth: customer.dateOfBirth,
+        sex: customer.sex,
+        race: customer.race,
+        height: customer.height,
+        weight: customer.weight,
+        eyeColor: customer.eyeColor,
+        hairColor: customer.hairColor,
+        employerName: customer.employerName
+      });
+
       if (tickets.length === 0) {
         setError('No tickets found for this customer');
       }
@@ -219,7 +247,43 @@ function PawnsMaintainWorkspaceContent() {
       }
       // Ticket found - go directly to edit mode
       const ticket = data[0];
-      const detail = await ensureDetail(ticket);
+      const detail = await ensureDetail(ticket as any);
+
+      // Fetch full customer data for printing
+      if (detail.customerId) {
+        try {
+          const customerDto = await http(`/api/customer/${detail.customerId}`);
+          if (customerDto) {
+            const customerRecord = apiToRecordLoose(customerDto);
+            setCurrentCustomer({
+              id: customerRecord.id || '',
+              firstName: customerRecord.firstName,
+              middleName: customerRecord.middleName,
+              lastName: customerRecord.lastName,
+              secondLastName: (customerRecord as any).secondLastName,
+              idType: customerRecord.idType,
+              idNumber: customerRecord.idNumber,
+              phoneNumber: customerRecord.phoneNumber,
+              streetAddress: customerRecord.streetAddress,
+              city: customerRecord.city,
+              zipCode: customerRecord.zipCode,
+              stateUs: customerRecord.stateUs,
+              idState: (customerRecord as any).idState || customerRecord.idState,
+              dateOfBirth: customerRecord.dateOfBirth,
+              sex: customerRecord.sex,
+              race: customerRecord.race,
+              height: customerRecord.height,
+              weight: customerRecord.weight,
+              eyeColor: customerRecord.eyeColor,
+              hairColor: customerRecord.hairColor,
+              employerName: customerRecord.employerName
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch customer for ticket reprint:', err);
+        }
+      }
+
       setSelectedTicket(detail);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Search failed';
@@ -234,6 +298,42 @@ function PawnsMaintainWorkspaceContent() {
     setError(null);
     try {
       const detail = await ensureDetail(result);
+
+      // Fetch full customer data if not already set or if id changed
+      if (detail.customerId && (!currentCustomer || currentCustomer.id !== detail.customerId)) {
+        try {
+          const customerDto = await http(`/api/customer/${detail.customerId}`);
+          if (customerDto) {
+            const customerRecord = apiToRecordLoose(customerDto);
+            setCurrentCustomer({
+              id: customerRecord.id || '',
+              firstName: customerRecord.firstName,
+              middleName: customerRecord.middleName,
+              lastName: customerRecord.lastName,
+              secondLastName: (customerRecord as any).secondLastName,
+              idType: customerRecord.idType,
+              idNumber: customerRecord.idNumber,
+              phoneNumber: customerRecord.phoneNumber,
+              streetAddress: customerRecord.streetAddress,
+              city: customerRecord.city,
+              zipCode: customerRecord.zipCode,
+              stateUs: customerRecord.stateUs,
+              idState: (customerRecord as any).idState || customerRecord.idState,
+              dateOfBirth: customerRecord.dateOfBirth,
+              sex: customerRecord.sex,
+              race: customerRecord.race,
+              height: customerRecord.height,
+              weight: customerRecord.weight,
+              eyeColor: customerRecord.eyeColor,
+              hairColor: customerRecord.hairColor,
+              employerName: customerRecord.employerName
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch customer for ticket reprint:', err);
+        }
+      }
+
       setSelectedTicket(detail);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to open ticket';
@@ -476,6 +576,7 @@ function PawnsMaintainWorkspaceContent() {
             initialData={transformPawnTicketToFormData(selectedTicket)}
             controlNumber={selectedTicket.controlNumber}
             pawnTicket={selectedTicket}
+            customer={currentCustomer || undefined}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>

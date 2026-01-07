@@ -67,7 +67,11 @@ export interface TicketByControlNumber {
     firstName: string;
     lastName: string;
   };
-  items: InventoryItem[]
+  items: InventoryItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  apr?: number;
+  originalPawnAmount?: number;
 }
 
 export type Lookup = {
