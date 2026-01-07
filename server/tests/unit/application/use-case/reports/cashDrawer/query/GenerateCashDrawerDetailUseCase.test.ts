@@ -162,4 +162,32 @@ describe('GenerateCashDrawerDetailUseCase', () => {
     // Final transaction reduces by 50 => 2050
     expect(result.summary.endingBalance).toBeCloseTo(2050, 2);
   });
+
+  it('counts multi-tender sales only once in sales totals', async () => {
+    const records: CashDrawerRecord[] = [
+      // Single-tender sale
+      makeRecord('2026-01-06T10:00:00Z', '111300', 'EMP', 'RETAIL SALE', 500, 0, null, 'CASH', 5500, 0, 0),
+      // Multi-tender sale (CASH + DEBIT for same transaction)
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'CASH', 6600, 0, 0),
+      makeRecord('2026-01-06T15:26:18Z', '111306', 'JL', 'RETAIL SALE', 1100, 0, null, 'DEBIT', 7700, 0, 0),
+      // Another single-tender sale
+      makeRecord('2026-01-06T16:00:00Z', '111307', 'CPK', 'RETAIL SALE', 200, 0, null, 'CHECK', 7900, 0, 0),
+    ];
+
+    repo.findByDateRange.mockResolvedValue(records);
+
+    const result = await useCase.execute({
+      startDate: '2026-01-06T00:00:00.000Z',
+      endDate: '2026-01-06T23:59:59.999Z',
+    });
+
+    // Verify sales summary counts 111306 only once
+    // Expected: 500 + 1100 (counted once) + 200 = 1800
+    // If bug existed: 500 + 1100 + 1100 + 200 = 2900
+    expect(result.salesSummary.sales).toBeCloseTo(1800, 2);
+    expect(result.salesSummary.totalSales).toBeCloseTo(1800, 2);
+
+    // Verify all 4 transaction lines are still present in output
+    expect(result.transactions).toHaveLength(4);
+  });
 });

@@ -60,19 +60,20 @@ export class GenerateCashDrawerDetailUseCase {
         let creditSales = 0;
         let layaways = 0;
         let repairs = 0;
-        let depositToBank = 0;
-        let cashRemoved = 0;
-        let toEmployeeDrawers = 0;
-        let toMainDrawer = 0;
-        let amt = 0;
-        let pm = '';
+
+        const seenTx = new Set<string>();
 
         for (const record of records) {
             const type = record.transactionType.toUpperCase();
             if (this.shouldIgnoreForTotals(type)) continue;
 
-            pm = (record.paymentMethod || '').toUpperCase();
-            amt = record.amount;
+            const txKey = `${record.occurredAt.getTime()}_${record.ticketNumber}_${record.employee}_${record.transactionType}`;
+            if (seenTx.has(txKey)) {
+                continue; // only count once per transaction (ignore multi-tender duplicates)
+            }
+            seenTx.add(txKey);
+
+            const amt = record.amount;
 
             if (type === 'RETAIL SALE' || type === 'SALE') {
                 sales += amt;
@@ -81,15 +82,7 @@ export class GenerateCashDrawerDetailUseCase {
             } else if (type.includes('REPAIR')) {
                 repairs += amt;
             } else if (type.includes('DEPOSIT') && type.includes('BANK')) {
-                depositToBank += amt;
                 creditSales += amt;
-            } else if (type.includes('TO EMPLOYEE')) {
-                toEmployeeDrawers += amt;
-            } else if (type.includes('DEPOSIT') && type.includes('MAIN')) {
-                toMainDrawer += amt;
-            } else if (amt < 0 && !pm.includes('CASH')) {
-                // Any other negative non-cash entry counts toward deposit to bank
-                depositToBank += amt;
             }
         }
         const totalSales = sales + creditSales + layaways + repairs;
@@ -280,11 +273,15 @@ export class GenerateCashDrawerDetailUseCase {
 
                 let effectiveAmount: number;
                 if (methods.size > 1) {
-                    // Multi-tender: apply only the cash-affecting portion once
-                    const cashLine = group.find(
-                        (g) => (g.paymentMethod || '').toUpperCase().includes('CASH')
-                    );
-                    effectiveAmount = cashLine ? cashLine.amount : group[0].amount;
+                    const typeUpper = record.transactionType.toUpperCase();
+                    if (typeUpper.startsWith('DEPOSIT FROM MAIN')) {
+                        // For DEPOSIT FROM MAIN, apply the full transaction impact (sum all tenders)
+                        effectiveAmount = group.reduce((s, g) => s + (g.amount ?? 0), 0);
+                    } else {
+                        // For typical multi-tender sales/payments, entries duplicate the full amount per tender.
+                        // Apply the transaction effect once using the first occurrence amount.
+                        effectiveAmount = group[0].amount;
+                    }
                 } else {
                     // Single tender (or duplicates of same method): sum amounts
                     effectiveAmount = group.reduce((s, g) => s + (g.amount ?? 0), 0);
