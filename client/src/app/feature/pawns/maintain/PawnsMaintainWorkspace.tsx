@@ -14,6 +14,7 @@ import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/p
 import { PawnTicketForm } from './PawnTicketForm';
 import { CancelButton } from '@/app/shared/components/CancelButton';
 import { formatDate } from '@/lib/utils';
+import { transformStones } from '@/app/shared/components/ElectronMenuBridge';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
 type ScopeFilter = 'all' | 'active';
@@ -40,31 +41,6 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     return '';
   };
 
-  const transformStones = (stones: Array<{
-    type?: { id: string; name?: string | null } | string;
-    shape?: { id: string; name?: string | null } | string;
-    color?: { id: string; name?: string | null } | string;
-    carat?: number | string;
-    weight?: number | string;
-    length?: number | string;
-    width?: number | string;
-    clarity?: string;
-    quantity?: number | string;
-  }> | undefined) => {
-    if (!stones || !Array.isArray(stones)) return undefined;
-    return stones.map((stone, index) => ({
-      id: `stone-${index}-${Date.now()}`,
-      quantity: String(stone.quantity || 1),
-      type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
-      shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
-      color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
-      carat: String(stone.carat || ''),
-      weight: String(stone.weight || ''),
-      length: String(stone.length || ''),
-      width: String(stone.width || ''),
-      clarity: stone.clarity || '',
-    }));
-  };
 
   const transformedItems = (pawnTicket.items || []).map((item) => ({
     id: item.id,

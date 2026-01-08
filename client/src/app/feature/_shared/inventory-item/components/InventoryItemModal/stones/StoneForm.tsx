@@ -15,31 +15,32 @@ interface StoneFormProps {
 
 const DEFAULT_FORM = {
   quantity: '1',
-  type: '',
-  shape: '',
+  type: { id: '', name: '' },
+  shape: { id: '', name: '' },
   carat: '',
-  color: '',
+  color: { id: '', name: '' },
   weight: '',
   length: '',
   width: '',
-  clarity: ''
+  clarity: { id: '', name: '' }
 };
 
 export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneFormProps) {
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
+
   useEffect(() => {
     if (initialStone) {
       setFormData({
         quantity: initialStone.quantity || '1',
-        type: initialStone.type || '',
-        shape: initialStone.shape || '',
+        type: initialStone.type || { id: '', name: '' },
+        shape: initialStone.shape || { id: '', name: '' },
         carat: initialStone.carat || '',
-        color: initialStone.color || '',
+        color: initialStone.color || { id: '', name: '' },
         weight: initialStone.weight || '',
         length: initialStone.length || '',
         width: initialStone.width || '',
-        clarity: initialStone.clarity || ''
+        clarity: initialStone.clarity || { id: '', name: '' }
       });
     } else {
       // Reset form when initialStone becomes null (e.g., after cancel)
@@ -47,7 +48,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
     }
   }, [initialStone]);
 
-  const updateField = useCallback((field: string, value: string) => {
+  const updateField = useCallback((field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -74,9 +75,11 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
         <div className="space-y-1">
           <Label className="text-xs font-semibold">Type *</Label>
           <LookupSelect
-            typeName={LookupTypeName.SHAPE}
+            typeName={LookupTypeName.TYPE}
             value={formData.type}
-            onChange={(v) => updateField('type', v)}
+            onChange={(_, stone) => {
+              updateField('type', stone)
+            }}
             placeholder="Select type..."
           />
         </div>
@@ -86,7 +89,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.SHAPE}
             value={formData.shape}
-            onChange={(v) => updateField('shape', v)}
+            onChange={(_, stone) => updateField('shape', stone)}
             placeholder="Select shape..."
           />
         </div>
@@ -108,7 +111,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.COLOR}
             value={formData.color}
-            onChange={(v) => updateField('color', v)}
+            onChange={(_, stone) => updateField('color', stone)}
             placeholder="Select color..."
           />
         </div>
@@ -154,7 +157,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.CLARITY}
             value={formData.clarity}
-            onChange={(v) => updateField('clarity', v)}
+            onChange={(_, stone) => updateField('clarity', stone)}
             placeholder="Select clarity..."
           />
         </div>
