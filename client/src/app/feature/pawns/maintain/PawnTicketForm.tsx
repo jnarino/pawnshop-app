@@ -319,6 +319,7 @@ export function PawnTicketForm({
                     >
                       <TableCell><div>
                         <div className="font-semibold">{item.categoryName || item.type}</div>
+                        {item.description && <div className="text-sm text-gray-600">{item.description}</div>}
                         {item.brandName && <div className="text-sm text-gray-600">Brand: {item.brandName}</div>}
                         {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                       </div></TableCell>
