@@ -1,12 +1,18 @@
+export interface LookupTypeStones {
+  id: string;
+  name: string;
+  attribute_type_id: string;
+}
+
 export interface Stone {
   id: string;
   quantity: string;
-  type: string;
-  shape?: string;
+  type: LookupTypeStones;
+  shape?: LookupTypeStones;
   carat?: string;
-  color?: string;
+  color?: LookupTypeStones;
   weight?: string;
   length?: string;
   width?: string;
-  clarity?: string;
+  clarity?: LookupTypeStones;
 }

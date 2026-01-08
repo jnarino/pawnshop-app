@@ -7,6 +7,7 @@ import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { createInventoryItem, getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import { useNavigate } from 'react-router-dom';
+import { LookupTypeStones } from '@/app/feature/_shared/inventory-item/components/InventoryItemModal/stones/types';
 
 // Helper to extract ID from attribute objects or return string value
 export const extractId = (value: unknown): string => {
@@ -21,9 +22,9 @@ export const extractId = (value: unknown): string => {
 
 // Transform stones from API format to frontend format
 export function transformStones(stones: Array<{
-  type?: { id: string; name?: string | null } | string;
-  shape?: { id: string; name?: string | null } | string;
-  color?: { id: string; name?: string | null } | string;
+  type: LookupTypeStones;
+  shape?: LookupTypeStones;
+  color?: LookupTypeStones;
   carat?: number | string;
   weight?: number | string;
   length?: number | string;
@@ -35,9 +36,9 @@ export function transformStones(stones: Array<{
   return stones.map((stone, index) => ({
     id: `stone-${index}-${Date.now()}`,
     quantity: String(stone.quantity || 1),
-    type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
-    shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
-    color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
+    type: stone.type,
+    shape: stone.shape,
+    color: stone.color,
     carat: String(stone.carat || ''),
     weight: String(stone.weight || ''),
     length: String(stone.length || ''),

@@ -12,12 +12,13 @@ interface DollarInputProps extends Omit<React.InputHTMLAttributes<HTMLInputEleme
 }
 
 export function DollarInput({ value = "", onChange, label, error, className, disabled, ...props }: DollarInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
   const [internalValue, setInternalValue] = useState(value.toString())
 
   const formatDisplay = (val: string) => {
-    if (!val) return ""
+    if (!val || val === '-') return val
 
+    const isNegative = val.startsWith('-')
     const clean = val.replace(/[^\d.]/g, "")
     const parts = clean.split(".")
 
@@ -26,28 +27,31 @@ export function DollarInput({ value = "", onChange, label, error, className, dis
 
     const withCommas = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
-    if (parts.length > 1) {
-      return `${withCommas}.${decimal}`
-    }
+    const result = parts.length > 1 ? `${withCommas}.${decimal}` : withCommas
 
-    return withCommas
+    return isNegative ? `-${result}` : result
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputValue = e.target.value
 
+    const isNegative = inputValue.startsWith('-')
     inputValue = inputValue.replace(/[^\d.]/g, "")
 
-    if (inputValue.includes(".")) {
-      const dotIndex = inputValue.indexOf(".")
-      const beforeDot = inputValue.substring(0, dotIndex)
-      const afterDot = inputValue.substring(dotIndex + 1).replace(/\./g, "")
-      inputValue = beforeDot + "." + afterDot
+    if (isNegative) {
+      inputValue = '-' + inputValue
+    }
+
+    if ((inputValue.match(/\./g) || []).length > 1) {
+      const firstDotIndex = inputValue.indexOf('.')
+      const before = inputValue.slice(0, firstDotIndex + 1)
+      const after = inputValue.slice(firstDotIndex + 1).replace(/\./g, '')
+      inputValue = before + after
     }
 
     if (inputValue.includes(".")) {
-      const [integer, decimal] = inputValue.split(".")
-      inputValue = integer + "." + decimal.substring(0, 2)
+      const [parts0, parts1] = inputValue.split(".")
+      inputValue = parts0 + "." + parts1.substring(0, 2)
     }
 
     setInternalValue(inputValue)
