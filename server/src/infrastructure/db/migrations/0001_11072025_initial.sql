@@ -898,3 +898,66 @@ CREATE TABLE IF NOT EXISTS hold_item_inventory (
   created_at TIMESTAMPTZ,
   UNIQUE(hold_item_id, inventory_item_id)
 );
+
+-------------------------
+-- Gun Transaction Types (lookup)
+-------------------------
+CREATE TABLE IF NOT EXISTS gun_transaction_type (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS trg_gun_transaction_type_updated ON gun_transaction_type;
+CREATE TRIGGER trg_gun_transaction_type_updated
+BEFORE UPDATE ON gun_transaction_type
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+INSERT INTO gun_transaction_type (code, description, sort_order) VALUES
+  ('PAWN',        'Pawned firearm', 10),
+  ('REDEEMED',    'Pawn redeemed by customer', 20),
+  ('SALE',        'Sold to customer', 30),
+  ('SOLD',        'Sold (legacy)', 35),
+  ('BUY',         'Purchased from customer', 40),
+  ('PICKED UP',   'Firearm picked up', 50),
+  ('RETURNED',    'Returned to customer', 60),
+  ('TRANSFER',    'Transferred to another location', 70),
+  ('HOLD',        'Police/legal hold placed', 80),
+  ('RELEASE',     'Hold released', 90),
+  ('CONFISCATE',  'Confiscated by police', 100),
+  ('VOID',        'Transaction voided', 110),
+  ('VOID SALE',   'Sale voided', 120),
+  ('CHANGE',      'Information changed/corrected', 130),
+  ('UNDO REDEE',  'Redemption reversed', 140),
+  ('DELETE',      'Record deleted', 150),
+  ('INVENTORY',   'Added to inventory', 160)
+ON CONFLICT (code) DO NOTHING;
+
+-------------------------
+-- Gun Transaction History
+-------------------------
+CREATE TABLE IF NOT EXISTS gun_transaction_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inventory_number TEXT,
+  inventory_item_id UUID REFERENCES inventory_item(id) ON DELETE CASCADE,
+  transaction_date TIMESTAMPTZ,
+  type_id UUID REFERENCES gun_transaction_type(id) ON DELETE RESTRICT,
+  clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
+  notes TEXT,
+  legacy_GNT_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS gun_transaction_history_item_idx ON gun_transaction_history(inventory_item_id);
+CREATE INDEX IF NOT EXISTS gun_transaction_history_date_idx ON gun_transaction_history(transaction_date);
+CREATE INDEX IF NOT EXISTS gun_transaction_history_type_idx ON gun_transaction_history(type_id);
+
+DROP TRIGGER IF EXISTS trg_gun_transaction_history_updated ON gun_transaction_history;
+CREATE TRIGGER trg_gun_transaction_history_updated
+BEFORE UPDATE ON gun_transaction_history
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
