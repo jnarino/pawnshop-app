@@ -12,8 +12,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 function ForfeitWorkspaceContent() {
   const { submitForfeit, selectedItems, reset, createdItems, closePrintModal, selectedPawn, loadingProcessPull, submitError } = useForfeitStore();
 
-
-  console.log(submitError)
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">Forfeit (Pull)</h1>
@@ -57,7 +55,6 @@ function ForfeitWorkspaceContent() {
           controlNumber={selectedPawn?.controlNumber || ''}
           items={createdItems}
           onPrint={(counts) => {
-            console.log('Printing labels:', counts);
             closePrintModal();
           }}
           onCancel={closePrintModal}

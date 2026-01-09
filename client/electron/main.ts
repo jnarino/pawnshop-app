@@ -78,15 +78,24 @@ function buildMenu() {
   if (isAuthed) {
     template.push(
       {
-        label: 'Pawn',
+        label: 'Pawns',
         submenu: [
           {
             label: 'Maintain',
-            click: () => mainWindow?.webContents.send('menu:pawn-maintain'),
+            click: () => mainWindow?.webContents.send('menu:pawns-maintain'),
           },
           {
             label: 'Forfeit (Pull)',
-            click: () => mainWindow?.webContents.send('menu:forfeit-pull'),
+            click: () => mainWindow?.webContents.send('menu:pawns-forfeit-pull'),
+          },
+        ],
+      },
+      {
+        label: 'Sales',
+        submenu: [
+          {
+            label: 'Maintain',
+            click: () => mainWindow?.webContents.send('menu:sales-maintain'),
           },
         ],
       },
@@ -98,11 +107,11 @@ function buildMenu() {
             submenu: [
               {
                 label: 'Remove / Add cash',
-                click: () => mainWindow?.webContents.send('menu:manage-cash'),
+                click: () => mainWindow?.webContents.send('menu:admin-cash-drawers-add-remove-cash'),
               },
               {
                 label: 'Balance',
-                click: () => mainWindow?.webContents.send('menu:balance-drawer'),
+                click: () => mainWindow?.webContents.send('menu:admin-cash-drawers-balance'),
               },
             ],
           },
