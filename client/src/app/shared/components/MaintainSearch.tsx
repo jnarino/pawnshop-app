@@ -11,44 +11,36 @@ import { CancelButton } from '@/app/shared/components/CancelButton';
 
 import { Loader2 } from 'lucide-react';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
-import { http } from '@/app/core/api/http';
-import { pawnTicketApi, type CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
-import type { CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { customerApi } from '@/app/core/api/customerApi';
 import { RangeDatePicker } from '@/components/ui/range-date-picker';
+import { formatDate } from '@/lib/utils';
 
 type TabKey = 'customer' | 'ticket' | 'date-range';
-type ScopeFilter = 'all' | 'active';
+export type ScopeFilter = 'all' | 'active';
 
 interface MaintainSearchProps {
-    selectedCustomer: CustomerData | null;
-    setSelectedCustomer: (customer: CustomerData | null) => void;
-    selectedTicket: any;
-    setSelectedTicket: (ticket: any) => void;
     handleSearchControlNumber: (ticketNumber: string) => void;
-    handleSelectedCustomer: (params: CustomerRecord) => void;
-    handleSearchByDateRange: (startDate: string, endDate: string) => void;
+    handleSelectedCustomer: (params: CustomerRecord, scope: ScopeFilter) => void;
+    handleSearchByDateRange?: (startDate: string, endDate: string) => void;
+    setShowTicketTable: (show: boolean) => void;
     showCustomerTab?: boolean;
     showTicketTab?: boolean;
     showDateRangeTab?: boolean;
 }
 
 export const MaintainSearch = ({
-    selectedCustomer,
-    setSelectedCustomer,
-    selectedTicket,
     handleSearchControlNumber,
-    setSelectedTicket,
     handleSelectedCustomer,
     handleSearchByDateRange,
+    setShowTicketTable,
     showCustomerTab = true,
     showTicketTab = true,
     showDateRangeTab = true
 }: MaintainSearchProps) => {
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('customer');
     const [scope, setScope] = useState<ScopeFilter>('active');
     const [customerResults, setCustomerResults] = useState<CustomerRecord[]>([]);
-    const [ticketResults, setTicketResults] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const [firstName, setFirstName] = useState('');
@@ -62,28 +54,13 @@ export const MaintainSearch = ({
         to: ''
     });
 
-
-    const ensureDetail = useCallback(async (result: any): Promise<any> => {
-        if ((result as CustomerActivePawnTicket).items?.length) {
-            return result as any;
-        }
-        if (result.customerId) {
-            const detailed = await pawnTicketApi.searchByControlNumber(result.customerId, result.controlNumber);
-            if (detailed.length) return detailed[0] as any;
-        }
-        throw new Error('Ticket details not available. Try searching with customer ID to load items.');
-    }, []);
-
     const handleClose = useCallback(() => {
         if (loading || detailLoading) return;
         setCustomerResults([]);
         setSelectedCustomer(null);
-        setTicketResults([]);
-        // setSelectedTicket(null);
         setFirstName('');
         setLastName('');
         setDateOfBirth('');
-        // setTicketNumber('');
         setError(null);
         setActiveTab('customer');
     }, [loading, detailLoading]);
@@ -116,61 +93,21 @@ export const MaintainSearch = ({
         }
     }, [firstName, lastName, dateOfBirth]);
 
-
-    const handleOpenTicket = useCallback(async (result: any) => {
-        setDetailLoading(true);
-        setError(null);
-        try {
-            const detail = await ensureDetail(result);
-
-            // Fetch full customer data if not already set or if id changed
-            if (detail.customerId && (!selectedCustomer || selectedCustomer.id !== detail.customerId)) {
-                try {
-                    const customerDto = await http(`/api/customer/${detail.customerId}`);
-                    if (customerDto) {
-                        const customerRecord = apiToRecordLoose(customerDto);
-                        setSelectedCustomer({
-                            id: customerRecord.id || '',
-                            firstName: customerRecord.firstName,
-                            middleName: customerRecord.middleName,
-                            lastName: customerRecord.lastName,
-                            secondLastName: (customerRecord as any).secondLastName,
-                            idType: customerRecord.idType,
-                            idNumber: customerRecord.idNumber,
-                            phoneNumber: customerRecord.phoneNumber,
-                            streetAddress: customerRecord.streetAddress,
-                            city: customerRecord.city,
-                            zipCode: customerRecord.zipCode,
-                            stateUs: customerRecord.stateUs,
-                            idState: (customerRecord as any).idState || customerRecord.idState,
-                            dateOfBirth: customerRecord.dateOfBirth,
-                            sex: customerRecord.sex,
-                            race: customerRecord.race,
-                            height: customerRecord.height,
-                            weight: customerRecord.weight,
-                            eyeColor: customerRecord.eyeColor,
-                            hairColor: customerRecord.hairColor,
-                            employerName: customerRecord.employerName
-                        });
-                    }
-                } catch (err) {
-                    console.warn('Failed to fetch customer for ticket reprint:', err);
-                }
-            }
-
-            setSelectedTicket(detail);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unable to open ticket';
-            setError(message);
-        } finally {
-            setDetailLoading(false);
-        }
-    }, [ensureDetail]);
+    const tabCount = [showCustomerTab, showTicketTab, showDateRangeTab].filter(Boolean).length;
+    const gridColsClass = {
+        1: 'grid-cols-1',
+        2: 'grid-cols-2',
+        3: 'grid-cols-3'
+    }[tabCount] || 'grid-cols-3';
 
     return (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
+        <Tabs value={activeTab} onValueChange={(v) => {
+            setShowTicketTable(false);
+            setActiveTab(v as TabKey)
+        }
+        }>
             <div className="flex items-center gap-4 flex-shrink-0">
-                <TabsList className="grid grid-cols-3 w-full">
+                <TabsList className={`grid ${gridColsClass} w-full`}>
                     {showCustomerTab && <TabsTrigger value="customer">By Customer</TabsTrigger>}
                     {showTicketTab && <TabsTrigger value="ticket">By Ticket ID</TabsTrigger>}
                     {showDateRangeTab && <TabsTrigger value="date-range">By Date Range</TabsTrigger>}
@@ -178,7 +115,7 @@ export const MaintainSearch = ({
                 <CancelButton />
             </div>
             <TabsContent value="customer" className="space-y-4">
-                <div className="grid grid-cols-12 gap-3">
+                <div className="grid grid-cols-12 gap-3 py-4">
                     <div className="col-span-4 space-y-2">
                         <Label htmlFor="first-name">First Name</Label>
                         <Input
@@ -237,6 +174,9 @@ export const MaintainSearch = ({
                             onValueChange={(value) => {
                                 const nextScope = value as ScopeFilter;
                                 setScope(nextScope);
+                                if (selectedCustomer) {
+                                    handleSelectedCustomer(selectedCustomer, nextScope);
+                                }
                             }}
                             className="flex gap-4"
                         >
@@ -282,13 +222,14 @@ export const MaintainSearch = ({
                             {customerResults.map((c) => (
                                 <TableRow
                                     key={c.id}
-                                    className={`cursor-pointer hover:bg-muted/50 ${selectedCustomer?.id === c.id ? 'bg-muted' : ''}`}
+                                    className={`cursor-pointer hover:bg-muted/50 ${selectedCustomer?.id === c.id ? 'bg-amber-50 border-l-4 border-amber-500' : ''}`}
                                     onClick={() => {
-                                        !loading && handleSelectedCustomer(c)
+                                        setSelectedCustomer(c);
+                                        !loading && handleSelectedCustomer(c, scope);
                                     }}
                                 >
                                     <TableCell className="font-semibold">{c.firstName} {c.lastName}</TableCell>
-                                    <TableCell>{c.dateOfBirth || '—'}</TableCell>
+                                    <TableCell>{formatDate(c.dateOfBirth) || '—'}</TableCell>
                                     <TableCell>{c.idNumber || '—'}</TableCell>
                                 </TableRow>
                             ))}
@@ -355,7 +296,7 @@ export const MaintainSearch = ({
                     </div>
                     <div className="col-span-6 flex justify-end gap-2">
                         <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
-                        <Button onClick={() => handleSearchByDateRange(dates.from, dates.to)} disabled={loading}>
+                        <Button onClick={() => handleSearchByDateRange?.(dates.from, dates.to)} disabled={loading}>
                             {loading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

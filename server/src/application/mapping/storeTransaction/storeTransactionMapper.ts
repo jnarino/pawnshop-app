@@ -19,6 +19,7 @@ export function toStoreTransactionResponseDto(
     const items: StoreTransactionItemResponseDto[] = tx.items.map((i) => ({
         id: i.id,
         storeTransactionId: i.storeTransactionId,
+        controlNumber: i.controlNumber,
         sequence: i.sequence,
         inventoryItemId: i.inventoryItemId,
         description: i.description,
@@ -36,6 +37,7 @@ export function toStoreTransactionResponseDto(
         id: tx.id,
         customerId: tx.customerId,
         clerkUserId: tx.clerkUserId,
+        controlNumber: tx.controlNumber,
         typeId: tx.typeId,
         occurredAt: tx.occurredAt.toISOString(),
         amount: tx.amount,

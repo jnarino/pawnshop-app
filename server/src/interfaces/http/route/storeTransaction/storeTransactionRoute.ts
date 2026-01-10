@@ -85,6 +85,40 @@ export function createStoreTransactionRouter(
 
     /**
      * @openapi
+     * /api/store-transaction/by-control-number:
+     *   get:
+     *     tags:
+     *       - Store Transactions
+     *     summary: List transactions by control number
+     *     description: Retrieve store transactions by control number
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: controlNumber
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Control number
+     *     responses:
+     *       200:
+     *         description: List of transactions in date range
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 description: Store transaction details
+     *       400:
+     *         description: Invalid date parameters
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/by-control-number', auth, controller.listByControlNumber);
+
+    /**
+     * @openapi
      * /api/store-transaction/remove-cash-from-main-drawer:
      *   post:
      *     tags:

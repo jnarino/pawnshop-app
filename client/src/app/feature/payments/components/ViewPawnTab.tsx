@@ -6,7 +6,7 @@ import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/p
 import { DueDateCalculatorModal } from './DueDateCalculatorModal';
 import { PaymentHistoryModal } from './PaymentHistoryModal';
 import { formatDate } from '@/lib/utils';
-import { transformStones } from '@/app/shared/components/ElectronMenuBridge';
+import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
@@ -14,17 +14,6 @@ interface ViewPawnTabProps {
   readonly onBack: () => void;
   readonly onMakePayment: () => void;
 }
-
-// Helper to extract ID from attribute objects or return string value
-const extractId = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  if (typeof value === 'object' && 'id' in value) {
-    return (value as { id: string }).id || '';
-  }
-  return '';
-};
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 

@@ -74,6 +74,7 @@ import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTra
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
 import { CloseBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
+import { ListStoreTransactionsByControlNumberUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByControlNumberUseCase';
 
 
 
@@ -153,6 +154,7 @@ export async function createApp() {
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
+  const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo);
   const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
   const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
   const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);
@@ -233,6 +235,7 @@ export async function createApp() {
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
     listStoreTransactionsByDateRangeUseCase,
+    listStoreTransactionsByControlNumberUseCase,
     createStoreTransactionUseCase,
     removeCashFromMainDrawerUseCase,
     addMoneyToMainDrawerUseCase,

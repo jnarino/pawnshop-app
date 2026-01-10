@@ -19,7 +19,6 @@ if (window.location.protocol === 'file:') {
     }
     return originalFetch(url, init);
   };
-  console.log(`[Renderer] Fetch patched for Electron API redirection to ${API_BASE_URL}`);
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

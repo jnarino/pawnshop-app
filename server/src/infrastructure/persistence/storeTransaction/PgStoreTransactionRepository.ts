@@ -24,6 +24,11 @@ const SQL_INSERT_ITEM = loadSql(
     'storeTransaction/store_transaction_item_insert'
 );
 
+const SQL_LIST_BY_CONTROL_NUMBER = loadSql(
+    'queries',
+    'storeTransaction/store_transaction_list_by_control_number'
+);
+
 const SQL_LIST_BY_CUSTOMER = loadSql(
     'queries',
     'storeTransaction/store_transaction_list_by_customer'
@@ -53,6 +58,7 @@ function mapRowToStoreTransactionHeader(row: any): {
     id: string;
     customerId: string | null;
     clerkUserId: string | null;
+    controlNumber: string | null;
     typeId: number;
     occurredAt: Date;
     amount: number | null;
@@ -69,6 +75,7 @@ function mapRowToStoreTransactionHeader(row: any): {
         id: row.id,
         customerId: row.customer_id,
         clerkUserId: row.clerk_user_id,
+        controlNumber: row.legacy_ticketnum,
         typeId: row.type_id,
         occurredAt: row.occurred_at,
         amount: row.amount !== null ? Number(row.amount) : null,
@@ -98,6 +105,7 @@ function mapRowToItem(row: any): StoreTransactionItem {
     return new StoreTransactionItem({
         id: row.id,
         storeTransactionId: row.store_transaction_id,
+        controlNumber: row.legacy_ticketnum,
         sequence: row.sequence,
         inventoryItemId: row.inventory_item_id,
         description: row.description,
@@ -134,7 +142,7 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
             params.amount,
             params.controlNumber
         ]);
-        
+
         const transactionId = txResult.rows[0].id;
 
         // Insert all tenders
@@ -156,7 +164,6 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
      */
     async create(tx: StoreTransaction, tempInventoryUpdates: { id: string, quantity: number }[] = []): Promise<StoreTransaction> {
         const client: PoolClient = await (this.pool as Pool).connect();
-        console.log('tx', tx)
         try {
             await client.query('BEGIN');
 
@@ -173,6 +180,7 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 tx.tenderChange,
                 tx.gunProcFee,
                 tx.note,
+                tx.controlNumber
             ]);
 
             const header = mapRowToStoreTransactionHeader(headerResult.rows[0]);
@@ -272,6 +280,29 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                     ...h,
                     tenders: tendersByTx.get(h.id) ?? [],
                     items: itemsByTx.get(h.id) ?? [],
+                })
+        );
+    }
+
+    /**
+     * List all store transactions whose occurred_at falls in the control number range.
+     */
+    async listByControlNumber(controlNumber: string): Promise<StoreTransaction[]> {
+        const headerResult = await this.pool.query(SQL_LIST_BY_CONTROL_NUMBER, [
+            controlNumber,
+        ]);
+        if (headerResult.rows.length === 0) {
+            return [];
+        }
+
+        const headers = headerResult.rows.map(mapRowToStoreTransactionHeader);
+
+        return headers.map(
+            (h) =>
+                new StoreTransaction({
+                    ...h,
+                    tenders: [],
+                    items: [],
                 })
         );
     }

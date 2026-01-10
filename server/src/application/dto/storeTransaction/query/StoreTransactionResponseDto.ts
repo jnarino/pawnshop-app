@@ -9,6 +9,7 @@ export interface StoreTransactionTenderResponseDto {
 export interface StoreTransactionItemResponseDto {
     id: string;
     storeTransactionId: string;
+    controlNumber: string;
     sequence: number;
     inventoryItemId: string | null;
     description: string | null;
@@ -27,6 +28,7 @@ export interface StoreTransactionResponseDto {
 
     customerId: string | null;
     clerkUserId: string | null;
+    controlNumber: string | null;
 
     typeId: number;
 
