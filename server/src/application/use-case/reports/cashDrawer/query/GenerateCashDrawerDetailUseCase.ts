@@ -55,7 +55,7 @@ export class GenerateCashDrawerDetailUseCase {
         }
 
         const withRecalculatedBalance = await this.processRecordsWithBalance(start, end, openingBalance);
-        
+
         if (!withRecalculatedBalance.length) {
             throw new NotFoundError('No cash drawer records for the selected date range');
         }
@@ -65,9 +65,10 @@ export class GenerateCashDrawerDetailUseCase {
 
         // Calculate all summaries
         const startingBalance = openingBalance;
-        const endingBalance = withRecalculatedBalance.length > 0
-            ? withRecalculatedBalance[withRecalculatedBalance.length - 1].balance
-            : openingBalance;
+        const endingBalance = startingBalance + this.calculateSalesSummary(withRecalculatedBalance).totalSales
+            + this.calculatePawnsBuys(withRecalculatedBalance).totalPawnsBuys
+            + this.calculateCashAdded(withRecalculatedBalance).totalCashAdded
+            + this.calculateCashOut(withRecalculatedBalance).totalCashOut;
 
         return {
             transactions: transactionDtos,
