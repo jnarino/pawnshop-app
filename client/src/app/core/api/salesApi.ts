@@ -69,5 +69,17 @@ export const salesApi = {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
-    }
+    },
+
+    findByControlNumber: async (controlNumber: string): Promise<any[]> => {
+        return http(`/api/store-transaction/by-control-number?controlNumber=${encodeURIComponent(controlNumber)}`);
+    },
+
+    getByCustomer: async (customerId: string): Promise<any[]> => {
+        return http(`/api/store-transaction/by-customer/${customerId}`);
+    },
+
+    getByDateRange: async (startDate: string, endDate: string): Promise<any[]> => {
+        return http(`/api/store-transaction/by-date?from=${startDate}&to=${endDate}`);
+    },
 };

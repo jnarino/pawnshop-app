@@ -11,8 +11,6 @@ export class PgCashDrawerReportRepository implements CashDrawerReportRepository 
     async findByDateRange(startDate: Date, endDate: Date): Promise<CashDrawerRecord[]> {
         const result = await this.pool.query(sqlCashDrawerDetail, [startDate, endDate]);
 
-        console.log('dates', startDate, endDate);
-
         return result.rows.map((row) => new CashDrawerRecord({
             occurredAt: row.occurred_at,
             ticketNumber: row.legacy_ticketnum,

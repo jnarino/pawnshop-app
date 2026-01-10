@@ -1,96 +1,59 @@
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-
-import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
-import { formatDate } from '@/lib/utils';
-import { transformStones } from '@/app/shared/components/ElectronMenuBridge';
-import { PawnTicketForm } from '../../pawns/maintain/PawnTicketForm';
-import { MaintainSearch } from '@/app/shared/components/MaintainSearch';
+import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
 import { CustomerRecord } from '../../_shared/customer';
-
-const extractId = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  if (typeof value === 'object' && 'id' in value) {
-    return (value as { id: string }).id || '';
-  }
-  return '';
-};
-
-function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
-
-
-  const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
-    if (!brand) return '';
-    if (typeof brand === 'object' && brand.name) return brand.name;
-    if (typeof brand === 'string') return brand;
-    return '';
-  };
-
-
-  const transformedItems = (pawnTicket.items || []).map((item) => ({
-    id: item.id,
-    type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
-    categoryName: item.inventoryCategory?.name || item.legacyCategoryDescription || '',
-    subcategoryId: item.inventorySubcategory?.id || '',
-    subcategoryName: item.inventorySubcategory?.name || '',
-    brandId: typeof item.brand === 'object' ? item.brand?.id : '',
-    brandName: getBrandName(item.brand),
-    model: item.model || '',
-    serial: item.serialNumber || '',
-    color: extractId(item.colorId),
-    colorName: (item.colorId as any)?.name || '',
-    condition: item.itemCondition || '',
-    quantity: String(item.quantity || 1),
-    amount: String(item.priceAmount || 0),
-    resale: String(item.resale || 0),
-    replace: String(item.itemReplace || 0),
-    ownerNumber: item.ownerMark || '',
-    description: item.itemDescription || '',
-    metal: extractId(item.attributes?.metal),
-    karat: extractId(item.attributes?.karat),
-    weight: extractId(item.extra?.weight),
-    weightUnit: extractId(item.extra?.weightUnit) || 'Grams',
-    gender: extractId(item.extra?.gender),
-    style: extractId(item.attributes?.style),
-    sizeLength: extractId(item.extra?.size),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stones: transformStones(item.extra?.stones as any),
-  }));
-
-  const transactionType = pawnTicket.transactionType?.toUpperCase();
-
-  return {
-    customerId: pawnTicket.customerId,
-    type: transactionType === 'PURCHASE' ? 'PURCHASE' as const : 'PAWN' as const,
-    periodicRate: String(Math.round((pawnTicket.periodicRate || 0) * 100)),
-    transactionDate: formatDate(pawnTicket.transactionDate),
-    maturityDate: formatDate(pawnTicket.maturityDate),
-    expirationDate: formatDate(pawnTicket.defaultDate),
-    items: transformedItems
-  };
-}
+import { salesApi } from '@/app/core/api/salesApi';
+import { Button } from '@/components/ui/button';
+import { Loader2, Pencil } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 function SalesMaintainWorkspaceContent() {
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<PawnTicketData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [scope, setScope] = useState<ScopeFilter>('active');
+  const [sales, setSales] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
   const modalTitle = selectedTicket ? `Pawn #${selectedTicket.controlNumber}` : 'Maintain sales';
+  const [showTicketTable, setShowTicketTable] = useState(false);
+
+  const handleSalesResponse = (sales: any[]) => {
+    setSales(sales);
+    setShowTicketTable(true);
+  }
+
+  const getSalesByCustomer = async (customerId: string) => {
+    const sales = await salesApi.getByCustomer(customerId);
+    handleSalesResponse(sales);
+  }
+
+  const getSalesByControlNumber = async (controlNumber: string) => {
+    const sales = await salesApi.findByControlNumber(controlNumber);
+    handleSalesResponse(sales);
+  }
+
+  const getSalesByDateRange = async (startDate: string, endDate: string) => {
+    const sales = await salesApi.getByDateRange(startDate, endDate);
+    handleSalesResponse(sales);
+  }
 
   const handleSelectedCustomer = (customer: CustomerRecord) => {
-    console.log({ customer });
-    // search sales by customer id
+    if (customer.id) {
+
+      getSalesByCustomer(customer.id);
+    }
+    setSelectedCustomer(customer);
   }
 
   const handleSearchControlNumber = (ticketNumber: string) => {
-    console.log({ ticketNumber });
-    // search sales by control number
+    getSalesByControlNumber(ticketNumber);
   }
 
   const handleSearchByDateRange = (startDate: string, endDate: string) => {
-    console.log({ startDate, endDate });
-    // search sales by date range
+    getSalesByDateRange(startDate, endDate);
   }
   return (
     <>
@@ -98,30 +61,72 @@ function SalesMaintainWorkspaceContent() {
       {!selectedTicket && (
         <div className="space-y-4">
           <MaintainSearch
-            selectedCustomer={selectedCustomer}
-            setSelectedCustomer={setSelectedCustomer}
-            selectedTicket={selectedTicket}
-            setSelectedTicket={setSelectedTicket}
             handleSearchControlNumber={handleSearchControlNumber}
             handleSelectedCustomer={handleSelectedCustomer}
             handleSearchByDateRange={handleSearchByDateRange}
+            setShowTicketTable={setShowTicketTable}
           />
         </div>
       )}
 
-      {selectedTicket && (
-        <div className="space-y-4">
-          <PawnTicketForm
-            mode="MODIFY"
-            initialData={transformPawnTicketToFormData(selectedTicket)}
-            controlNumber={selectedTicket.controlNumber}
-            pawnTicket={selectedTicket}
-            customer={selectedCustomer || undefined}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
-            <Button onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Update Pawn</Button>
+      {showTicketTable && !selectedTicket && (
+        <div className="border rounded-lg mt-8">
+          <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+            <span>Sales for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
+            <span className="text-xs">Scope: {scope}</span>
           </div>
+          <Table stickyHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-28">Ticket #</TableHead>
+                <TableHead className="w-20">Customer #</TableHead>
+                <TableHead className="w-28">Date IN</TableHead>
+                <TableHead className="w-28">Date Due</TableHead>
+                <TableHead className="w-28">Status</TableHead>
+                <TableHead className="w-24">Amount</TableHead>
+                <TableHead className="w-32">Amount Due</TableHead>
+                <TableHead className="w-16 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sales.map((row) => {
+                function handleOpenTicket(row: any): void {
+                  throw new Error('Function not implemented.');
+                }
+
+                return (
+                  <TableRow key={`${row.controlNumber}-${row.id}`}>
+                    <TableCell className="font-semibold">{row.controlNumber}</TableCell>
+                    <TableCell className="uppercase">{row.customerId}</TableCell>
+                    <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
+                    <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
+                    <TableCell className="capitalize">{(row
+                    ).status || '—'}</TableCell>
+                    <TableCell>${row.amount}</TableCell>
+                    <TableCell>${row.amountDue}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenTicket(row)}
+                        disabled={detailLoading}
+                        aria-label="Edit pawn"
+                      >
+                        {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {sales.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    No tickets yet. Search and select a customer.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
     </>
