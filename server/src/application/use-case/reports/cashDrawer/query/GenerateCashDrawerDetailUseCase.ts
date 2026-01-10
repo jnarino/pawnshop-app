@@ -13,6 +13,9 @@ export class GenerateCashDrawerDetailUseCase {
 
         const { start, end } = this.resolveDateRange(dto.startDate, dto.endDate);
 
+        // Get opening balance from all transactions before this date
+        const openingBalance = await this.repo.getOpeningBalance(start);
+
         const records = await this.repo.findByDateRange(start, end);
         if (!records.length) {
             throw new NotFoundError('No cash drawer records for the selected date range');
@@ -21,19 +24,17 @@ export class GenerateCashDrawerDetailUseCase {
         // Group by transaction (ticketNumber + occurredAt + employee) and aggregate payment methods
         const grouped = this.groupByTransaction(records);
 
-        // Recalculate running balance based on grouped transactions
-        const withRecalculatedBalance = this.recalculateRunningBalance(grouped);
+        // Calculate running balance starting from opening balance
+        const withRecalculatedBalance = this.recalculateRunningBalance(grouped, openingBalance);
 
         // Map to DTOs
         const transactionDtos = withRecalculatedBalance.map(toCashDrawerDetailDto);
 
         // Calculate all summaries
-        const startingBalance = withRecalculatedBalance.length > 0
-            ? withRecalculatedBalance[0].balance - withRecalculatedBalance[0].amount
-            : 0;
+        const startingBalance = openingBalance;
         const endingBalance = withRecalculatedBalance.length > 0
             ? withRecalculatedBalance[withRecalculatedBalance.length - 1].balance
-            : 0;
+            : openingBalance;
 
         return {
             transactions: transactionDtos,
@@ -226,7 +227,9 @@ export class GenerateCashDrawerDetailUseCase {
                         ticketNumber: existing.ticketNumber,
                         employee: existing.employee,
                         transactionType: existing.transactionType,
+                        transactionCode: existing.transactionCode,
                         amount: existing.amount,
+                        tenderAmount: existing.tenderAmount,
                         tenderChange: existing.tenderChange,
                         remarks: existing.remarks,
                         paymentMethod: paymentMethods,
@@ -242,14 +245,12 @@ export class GenerateCashDrawerDetailUseCase {
         return Array.from(groupMap.values());
     }
 
-    private recalculateRunningBalance(records: CashDrawerRecord[]): CashDrawerRecord[] {
+    private recalculateRunningBalance(records: CashDrawerRecord[], openingBalance: number = 0): CashDrawerRecord[] {
         if (records.length === 0) {
             return records;
         }
 
-        // Get the initial balance from the first record
-        const initialBalance = records[0].balance - records[0].amount;
-        let runningBalance = initialBalance;
+        let runningBalance = openingBalance;
 
         // Ensure we only apply the transaction amount once per unique transaction
         // while still emitting one line per tender for visibility. Use a transaction
@@ -296,7 +297,9 @@ export class GenerateCashDrawerDetailUseCase {
                 ticketNumber: record.ticketNumber,
                 employee: record.employee,
                 transactionType: record.transactionType,
+                transactionCode: record.transactionCode,
                 amount: record.amount,
+                tenderAmount: record.tenderAmount,
                 tenderChange: record.tenderChange,
                 remarks: record.remarks,
                 paymentMethod: record.paymentMethod,

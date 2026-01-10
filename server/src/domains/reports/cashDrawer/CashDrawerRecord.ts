@@ -3,7 +3,9 @@ export type CashDrawerRecordProps = {
   ticketNumber: string | null;
   employee: string;
   transactionType: string;
+  transactionCode: string;
   amount: number;
+  tenderAmount: number;
   tenderChange: number;
   remarks: string | null;
   paymentMethod: string | null;
@@ -18,7 +20,9 @@ export class CashDrawerRecord {
   readonly ticketNumber: string | null;
   readonly employee: string;
   readonly transactionType: string;
+  readonly transactionCode: string;
   readonly amount: number;
+  readonly tenderAmount: number;
   readonly tenderChange: number;
   readonly remarks: string | null;
   readonly paymentMethod: string | null;
@@ -31,7 +35,9 @@ export class CashDrawerRecord {
     this.ticketNumber = props.ticketNumber;
     this.employee = props.employee;
     this.transactionType = props.transactionType;
+    this.transactionCode = props.transactionCode;
     this.amount = props.amount;
+    this.tenderAmount = props.tenderAmount;
     this.tenderChange = props.tenderChange;
     this.remarks = props.remarks;
     this.paymentMethod = props.paymentMethod;
