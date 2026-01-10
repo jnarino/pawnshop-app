@@ -32,7 +32,7 @@ LEFT JOIN tender_type AS ttype
 LEFT JOIN pawn_ticket AS pt
   ON sttype.code = 'PPU'
  AND pt.control_number = st.legacy_ticketnum
-WHERE st.occurred_at >= date_trunc('day', $1::timestamptz)
+WHERE st.occurred_at > $1::timestamptz
   AND st.occurred_at <  date_trunc('day', $2::timestamptz) + interval '1 day'
   AND sttype.code NOT IN ('T', 'MB','PD')
 ORDER BY st.occurred_at ASC, st.id ASC, stt.id ASC;
