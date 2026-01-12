@@ -47,23 +47,11 @@ export const MaintainSearch = ({
     const [lastName, setLastName] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState('');
     const [loading, setLoading] = useState(false);
-    const [detailLoading, setDetailLoading] = useState(false);
     const [ticketNumber, setTicketNumber] = useState('');
     const [dates, setDates] = useState({
         from: '',
         to: ''
     });
-
-    const handleClose = useCallback(() => {
-        if (loading || detailLoading) return;
-        setCustomerResults([]);
-        setSelectedCustomer(null);
-        setFirstName('');
-        setLastName('');
-        setDateOfBirth('');
-        setError(null);
-        setActiveTab('customer');
-    }, [loading, detailLoading]);
 
     const searchCustomers = useCallback(async () => {
         if (!firstName && !lastName && !dateOfBirth) {
@@ -191,7 +179,6 @@ export const MaintainSearch = ({
                         </RadioGroup>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
                         <Button onClick={searchCustomers} disabled={loading}>
                             {loading ? (
                                 <>
@@ -266,7 +253,6 @@ export const MaintainSearch = ({
                         />
                     </div>
                     <div className="col-span-6 flex justify-end gap-2">
-                        <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
                         <Button onClick={() => handleSearchControlNumber(ticketNumber)} disabled={loading}>
                             {loading ? (
                                 <>
@@ -295,7 +281,6 @@ export const MaintainSearch = ({
                         />
                     </div>
                     <div className="col-span-6 flex justify-end gap-2">
-                        <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
                         <Button onClick={() => handleSearchByDateRange?.(dates.from, dates.to)} disabled={loading}>
                             {loading ? (
                                 <>
