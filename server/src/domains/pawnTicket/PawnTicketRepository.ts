@@ -1,4 +1,5 @@
 import { PawnTicket } from './PawnTicket';
+import { InventoryItem } from '../inventory/InventoryItem';
 
 export interface PawnTicketRepository {
   /**
@@ -80,4 +81,10 @@ export interface PawnTicketRepository {
    * Also updates transaction_date and default_marked_by.
    */
   setStatusByCode(pawnTicketId: string, statusCode: string, transactionType: 'PAWN' | 'PURCHASE', transactionDate: Date, defaultMarkedBy: string): Promise<void>;
+
+  /**
+   * List distinct previous items linked to a customer's pawn tickets.
+   * Filters inventory_item by status in ('U','T','V').
+   */
+  listPreviousItemsByCustomer(customerId: string): Promise<InventoryItem[]>;
 }

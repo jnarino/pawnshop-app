@@ -70,6 +70,11 @@ const SQL_FIND_BY_ID = loadSql(
     'pawnTicket/pawn_ticket_find_by_id'
 );
 
+const SQL_PREVIOUS_ITEMS_BY_CUSTOMER = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_previous_items_by_customer_id'
+);
+
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     // Helper to unwrap id/name or fallback to id
     const unwrapLookup = (val: any) => {
@@ -186,9 +191,6 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
     }
 
-    // ...existing code...
-    // ...existing code...
-
     async setStatus(pawnTicketId: string, status: string): Promise<void> {
         await this.db.query(SQL_SET_STATUS, [pawnTicketId, status]);
     }
@@ -257,6 +259,11 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
             customerId
         ]);
         return result.rows.map(mapRowToPawnTicket);
+    }
+
+    async listPreviousItemsByCustomer(customerId: string): Promise<InventoryItem[]> {
+        const result = await this.db.query(SQL_PREVIOUS_ITEMS_BY_CUSTOMER, [customerId]);
+        return result.rows.map((row: any) => mapJsonbToInventoryItem(row.item_data));
     }
 
 
