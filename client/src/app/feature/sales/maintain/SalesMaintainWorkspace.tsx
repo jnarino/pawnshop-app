@@ -6,8 +6,9 @@ import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSea
 import { CustomerRecord } from '../../_shared/customer';
 import { salesApi } from '@/app/core/api/salesApi';
 import { Button } from '@/components/ui/button';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Tooltip } from '@/components/ui/tooltip';
 
 function SalesMaintainWorkspaceContent() {
   const [selectedTicket, setSelectedTicket] = useState<PawnTicketData | null>(null);
@@ -105,15 +106,17 @@ function SalesMaintainWorkspaceContent() {
                     <TableCell>${row.amount}</TableCell>
                     <TableCell>${row.amountDue}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenTicket(row)}
-                        disabled={detailLoading}
-                        aria-label="Edit pawn"
-                      >
-                        {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-                      </Button>
+                      <Tooltip content="View sale">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenTicket(row)}
+                          disabled={detailLoading}
+                          aria-label="Edit pawn"
+                        >
+                          {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 );

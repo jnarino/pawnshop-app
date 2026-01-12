@@ -13,19 +13,15 @@ import {
 import { ChevronDownIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
 import type { FormMode } from '../../_shared/pawn-ticket/types/types';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import packageIcon from '@/assets/icons/package.svg';
 import addIcon from '@/assets/icons/add.svg';
-import editIcon from '@/assets/icons/edit.svg';
-import deleteIcon from '@/assets/icons/delete.svg';
-import visibilityIcon from '@/assets/icons/visibility.svg';
 import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PawnItemsTable } from '../components/PawnItemsTable';
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -302,73 +298,14 @@ export function PawnTicketForm({
                 No items added yet. Click "Add Item" to get started.
               </div>
             ) : (
-              <Table stickyHeader>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead sticky className="w-[300px] bg-white z-20">Item</TableHead>
-                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
-                    <TableHead sticky className="bg-white z-20">Status</TableHead>
-                    <TableHead sticky className="bg-white z-20">Value</TableHead>
-                    <TableHead sticky className="bg-white z-20">Total</TableHead>
-                    <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.items.map((item) => (
-                    <TableRow
-                      key={item.id}
-                    >
-                      <TableCell><div>
-                        <div className="font-semibold">{item.categoryName || item.type}</div>
-                        {item.description && <div className="text-sm text-gray-600">{item.description}</div>}
-                        {item.brandName && <div className="text-sm text-gray-600">Brand: {item.brandName}</div>}
-                        {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
-                      </div></TableCell>
-                      <TableCell>{item.quantity || 1}</TableCell>
-                      <TableCell><Badge variant="outline">{item.status || '—'}</Badge></TableCell>
-                      <TableCell>${Number(item.amount || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-medium">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex gap-2 justify-center items-center">
-                          {isViewMode ? (
-                            <button
-                              type="button"
-                              onClick={() => handleViewItem(item)}
-                              className="cursor-pointer hover:opacity-70"
-                            >
-                              <img
-                                src={visibilityIcon}
-                                alt="View"
-                                className="w-5 h-5"
-                                style={{ filter: 'brightness(0) saturate(100%)' }}
-                              />
-                            </button>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleEditItem(item)}
-                                disabled={disabled}
-                                className="cursor-pointer hover:opacity-70 disabled:opacity-30 !p-0"
-                              >
-                                <img src={editIcon} alt="Edit" className="w-6 h-6" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItem(item.id!)}
-                                disabled={disabled}
-                                className="cursor-pointer hover:opacity-70 disabled:opacity-30 !p-0"
-                              >
-                                <img src={deleteIcon} alt="Delete" className="w-6 h-6" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <PawnItemsTable
+                items={formData.items}
+                isViewMode={isViewMode}
+                disabled={disabled}
+                onView={handleViewItem}
+                onEdit={handleEditItem}
+                onRemove={handleRemoveItem}
+              />
             )}
           </CardContent>
         </Card>

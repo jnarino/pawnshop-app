@@ -1,396 +1,126 @@
-import { useState } from 'react';
-import { usePawnHistory } from '../../hooks/usePawnHistory';
-import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
+import { useState, useMemo } from 'react';
+import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
+import { useCustomerHistory } from '../../hooks/useCustomerHistory';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2 } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import { PawnItemsTable } from '../../components/PawnItemsTable';
+import { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 
 export default function HistoryTab() {
-  const { history, loading, error, refreshHistory } = usePawnHistory();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const { customer } = usePawnWorkflow();
+  const { history, loading, error } = useCustomerHistory(customer?.id);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
-  const filteredHistory = history.filter(item => {
-    const matchesSearch = searchTerm === '' ||
-      item.controlNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+  const selectedTicket = useMemo(() =>
+    history.find(ticket => ticket.id === selectedTicketId),
+    [history, selectedTicketId]);
 
-    const matchesType = selectedType === 'all' || item.type === selectedType;
-    const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
+  const selectedTicketItems: InventoryItemDraft[] = useMemo(() => {
+    if (!selectedTicket || !selectedTicket.items) return [];
 
-    let matchesDate = true;
-    if (dateRange.start && dateRange.end) {
-      const itemDate = new Date(item.completedDate);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
-      matchesDate = itemDate >= startDate && itemDate <= endDate;
-    }
+    return selectedTicket.items.map(item => {
+      const attributes = item.attributes || {};
+      return {
+        id: item.id || crypto.randomUUID(),
+        type: 'Item',
+        categoryName: item.inventoryCategory?.name || 'Unknown',
+        description: item.itemDescription || '',
+        brandName: item.brand?.name || (typeof item.brand === 'string' ? item.brand : '') || '',
+        model: item.model || '',
+        serial: item.serialNumber || '',
+        quantity: String(item.quantity || 1),
+        amount: String(item.priceAmount || 0),
+        status: item.status || 'P',
+        ownerNumber: item.inventoryNumber || '',
+        metal: (attributes.metal as any)?.name,
+        karat: (attributes.karat as any)?.name,
+        weight: String(attributes.weight || ''),
+        stones: (item.extra?.stones as any[]) || [],
+      };
+    });
+  }, [selectedTicket]);
 
-    return matchesSearch && matchesType && matchesStatus && matchesDate;
-  });
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-10">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-10 text-center text-red-500">
+        Failed to load history. Please try again.
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="p-10 text-center text-gray-500">
+        No transaction history found for this customer.
+      </div>
+    );
+  }
 
   return (
-    <div className="tab-content">
-      <style>{`
-        .tab-content {
-          padding: 24px;
-          max-width: 1400px;
-          margin: 0 auto;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-header {
-          margin-bottom: 32px;
-          padding-bottom: 20px;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        .tab-title {
-          font-size: 28px;
-          font-weight: 700;
-          color: #1f2937;
-          margin: 0 0 8px 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .tab-subtitle {
-          font-size: 16px;
-          color: #6b7280;
-          margin: 0;
-        }
-
-        .filters-section {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1fr auto;
-          gap: 16px;
-          margin-bottom: 24px;
-          align-items: end;
-        }
-
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .filter-label {
-          font-size: 14px;
-          font-weight: 500;
-          color: #374151;
-        }
-
-        .search-input,
-        .filter-select,
-        .date-input {
-          padding: 12px 16px;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          font-size: 14px;
-          transition: all 0.2s ease;
-        }
-
-        .search-input:focus,
-        .filter-select:focus,
-        .date-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .date-range {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .history-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 16px;
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .history-table th {
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding: 16px 12px;
-          text-align: left;
-          font-weight: 600;
-          color: #374151;
-          font-size: 14px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .history-table td {
-          padding: 16px 12px;
-          border-bottom: 1px solid #f3f4f6;
-          font-size: 14px;
-          color: #374151;
-        }
-
-        .history-table tbody tr:hover {
-          background-color: #f8fafc;
-        }
-
-        .status-badge {
-          padding: 4px 12px;
-          border-radius: 16px;
-          font-size: 12px;
-          font-weight: 500;
-          text-transform: uppercase;
-        }
-
-        .status-redeemed {
-          background: #d1fae5;
-          color: #065f46;
-        }
-
-        .status-defaulted {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-
-        .status-sold {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-
-        .type-badge {
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .type-pawn {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .type-purchase {
-          background: #e0e7ff;
-          color: #3730a3;
-        }
-
-        .currency {
-          font-weight: 600;
-          color: #059669;
-        }
-
-        .currency-negative {
-          font-weight: 600;
-          color: #dc2626;
-        }
-
-        .control-number {
-          font-weight: 600;
-          color: #3b82f6;
-        }
-
-        .refresh-btn {
-          padding: 12px 20px;
-          background: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          height: fit-content;
-        }
-
-        .refresh-btn:hover {
-          background: #2563eb;
-          transform: translateY(-1px);
-        }
-
-        .loading-state,
-        .error-state,
-        .empty-state {
-          text-align: center;
-          padding: 64px 20px;
-          color: #6b7280;
-        }
-
-        .error-state {
-          color: #dc2626;
-          background: #fef2f2;
-          border-radius: 8px;
-          border: 1px solid #fecaca;
-        }
-
-        @media (max-width: 768px) {
-          .tab-content {
-            margin: 16px;
-            padding: 20px;
-          }
-
-          .filters-section {
-            grid-template-columns: 1fr;
-            gap: 12px;
-          }
-
-          .date-range {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .history-table {
-            font-size: 12px;
-          }
-
-          .history-table th,
-          .history-table td {
-            padding: 12px 8px;
-          }
-        }
-      `}</style>
-
-      <div className="tab-header">
-        <h1 className="tab-title">
-          📜 Transaction History
-        </h1>
-        <p className="tab-subtitle">
-          View completed pawn transactions and purchases
-        </p>
+    <div className="space-y-6">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ticket #</TableHead>
+              <TableHead>Date IN</TableHead>
+              <TableHead>Date OUT</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Amount Paid</TableHead>
+              <TableHead>Store</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {history.map((ticket) => (
+              <TableRow
+                key={ticket.id}
+                className={`cursor-pointer transition-colors hover:bg-muted/50 ${selectedTicketId === ticket.id ? 'bg-muted' : ''}`}
+                onClick={() => setSelectedTicketId(ticket.id === selectedTicketId ? null : ticket.id)}
+              >
+                <TableCell className="font-medium">{ticket.controlNumber}</TableCell>
+                <TableCell>{formatDate(ticket.transactionDate)}</TableCell>
+                <TableCell>{formatDate(ticket.defaultDate)}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
+                    ${ticket.pawnStatus === 'Active' ? 'bg-green-100 text-green-800' :
+                      ticket.pawnStatus === 'Redeemed' ? 'bg-blue-100 text-blue-800' :
+                        ticket.pawnStatus === 'Forfeited' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'}`}>
+                    {ticket.pawnStatus}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">${Number(ticket.amountFinanced).toFixed(2)}</TableCell>
+                <TableCell className="text-right">
+                  {ticket.redemptionAmount ? `$${Number(ticket.redemptionAmount).toFixed(2)}` : '-'}
+                </TableCell>
+                <TableCell>Main Store</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
-      <div className="filters-section">
-        <div className="filter-group">
-          <label className="filter-label">Search</label>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Control number or customer name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+      {selectedTicket && (
+        <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            Items for Ticket #{selectedTicket.controlNumber}
+          </h3>
+          <PawnItemsTable
+            items={selectedTicketItems}
+            isViewMode={true}
+            selectable={false}
           />
         </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Type</label>
-          <select
-            className="filter-select"
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-          >
-            <option value="all">All Types</option>
-            <option value="PAWN">Pawn</option>
-            <option value="PURCHASE">Purchase</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Status</label>
-          <select
-            className="filter-select"
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="redeemed">Redeemed</option>
-            <option value="defaulted">Defaulted</option>
-            <option value="sold">Sold</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Date Range</label>
-          <div className="date-range">
-            <input
-              type="date"
-              className="date-input"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-            />
-            <span>to</span>
-            <input
-              type="date"
-              className="date-input"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        <button
-          className="refresh-btn"
-          onClick={loadHistory}
-          disabled={loading}
-        >
-          {loading ? '🔄' : '↻'} Refresh
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="loading-state">
-          <div>🔄 Loading transaction history...</div>
-        </div>
-      ) : error ? (
-        <div className="error-state">
-          <div>❌ {error}</div>
-          <button className="refresh-btn" onClick={loadHistory} style={{ marginTop: '16px' }}>
-            Try Again
-          </button>
-        </div>
-      ) : filteredHistory.length === 0 ? (
-        <div className="empty-state">
-          <div>📋 No transactions found</div>
-          {searchTerm && <div style={{ marginTop: '8px' }}>Try adjusting your search criteria</div>}
-        </div>
-      ) : (
-        <table className="history-table">
-          <thead>
-            <tr>
-              <th>Control #</th>
-              <th>Customer</th>
-              <th>Type</th>
-              <th>Transaction Date</th>
-              <th>Completed Date</th>
-              <th>Original Amount</th>
-              <th>Final Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredHistory.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <span className="control-number">{item.controlNumber}</span>
-                </td>
-                <td>{item.customerName}</td>
-                <td>
-                  <span className={`type-badge type-${item.type.toLowerCase()}`}>
-                    {item.type}
-                  </span>
-                </td>
-                <td>{formatDate(item.transactionDate)}</td>
-                <td>{formatDate(item.completedDate)}</td>
-                <td>
-                  <span className="currency">{formatMoney(item.amount)}</span>
-                </td>
-                <td>
-                  {item.finalAmount ? (
-                    <span className="currency">{formatMoney(item.finalAmount)}</span>
-                  ) : (
-                    <span style={{ color: '#9ca3af' }}>—</span>
-                  )}
-                </td>
-                <td>
-                  <span className={`status-badge status-${item.status}`}>
-                    {item.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );
