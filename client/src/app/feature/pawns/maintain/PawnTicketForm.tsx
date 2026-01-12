@@ -13,7 +13,6 @@ import {
 import { ChevronDownIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, addDays } from 'date-fns';
 import type { FormMode } from '../../_shared/pawn-ticket/types/types';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
@@ -306,8 +305,8 @@ export function PawnTicketForm({
                 <TableHeader>
                   <TableRow>
                     <TableHead sticky className="w-[300px] bg-white z-20">Item</TableHead>
-                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
                     <TableHead sticky className="bg-white z-20">Status</TableHead>
+                    <TableHead sticky className="bg-white z-20">Quantity</TableHead>
                     <TableHead sticky className="bg-white z-20">Value</TableHead>
                     <TableHead sticky className="bg-white z-20">Total</TableHead>
                     <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
@@ -324,8 +323,8 @@ export function PawnTicketForm({
                         {item.brandName && <div className="text-sm text-gray-600">Brand: {item.brandName}</div>}
                         {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                       </div></TableCell>
+                      <TableCell><Badge variant="outline">{item.status === "B" ? "PURCHASED" : item.status === "P" ? "PAWN" : "-"}</Badge></TableCell>
                       <TableCell>{item.quantity || 1}</TableCell>
-                      <TableCell><Badge variant="outline">{item.status || '—'}</Badge></TableCell>
                       <TableCell>${Number(item.amount || 0).toFixed(2)}</TableCell>
                       <TableCell className="font-medium">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
                       <TableCell className="text-center">
