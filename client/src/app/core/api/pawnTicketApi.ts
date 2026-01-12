@@ -165,6 +165,48 @@ export const pawnTicketApi = {
     return http(`/api/pawn-ticket/customer/${customerId}`);
   },
 
+  getPreviousItemsByCustomer: async (customerId: string): Promise<PawnTicketItem[]> => {
+    // return http(`/api/pawn-ticket/customer/${customerId}/previous-items`);
+
+    // Mock data
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          {
+            id: 'item-1',
+            status: 'B',
+            quantity: 1,
+            priceAmount: 200,
+            resale: 400,
+            itemDescription: 'Gold Necklace 24k',
+            inventoryCategory: { id: 'cat-1', name: 'Jewelry' },
+            inventorySubcategory: { id: 'sub-1', name: 'Necklaces' },
+            brand: { id: 'brand-1', name: 'Generic' },
+            model: 'Vintage',
+            serialNumber: 'VN123456',
+            extra: { stones: [] },
+            attributes: { metal: { id: 'Gold', name: 'Gold' }, karat: { id: '24k', name: '24k' } }
+          },
+          {
+            id: 'item-2',
+            status: 'P',
+            quantity: 1,
+            priceAmount: 500,
+            resale: 1000,
+            itemDescription: 'Gibson Les Paul Guitar',
+            inventoryCategory: { id: 'cat-2', name: 'Musical Instruments' },
+            inventorySubcategory: { id: 'sub-2', name: 'Guitars' },
+            brand: { id: 'brand-2', name: 'Gibson' },
+            model: 'Les Paul Standard',
+            serialNumber: 'LP2023001',
+            extra: {},
+            attributes: {}
+          }
+        ]);
+      }, 500);
+    });
+  },
+
   getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
     return http(`/api/pawn-ticket/customer/${customerId}/active`);
   },
