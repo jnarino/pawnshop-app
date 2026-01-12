@@ -177,11 +177,11 @@ export const pawnTicketApi = {
   },
 
   searchByControlNumber: async (
-    customerId: string,
+    _customerId: string,
     controlNumber: string
   ): Promise<CustomerActivePawnTicket[]> => {
     return http(
-      `/api/pawn-ticket/customer/${customerId}/active?controlNumber=${encodeURIComponent(controlNumber)}`
+      `/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`
     );
   },
 

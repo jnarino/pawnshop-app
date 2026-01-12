@@ -307,6 +307,7 @@ export function PawnTicketForm({
                   <TableRow>
                     <TableHead sticky className="w-[300px] bg-white z-20">Item</TableHead>
                     <TableHead sticky className="bg-white z-20">Quantity</TableHead>
+                    <TableHead sticky className="bg-white z-20">Status</TableHead>
                     <TableHead sticky className="bg-white z-20">Value</TableHead>
                     <TableHead sticky className="bg-white z-20">Total</TableHead>
                     <TableHead sticky className="text-center bg-white z-20">Actions</TableHead>
@@ -324,6 +325,7 @@ export function PawnTicketForm({
                         {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                       </div></TableCell>
                       <TableCell>{item.quantity || 1}</TableCell>
+                      <TableCell><Badge variant="outline">{item.status || '—'}</Badge></TableCell>
                       <TableCell>${Number(item.amount || 0).toFixed(2)}</TableCell>
                       <TableCell className="font-medium">${(Number(item.amount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
                       <TableCell className="text-center">

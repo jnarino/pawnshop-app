@@ -1,6 +1,61 @@
 SELECT
-  st.*
+  st.id,
+  st.legacy_acct_pk,
+  st.legacy_acct_id,
+  st.legacy_ticketnum,
+  st.legacy_cus_fk,
+  st.legacy_usr_fk,
+  st.customer_id,
+  st.clerk_user_id,
+  st.type_id,
+  st.occurred_at,
+  st.amount,
+  st.tax_sales,
+  st.tax_exempt_used,
+  st.state_tax,
+  st.tender_change,
+  st.override_amount,
+  st.gun_proc_fee,
+  st.note,
+  st.created_at,
+  st.updated_at,
+  st.pawn_ticket_id,
+  st.interest_amount,
+  st.principal_amount,
+  st.fees_amount,
+  stt.id AS type_detail_id,
+  stt.code AS type_code,
+  stt.legacy_code AS type_legacy_code,
+  stt.name AS type_name,
+  stt.cash_dir AS type_cash_dir,
+  stt.active AS type_active,
+  sti.id AS item_id,
+  sti.store_transaction_id AS item_store_transaction_id,
+  sti.sequence AS item_sequence,
+  sti.inventory_item_id AS item_inventory_item_id,
+  sti.description AS item_description,
+  sti.quantity AS item_quantity,
+  sti.line_amount AS item_line_amount,
+  sti.line_cost AS item_line_cost,
+  sti.tax_exempt AS item_tax_exempt,
+  sti.county_tax_exempt AS item_county_tax_exempt,
+  sti.returned AS item_returned,
+  sti.status AS item_status,
+  sti.legacy_sitem_pk AS item_legacy_sitem_pk,
+  sti.legacy_items_pk AS item_legacy_items_pk,
+  sti.legacy_items_guid AS item_legacy_items_guid,
+  sti.legacy_invnum AS item_legacy_invnum,
+  sti.legacy_vendor_pk AS item_legacy_vendor_pk,
+  sti.legacy_from_customer_pk AS item_legacy_from_customer_pk,
+  sti.legacy_cflag AS item_legacy_cflag,
+  sti.legacy_sit_id AS item_legacy_sit_id,
+  sti.legacy_sales_loc AS item_legacy_sales_loc,
+  sti.legacy_last_updated_usr AS item_legacy_last_updated_usr,
+  sti.created_at AS item_created_at
 FROM store_transaction st
-WHERE st.occurred_at >= $1
+JOIN store_transaction_type stt ON stt.id = st.type_id
+LEFT JOIN store_transaction_item sti ON sti.store_transaction_id = st.id
+WHERE stt.code = 'SS'
+  AND st.occurred_at >= $1
   AND st.occurred_at <= $2
 ORDER BY st.occurred_at DESC;

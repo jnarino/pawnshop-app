@@ -44,7 +44,7 @@ describe('ListStoreTransactionsByControlNumberUseCase', () => {
 
         storeTransactionRepo.listByControlNumber.mockResolvedValue(mockTransactions);
 
-        const result = await useCase.execute({ controlNumber: '12345' });
+        const result = await useCase.execute('12345');
 
         expect(storeTransactionRepo.listByControlNumber).toHaveBeenCalledWith('12345');
         expect(result).toHaveLength(2);
@@ -55,14 +55,13 @@ describe('ListStoreTransactionsByControlNumberUseCase', () => {
     it('returns an empty list when no transactions are found', async () => {
         storeTransactionRepo.listByControlNumber.mockResolvedValue([]);
 
-        const result = await useCase.execute({ controlNumber: '99999' });
+        const result = await useCase.execute('99999');
 
         expect(storeTransactionRepo.listByControlNumber).toHaveBeenCalledWith('99999');
         expect(result).toHaveLength(0);
     });
 
     it('throws validation error if control number is missing', async () => {
-        await expect(useCase.execute({ controlNumber: '' })).rejects.toThrow();
-        await expect(useCase.execute({})).rejects.toThrow();
+        await expect(useCase.execute('')).rejects.toThrow();
     });
 });
