@@ -230,4 +230,112 @@ export const pawnTicketApi = {
   findByDateRange: async (from: string, to: string): Promise<TicketByControlNumber[]> => {
     return http(`/api/pawn-ticket/date-range?from=${from}&to=${to}`);
   },
+
+  getAllTicketsByCustomer: async (customerId: string): Promise<TicketByControlNumber[]> => {
+    // return http(`/api/pawn-ticket/customer/${customerId}/history`);
+
+    // Mock data
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          {
+            id: 'hist-ticket-1',
+            controlNumber: '888100',
+            transactionType: 'PAWN',
+            customerId: customerId,
+            amountFinanced: 500,
+            purchaseTradeValue: 0,
+            transactionDate: '2023-01-15T10:00:00Z',
+            maturityDate: '2023-02-14T10:00:00Z',
+            defaultDate: '2023-03-16T10:00:00Z',
+            pawnStatus: 'Redeemed',
+            itemIds: ['item-h1'],
+            currentCharges: 0,
+            redemptionAmount: 0,
+            items: [
+              {
+                id: 'item-h1', // Unique ID
+                status: 'P',
+                quantity: 1,
+                priceAmount: 500,
+                resale: 1000,
+                itemDescription: 'Diamond Ring 18k',
+                inventoryCategory: { id: 'cat-1', name: 'Jewelry' },
+                inventorySubcategory: { id: 'sub-1', name: 'Rings' },
+                brand: { id: 'brand-1', name: 'Tiffany & Co.' },
+                model: 'Solitaire',
+                serialNumber: 'TIF123',
+                extra: {},
+                attributes: { metal: { id: 'Gold', name: 'Gold' }, karat: { id: '18k', name: '18k' } }
+              } as any
+            ]
+          },
+          {
+            id: 'hist-ticket-2',
+            controlNumber: '888101',
+            transactionType: 'PAWN',
+            customerId: customerId,
+            amountFinanced: 250,
+            purchaseTradeValue: 0,
+            transactionDate: '2023-02-01T14:30:00Z',
+            maturityDate: '2023-03-03T14:30:00Z',
+            defaultDate: '2023-04-02T14:30:00Z',
+            pawnStatus: 'Active',
+            itemIds: ['item-h2'],
+            currentCharges: 25,
+            redemptionAmount: 275,
+            items: [
+              {
+                id: 'item-h2',
+                status: 'P',
+                quantity: 1,
+                priceAmount: 250,
+                resale: 500,
+                itemDescription: 'Sony PlayStation 5',
+                inventoryCategory: { id: 'cat-3', name: 'Electronics' },
+                inventorySubcategory: { id: 'sub-3', name: 'Consoles' },
+                brand: { id: 'brand-3', name: 'Sony' },
+                model: 'PS5 Disc Edition',
+                serialNumber: 'S01-456789',
+                extra: {},
+                attributes: {}
+              } as any
+            ]
+          },
+          {
+            id: 'hist-ticket-3',
+            controlNumber: '888102',
+            transactionType: 'PAWN',
+            customerId: customerId,
+            amountFinanced: 1200,
+            purchaseTradeValue: 0,
+            transactionDate: '2023-03-10T09:15:00Z',
+            maturityDate: '2023-04-09T09:15:00Z',
+            defaultDate: '2023-05-09T09:15:00Z',
+            pawnStatus: 'Forfeited',
+            itemIds: ['item-h3'],
+            currentCharges: 0,
+            redemptionAmount: 0,
+            items: [
+              {
+                id: 'item-h3',
+                status: 'B', // Inventory
+                quantity: 1,
+                priceAmount: 1200,
+                resale: 2400,
+                itemDescription: 'Rolex Submariner',
+                inventoryCategory: { id: 'cat-1', name: 'Jewelry' },
+                inventorySubcategory: { id: 'sub-4', name: 'Watches' },
+                brand: { id: 'brand-4', name: 'Rolex' },
+                model: 'Submariner Date',
+                serialNumber: 'R888999',
+                extra: {},
+                attributes: {}
+              } as any
+            ]
+          }
+        ]);
+      }, 500);
+    });
+  },
 };
