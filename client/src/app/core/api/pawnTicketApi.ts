@@ -75,6 +75,24 @@ export interface TicketByControlNumber {
   periodicRate?: number;
 }
 
+export interface HistoryTicket {
+  id: string;
+  controlNumber: string;
+  dateOut: string;
+  dateIn: string;
+  status: string;
+  amount: number;
+  amountPaid: number;
+  items: HistoryItem[];
+}
+
+export interface HistoryItem {
+  id: string;
+  description: string;
+  amountEach: number;
+  quantity: number;
+}
+
 export type Lookup = {
   id: string;
   name: string;
@@ -193,7 +211,7 @@ export const pawnTicketApi = {
     return http(`/api/pawn-ticket/date-range?from=${from}&to=${to}`);
   },
 
-  getAllTicketsByCustomer: async (customerId: string): Promise<TicketByControlNumber[]> => {
+  getAllTicketsByCustomer: async (customerId: string): Promise<HistoryTicket[]> => {
     return http(`/api/pawn-ticket/customer/${customerId}/history`);
   },
 };

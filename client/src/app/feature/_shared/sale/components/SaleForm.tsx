@@ -22,8 +22,6 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindAvailableItemByNumber';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
-import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
-
 
 const TAX_RATE = 0.065;
 
@@ -70,19 +68,12 @@ export function SaleForm({
   externalDraft,
   onDraftChange,
   customer,
-  taxExemptUsed,
-  setTaxExemptUsed,
-  eatTax,
-  setEatTax,
   onSubmit,
   disabled = false
 }: SaleTicketFormProps) {
   const isViewMode = mode === 'VIEW';
-  const { findAvailableItemByNumber, isLoading, error, success } = useFindAvailableItemByNumber();
+  const { findAvailableItemByNumber } = useFindAvailableItemByNumber();
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
-  const { printTransactionForm, printLabels } = usePawnPrint();
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [showLabelModal, setShowLabelModal] = useState(false);
 
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
@@ -97,6 +88,8 @@ export function SaleForm({
     taxExemptUsed: initialData?.taxExemptUsed || false,
     eatTax: initialData?.eatTax || false
   });
+
+  console.log('externalDraft', externalDraft);
 
   const formData = {
     ...localFormData,
@@ -248,6 +241,8 @@ export function SaleForm({
   const handleFieldByKey = useCallback((key: string, value: any) => {
     updateFormData({ [key]: value });
   }, [updateFormData]);
+
+  console.log({ items: formData.items });
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">

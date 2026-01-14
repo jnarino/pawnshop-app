@@ -4,8 +4,8 @@ import { useCustomerHistory } from '../../hooks/useCustomerHistory';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { PawnItemsTable } from '../../components/PawnItemsTable';
-import { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
+import { HistoryItem } from '@/app/core/api/pawnTicketApi';
+import { HistoryTable } from '../../components/HistoryTable';
 
 export default function HistoryTab() {
   const { customer } = usePawnWorkflow();
@@ -16,27 +16,15 @@ export default function HistoryTab() {
     history.find(ticket => ticket.id === selectedTicketId),
     [history, selectedTicketId]);
 
-  const selectedTicketItems: InventoryItemDraft[] = useMemo(() => {
+  const selectedTicketItems: HistoryItem[] = useMemo(() => {
     if (!selectedTicket || !selectedTicket.items) return [];
 
     return selectedTicket.items.map(item => {
-      const attributes = item.attributes || {};
       return {
         id: item.id || crypto.randomUUID(),
-        type: 'Item',
-        categoryName: item.inventoryCategory?.name || 'Unknown',
-        description: item.itemDescription || '',
-        brandName: item.brand?.name || (typeof item.brand === 'string' ? item.brand : '') || '',
-        model: item.model || '',
-        serial: item.serialNumber || '',
-        quantity: String(item.quantity || 1),
-        amount: String(item.priceAmount || 0),
-        status: item.status || 'P',
-        ownerNumber: item.inventoryNumber || '',
-        metal: (attributes.metal as any)?.name,
-        karat: (attributes.karat as any)?.name,
-        weight: String(attributes.weight || ''),
-        stones: (item.extra?.stones as any[]) || [],
+        description: item.description || '',
+        amountEach: item.amountEach || 0,
+        quantity: item.quantity || 1,
       };
     });
   }, [selectedTicket]);
@@ -66,59 +54,59 @@ export default function HistoryTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ticket #</TableHead>
-              <TableHead>Date IN</TableHead>
-              <TableHead>Date OUT</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Amount Paid</TableHead>
-              <TableHead>Store</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((ticket) => (
-              <TableRow
-                key={ticket.id}
-                className={`cursor-pointer transition-colors hover:bg-muted/50 ${selectedTicketId === ticket.id ? 'bg-muted' : ''}`}
-                onClick={() => setSelectedTicketId(ticket.id === selectedTicketId ? null : ticket.id)}
-              >
-                <TableCell className="font-medium">{ticket.controlNumber}</TableCell>
-                <TableCell>{formatDate(ticket.transactionDate)}</TableCell>
-                <TableCell>{formatDate(ticket.defaultDate)}</TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
-                    ${ticket.pawnStatus === 'Active' ? 'bg-green-100 text-green-800' :
-                      ticket.pawnStatus === 'Redeemed' ? 'bg-blue-100 text-blue-800' :
-                        ticket.pawnStatus === 'Forfeited' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'}`}>
-                    {ticket.pawnStatus}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">${Number(ticket.amountFinanced).toFixed(2)}</TableCell>
-                <TableCell className="text-right">
-                  {ticket.redemptionAmount ? `$${Number(ticket.redemptionAmount).toFixed(2)}` : '-'}
-                </TableCell>
-                <TableCell>Main Store</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Previous Items for {customer?.firstName} {customer?.lastName}</h2>
+
       </div>
+      <Table stickyHeader>
+        <TableHeader>
+          <TableRow>
+            <TableHead sticky className="bg-white z-20">Ticket #</TableHead>
+            <TableHead sticky className="bg-white z-20">Date IN</TableHead>
+            <TableHead sticky className="bg-white z-20">Date OUT</TableHead>
+            <TableHead sticky className="bg-white z-20">Status</TableHead>
+            <TableHead sticky className="text-right bg-white z-20">Amount</TableHead>
+            <TableHead sticky className="text-right bg-white z-20">Amount Paid</TableHead>
+            <TableHead sticky className="bg-white z-20">Store</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {history.map((ticket) => (
+            <TableRow
+              key={ticket.id}
+              className={`cursor-pointer transition-colors hover:bg-muted/50 ${selectedTicketId === ticket.id ? 'bg-muted' : ''}`}
+              onClick={() => setSelectedTicketId(ticket.id === selectedTicketId ? null : ticket.id)}
+            >
+              <TableCell className="font-medium">{ticket.controlNumber}</TableCell>
+              <TableCell>{formatDate(ticket.dateIn)}</TableCell>
+              <TableCell>{formatDate(ticket.dateOut)}</TableCell>
+              <TableCell>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
+                    ${ticket.status === 'Active' ? 'bg-green-100 text-green-800' :
+                    ticket.status === 'Redeemed' ? 'bg-blue-100 text-blue-800' :
+                      ticket.status === 'Forfeited' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'}`}>
+                  {ticket.status}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">${Number(ticket.amount).toFixed(2)}</TableCell>
+              <TableCell className="text-right">
+                {ticket.amountPaid ? `$${Number(ticket.amountPaid).toFixed(2)}` : '-'}
+              </TableCell>
+              <TableCell>Main Store</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       {selectedTicket && (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             Items for Ticket #{selectedTicket.controlNumber}
           </h3>
-          <PawnItemsTable
+          <HistoryTable
             items={selectedTicketItems}
-            isViewMode={true}
-            selectable={false}
           />
         </div>
       )}
