@@ -106,7 +106,7 @@ export function PawnItemsTable({
                         {isViewMode && (
                             <TableCell>
                                 <Badge variant="outline">
-                                    {item.status === "B" ? "PURCHASED" : item.status === "P" ? "PAWN" : "-"}
+                                    {item.status === "B" ? "PURCHASED" : item.status === "P" ? "PAWN" : item.status === "U" ? "PICKED UP" : "-"}
                                 </Badge>
                             </TableCell>
                         )}
