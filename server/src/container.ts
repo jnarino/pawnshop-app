@@ -14,6 +14,7 @@ import { DeleteCustomerUseCase } from './application/use-case/customer/command/D
 import { UpdateCustomerUseCase } from './application/use-case/customer/command/UpdateCustomerUseCase';
 import { FindCustomerUseCase } from './application/use-case/customer/query/FindCustomerUseCase';
 import { GetCustomerByIdUseCase } from './application/use-case/customer/query/GetCustomerByIdUseCase';
+import { GetCustomerStatisticsUseCase } from './application/use-case/customer/query/GetCustomerStatisticsUseCase';
 import { PgAppUserRepository } from './infrastructure/persistence/appUser/PgAppUserRepository';
 import { PgCustomerRepository } from './infrastructure/persistence/customer/PgCustomerRepository';
 import { AppUserSessionRepository } from './infrastructure/persistence/session/AppUserSessionRepository';
@@ -122,6 +123,7 @@ export async function createApp() {
   const deleteCustomerUseCase = new DeleteCustomerUseCase(customerRepo);
   const findCustomerUseCase = new FindCustomerUseCase(customerRepo);
   const getCustomerByIdUseCase = new GetCustomerByIdUseCase(customerRepo);
+  const getCustomerStatisticsUseCase = new GetCustomerStatisticsUseCase(customerRepo);
 
   // Inventory Item use-cases
   const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo, itemAttributeMapper);
@@ -193,7 +195,8 @@ export async function createApp() {
     updateCustomerUseCase,
     deleteCustomerUseCase,
     findCustomerUseCase,
-    getCustomerByIdUseCase
+    getCustomerByIdUseCase,
+    getCustomerStatisticsUseCase
   );
 
   const inventoryItemController = new InventoryItemController(

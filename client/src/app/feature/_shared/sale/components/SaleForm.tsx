@@ -57,9 +57,9 @@ interface SaleTicketFormProps {
   }) => Promise<void>;
   readonly disabled?: boolean;
   readonly taxExemptUsed?: boolean;
-  readonly setTaxExemptUsed: (value: boolean) => void;
+  readonly setTaxExemptUsed?: (value: boolean) => void;
   readonly eatTax?: boolean;
-  readonly setEatTax: (value: boolean) => void;
+  readonly setEatTax?: (value: boolean) => void;
 }
 
 export function SaleForm({

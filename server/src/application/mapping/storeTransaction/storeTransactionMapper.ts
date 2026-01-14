@@ -39,6 +39,8 @@ export function toStoreTransactionResponseDto(
         clerkUserId: tx.clerkUserId,
         controlNumber: tx.controlNumber,
         typeId: tx.typeId,
+        typeCode: (tx as any).typeCode,
+        typeName: (tx as any).typeName,
         occurredAt: tx.occurredAt.toISOString(),
         amount: tx.amount,
         taxSales: tx.taxSales,

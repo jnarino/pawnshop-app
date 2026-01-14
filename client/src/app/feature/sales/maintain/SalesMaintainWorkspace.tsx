@@ -13,7 +13,7 @@ import { SaleForm } from '../../_shared/sale/components/SaleForm';
 import { http } from '@/app/core/api/http';
 
 function SalesMaintainWorkspaceContent() {
-  const [selectedTicket, setSelectedTicket] = useState<null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [scope, setScope] = useState<ScopeFilter>('active');
   const [sales, setSales] = useState<any[]>([]);
@@ -126,27 +126,28 @@ function SalesMaintainWorkspaceContent() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-28">Ticket #</TableHead>
-                {!selectedCustomer && <TableHead className="w-20">Customer #</TableHead>}
+                <TableHead className="w-56">Customer</TableHead>
                 <TableHead className="w-28">Date IN</TableHead>
                 <TableHead className="w-28">Date Due</TableHead>
                 <TableHead className="w-28">Status</TableHead>
                 <TableHead className="w-24">Amount</TableHead>
-                <TableHead className="w-32">Amount Due</TableHead>
                 <TableHead className="w-16 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sales.map((row) => {
+                const customerName = row.customer
+                  ? `${row.customer.lastName}, ${row.customer.firstName}`
+                  : row.customerId;
+
                 return (
                   <TableRow key={`${row.controlNumber}-${row.id}`}>
                     <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                    {!selectedCustomer && <TableCell className="uppercase">{row.customerId}</TableCell>}
+                    <TableCell className="uppercase">{customerName}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
-                    <TableCell className="capitalize">{(row
-                    ).status || '—'}</TableCell>
+                    <TableCell className="capitalize">{row.typeName || row.status || '—'}</TableCell>
                     <TableCell>${row.amount}</TableCell>
-                    <TableCell>${row.amountDue}</TableCell>
                     <TableCell className="text-right">
                       <Tooltip content="View sale">
                         <Button
@@ -182,8 +183,6 @@ function SalesMaintainWorkspaceContent() {
             mode="VIEW"
             initialData={selectedTicket}
             externalDraft={selectedTicket}
-            controlNumber={selectedTicket.controlNumber}
-            pawnTicket={selectedTicket}
             customer={currentCustomer || undefined}
           />
           <div className="flex justify-end gap-2">

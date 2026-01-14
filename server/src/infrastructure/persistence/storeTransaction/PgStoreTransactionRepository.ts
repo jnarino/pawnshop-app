@@ -60,6 +60,8 @@ function mapRowToStoreTransactionHeader(row: any): {
     clerkUserId: string | null;
     controlNumber: string | null;
     typeId: number;
+    typeCode?: string;
+    typeName?: string;
     occurredAt: Date;
     amount: number | null;
     taxSales: number | null;
@@ -86,6 +88,8 @@ function mapRowToStoreTransactionHeader(row: any): {
         clerkUserId: row.clerk_user_id,
         controlNumber: row.legacy_ticketnum,
         typeId: row.type_id,
+        typeCode: row.type_code,
+        typeName: row.type_name,
         occurredAt: row.occurred_at,
         amount: row.amount !== null ? Number(row.amount) : null,
         taxSales: row.tax_sales !== null ? Number(row.tax_sales) : null,
@@ -329,6 +333,13 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
             if (header.customer) {
                 (tx as any).customer = header.customer;
             }
+            // Preserve typeCode and typeName from header if present
+            if (header.typeCode) {
+                (tx as any).typeCode = header.typeCode;
+            }
+            if (header.typeName) {
+                (tx as any).typeName = header.typeName;
+            }
             transactions.push(tx);
         }
 
@@ -404,6 +415,13 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
             // Preserve customer object from header if present
             if (header.customer) {
                 (tx as any).customer = header.customer;
+            }
+            // Preserve typeCode and typeName from header if present
+            if (header.typeCode) {
+                (tx as any).typeCode = header.typeCode;
+            }
+            if (header.typeName) {
+                (tx as any).typeName = header.typeName;
             }
             transactions.push(tx);
         }
@@ -489,6 +507,13 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
             // Preserve customer object from header if present
             if (header.customer) {
                 (tx as any).customer = header.customer;
+            }
+            // Preserve typeCode and typeName from header if present
+            if (header.typeCode) {
+                (tx as any).typeCode = header.typeCode;
+            }
+            if (header.typeName) {
+                (tx as any).typeName = header.typeName;
             }
             transactions.push(tx);
         }
