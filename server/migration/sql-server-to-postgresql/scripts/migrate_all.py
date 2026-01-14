@@ -15,6 +15,7 @@ from migrate_inventory import migrate_inventory
 from seed_pawn_types import seed_pawn_types
 from migrate_pawn import migrate_pawn_tickets
 from migrate_gunlog import migrate_gunlog
+from migrate_gun_transaction_history import migrate_gun_transaction_history
 from migrate_sales import migrate_sales
 from migrate_layaway import migrate_layaway
 from migrate_pawn_payments import migrate_pawn_payments
@@ -71,6 +72,10 @@ def run_migration():
     # Phase 5: Gun Log
     print("\n🔫 PHASE 5: Gun Log")
     migrate_gunlog()
+    
+    # Phase 5.5: Gun Transaction History
+    print("\n🔫 PHASE 5.5: Gun Transaction History")
+    migrate_gun_transaction_history()
     
     # Phase 6: Police Holds
     print("\n👮 PHASE 6: Police Holds")

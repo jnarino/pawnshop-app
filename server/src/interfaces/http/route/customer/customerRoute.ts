@@ -104,6 +104,63 @@ export function createCustomerRouter(
 
     /**
      * @openapi
+     * /api/customer/{id}/statistics:
+     *   get:
+     *     tags:
+     *       - Customers
+     *     summary: Get customer statistics
+     *     description: Retrieve customer statistics including active pawns, redeemed pawns, buys, and financial ratios
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID
+     *     responses:
+     *       200:
+     *         description: Customer statistics
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 customerId:
+     *                   type: string
+     *                 customerName:
+     *                   type: string
+     *                 activePawns:
+     *                   type: number
+     *                   description: Number of currently active pawn tickets
+     *                 redeemedPawns:
+     *                   type: number
+     *                   description: Number of redeemed pawn tickets
+     *                 defaultedPawns:
+     *                   type: number
+     *                   description: Number of defaulted pawn tickets
+     *                 buys:
+     *                   type: number
+     *                   description: Number of purchase transactions (items bought from customer)
+     *                 redemptionRatio:
+     *                   type: number
+     *                   description: Percentage of pawns that were redeemed (0-100)
+     *                 defaultRatio:
+     *                   type: number
+     *                   description: Percentage of pawns that defaulted (0-100)
+     *                 totalSalesAmount:
+     *                   type: number
+     *                   description: Total amount of retail sales to this customer
+     *       404:
+     *         description: Customer not found
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/:id/statistics', auth, controller.getStatistics);
+
+    /**
+     * @openapi
      * /api/customer:
      *   post:
      *     tags:

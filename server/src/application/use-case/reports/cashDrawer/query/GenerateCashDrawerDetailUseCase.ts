@@ -13,27 +13,62 @@ export class GenerateCashDrawerDetailUseCase {
 
         const { start, end } = this.resolveDateRange(dto.startDate, dto.endDate);
 
-        const records = await this.repo.findByDateRange(start, end);
-        if (!records.length) {
-            throw new NotFoundError('No cash drawer records for the selected date range');
+        // Determine opening balance:
+        // 1) Get last close (MB) before start
+        // 2) If last close is more than 1 calendar day before start, accumulate transactions
+        //    between last close and start-of-day to compute carryover; otherwise use last close amount.
+        let openingBalance = 0;
+        const lastClose = await this.repo.getLastClose(start);
+        if (lastClose) {
+            const closingAmount = lastClose.amount;
+            const lastCloseDate = lastClose.occurredAt;
+
+            const lastCloseDay = this.startOfDayUTC(lastCloseDate);
+            const reportDay = this.startOfDayUTC(start);
+            const daysDifference = Math.floor((reportDay.getTime() - lastCloseDay.getTime()) / (1000 * 60 * 60 * 24));
+
+            // If the last close happened on any prior calendar day, accumulate.
+            if (daysDifference > 1) {
+                console.log('Accumulating from last close:', lastCloseDate, 'to report day:', reportDay);
+                // Process transactions from last close timestamp up to start of report day
+                // Add one minute to lastCloseDate to exclude the close transaction itself
+                const accumulationStartDate = new Date(lastCloseDate.getTime() + 60000);
+                // Set accumulation end to the last moment before the report day (end of previous day)
+                const accumulationEndDate = new Date(start.getTime() - 1);
+                console.log('Accumulation window - Start (after close):', accumulationStartDate, 'End (before report):', accumulationEndDate);
+                const accumulationRecords = await this.processRecordsWithBalance(accumulationStartDate, accumulationEndDate, closingAmount);
+                const transactionDtos = accumulationRecords.map(toCashDrawerDetailDto);
+                console.log('Accumulation records count:', accumulationRecords.length);
+                if (accumulationRecords.length > 0) {
+                    console.log('First accumulation record:', transactionDtos[0]);
+                    console.log('Last accumulation record:', transactionDtos[accumulationRecords.length - 1]);
+                }
+                // Extract the final balance before the report start date
+                const carryover = accumulationRecords.length > 0
+                    ? accumulationRecords[accumulationRecords.length - 1].balance - closingAmount
+                    : 0;
+                console.log('Carryover balance:', carryover, '= final balance', accumulationRecords.length > 0 ? accumulationRecords[accumulationRecords.length - 1].balance : 0, '- close amount', closingAmount);
+                openingBalance = closingAmount + carryover;
+            } else {
+                openingBalance = closingAmount;
+            }
         }
 
-        // Group by transaction (ticketNumber + occurredAt + employee) and aggregate payment methods
-        const grouped = this.groupByTransaction(records);
+        const withRecalculatedBalance = await this.processRecordsWithBalance(start, end, openingBalance);
 
-        // Recalculate running balance based on grouped transactions
-        const withRecalculatedBalance = this.recalculateRunningBalance(grouped);
+        if (!withRecalculatedBalance.length) {
+            throw new NotFoundError('No cash drawer records for the selected date range');
+        }
 
         // Map to DTOs
         const transactionDtos = withRecalculatedBalance.map(toCashDrawerDetailDto);
 
         // Calculate all summaries
-        const startingBalance = withRecalculatedBalance.length > 0
-            ? withRecalculatedBalance[0].balance - withRecalculatedBalance[0].amount
-            : 0;
-        const endingBalance = withRecalculatedBalance.length > 0
-            ? withRecalculatedBalance[withRecalculatedBalance.length - 1].balance
-            : 0;
+        const startingBalance = openingBalance;
+        const endingBalance = startingBalance + this.calculateSalesSummary(withRecalculatedBalance).totalSales
+            + this.calculatePawnsBuys(withRecalculatedBalance).totalPawnsBuys
+            + this.calculateCashAdded(withRecalculatedBalance).totalCashAdded
+            + this.calculateCashOut(withRecalculatedBalance).totalCashOut;
 
         return {
             transactions: transactionDtos,
@@ -52,6 +87,25 @@ export class GenerateCashDrawerDetailUseCase {
                 endingBalance,
             }
         };
+    }
+
+    private async processRecordsWithBalance(
+        startDate: Date,
+        endDate: Date,
+        initialBalance: number
+    ): Promise<CashDrawerRecord[]> {
+        const records = await this.repo.findByDateRange(startDate, endDate);
+        if (!records.length) {
+            return [];
+        }
+
+        // Group by transaction (ticketNumber + occurredAt + employee) and aggregate payment methods
+        const grouped = this.groupByTransaction(records);
+
+        // Calculate running balance starting from initial balance
+        const withRecalculatedBalance = this.recalculateRunningBalance(grouped, initialBalance);
+
+        return withRecalculatedBalance;
     }
 
     private calculateSalesSummary(records: CashDrawerRecord[]) {
@@ -226,7 +280,9 @@ export class GenerateCashDrawerDetailUseCase {
                         ticketNumber: existing.ticketNumber,
                         employee: existing.employee,
                         transactionType: existing.transactionType,
+                        transactionCode: existing.transactionCode,
                         amount: existing.amount,
+                        tenderAmount: existing.tenderAmount,
                         tenderChange: existing.tenderChange,
                         remarks: existing.remarks,
                         paymentMethod: paymentMethods,
@@ -242,14 +298,12 @@ export class GenerateCashDrawerDetailUseCase {
         return Array.from(groupMap.values());
     }
 
-    private recalculateRunningBalance(records: CashDrawerRecord[]): CashDrawerRecord[] {
+    private recalculateRunningBalance(records: CashDrawerRecord[], openingBalance: number = 0): CashDrawerRecord[] {
         if (records.length === 0) {
             return records;
         }
 
-        // Get the initial balance from the first record
-        const initialBalance = records[0].balance - records[0].amount;
-        let runningBalance = initialBalance;
+        let runningBalance = openingBalance;
 
         // Ensure we only apply the transaction amount once per unique transaction
         // while still emitting one line per tender for visibility. Use a transaction
@@ -296,7 +350,9 @@ export class GenerateCashDrawerDetailUseCase {
                 ticketNumber: record.ticketNumber,
                 employee: record.employee,
                 transactionType: record.transactionType,
+                transactionCode: record.transactionCode,
                 amount: record.amount,
+                tenderAmount: record.tenderAmount,
                 tenderChange: record.tenderChange,
                 remarks: record.remarks,
                 paymentMethod: record.paymentMethod,

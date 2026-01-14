@@ -14,6 +14,7 @@ import { DeleteCustomerUseCase } from './application/use-case/customer/command/D
 import { UpdateCustomerUseCase } from './application/use-case/customer/command/UpdateCustomerUseCase';
 import { FindCustomerUseCase } from './application/use-case/customer/query/FindCustomerUseCase';
 import { GetCustomerByIdUseCase } from './application/use-case/customer/query/GetCustomerByIdUseCase';
+import { GetCustomerStatisticsUseCase } from './application/use-case/customer/query/GetCustomerStatisticsUseCase';
 import { PgAppUserRepository } from './infrastructure/persistence/appUser/PgAppUserRepository';
 import { PgCustomerRepository } from './infrastructure/persistence/customer/PgCustomerRepository';
 import { AppUserSessionRepository } from './infrastructure/persistence/session/AppUserSessionRepository';
@@ -38,6 +39,8 @@ import { PgPawnTicketPaymentRepository } from './infrastructure/persistence/pawn
 import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWork';
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
+import { ListPreviousItemsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPreviousItemsByCustomerUseCase';
+import { ListHistoryPawnsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListHistoryPawnsByCustomerUseCase';
 import { GetPawnTicketPaymentsUseCase } from './application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
@@ -74,6 +77,7 @@ import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTra
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
 import { CloseBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
+import { ListStoreTransactionsByControlNumberUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByControlNumberUseCase';
 
 
 
@@ -119,6 +123,7 @@ export async function createApp() {
   const deleteCustomerUseCase = new DeleteCustomerUseCase(customerRepo);
   const findCustomerUseCase = new FindCustomerUseCase(customerRepo);
   const getCustomerByIdUseCase = new GetCustomerByIdUseCase(customerRepo);
+  const getCustomerStatisticsUseCase = new GetCustomerStatisticsUseCase(customerRepo);
 
   // Inventory Item use-cases
   const createInventoryItemUseCase = new CreateInventoryItemUseCase(inventoryItemRepo, itemAttributeMapper);
@@ -147,12 +152,14 @@ export async function createApp() {
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo);
-
+  const listPreviousItemsByCustomerUseCase = new ListPreviousItemsByCustomerUseCase(pawnTicketRepo);
+  const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
 
   // Store Transaction use-cases
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
+  const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo);
   const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
   const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
   const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);
@@ -188,7 +195,8 @@ export async function createApp() {
     updateCustomerUseCase,
     deleteCustomerUseCase,
     findCustomerUseCase,
-    getCustomerByIdUseCase
+    getCustomerByIdUseCase,
+    getCustomerStatisticsUseCase
   );
 
   const inventoryItemController = new InventoryItemController(
@@ -223,6 +231,8 @@ export async function createApp() {
     listPawnTicketsByControlNumberUseCase,
     listPawnTicketsByCustomerUseCase,
     listActivePawnTicketsByCustomerUseCase,
+    listPreviousItemsByCustomerUseCase,
+    listHistoryPawnsByCustomerUseCase,
     getPawnTicketPaymentsUseCase,
     getPawnTicketCurrentChargesUseCase,
     payPawnTicketUseCase,
@@ -233,6 +243,7 @@ export async function createApp() {
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
     listStoreTransactionsByDateRangeUseCase,
+    listStoreTransactionsByControlNumberUseCase,
     createStoreTransactionUseCase,
     removeCashFromMainDrawerUseCase,
     addMoneyToMainDrawerUseCase,

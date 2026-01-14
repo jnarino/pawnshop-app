@@ -135,6 +135,89 @@ export function createPawnTicketRouter(
 
     /**
      * @openapi
+     * /api/pawn-ticket/customer/{customerId}/previous-items:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List distinct previous items for a customer
+     *     description: Retrieve distinct inventory items from customer's previous pawn tickets, filtered by status in (U, T, V)
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: customerId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID
+     *     responses:
+     *       200:
+     *         description: List of distinct previous inventory items
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/InventoryItem'
+     *       400:
+     *         description: Invalid customer ID format
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/customer/:customerId/previous-items', auth, controller.listPreviousItemsByCustomer);
+
+    /**
+     * @openapi
+     * /api/pawn-ticket/customer/{customerId}/history:
+     *   get:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: List pawn history for a customer
+     *     description: Retrieve simplified pawn history for a customer with ticket dates, amounts, and item descriptions
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: customerId
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Customer ID (UUID)
+     *     responses:
+     *       200:
+     *         description: Pawn history with essential information
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   id:
+     *                     type: string
+     *                   controlNumber:
+     *                     type: string
+     *                   pawnDate:
+     *                     type: string
+     *                     format: date-time
+     *                   maturityDate:
+     *                     type: string
+     *                     format: date-time
+     *                   pawnAmount:
+     *                     type: number
+     *                   totalItems:
+     *                     type: integer
+     *                   itemDescriptions:
+     *                     type: string
+     *       400:
+     *         description: Invalid customer ID format
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/customer/:customerId/history', auth, controller.listHistoryByCustomer);
+
+    /**
+     * @openapi
      * /api/pawn-ticket/{pawnTicketId}/payments:
      *   get:
      *     tags:

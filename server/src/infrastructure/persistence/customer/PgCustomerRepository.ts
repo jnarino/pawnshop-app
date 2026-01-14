@@ -27,6 +27,10 @@ const sqlFindByIdDocument = loadSql(
     'queries',
     'customer/customer_find_by_id_document'
 );
+const sqlGetStatistics = loadSql(
+    'queries',
+    'customer/customer_statistics'
+);
 
 function toPgDate(value: Date | null): string | null {
     if (!value) return null;
@@ -272,5 +276,32 @@ export class PgCustomerRepository implements CustomerRepository {
             createdAt: row.created_at ? new Date(row.created_at) : new Date(),
             updatedAt: row.updated_at ? new Date(row.updated_at) : new Date()
         });
+    }
+
+    async getStatistics(customerId: string): Promise<{
+        customerId: string;
+        customerName: string;
+        activePawns: number;
+        redeemedPawns: number;
+        defaultedPawns: number;
+        buys: number;
+        totalPawns: number;
+        totalSalesAmount: number;
+    } | null> {
+        const result = await this.pool.query(sqlGetStatistics, [customerId]);
+        
+        if (result.rowCount === 0) return null;
+
+        const row = result.rows[0];
+        return {
+            customerId: row.customer_id,
+            customerName: row.customer_name,
+            activePawns: parseInt(row.active_pawns, 10),
+            redeemedPawns: parseInt(row.redeemed_pawns, 10),
+            defaultedPawns: parseInt(row.defaulted_pawns, 10),
+            buys: parseInt(row.buys, 10),
+            totalPawns: parseInt(row.total_pawns, 10),
+            totalSalesAmount: parseFloat(row.total_sales_amount)
+        };
     }
 }

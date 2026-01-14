@@ -39,7 +39,6 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
     try {
       const types = await tenderTypeApi.list();
       const filteredTypes = types.filter(t => allowedTenderTypes.includes(t.id));
-      console.log({ types });
       setAvailableTypes(filteredTypes);
 
       if (filteredTypes.length > 0) {

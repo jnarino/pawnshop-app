@@ -61,7 +61,42 @@ SELECT
         'min_resale', ii.min_resale,
         'item_replace', ii.item_replace,
         'extra', (
-          CASE WHEN ii.extra IS NULL THEN NULL ELSE ii.extra END
+          CASE
+            WHEN ii.extra IS NULL THEN NULL
+            ELSE (
+              jsonb_build_object(
+                'stones', (
+                  CASE
+                    WHEN ii.extra ? 'stones' THEN (
+                      SELECT jsonb_agg(
+                        (
+                          jsonb_build_object(
+                            'type', CASE
+                              WHEN iav_type.id IS NOT NULL THEN jsonb_build_object('id', iav_type.id, 'name', iav_type.value, 'attribute_type_id', iav_type.attribute_type_id)
+                              ELSE stone->'type'
+                            END,
+                            'color', CASE
+                              WHEN iav_stone_color.id IS NOT NULL THEN jsonb_build_object('id', iav_stone_color.id, 'name', iav_stone_color.value, 'attribute_type_id', iav_stone_color.attribute_type_id)
+                              ELSE stone->'color'
+                            END,
+                            'shape', CASE
+                              WHEN iav_shape.id IS NOT NULL THEN jsonb_build_object('id', iav_shape.id, 'name', iav_shape.value, 'attribute_type_id', iav_shape.attribute_type_id)
+                              ELSE stone->'shape'
+                            END
+                          ) || (stone - 'type' - 'color' - 'shape')
+                        )
+                      )
+                      FROM jsonb_array_elements(ii.extra->'stones') stone
+                      LEFT JOIN item_attribute_value iav_type ON iav_type.id = CASE WHEN (stone->>'type') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (stone->>'type')::uuid ELSE NULL END
+                      LEFT JOIN item_attribute_value iav_stone_color ON iav_stone_color.id = CASE WHEN (stone->>'color') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (stone->>'color')::uuid ELSE NULL END
+                      LEFT JOIN item_attribute_value iav_shape ON iav_shape.id = CASE WHEN (stone->>'shape') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (stone->>'shape')::uuid ELSE NULL END
+                    )
+                    ELSE NULL
+                  END
+                )
+              ) || (ii.extra - 'stones')
+            )
+          END
         ),
         'attributes', (
           CASE WHEN ii.attributes IS NULL THEN NULL ELSE (

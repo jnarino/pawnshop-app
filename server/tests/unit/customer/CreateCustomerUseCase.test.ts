@@ -10,6 +10,7 @@ class MockCustomerRepository implements CustomerRepository {
   create = jest.fn(async (c: Customer) => c);
   update = jest.fn();
   delete = jest.fn();
+  getStatistics = jest.fn();
 }
 
 describe('CreateCustomerUseCase', () => {

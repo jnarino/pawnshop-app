@@ -15,10 +15,7 @@ import ConfirmModal from '@/app/shared/components/ConfirmModal';
 import { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 
 export const PawnList = () => {
-    const { searchResults: items, selectPawn, isPullInProgress } = useForfeitStore();
-    const [temporalEditingRowId, setTemporalEditingRowId] = useState<string | null>(null);
-
-    const [editingRowId, setEditingRowId] = useState<string | null>(null);
+    const { searchResults: items, selectPawn, isPullInProgress, editingRowId, temporalEditingRowId, setTemporalEditingRowId, setEditingRowId } = useForfeitStore();
     const [cancelModalOpen, setCancelModalOpen] = useState(false)
 
     const confirmChangeOfPawnTicket = () => {

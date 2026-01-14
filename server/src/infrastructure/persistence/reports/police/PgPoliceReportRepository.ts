@@ -42,6 +42,9 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
                 const transactionDate = row.transaction_date ? new Date(row.transaction_date) : new Date();
                 const transactionTime = transactionDate.toTimeString().substring(0, 8);
 
+                const karatText: string = row.karat || '';
+                const parsedKarat = this.parseKaratToNumber(karatText);
+
                 const props: PoliceReportProps = {
                     id: crypto.randomUUID(),
                     controlNumber: row.control_number || '',
@@ -60,13 +63,15 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
                     customerLastName: row.last_name || '',
                     customerDob: row.date_of_birth ? new Date(row.date_of_birth) : new Date(),
                     customerGender: row.sex || '',
+                    customerRace: row.race || '',
                     customerAddress: row.street_address || '',
                     customerCity: row.city || '',
                     customerState: row.state_us || '',
                     customerZip: row.zip_code || '',
                     customerPhone: row.phone_number || '',
                     customerEmployer: row.employer_name || '',
-                    customerIdType: row.id_type || '',
+                    // Combine state + type to match export (e.g., "FL DRIVERS")
+                    customerIdType: [row.id_state, row.id_type].filter(Boolean).join(' ') || '',
                     customerIdNumber: row.id_number || '',
 
                     customerHeight: row.height || '',
@@ -77,14 +82,24 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
                     itemType: row.subcategory_name || '',
                     itemBrand: row.brand_name || '',
                     itemDescription: row.item_description || '',
-                    itemMetalType: '', // Would need additional info
-                    itemKarat: 0, // Would need additional info
-                    itemWeight: 0, // Would need additional info
-                    itemSize: '', // Would need additional info
-                    itemQuantity: 0,
-                    itemAmount: 0,
+                    itemMetalType: row.metal_color || '',
+                    itemKarat: parsedKarat,
+                    itemWeight: row.weight || 0,
+                    itemSize: row.sizelength || '',
+                    itemQuantity: row.quantity || 0,
+                    itemAmount: row.price_amount || 0,
                     itemStatus: '',
                     recordType: 'J',
+
+                    serialNumber: row.serial_number || '',
+                    ownerMark: row.owner_mark || '',
+                    model: row.model || '',
+                    subcategoryInitial: row.subcategory_initial || '',
+                    metalColor: row.metal_color || '',
+                    stoneShape: row.shape_id || '',
+                    stoneColor: row.color || '',
+
+                    username: row.username || '',
 
                     holdDate: transactionDate,
                     holdAgency: '',
@@ -104,5 +119,22 @@ export class PgPoliceReportRepository implements PoliceReportRepository {
         });
 
         return reports;
+    }
+
+    private parseKaratToNumber(karatText: string): number {
+        if (!karatText) return 0;
+        const t = karatText.toUpperCase().trim();
+        // Sterling silver .925 -> 0.93
+        const silver = t.match(/0?\.?(\d{2,3})/);
+        if (t.includes('.925') || t === '.925' || t.includes('925')) {
+            return 0.93;
+        }
+        // e.g., 10K, 10KT, 14K, 18KT
+        const kt = t.match(/(\d{1,2})\s*K(T)?/);
+        if (kt) {
+            return parseFloat(kt[1]);
+        }
+        const num = parseFloat(t);
+        return isNaN(num) ? 0 : num;
     }
 }

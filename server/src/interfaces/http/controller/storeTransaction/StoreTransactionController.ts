@@ -10,11 +10,13 @@ import { AddMoneyToMainDrawerUseCase } from '../../../../application/use-case/st
 import { ListBalanceCashDrawerUseCase } from '../../../../application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
 import { CloseBalanceCashDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
 import { ValidationError } from '../../../../application/common/errors';
+import { ListStoreTransactionsByControlNumberUseCase } from '../../../../application/use-case/storeTransaction/query/ListStoreTransactionsByControlNumberUseCase';
 
 export class StoreTransactionController {
   constructor(
     private readonly listByCustomerUseCase: ListStoreTransactionsByCustomerUseCase,
     private readonly listByDateRangeUseCase: ListStoreTransactionsByDateRangeUseCase,
+    private readonly listByControlNumberUseCase: ListStoreTransactionsByControlNumberUseCase,
     private readonly createStoreTransactionUseCase: CreateStoreTransactionUseCase,
     private readonly removeCashFromMainDrawerUseCase: RemoveCashFromMainDrawerUseCase,
     private readonly addMoneyToMainDrawerUseCase: AddMoneyToMainDrawerUseCase,
@@ -117,6 +119,16 @@ export class StoreTransactionController {
       const actor = this.getActor(req);
       const result = await this.closeBalanceCashDrawerUseCase.execute(req.body, actor.id);
       return res.status(201).json(result);
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  listByControlNumber = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { controlNumber } = req.query;
+      const result = await this.listByControlNumberUseCase.execute(controlNumber as string);
+      return res.json(result);
     } catch (error) {
       return next(error);
     }

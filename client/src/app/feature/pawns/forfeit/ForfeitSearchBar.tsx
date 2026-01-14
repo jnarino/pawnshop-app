@@ -6,9 +6,11 @@ import { useForfeitStore } from './stores/forfeitStore';
 
 export const ForfeitSearchBar = () => {
     const { searchCriteria, setSearchCriteria, searchPawns, loading } = useForfeitStore();
+    const { resetSelectedPawn } = useForfeitStore();
 
     const handleSearch = (e?: React.FormEvent) => {
         e?.preventDefault();
+        resetSelectedPawn();
         searchPawns();
     };
 

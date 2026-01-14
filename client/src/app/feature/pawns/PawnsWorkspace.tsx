@@ -5,6 +5,8 @@ import NewPawnTab from './tabs/NewPawnTab';
 import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
 import { CancelButton } from '@/app/shared/components/CancelButton';
+import { PreviousItemsTab } from './tabs/PreviousItemsTab/PreviousItemsTab';
+import HistoryTab from './tabs/HistoryTab/HistoryTab';
 
 function PawnsWorkspaceContent() {
   const {
@@ -61,9 +63,7 @@ function PawnsWorkspaceContent() {
         </TabsContent>
 
         <TabsContent value="previousItems" keepMounted className="flex-1 min-h-0 pt-4">
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Previous Items - Coming Soon
-          </div>
+          <PreviousItemsTab customer={customer} />
         </TabsContent>
 
         <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
@@ -71,9 +71,7 @@ function PawnsWorkspaceContent() {
         </TabsContent>
 
         <TabsContent value="history" keepMounted className="flex-1 min-h-0 pt-4">
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            History - Coming Soon
-          </div>
+          <HistoryTab />
         </TabsContent>
       </Tabs>
     </>

@@ -22,6 +22,7 @@ export interface PoliceReportProps {
   customerLastName: string;
   customerDob: Date;
   customerGender: string;
+  customerRace: string;
   customerAddress: string;
   customerCity: string;
   customerState: string;
@@ -49,6 +50,18 @@ export interface PoliceReportProps {
   itemAmount: number;
   itemStatus: string;
   recordType: 'J' | 'O' | 'G'; // Jewelry, Other, Firearms
+
+  // Additional item/spec fields from daily export
+  serialNumber?: string;
+  ownerMark?: string;
+  model?: string;
+  subcategoryInitial?: string; // e.g., R/N/B/P/E/C
+  metalColor?: string; // e.g., Y/W/T/S/B
+  stoneShape?: string; // initial, e.g., R
+  stoneColor?: string; // initial, e.g., C
+
+  // Clerk / username
+  username?: string;
   
   // Hold info
   holdDate: Date;
@@ -84,6 +97,7 @@ export class PoliceReport {
   readonly customerLastName: string;
   readonly customerDob: Date;
   readonly customerGender: string;
+  readonly customerRace: string;
   readonly customerAddress: string;
   readonly customerCity: string;
   readonly customerState: string;
@@ -109,6 +123,15 @@ export class PoliceReport {
   readonly itemAmount: number;
   readonly itemStatus: string;
   readonly recordType: 'J' | 'O' | 'G';
+
+  readonly serialNumber?: string;
+  readonly ownerMark?: string;
+  readonly model?: string;
+  readonly subcategoryInitial?: string;
+  readonly metalColor?: string;
+  readonly stoneShape?: string;
+  readonly stoneColor?: string;
+  readonly username?: string;
 
   readonly holdDate: Date;
   readonly holdAgency: string;
@@ -141,6 +164,7 @@ export class PoliceReport {
     this.customerLastName = props.customerLastName;
     this.customerDob = props.customerDob;
     this.customerGender = props.customerGender;
+    this.customerRace = props.customerRace;
     this.customerAddress = props.customerAddress;
     this.customerCity = props.customerCity;
     this.customerState = props.customerState;
@@ -166,6 +190,15 @@ export class PoliceReport {
     this.itemAmount = props.itemAmount;
     this.itemStatus = props.itemStatus;
     this.recordType = props.recordType;
+
+    this.serialNumber = props.serialNumber;
+    this.ownerMark = props.ownerMark;
+    this.model = props.model;
+    this.subcategoryInitial = props.subcategoryInitial;
+    this.metalColor = props.metalColor;
+    this.stoneShape = props.stoneShape;
+    this.stoneColor = props.stoneColor;
+    this.username = props.username;
     
     this.holdDate = props.holdDate;
     this.holdAgency = props.holdAgency;

@@ -4,8 +4,8 @@ import type { LookupTypeName } from '@/app/shared/types/lookup';
 
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
-  readonly value: string | undefined;
-  readonly onChange: (value: string, displayValue?: string) => void;
+  readonly value: { id: string; name: string } | undefined;
+  readonly onChange: (value: string, displayValue?: any) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
   readonly required?: boolean;
@@ -35,12 +35,12 @@ export function LookupSelect({
   const handleValueChange = (selectedId: string) => {
     const option = options.find(opt => opt.id === selectedId);
     if (option) {
-      onChange(selectedId, option.value);
+      onChange(selectedId, { id: option.id, name: option.value });
     }
   };
 
   return (
-    <Select value={value ?? ''} onValueChange={handleValueChange} required={required} disabled={disabled}>
+    <Select value={value?.id ?? ''} onValueChange={handleValueChange} required={required} disabled={disabled}>
       <SelectTrigger className={`h-8 text-xs ${className}`}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

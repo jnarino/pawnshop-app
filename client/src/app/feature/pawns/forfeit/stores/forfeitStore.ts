@@ -15,6 +15,8 @@ interface ForfeitStore {
     searchResults: TicketByControlNumber[];
     selectedPawn: TicketByControlNumber | null;
     selectedItems: InventoryItemDraft[];
+    temporalEditingRowId: string | null;
+    editingRowId: string | null;
     searchCriteria: SearchCriteria;
     isPullInProgress: boolean;
     scrapItems: { itemDescription: string; inventoryNumber: string }[];
@@ -26,6 +28,9 @@ interface ForfeitStore {
     setSearchCriteria: (criteria: Partial<SearchCriteria>) => void;
     searchPawns: () => Promise<void>;
     selectPawn: (pawn: TicketByControlNumber) => void;
+    resetSelectedPawn: () => void;
+    setTemporalEditingRowId: (id: string | null) => void;
+    setEditingRowId: (id: string | null) => void;
     updateItem: (item: InventoryItemDraft) => void;
     submitForfeit: () => Promise<void>;
     fetchScrapItems: () => Promise<void>;
@@ -81,6 +86,8 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
     searchResults: [],
     selectedPawn: null,
     selectedItems: [],
+    temporalEditingRowId: '',
+    editingRowId: '',
     isPullInProgress: false,
     scrapItems: [],
     loadingProcessPull: false,
@@ -125,6 +132,14 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
         set({ selectedPawn: pawn, selectedItems: items, isPullInProgress: false, createdItems: [] });
     },
 
+    setTemporalEditingRowId(id) {
+        set({ temporalEditingRowId: id });
+    },
+
+    setEditingRowId(id) {
+        set({ editingRowId: id });
+    },
+
     updateItem: (updatedItem) => {
         set((state) => {
             const newItems = state.selectedItems.map(item =>
@@ -135,6 +150,10 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
                 isPullInProgress: newItems.some(item => item.status === 'Pulled')
             };
         });
+    },
+
+    resetSelectedPawn: () => {
+        set({ selectedPawn: null, selectedItems: [], temporalEditingRowId: '', editingRowId: '', isPullInProgress: false, createdItems: [] });
     },
 
     submitForfeit: async () => {

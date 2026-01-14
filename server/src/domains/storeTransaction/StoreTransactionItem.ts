@@ -4,6 +4,7 @@ export class StoreTransactionItem {
     storeTransactionId: string;
     sequence: number;
     inventoryItemId: string | null;
+    controlNumber: string | null;
 
     description: string | null;
     quantity: number;
@@ -21,7 +22,7 @@ export class StoreTransactionItem {
         storeTransactionId: string;
         sequence?: number;
         inventoryItemId?: string | null;
-
+        controlNumber?: string | null;
         description?: string | null;
         quantity?: number;
         lineAmount?: number | null;
@@ -37,7 +38,7 @@ export class StoreTransactionItem {
         this.storeTransactionId = params.storeTransactionId;
         this.sequence = params.sequence ?? 1;
         this.inventoryItemId = params.inventoryItemId ?? null;
-
+        this.controlNumber = params.controlNumber ?? null;
         this.description = params.description ?? null;
         this.quantity = params.quantity ?? 1;
         this.lineAmount = params.lineAmount ?? null;

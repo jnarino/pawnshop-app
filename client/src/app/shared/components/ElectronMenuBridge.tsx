@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { toast } from 'sonner';
 import ManageCashDialog from '@/app/feature/admin/components/ManageCashDialog';
 import DrawerBalanceDialog from '@/app/feature/admin/components/DrawerBalanceDialog';
@@ -6,7 +8,8 @@ import { FindByInputModal, InventoryItemModal } from '@/app/feature/_shared/inve
 import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { createInventoryItem, getByInventoryNumber, updateInventoryItem, type InventoryItemApiResponse, type UpdateInventoryItemPayload } from '@/app/core/api/inventoryItemApi';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
-import { useNavigate } from 'react-router-dom';
+import { LookupTypeStones, Stone } from '@/app/feature/_shared/inventory-item/components/InventoryItemModal/stones/types';
+import { useElectronMenuEvents } from '@/app/shared/hooks/useElectronMenuEvents';
 
 // Helper to extract ID from attribute objects or return string value
 export const extractId = (value: unknown): string => {
@@ -21,28 +24,28 @@ export const extractId = (value: unknown): string => {
 
 // Transform stones from API format to frontend format
 export function transformStones(stones: Array<{
-  type?: { id: string; name?: string | null } | string;
-  shape?: { id: string; name?: string | null } | string;
-  color?: { id: string; name?: string | null } | string;
+  type: LookupTypeStones;
+  shape?: LookupTypeStones;
+  color?: LookupTypeStones;
   carat?: number | string;
   weight?: number | string;
   length?: number | string;
   width?: number | string;
-  clarity?: string;
+  clarity?: LookupTypeStones;
   quantity?: number | string;
 }> | undefined) {
   if (!stones || !Array.isArray(stones)) return undefined;
   return stones.map((stone, index) => ({
     id: `stone-${index}-${Date.now()}`,
     quantity: String(stone.quantity || 1),
-    type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
-    shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
-    color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
+    type: stone.type,
+    shape: stone.shape,
+    color: stone.color,
     carat: String(stone.carat || ''),
     weight: String(stone.weight || ''),
     length: String(stone.length || ''),
     width: String(stone.width || ''),
-    clarity: stone.clarity || '',
+    clarity: stone.clarity,
   }));
 }
 
@@ -79,8 +82,7 @@ export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): Inve
     weight: extractId(extra.weight),
     weightUnit: extractId(extra.weightUnit) || 'Grams',
     // Stones
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stones: transformStones(extra.stones as any),
+    stones: transformStones(extra.stones as Stone[]),
     // Store original data for update
     status: item.status,
     inventoryNumber: item.inventoryNumber,
@@ -159,72 +161,18 @@ export default function ElectronMenuBridge() {
 
   const navigate = useNavigate();
 
-  // Open cash dialog on menu signal
-  useEffect(() => {
-    const api = globalThis.electronAPI;
-    if (!api?.onManageCash) return;
-    const dispose = api.onManageCash(() => setCashDialogOpen(true));
-    return () => dispose?.();
-  }, []);
-
-  useEffect(() => {
-    const api = globalThis.electronAPI;
-    if (!api?.onBalanceDrawer) return;
-    const dispose = api.onBalanceDrawer(() => setDrawerBalanceDialogOpen(true));
-    return () => dispose?.();
-  }, []);
-
-  // Open inventory maintain flow on menu signal
-  useEffect(() => {
-    const api = globalThis.electronAPI;
-    if (!api) return;
-
-    const unsubscribes: Array<() => void> = [];
-
-    if (api.onInventoryMaintain) {
-      const dispose = api.onInventoryMaintain(() => {
-        setFindInventoryError(null);
-        setFindInventoryOpen(true);
-      });
-      if (dispose) unsubscribes.push(dispose);
-    }
-
-    if (api.onNewInventoryItem) {
-      const dispose = api.onNewInventoryItem(() => {
-        setShowNewInventoryItem(true);
-      });
-      if (dispose) unsubscribes.push(dispose);
-    }
-
-    return () => {
-      unsubscribes.forEach((fn) => fn());
-    };
-  }, []);
-
-  useEffect(() => {
-    const api = globalThis.electronAPI;
-    if (!api) return;
-
-    const unsubscribes: Array<() => void> = [];
-
-    if (api.onPawnMaintain) {
-      const dispose = api.onPawnMaintain(() => {
-        navigate('/pawns/maintain', { replace: true });
-      });
-      if (dispose) unsubscribes.push(dispose);
-    }
-
-    if (api.onForfeit) {
-      const dispose = api.onForfeit(() => {
-        navigate('/pawns/forfeit', { replace: true });
-      });
-      if (dispose) unsubscribes.push(dispose);
-    }
-
-    return () => {
-      unsubscribes.forEach((fn) => fn());
-    };
-  }, []);
+  useElectronMenuEvents({
+    onPawnsMaintain: () => navigate('/pawns/maintain', { replace: true }),
+    onPawnsForfeitPull: () => navigate('/pawns/forfeit', { replace: true }),
+    onSalesMaintain: () => navigate('/sales/maintain', { replace: true }),
+    onManageCash: () => setCashDialogOpen(true),
+    onBalanceDrawer: () => setDrawerBalanceDialogOpen(true),
+    onInventoryMaintain: () => {
+      setFindInventoryError(null);
+      setFindInventoryOpen(true);
+    },
+    onNewInventoryItem: () => setShowNewInventoryItem(true),
+  });
 
   const handleFindInventory = useCallback(async (inventoryNumber: string) => {
     setFindInventoryLoading(true);
@@ -261,7 +209,6 @@ export default function ElectronMenuBridge() {
     } catch (err) {
       console.error('Failed to update inventory item:', err);
       toast.error('Failed to update inventory item');
-      // The modal will stay open so user can retry or cancel
     }
   }, []);
 

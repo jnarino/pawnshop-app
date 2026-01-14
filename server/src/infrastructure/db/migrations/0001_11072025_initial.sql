@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS app_user (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   role_id SMALLINT NOT NULL REFERENCES role(id),
   legacy_usr_pk BIGINT,
+  legacy_usr_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -680,91 +681,110 @@ CREATE INDEX IF NOT EXISTS idx_layaway_payment_agreement ON layaway_payment(laya
 -----------------------
 CREATE TABLE IF NOT EXISTS gunlog (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  gunlog_number  INTEGER NOT NULL,
-  CONSTRAINT gunlog_number_unique UNIQUE (gunlog_number),
+  legacy_gunlog_pk BIGINT,
+  gunlog_number INTEGER NOT NULL UNIQUE,
+  prev_gunlog_rec BIGINT,
+  next_gunlog_rec BIGINT,
+  
+  inventory_item_id UUID NOT NULL REFERENCES inventory_item(id) ON DELETE CASCADE,
 
-  inventory_item_id UUID REFERENCES inventory_item(id) ON DELETE SET NULL,
+  manufacturer TEXT,
+  model TEXT,
+  serial TEXT,
+  caliber TEXT,
+  action TEXT,
+  condition TEXT,
 
-  manufacturer    TEXT NOT NULL,
-  importer        TEXT,
-  model           TEXT,
-  serial_number   TEXT NOT NULL,
-  caliber_gauge   TEXT NOT NULL,
-  firearm_type    TEXT NOT NULL,
-  firearm_action  TEXT NOT NULL,
+  buyer_amount NUMERIC(12,2),
+  buyer_date TIMESTAMPTZ,
+  buyer_first_name TEXT,
+  buyer_middle_name TEXT,
+  buyer_last_name TEXT,
+  buyer_street_address TEXT,
+  buyer_id_address TEXT,
+  buyer_city TEXT,
+  buyer_state_us TEXT,
+  buyer_zip_code TEXT,
+  buyer_id_type TEXT,
+  buyer_id_number TEXT,
 
-  acquisition_date        TIMESTAMPTZ NOT NULL,
-  acquisition_customer_id UUID REFERENCES customer(id) ON DELETE SET NULL,
+  sold_date TIMESTAMPTZ,
+  sold_first_name TEXT,
+  sold_middle_name TEXT,
+  sold_last_name TEXT,
+  sold_street_address TEXT,
+  sold_id_address TEXT,
+  sold_city TEXT,
+  sold_state_us TEXT,
+  sold_zip_code TEXT,
+  sold_amount NUMERIC(12,2),
+  sold_id_type TEXT,
+  sold_id_number TEXT,
 
-  acq_name_full   TEXT NOT NULL,
-  acq_addr1       TEXT,
-  acq_suite_number TEXT,
-  acq_addr2       TEXT,
-  acq_city        TEXT,
-  acq_state       TEXT,
-  acq_zip         TEXT,
-  acq_id_type     TEXT,
-  acq_id_number   TEXT,
+  transaction_num TEXT,
+  notes_1 TEXT,
+  notes_2 TEXT,
 
-  disposition_date        TIMESTAMPTZ,
-  disposition_customer_id UUID REFERENCES customer(id) ON DELETE SET NULL,
+  voided BOOLEAN DEFAULT FALSE,
+  changed BOOLEAN DEFAULT FALSE,
 
-  disp_name_full  TEXT,
-  disp_addr1      TEXT,
-  disp_suite_number TEXT,
-  disp_addr2      TEXT,
-  disp_city       TEXT,
-  disp_state      TEXT,
-  disp_zip        TEXT,
-  disp_id_type    TEXT,
-  disp_id_number  TEXT,
+  guntype TEXT,
+  importer TEXT,
+  nicstn TEXT,
 
-  acquisition_store_tx_id  UUID REFERENCES store_transaction(id) ON DELETE SET NULL,
-  disposition_store_tx_id  UUID REFERENCES store_transaction(id) ON DELETE SET NULL,
+  legacy_gun_id UUID,
+  legacy_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
 
-  status          TEXT NOT NULL DEFAULT 'active'
-                  CHECK (status IN ('active','voided','corrected')),
-  supersedes_id   UUID REFERENCES gunlog(id) ON DELETE SET NULL,
-  notes           TEXT,
+  orig_manufacturer TEXT,
+  orig_model TEXT,
+  orig_serial TEXT,
+  orig_caliber TEXT,
+  orig_action TEXT,
+  orig_buy_date TIMESTAMPTZ,
+  orig_buy_fname TEXT,
+  orig_buy_mname TEXT,
+  orig_buy_lname TEXT,
+  orig_buy_add1 TEXT,
+  orig_buy_add2 TEXT,
+  orig_buy_city TEXT,
+  orig_buy_state TEXT,
+  orig_buy_zip TEXT,
+  orig_buy_id_type TEXT,
+  orig_buy_id_num TEXT,
+  orig_sold_date TIMESTAMPTZ,
+  orig_sold_fname TEXT,
+  orig_sold_mname TEXT,
+  orig_sold_lname TEXT,
+  orig_sold_add1 TEXT,
+  orig_sold_add2 TEXT,
+  orig_sold_city TEXT,
+  orig_sold_state TEXT,
+  orig_sold_zip TEXT,
+  orig_sold_id_type TEXT,
+  orig_sold_id_num TEXT,
+  orig_trans_num TEXT,
+  orig_guntype TEXT,
+  orig_importer TEXT,
+  orig_nicstn TEXT,
 
-  last_updated_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
-
-  -- legacy linkage
-  legacy_gunlog_pk        BIGINT,
-  legacy_gunlognum        INTEGER,
-  legacy_prev_gunlogrec   BIGINT,
-  legacy_next_gunlogrec   BIGINT,
-  legacy_invnum           TEXT,
-  legacy_transnum         TEXT,
-  legacy_changed          BOOLEAN,
-  legacy_voided           BOOLEAN,
-  legacy_nicstn           TEXT,
-  legacy_pickdate         TIMESTAMPTZ,
-  legacy_gun_id           TEXT,
-  legacy_last_updated_usr TEXT,
-
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_gunlog_legacy_pk       ON gunlog(legacy_gunlog_pk);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_serial         ON gunlog(serial_number);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_acq_date       ON gunlog(acquisition_date);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_disp_date      ON gunlog(disposition_date);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_inventory      ON gunlog(inventory_item_id);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_invnum  ON gunlog(legacy_invnum);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_trans   ON gunlog(legacy_transnum);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_prev    ON gunlog(legacy_prev_gunlogrec);
-CREATE INDEX        IF NOT EXISTS idx_gunlog_legacy_next    ON gunlog(legacy_next_gunlogrec);
-
-CREATE INDEX IF NOT EXISTS inv_sub_cat_active ON inventory_subcategory (inventory_category_id) WHERE is_active;
-CREATE INDEX IF NOT EXISTS inv_brand_cat_active ON inventory_brand (inventory_category_id) WHERE is_active;
-CREATE INDEX IF NOT EXISTS inv_cat_name_active ON inventory_category (name) WHERE is_active;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_gunlog_legacy_pk ON gunlog(legacy_gunlog_pk);
+CREATE INDEX IF NOT EXISTS idx_gunlog_serial ON gunlog(serial);
+CREATE INDEX IF NOT EXISTS idx_gunlog_buyer_date ON gunlog(buyer_date);
+CREATE INDEX IF NOT EXISTS idx_gunlog_sold_date ON gunlog(sold_date);
+CREATE INDEX IF NOT EXISTS idx_gunlog_inventory ON gunlog(inventory_item_id);
 
 DROP TRIGGER IF EXISTS trg_gunlog_updated ON gunlog;
 CREATE TRIGGER trg_gunlog_updated
 BEFORE UPDATE ON gunlog
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE INDEX IF NOT EXISTS inv_sub_cat_active ON inventory_subcategory (inventory_category_id) WHERE is_active;
+CREATE INDEX IF NOT EXISTS inv_brand_cat_active ON inventory_brand (inventory_category_id) WHERE is_active;
+CREATE INDEX IF NOT EXISTS inv_cat_name_active ON inventory_category (name) WHERE is_active;
 
 -----------------------
 -- App settings (control numbers)
@@ -785,7 +805,8 @@ INSERT INTO app_settings (key, value, description)
 VALUES 
   ('pawn_ticket_control_number_next', '100001', 'Next control number for pawn tickets (PAWN type)'),
   ('purchase_ticket_control_number_next', '1', 'Next control number for purchase tickets (PURCHASE type)'),
-  ('store_sale_control_number_next', '1', 'Next control number for store sales (retail, layaway, etc)')
+  ('store_sale_control_number_next', '1', 'Next control number for store sales (retail, layaway, etc)'),
+  ('gun_transfer_number_next', '1', 'Next control number for gun log transactions')
 ON CONFLICT (key) DO NOTHING;
 
 -- NOTE: After migration, run a script to set store_sale_control_number_next to (max ticketnum + 1) from legacy acct table for types:
@@ -836,6 +857,22 @@ BEGIN
   SET value = (value::INTEGER + 1)::TEXT,
       updated_at = NOW()
   WHERE key = 'purchase_ticket_control_number_next'
+  RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
+
+  RETURN next_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get next control number for gun transfer transactions  
+CREATE OR REPLACE FUNCTION get_next_gun_transfer_number()
+RETURNS TEXT AS $$
+DECLARE
+  next_num TEXT;
+BEGIN
+  UPDATE app_settings
+  SET value = (value::INTEGER + 1)::TEXT,
+      updated_at = NOW()
+  WHERE key = 'gun_transfer_number_next'
   RETURNING (value::INTEGER - 1)::TEXT INTO next_num;
 
   RETURN next_num;
@@ -898,3 +935,66 @@ CREATE TABLE IF NOT EXISTS hold_item_inventory (
   created_at TIMESTAMPTZ,
   UNIQUE(hold_item_id, inventory_item_id)
 );
+
+-------------------------
+-- Gun Transaction Types (lookup)
+-------------------------
+CREATE TABLE IF NOT EXISTS gun_transaction_type (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL UNIQUE,
+  description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS trg_gun_transaction_type_updated ON gun_transaction_type;
+CREATE TRIGGER trg_gun_transaction_type_updated
+BEFORE UPDATE ON gun_transaction_type
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+INSERT INTO gun_transaction_type (code, description, sort_order) VALUES
+  ('PAWN',        'Pawned firearm', 10),
+  ('REDEEMED',    'Pawn redeemed by customer', 20),
+  ('SALE',        'Sold to customer', 30),
+  ('SOLD',        'Sold (legacy)', 35),
+  ('BUY',         'Purchased from customer', 40),
+  ('PICKED UP',   'Firearm picked up', 50),
+  ('RETURNED',    'Returned to customer', 60),
+  ('TRANSFER',    'Transferred to another location', 70),
+  ('HOLD',        'Police/legal hold placed', 80),
+  ('RELEASE',     'Hold released', 90),
+  ('CONFISCATE',  'Confiscated by police', 100),
+  ('VOID',        'Transaction voided', 110),
+  ('VOID SALE',   'Sale voided', 120),
+  ('CHANGE',      'Information changed/corrected', 130),
+  ('UNDO REDEE',  'Redemption reversed', 140),
+  ('DELETE',      'Record deleted', 150),
+  ('INVENTORY',   'Added to inventory', 160)
+ON CONFLICT (code) DO NOTHING;
+
+-------------------------
+-- Gun Transaction History
+-------------------------
+CREATE TABLE IF NOT EXISTS gun_transaction_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inventory_number TEXT,
+  inventory_item_id UUID REFERENCES inventory_item(id) ON DELETE CASCADE,
+  transaction_date TIMESTAMPTZ,
+  type_id UUID REFERENCES gun_transaction_type(id) ON DELETE RESTRICT,
+  clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL,
+  notes TEXT,
+  legacy_GNT_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS gun_transaction_history_item_idx ON gun_transaction_history(inventory_item_id);
+CREATE INDEX IF NOT EXISTS gun_transaction_history_date_idx ON gun_transaction_history(transaction_date);
+CREATE INDEX IF NOT EXISTS gun_transaction_history_type_idx ON gun_transaction_history(type_id);
+
+DROP TRIGGER IF EXISTS trg_gun_transaction_history_updated ON gun_transaction_history;
+CREATE TRIGGER trg_gun_transaction_history_updated
+BEFORE UPDATE ON gun_transaction_history
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
