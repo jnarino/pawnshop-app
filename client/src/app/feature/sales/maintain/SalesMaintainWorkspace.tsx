@@ -1,24 +1,27 @@
 import { useState } from 'react';
 
-import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
+import type { CustomerData, PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
-import { CustomerRecord } from '../../_shared/customer';
+import { apiToRecordLoose, CustomerRecord } from '../../_shared/customer';
 import { salesApi } from '@/app/core/api/salesApi';
 import { Button } from '@/components/ui/button';
 import { Loader2, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
+import { SaleForm } from '../../_shared/sale/components/SaleForm';
+import { http } from '@/app/core/api/http';
 
 function SalesMaintainWorkspaceContent() {
-  const [selectedTicket, setSelectedTicket] = useState<PawnTicketData | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<null>(null);
   const [loading, setLoading] = useState(false);
   const [scope, setScope] = useState<ScopeFilter>('active');
   const [sales, setSales] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState<CustomerData | null>(null);
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
-  const modalTitle = selectedTicket ? `Pawn #${selectedTicket.controlNumber}` : 'Maintain sales';
+  const modalTitle = selectedTicket ? `Sale` : 'Maintain sales';
   const [showTicketTable, setShowTicketTable] = useState(false);
 
   const handleSalesResponse = (sales: any[]) => {
@@ -50,12 +53,55 @@ function SalesMaintainWorkspaceContent() {
   }
 
   const handleSearchControlNumber = (ticketNumber: string) => {
+    setSelectedCustomer(null);
     getSalesByControlNumber(ticketNumber);
   }
 
   const handleSearchByDateRange = (startDate: string, endDate: string) => {
+    setSelectedCustomer(null);
     getSalesByDateRange(startDate, endDate);
   }
+
+  const getCustomerInformationById = async (customerId: string) => {
+    try {
+      const customerDto = await http(`/api/customer/${customerId}`);
+      if (customerDto) {
+        const customerRecord = apiToRecordLoose(customerDto);
+        setCurrentCustomer({
+          id: customerRecord.id || '',
+          firstName: customerRecord.firstName,
+          middleName: customerRecord.middleName,
+          lastName: customerRecord.lastName,
+          secondLastName: (customerRecord as any).secondLastName,
+          idType: customerRecord.idType,
+          idNumber: customerRecord.idNumber,
+          phoneNumber: customerRecord.phoneNumber,
+          streetAddress: customerRecord.streetAddress,
+          city: customerRecord.city,
+          zipCode: customerRecord.zipCode,
+          stateUs: customerRecord.stateUs,
+          idState: (customerRecord as any).idState || customerRecord.idState,
+          dateOfBirth: customerRecord.dateOfBirth,
+          sex: customerRecord.sex,
+          race: customerRecord.race,
+          height: customerRecord.height,
+          weight: customerRecord.weight,
+          eyeColor: customerRecord.eyeColor,
+          hairColor: customerRecord.hairColor,
+          employerName: customerRecord.employerName
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to fetch customer for ticket reprint:', err);
+    }
+  }
+
+  const handleOpenTicket = (row: any): void => {
+    setSelectedTicket(row);
+    getCustomerInformationById(row.customerId);
+  };
+
+  console.log({ sales, selectedTicket });
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">{modalTitle}</h1>
@@ -80,7 +126,7 @@ function SalesMaintainWorkspaceContent() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-28">Ticket #</TableHead>
-                <TableHead className="w-20">Customer #</TableHead>
+                {!selectedCustomer && <TableHead className="w-20">Customer #</TableHead>}
                 <TableHead className="w-28">Date IN</TableHead>
                 <TableHead className="w-28">Date Due</TableHead>
                 <TableHead className="w-28">Status</TableHead>
@@ -91,14 +137,10 @@ function SalesMaintainWorkspaceContent() {
             </TableHeader>
             <TableBody>
               {sales.map((row) => {
-                function handleOpenTicket(row: any): void {
-                  throw new Error('Function not implemented.');
-                }
-
                 return (
                   <TableRow key={`${row.controlNumber}-${row.id}`}>
                     <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                    <TableCell className="uppercase">{row.customerId}</TableCell>
+                    {!selectedCustomer && <TableCell className="uppercase">{row.customerId}</TableCell>}
                     <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{(row
@@ -130,6 +172,24 @@ function SalesMaintainWorkspaceContent() {
               )}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+
+      {selectedTicket && (
+        <div className="space-y-4">
+          <SaleForm
+            mode="VIEW"
+            initialData={selectedTicket}
+            externalDraft={selectedTicket}
+            controlNumber={selectedTicket.controlNumber}
+            pawnTicket={selectedTicket}
+            customer={currentCustomer || undefined}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
+            <Button onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Void or return sale</Button>
+          </div>
         </div>
       )}
     </>

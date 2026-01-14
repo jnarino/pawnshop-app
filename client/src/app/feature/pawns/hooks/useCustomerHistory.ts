@@ -1,16 +1,16 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { pawnTicketApi, TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { pawnTicketApi, HistoryTicket } from '@/app/core/api/pawnTicketApi';
 
 interface UseCustomerHistoryResult {
-    history: TicketByControlNumber[];
+    history: HistoryTicket[];
     loading: boolean;
     error: Error | null;
     refetch: () => Promise<void>;
 }
 
 export const useCustomerHistory = (customerId: string | undefined): UseCustomerHistoryResult => {
-    const [history, setHistory] = useState<TicketByControlNumber[]>([]);
+    const [history, setHistory] = useState<HistoryTicket[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
