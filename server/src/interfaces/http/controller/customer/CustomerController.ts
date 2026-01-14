@@ -4,6 +4,7 @@ import { CreateCustomerUseCase } from '../../../../application/use-case/customer
 import { DeleteCustomerUseCase } from '../../../../application/use-case/customer/command/DeleteCustomerUseCase';
 import { UpdateCustomerUseCase } from '../../../../application/use-case/customer/command/UpdateCustomerUseCase';
 import { GetCustomerByIdUseCase } from '../../../../application/use-case/customer/query/GetCustomerByIdUseCase';
+import { GetCustomerStatisticsUseCase } from '../../../../application/use-case/customer/query/GetCustomerStatisticsUseCase';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { FindCustomerUseCase } from '../../../../application/use-case/customer/query/FindCustomerUseCase';
 
@@ -14,7 +15,8 @@ export class CustomerController {
         private readonly updateCustomerUseCase: UpdateCustomerUseCase,
         private readonly deleteCustomerUseCase: DeleteCustomerUseCase,
         private readonly findCustomerUseCase: FindCustomerUseCase,
-        private readonly getCustomerByIdUseCase: GetCustomerByIdUseCase
+        private readonly getCustomerByIdUseCase: GetCustomerByIdUseCase,
+        private readonly getCustomerStatisticsUseCase: GetCustomerStatisticsUseCase
     ) { }
 
     search = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -44,6 +46,19 @@ export class CustomerController {
     getById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
             const result = await this.getCustomerByIdUseCase.execute({ id: req.params.id });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Get customer statistics (pawns, buys, sales, ratios).
+     * GET /api/customers/:id/statistics
+     */
+    getStatistics = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.getCustomerStatisticsUseCase.execute({ id: req.params.id });
             return res.json(result);
         } catch (err) {
             return next(err);

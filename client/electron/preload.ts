@@ -19,35 +19,53 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }>) => ipcRenderer.invoke('print-labels', items),
 
     printDocument: (html: string) => ipcRenderer.invoke('print-document', html),
+    getApiConfig: () => ipcRenderer.invoke('get-api-config'),
 
-    // Menu-driven actions
-    onManageCash: (cb: () => void) => {
+    /* Menu actions */
+
+    // Pawns
+    onPawnsMaintain: (cb: () => void) => {
         const handler = () => cb();
-        ipcRenderer.on('menu:manage-cash', handler);
-        return () => ipcRenderer.removeListener('menu:manage-cash', handler);
+        ipcRenderer.on('menu:pawns-maintain', handler);
+        return () => ipcRenderer.removeListener('menu:pawns-maintain', handler);
     },
 
+    onPawnsForfeitPull: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:pawns-forfeit-pull', handler);
+        return () => ipcRenderer.removeListener('menu:pawns-forfeit-pull', handler);
+    },
+
+    // Sales
+    onSalesMaintain: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:sales-maintain', handler);
+        return () => ipcRenderer.removeListener('menu:sales-maintain', handler);
+    },
+
+    // Cash drawers
+    onManageCash: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:admin-cash-drawers-add-remove-cash', handler);
+        return () => ipcRenderer.removeListener('menu:admin-cash-drawers-add-remove-cash', handler);
+    },
+
+    onBalanceDrawer: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:admin-cash-drawers-balance', handler);
+        return () => ipcRenderer.removeListener('menu:admin-cash-drawers-balance', handler);
+    },
+
+    // Inventory
     onInventoryMaintain: (cb: () => void) => {
         const handler = () => cb();
         ipcRenderer.on('menu:inventory-maintain', handler);
         return () => ipcRenderer.removeListener('menu:inventory-maintain', handler);
     },
 
-    onPawnMaintain: (cb: () => void) => {
+    onNewInventoryItem: (cb: () => void) => {
         const handler = () => cb();
-        ipcRenderer.on('menu:pawn-maintain', handler);
-        return () => ipcRenderer.removeListener('menu:pawn-maintain', handler);
-    },
-
-    onForfeit: (cb: () => void) => {
-        const handler = () => cb();
-        ipcRenderer.on('menu:forfeit-pull', handler);
-        return () => ipcRenderer.removeListener('menu:forfeit-pull', handler);
-    },
-
-    onBalanceDrawer: (cb: () => void) => {
-        const handler = () => cb();
-        ipcRenderer.on('menu:balance-drawer', handler);
-        return () => ipcRenderer.removeListener('menu:balance-drawer', handler);
+        ipcRenderer.on('menu:inventory-new', handler);
+        return () => ipcRenderer.removeListener('menu:inventory-new', handler);
     },
 });

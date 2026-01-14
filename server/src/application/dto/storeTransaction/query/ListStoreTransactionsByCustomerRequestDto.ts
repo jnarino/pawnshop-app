@@ -7,3 +7,4 @@ export const listStoreTransactionsByCustomerRequestSchema = z.object({
 export type ListStoreTransactionsByCustomerRequestDto = z.infer<
   typeof listStoreTransactionsByCustomerRequestSchema
 >;
+

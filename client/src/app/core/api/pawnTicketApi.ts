@@ -67,7 +67,30 @@ export interface TicketByControlNumber {
     firstName: string;
     lastName: string;
   };
-  items: InventoryItem[]
+  items: InventoryItem[];
+  currentCharges?: number;
+  redemptionAmount?: number;
+  apr?: number;
+  originalPawnAmount?: number;
+  periodicRate?: number;
+}
+
+export interface HistoryTicket {
+  id: string;
+  controlNumber: string;
+  dateOut: string;
+  dateIn: string;
+  status: string;
+  amount: number;
+  amountPaid: number;
+  items: HistoryItem[];
+}
+
+export interface HistoryItem {
+  id: string;
+  description: string;
+  amountEach: number;
+  quantity: number;
 }
 
 export type Lookup = {
@@ -160,6 +183,10 @@ export const pawnTicketApi = {
     return http(`/api/pawn-ticket/customer/${customerId}`);
   },
 
+  getPreviousItemsByCustomer: async (customerId: string): Promise<PawnTicketItem[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}/previous-items`);
+  },
+
   getActiveByCustomer: async (customerId: string): Promise<CustomerActivePawnTicket[]> => {
     return http(`/api/pawn-ticket/customer/${customerId}/active`);
   },
@@ -172,15 +199,19 @@ export const pawnTicketApi = {
   },
 
   searchByControlNumber: async (
-    customerId: string,
+    _customerId: string,
     controlNumber: string
   ): Promise<CustomerActivePawnTicket[]> => {
     return http(
-      `/api/pawn-ticket/customer/${customerId}/active?controlNumber=${encodeURIComponent(controlNumber)}`
+      `/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`
     );
   },
 
   findByDateRange: async (from: string, to: string): Promise<TicketByControlNumber[]> => {
     return http(`/api/pawn-ticket/date-range?from=${from}&to=${to}`);
+  },
+
+  getAllTicketsByCustomer: async (customerId: string): Promise<HistoryTicket[]> => {
+    return http(`/api/pawn-ticket/customer/${customerId}/history`);
   },
 };

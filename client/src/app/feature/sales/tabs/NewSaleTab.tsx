@@ -47,7 +47,6 @@ export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProp
       taxExemptUsed: formData.taxExemptUsed,
       eatTax: formData.eatTax
     });
-    console.log({ pendingSaleData: formData });
     setShowPaymentModal(true);
   }, [customerId, taxExemptUsed]);
 

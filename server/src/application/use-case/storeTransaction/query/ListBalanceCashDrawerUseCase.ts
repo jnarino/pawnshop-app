@@ -5,6 +5,7 @@ import {
   CashDrawerBalanceResponseDto,
   MainDrawerBalance
 } from '../../../dto/storeTransaction/query/CashDrawerBalanceDto';
+import { ValidationError } from '../../../common/errors';
 
 // All 8 tender types in order
 const TENDER_TYPES = [
@@ -27,6 +28,10 @@ export class ListBalanceCashDrawerUseCase {
     // Get last close and activity since close
     const lastClose = await this.storeTransactionRepository.getLastClose();
     const activity = await this.storeTransactionRepository.getActivitySinceClose();
+
+    if (lastClose && activity.length === 0) {
+      throw new ValidationError('There are no more transactions after the last close.');
+    }
 
     // Build map of tender totals
     const tenderTotals = new Map<number, number>();

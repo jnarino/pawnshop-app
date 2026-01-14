@@ -9,6 +9,7 @@ export interface StoreTransactionTenderResponseDto {
 export interface StoreTransactionItemResponseDto {
     id: string;
     storeTransactionId: string;
+    controlNumber: string | null;
     sequence: number;
     inventoryItemId: string | null;
     description: string | null;
@@ -22,13 +23,27 @@ export interface StoreTransactionItemResponseDto {
     createdAt: string;
 }
 
+export interface CustomerInfoDto {
+    id: string;
+    firstName: string | null;
+    middleName: string | null;
+    lastName: string | null;
+    phoneNumber: string | null;
+    cellPhone: string | null;
+    email: string | null;
+}
+
 export interface StoreTransactionResponseDto {
     id: string;
 
     customerId: string | null;
+    customer?: CustomerInfoDto;
     clerkUserId: string | null;
+    controlNumber: string | null;
 
     typeId: number;
+    typeCode?: string;
+    typeName?: string;
 
     occurredAt: string;
 

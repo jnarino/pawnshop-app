@@ -41,6 +41,10 @@ export class CloseBalanceCashDrawerUseCase {
     const lastClose = await this.storeTransactionRepo.getLastClose();
     const activity = await this.storeTransactionRepo.getActivitySinceClose();
 
+    if (lastClose && activity.length === 0) {
+      throw new ValidationError('There are no more transactions after the last close.');
+    }
+
     // 2. Sum activity by tender type
     const lastCloseBalance = lastClose?.amount ?? 0;
     const activityByTender = new Map<number, number>();
@@ -112,8 +116,9 @@ export class CloseBalanceCashDrawerUseCase {
     
     for (const [tenderTypeId, amount] of depositsByTender.entries()) {
       if (amount > 0) {
+        const transactionId = crypto.randomUUID();
         const transaction = new StoreTransaction({
-          id: crypto.randomUUID(),
+          id: transactionId,
           customerId: null,
           clerkUserId,
           typeId: TYPE_DEPOSIT_FROM_MAIN,
@@ -130,7 +135,7 @@ export class CloseBalanceCashDrawerUseCase {
           tenders: [
             new StoreTransactionTender({
               id: crypto.randomUUID(),
-              storeTransactionId: '',
+              storeTransactionId: transactionId,
               tenderTypeId,
               amount: -amount,
               createdAt: occurredAt

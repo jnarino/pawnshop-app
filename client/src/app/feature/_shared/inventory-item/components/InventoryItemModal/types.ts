@@ -46,6 +46,7 @@ export interface InventoryItemDraft {
   itemStatus?: 'I' | 'J';
   minResale?: string;
   scrappedIntoInvItem?: ScrappedItem[];
+  sourceItemId?: string;
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {

@@ -41,4 +41,18 @@ export interface CustomerRepository {
    * - dateOfBirth + lastName + firstName
    */
   findCustomer(criteria: FindCustomerCriteria): Promise<Customer[]>;
+
+  /**
+   * Get customer statistics including pawn activity, purchases, and sales
+   */
+  getStatistics(customerId: string): Promise<{
+    customerId: string;
+    customerName: string;
+    activePawns: number;
+    redeemedPawns: number;
+    defaultedPawns: number;
+    buys: number;
+    totalPawns: number;
+    totalSalesAmount: number;
+  } | null>;
 }

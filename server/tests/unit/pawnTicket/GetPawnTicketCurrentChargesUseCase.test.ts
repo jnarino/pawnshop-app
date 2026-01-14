@@ -128,4 +128,78 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
         });
     });
 
+    it('handles long history with voids and multi-month pays', async () => {
+        const mockTicket = {
+            id: 'pawn-long',
+            controlNumber: 'PAWN-LONG',
+            transactionType: 'PAWN' as const,
+            customerId: 'cust-long',
+            customer: { firstName: 'Long', lastName: 'History' },
+            clerkUserId: '',
+            amountFinanced: 120,
+            originalPawnAmount: 120,
+            periodicRate: 0.25,
+            apr: 0,
+            purchaseTradeValue: null,
+            transactionDate: '2025-12-08T12:13:00.000Z',
+            maturityDate: '2022-09-17T00:00:00.000Z',
+            defaultDate: '2026-02-06T00:00:00.000Z',
+            createdDate: '2022-07-19T15:54:00.000Z',
+            pawnStatus: 'P' as const,
+            itemIds: [],
+            items: []
+        };
+
+        const payments = [
+            { paymentDate: '2025-12-08T12:13:34.000Z', principalPaid: 30 },
+            { paymentDate: '2025-11-05T13:46:47.000Z', principalPaid: 30 },
+            { paymentDate: '2025-10-06T14:12:48.000Z', principalPaid: 30 },
+            { paymentDate: '2025-10-06T14:12:33.000Z', principalPaid: -30 },
+            { paymentDate: '2025-10-06T14:03:51.000Z', principalPaid: 30 },
+            { paymentDate: '2025-09-05T10:24:57.000Z', principalPaid: 30 },
+            { paymentDate: '2025-08-04T15:37:53.000Z', principalPaid: 30 },
+            { paymentDate: '2025-07-07T17:32:35.000Z', principalPaid: 30 },
+            { paymentDate: '2025-06-07T14:21:37.000Z', principalPaid: 30 },
+            { paymentDate: '2025-05-02T13:38:30.000Z', principalPaid: 30 },
+            { paymentDate: '2025-04-02T13:15:57.000Z', principalPaid: 30 },
+            { paymentDate: '2025-02-13T10:12:18.000Z', principalPaid: 30 },
+            { paymentDate: '2025-01-07T12:20:16.000Z', principalPaid: 30 },
+            { paymentDate: '2024-11-27T10:57:30.000Z', principalPaid: 60 },
+            { paymentDate: '2024-10-01T14:54:31.000Z', principalPaid: 30 },
+            { paymentDate: '2024-08-08T12:57:22.000Z', principalPaid: 60 },
+            { paymentDate: '2024-05-30T16:54:16.000Z', principalPaid: 90 },
+            { paymentDate: '2024-04-17T11:36:40.000Z', principalPaid: 30 },
+            { paymentDate: '2024-02-22T10:24:50.000Z', principalPaid: 30 },
+            { paymentDate: '2024-02-22T10:23:09.000Z', principalPaid: 90 },
+            { paymentDate: '2024-01-15T11:59:57.000Z', principalPaid: 30 },
+            { paymentDate: '2023-12-13T14:29:38.000Z', principalPaid: 30 },
+            { paymentDate: '2023-11-15T17:12:13.000Z', principalPaid: 30 },
+            { paymentDate: '2023-10-14T15:33:39.000Z', principalPaid: 30 },
+            { paymentDate: '2023-09-08T16:57:23.000Z', principalPaid: 30 },
+            { paymentDate: '2023-08-08T14:32:42.000Z', principalPaid: 30 },
+            { paymentDate: '2023-07-05T11:44:45.000Z', principalPaid: 30 },
+            { paymentDate: '2023-06-06T11:58:03.000Z', principalPaid: 60 },
+            { paymentDate: '2023-05-04T15:28:11.000Z', principalPaid: 30 },
+            { paymentDate: '2023-04-03T09:55:17.000Z', principalPaid: 30 },
+            { paymentDate: '2023-02-06T15:21:50.000Z', principalPaid: 30 },
+            { paymentDate: '2023-01-06T15:11:51.000Z', principalPaid: 30 },
+            { paymentDate: '2022-11-10T17:25:13.000Z', principalPaid: 30 },
+            { paymentDate: '2022-09-22T15:19:55.000Z', principalPaid: 30 },
+            { paymentDate: '2022-07-19T15:54:52.000Z', principalPaid: -120 }
+        ];
+
+        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        paymentsUseCase.execute.mockResolvedValue(payments as any);
+
+        const result = await useCase.execute({ controlNumber: 'PAWN-LONG', referenceDate: new Date('2026-01-08T00:00:00.000Z') });
+
+        expect(result).toEqual({
+            pawnTicketId: 'pawn-long',
+            currentCharges: 120,
+            pawnAmount: 120,
+            periodsBehind: 4,
+            redemptionAmount: 219
+        });
+    });
+
 });

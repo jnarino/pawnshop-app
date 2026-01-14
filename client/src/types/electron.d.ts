@@ -7,11 +7,17 @@ declare global {
       onNavigate?: (cb: (route: string) => void) => () => void;
       authChanged?: (authed: boolean) => void;
       refreshMenu?: () => void;
+
+      onPawnsMaintain?: (cb: () => void) => () => void;
+      onPawnsForfeitPull?: (cb: () => void) => () => void;
+
+      onSalesMaintain?: (cb: () => void) => () => void;
+
       onManageCash?: (cb: () => void) => () => void;
-      onInventoryMaintain?: (cb: () => void) => () => void;
-      onPawnMaintain?: (cb: () => void) => () => void;
       onBalanceDrawer?: (cb: () => void) => () => void;
-      onForfeit?: (cb: () => void) => () => void;
+
+      onInventoryMaintain?: (cb: () => void) => () => void;
+      onNewInventoryItem?: (cb: () => void) => () => void;
 
       // ✅ Printing
       printLabels?: (items: Array<{
@@ -21,6 +27,9 @@ declare global {
       }>) => Promise<{ success: boolean; count?: number; error?: string }>;
 
       printDocument?: (html: string) => Promise<{ success: boolean; error?: string }>;
+
+      // ✅ Config
+      getApiConfig?: () => Promise<{ mode?: 'server' | 'client'; serverUrl?: string }>;
     };
   }
 }

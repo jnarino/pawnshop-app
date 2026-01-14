@@ -36,6 +36,9 @@ export interface StoreTransactionRepository {
         to: Date;
     }): Promise<StoreTransaction[]>;
 
+
+    listByControlNumber(controlNumber: string): Promise<StoreTransaction[]>;
+
     /**
      * Get the last MAIN BALANCE (close) transaction.
      * Returns null if no close has been recorded.

@@ -102,15 +102,16 @@ def migrate_users():
                     row.get('USR_TERMINATE'), # Use correct col if known, else check keys again if fails
                     bool(row.get('USR_ACTIVE', 1)),
                     role_id,
-                    old_pk # legacy_usr_pk
+                    old_pk, # legacy_usr_pk
+                    str(row.get('USR_ID') or '').strip() if row.get('USR_ID') else None # legacy_usr_id
                 ))
             
             user_map[old_pk] = new_id
             
-            # Map UUID as well if available
-            old_uuid = str(row.get('USR_ID') or '').strip()
-            if old_uuid:
-                user_map[old_uuid] = new_id
+            # Map legacy_usr_id as well if available
+            legacy_usr_id = row.get('USR_ID')
+            if legacy_usr_id:
+                user_map[str(legacy_usr_id).strip()] = new_id
             
             if len(batch_data) >= batch_size:
                 _insert_batch(pg_cursor, batch_data)
@@ -144,7 +145,7 @@ def _insert_batch(cursor, data):
             id, username, password_hash, 
             first_name, middle_name, last_name, 
             street_address, suite_number, city, state_us, zip_code, phone_number, ss_number, birth_date,
-            starting_date, terminated_date, is_active, role_id, legacy_usr_pk
+            starting_date, terminated_date, is_active, role_id, legacy_usr_pk, legacy_usr_id
         ) VALUES %s
         ON CONFLICT (username) DO UPDATE SET
             first_name = EXCLUDED.first_name,
@@ -153,7 +154,8 @@ def _insert_batch(cursor, data):
             suite_number = EXCLUDED.suite_number,
             phone_number = EXCLUDED.phone_number,
             role_id = EXCLUDED.role_id,
-            legacy_usr_pk = EXCLUDED.legacy_usr_pk
+            legacy_usr_pk = EXCLUDED.legacy_usr_pk,
+            legacy_usr_id = EXCLUDED.legacy_usr_id
     """
     execute_values(cursor, sql, data)
 

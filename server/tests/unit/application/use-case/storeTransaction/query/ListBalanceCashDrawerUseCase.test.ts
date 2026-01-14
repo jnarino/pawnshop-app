@@ -68,11 +68,7 @@ describe('ListBalanceCashDrawerUseCase', () => {
   });
 
   it('returns asOf timestamp', async () => {
-    storeTransactionRepo.getLastClose.mockResolvedValue({
-      id: 'close-1',
-      occurredAt: new Date('2025-12-31T18:00:54Z'),
-      amount: 500
-    });
+    storeTransactionRepo.getLastClose.mockResolvedValue(null);
     storeTransactionRepo.getActivitySinceClose.mockResolvedValue([]);
 
     const before = Date.now();
@@ -82,6 +78,17 @@ describe('ListBalanceCashDrawerUseCase', () => {
     const asOfTime = new Date(result.asOf).getTime();
     expect(asOfTime).toBeGreaterThanOrEqual(before - 1000);
     expect(asOfTime).toBeLessThanOrEqual(after + 1000);
+  });
+
+  it('throws when there is a prior close and no activity after it', async () => {
+    storeTransactionRepo.getLastClose.mockResolvedValue({
+      id: 'close-1',
+      occurredAt: new Date('2025-12-31T18:00:54Z'),
+      amount: 500
+    });
+    storeTransactionRepo.getActivitySinceClose.mockResolvedValue([]);
+
+    await expect(useCase.execute({})).rejects.toThrow('There are no more transactions after the last close.');
   });
 
   it('aggregates multiple transactions for same tender', async () => {

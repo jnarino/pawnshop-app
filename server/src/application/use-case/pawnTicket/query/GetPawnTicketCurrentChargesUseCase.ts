@@ -25,9 +25,24 @@ export class GetPawnTicketCurrentChargesUseCase {
 
         // ---------- 2) payments (asc) ----------
         const raw = await this.getPawnTicketPaymentsUseCase.execute({ pawnTicketId: ticket.id });
-        const payments = raw
-            .filter(p => p && p.paymentDate)
-            .map(p => ({ ...p, paymentDate: new Date(p.paymentDate) }))
+
+        // Aggregate payments by UTC day to neutralize voids on the same day and accumulate multi-month payments cleanly
+        const paymentsByDay = new Map<string, { paymentDate: Date; principalPaid: number }>();
+        for (const p of raw) {
+            if (!p || !p.paymentDate) continue;
+            const d = new Date(p.paymentDate);
+            const key = d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+            const existing = paymentsByDay.get(key);
+            if (existing) {
+                existing.principalPaid += p.principalPaid;
+            } else {
+                // Keep the actual timestamp for ordering so same-day payments after createdDate are retained
+                paymentsByDay.set(key, { paymentDate: d, principalPaid: p.principalPaid });
+            }
+        }
+
+        const payments = Array.from(paymentsByDay.values())
+            .filter(p => p.principalPaid !== 0) // drop fully voided days
             .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime());
 
         const increases = payments.filter(p => p.principalPaid < 0);    // negative = increase
@@ -106,7 +121,8 @@ export class GetPawnTicketCurrentChargesUseCase {
         let redemptionAmount = 0;
         const maturityDate = ticket.maturityDate ? new Date(ticket.maturityDate) : undefined;
         const maturityDays = maturityDate ? Math.floor((maturityDate.getTime() - initialPawnDate.getTime()) / dayMs) : undefined;
-        if (maturityDays !== undefined && maturityDays <= 60) {
+        const withinEarlyWindow = maturityDays !== undefined && maturityDays <= 60 && !!maturityDate && maturityDate.getTime() >= referenceDate.getTime();
+        if (withinEarlyWindow) {
             // If <= 30 days, charge 1 full period; if >30 and <=60, charge 2 full periods ONLY if more than 30 days have elapsed
             let forcedPeriods = 1;
             if (maturityDays > 30 && daysFromStart > 30) {

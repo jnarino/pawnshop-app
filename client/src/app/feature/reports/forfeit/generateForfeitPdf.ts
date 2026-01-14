@@ -191,7 +191,6 @@ export async function generateForfeitPdf(data: ForfeitReportData, dateRange: { f
 
                 // Col 1: Last Paid (Only on first item line)
                 if (index === 0) {
-                    console.log({ lastPaid: item.lastPaid, format: formatDate(item.lastPaid) })
                     page.drawText(formatDate(item.lastPaid), { x, y: subY, size: fontSize, font });
                 }
                 x += colWidths.col1;

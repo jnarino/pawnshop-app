@@ -1,69 +1,25 @@
 import { useCallback, useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Pencil } from 'lucide-react';
 import { pawnTicketApi, type CustomerActivePawnTicket, type TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
-import type { PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
+import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { PawnTicketForm } from './PawnTicketForm';
-import { CancelButton } from '@/app/shared/components/CancelButton';
 import { formatDate } from '@/lib/utils';
+import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
+import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
 
 type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
-type ScopeFilter = 'all' | 'active';
-type TabKey = 'customer' | 'ticket';
-
-// Helper to extract ID from attribute objects or return string value
-const extractId = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  if (typeof value === 'object' && 'id' in value) {
-    return (value as { id: string }).id || '';
-  }
-  return '';
-};
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
-
 
   const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
     if (!brand) return '';
     if (typeof brand === 'object' && brand.name) return brand.name;
     if (typeof brand === 'string') return brand;
     return '';
-  };
-
-  const transformStones = (stones: Array<{
-    type?: { id: string; name?: string | null } | string;
-    shape?: { id: string; name?: string | null } | string;
-    color?: { id: string; name?: string | null } | string;
-    carat?: number | string;
-    weight?: number | string;
-    length?: number | string;
-    width?: number | string;
-    clarity?: string;
-    quantity?: number | string;
-  }> | undefined) => {
-    if (!stones || !Array.isArray(stones)) return undefined;
-    return stones.map((stone, index) => ({
-      id: `stone-${index}-${Date.now()}`,
-      quantity: String(stone.quantity || 1),
-      type: typeof stone.type === 'object' ? stone.type?.id || '' : stone.type || '',
-      shape: typeof stone.shape === 'object' ? stone.shape?.id || '' : stone.shape || '',
-      color: typeof stone.color === 'object' ? stone.color?.id || '' : stone.color || '',
-      carat: String(stone.carat || ''),
-      weight: String(stone.weight || ''),
-      length: String(stone.length || ''),
-      width: String(stone.width || ''),
-      clarity: stone.clarity || '',
-    }));
   };
 
   const transformedItems = (pawnTicket.items || []).map((item) => ({
@@ -77,13 +33,15 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     model: item.model || '',
     serial: item.serialNumber || '',
     color: extractId(item.colorId),
+    colorName: (item.colorId as any)?.name || '',
     condition: item.itemCondition || '',
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
     resale: String(item.resale || 0),
     replace: String(item.itemReplace || 0),
-    ownerNumber: item.inventoryNumber || '',
+    ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
+    status: item.status || '',
     metal: extractId(item.attributes?.metal),
     karat: extractId(item.attributes?.karat),
     weight: extractId(item.extra?.weight),
@@ -109,64 +67,17 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 }
 
 function PawnsMaintainWorkspaceContent() {
-  const [activeTab, setActiveTab] = useState<TabKey>('customer');
   const [scope, setScope] = useState<ScopeFilter>('active');
-
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [customerResults, setCustomerResults] = useState<CustomerRecord[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
 
-  const [ticketNumber, setTicketNumber] = useState('');
   const [ticketResults, setTicketResults] = useState<TicketResult[]>([]);
+  const [currentCustomer, setCurrentCustomer] = useState<CustomerData | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTicketTable, setShowTicketTable] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<PawnTicketData | null>(null);
-
-  const handleClose = useCallback(() => {
-    if (loading || detailLoading) return;
-    setCustomerResults([]);
-    setSelectedCustomer(null);
-    setTicketResults([]);
-    setSelectedTicket(null);
-    setFirstName('');
-    setLastName('');
-    setDateOfBirth('');
-    setTicketNumber('');
-    setError(null);
-    setActiveTab('customer');
-  }, [loading, detailLoading]);
-
-  const searchCustomers = useCallback(async () => {
-    if (!firstName && !lastName && !dateOfBirth) {
-      setError('Enter first name, last name, or DOB');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (firstName) params.append('firstName', firstName);
-      if (lastName) params.append('lastName', lastName);
-      if (dateOfBirth) params.append('dateOfBirth', dateOfBirth);
-      params.append('limit', import.meta.env.VITE_CUSTOMER_SEARCH_LIMIT || '100');
-      const payload = await http(`/api/customer?${params.toString()}`);
-      const results = (Array.isArray(payload) ? payload : []).map(apiToRecordLoose);
-      setCustomerResults(results);
-      if (results.length === 0) {
-        setError('No customers found with those fields');
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Search failed';
-      setError(message);
-      setCustomerResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [firstName, lastName, dateOfBirth]);
 
   const fetchTicketsForCustomer = useCallback(async (customer: CustomerRecord, currentScope: ScopeFilter) => {
     setLoading(true);
@@ -176,7 +87,31 @@ function PawnsMaintainWorkspaceContent() {
         ? await pawnTicketApi.getActiveByCustomer(customer.id || '')
         : await pawnTicketApi.getByCustomer(customer.id || '');
       setTicketResults(tickets);
-      setSelectedCustomer(customer);
+
+      setCurrentCustomer({
+        id: customer.id || '',
+        firstName: customer.firstName,
+        middleName: customer.middleName,
+        lastName: customer.lastName,
+        secondLastName: (customer as any).secondLastName,
+        idType: customer.idType,
+        idNumber: customer.idNumber,
+        phoneNumber: customer.phoneNumber,
+        streetAddress: customer.streetAddress,
+        city: customer.city,
+        zipCode: customer.zipCode,
+        stateUs: customer.stateUs,
+        idState: (customer as any).idState,
+        dateOfBirth: customer.dateOfBirth,
+        sex: customer.sex,
+        race: customer.race,
+        height: customer.height,
+        weight: customer.weight,
+        eyeColor: customer.eyeColor,
+        hairColor: customer.hairColor,
+        employerName: customer.employerName
+      });
+
       if (tickets.length === 0) {
         setError('No tickets found for this customer');
       }
@@ -189,9 +124,9 @@ function PawnsMaintainWorkspaceContent() {
     }
   }, []);
 
-  const loadTicketsForCustomer = useCallback(async (customer: CustomerRecord) => {
+  const loadTicketsForCustomer = useCallback(async (customer: CustomerRecord, scope: ScopeFilter) => {
     await fetchTicketsForCustomer(customer, scope);
-  }, [fetchTicketsForCustomer, scope]);
+  }, [fetchTicketsForCustomer]);
 
   const ensureDetail = useCallback(async (result: TicketResult): Promise<PawnTicketData> => {
     if ((result as CustomerActivePawnTicket).items?.length) {
@@ -204,7 +139,7 @@ function PawnsMaintainWorkspaceContent() {
     throw new Error('Ticket details not available. Try searching with customer ID to load items.');
   }, []);
 
-  const searchByTicket = useCallback(async () => {
+  const searchByTicket = useCallback(async (ticketNumber: string) => {
     if (!ticketNumber.trim()) {
       setError('Enter a ticket number');
       return;
@@ -219,7 +154,43 @@ function PawnsMaintainWorkspaceContent() {
       }
       // Ticket found - go directly to edit mode
       const ticket = data[0];
-      const detail = await ensureDetail(ticket);
+      const detail = await ensureDetail(ticket as any);
+
+      // Fetch full customer data for printing
+      if (detail.customerId) {
+        try {
+          const customerDto = await http(`/api/customer/${detail.customerId}`);
+          if (customerDto) {
+            const customerRecord = apiToRecordLoose(customerDto);
+            setCurrentCustomer({
+              id: customerRecord.id || '',
+              firstName: customerRecord.firstName,
+              middleName: customerRecord.middleName,
+              lastName: customerRecord.lastName,
+              secondLastName: (customerRecord as any).secondLastName,
+              idType: customerRecord.idType,
+              idNumber: customerRecord.idNumber,
+              phoneNumber: customerRecord.phoneNumber,
+              streetAddress: customerRecord.streetAddress,
+              city: customerRecord.city,
+              zipCode: customerRecord.zipCode,
+              stateUs: customerRecord.stateUs,
+              idState: (customerRecord as any).idState || customerRecord.idState,
+              dateOfBirth: customerRecord.dateOfBirth,
+              sex: customerRecord.sex,
+              race: customerRecord.race,
+              height: customerRecord.height,
+              weight: customerRecord.weight,
+              eyeColor: customerRecord.eyeColor,
+              hairColor: customerRecord.hairColor,
+              employerName: customerRecord.employerName
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch customer for ticket reprint:', err);
+        }
+      }
+
       setSelectedTicket(detail);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Search failed';
@@ -227,13 +198,49 @@ function PawnsMaintainWorkspaceContent() {
     } finally {
       setLoading(false);
     }
-  }, [ticketNumber, ensureDetail]);
+  }, [ensureDetail]);
 
   const handleOpenTicket = useCallback(async (result: TicketResult) => {
     setDetailLoading(true);
     setError(null);
     try {
       const detail = await ensureDetail(result);
+
+      // Fetch full customer data if not already set or if id changed
+      if (detail.customerId && (!currentCustomer || currentCustomer.id !== detail.customerId)) {
+        try {
+          const customerDto = await http(`/api/customer/${detail.customerId}`);
+          if (customerDto) {
+            const customerRecord = apiToRecordLoose(customerDto);
+            setCurrentCustomer({
+              id: customerRecord.id || '',
+              firstName: customerRecord.firstName,
+              middleName: customerRecord.middleName,
+              lastName: customerRecord.lastName,
+              secondLastName: (customerRecord as any).secondLastName,
+              idType: customerRecord.idType,
+              idNumber: customerRecord.idNumber,
+              phoneNumber: customerRecord.phoneNumber,
+              streetAddress: customerRecord.streetAddress,
+              city: customerRecord.city,
+              zipCode: customerRecord.zipCode,
+              stateUs: customerRecord.stateUs,
+              idState: (customerRecord as any).idState || customerRecord.idState,
+              dateOfBirth: customerRecord.dateOfBirth,
+              sex: customerRecord.sex,
+              race: customerRecord.race,
+              height: customerRecord.height,
+              weight: customerRecord.weight,
+              eyeColor: customerRecord.eyeColor,
+              hairColor: customerRecord.hairColor,
+              employerName: customerRecord.employerName
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch customer for ticket reprint:', err);
+        }
+      }
+
       setSelectedTicket(detail);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to open ticket';
@@ -245,227 +252,85 @@ function PawnsMaintainWorkspaceContent() {
 
   const modalTitle = selectedTicket ? `Pawn #${selectedTicket.controlNumber}` : 'Maintain Pawn Tickets';
 
+  const handleSelectedCustomer = (customer: CustomerRecord, scope: ScopeFilter) => {
+    setTicketResults([]);
+    loadTicketsForCustomer(customer, scope);
+    setSelectedCustomer(customer);
+    setScope(scope);
+    setShowTicketTable(true);
+  }
+
+  const handleSearchControlNumber = (ticketNumber: string) => {
+    setTicketResults([]);
+    searchByTicket(ticketNumber);
+  }
+
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">{modalTitle}</h1>
       {!selectedTicket && (
         <div className="space-y-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="customer">By Customer</TabsTrigger>
-                <TabsTrigger value="ticket">By Ticket ID</TabsTrigger>
-              </TabsList>
-              <CancelButton />
-            </div>
-            <TabsContent value="customer" className="space-y-4">
-              <div className="grid grid-cols-12 gap-3">
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor="first-name">First Name</Label>
-                  <Input
-                    id="first-name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
-                    disabled={loading}
-                    className="text-sm"
-                  />
-                </div>
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor="last-name">Last Name</Label>
-                  <Input
-                    id="last-name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
-                    disabled={loading}
-                    className="text-sm"
-                  />
-                </div>
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor="dob">Date of Birth</Label>
-                  <Input
-                    id="dob"
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    disabled={loading}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
+          <MaintainSearch
+            handleSearchControlNumber={handleSearchControlNumber}
+            handleSelectedCustomer={handleSelectedCustomer}
+            setShowTicketTable={setShowTicketTable}
+            showDateRangeTab={false}
+          />
+        </div>
+      )}
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <Label>Status</Label>
-                  <RadioGroup
-                    value={scope}
-                    onValueChange={(value) => {
-                      const nextScope = value as ScopeFilter;
-                      setScope(nextScope);
-                      if (selectedCustomer) {
-                        fetchTicketsForCustomer(selectedCustomer, nextScope);
-                      }
-                    }}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="all" id="scope-all" />
-                      <Label htmlFor="scope-all" className="cursor-pointer">All</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="active" id="scope-active" />
-                      <Label htmlFor="scope-active" className="cursor-pointer">Active</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
-                  <Button onClick={searchCustomers} disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Searching...
-                      </>
-                    ) : 'Search Customers'}
-                  </Button>
-                </div>
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="border rounded-lg">
-                <Table stickyHeader>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-40">Customer</TableHead>
-                      <TableHead className="w-32">DOB</TableHead>
-                      <TableHead className="w-32">ID Number</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customerResults.map((c) => (
-                      <TableRow
-                        key={c.id}
-                        className={`cursor-pointer hover:bg-muted/50 ${selectedCustomer?.id === c.id ? 'bg-muted' : ''}`}
-                        onClick={() => !loading && loadTicketsForCustomer(c)}
+      {showTicketTable && !selectedTicket && (
+        <div className="border rounded-lg mt-8">
+          <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+            <span>Tickets for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
+            <span className="text-xs">Scope: {scope}</span>
+          </div>
+          <Table stickyHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-28">Ticket #</TableHead>
+                <TableHead className="w-20">Type</TableHead>
+                <TableHead className="w-28">Status</TableHead>
+                <TableHead className="w-24">Amount</TableHead>
+                <TableHead className="w-32">Transaction</TableHead>
+                <TableHead className="w-16 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ticketResults.map((row) => {
+                const amount = row.transactionType === 'PURCHASE'
+                  ? row.purchaseTradeValue ?? 0
+                  : row.amountFinanced ?? 0;
+                return (
+                  <TableRow key={`${row.controlNumber}-${row.id}`}>
+                    <TableCell className="font-semibold">{row.controlNumber}</TableCell>
+                    <TableCell className="uppercase">{row.transactionType}</TableCell>
+                    <TableCell className="capitalize">{(row as CustomerActivePawnTicket).pawnStatus || '—'}</TableCell>
+                    <TableCell>${amount}</TableCell>
+                    <TableCell>{row.transactionDate ? formatDate(row.transactionDate) : '—'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenTicket(row)}
+                        disabled={detailLoading}
+                        aria-label="Edit pawn"
                       >
-                        <TableCell className="font-semibold">{c.firstName} {c.lastName}</TableCell>
-                        <TableCell>{c.dateOfBirth || '—'}</TableCell>
-                        <TableCell>{c.idNumber || '—'}</TableCell>
-                      </TableRow>
-                    ))}
-                    {customerResults.length === 0 && !loading && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
-                          No customers yet. Search by name or DOB.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {selectedCustomer && (
-                <div className="border rounded-lg">
-                  <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Tickets for {selectedCustomer.firstName} {selectedCustomer.lastName}</span>
-                    <span className="text-xs">Scope: {scope}</span>
-                  </div>
-                  <Table stickyHeader>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-28">Ticket #</TableHead>
-                        <TableHead className="w-20">Type</TableHead>
-                        <TableHead className="w-28">Status</TableHead>
-                        <TableHead className="w-24">Amount</TableHead>
-                        <TableHead className="w-32">Transaction</TableHead>
-                        <TableHead className="w-16 text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ticketResults.map((row) => {
-                        const amount = row.transactionType === 'PURCHASE'
-                          ? row.purchaseTradeValue ?? 0
-                          : row.amountFinanced ?? 0;
-                        return (
-                          <TableRow key={`${row.controlNumber}-${row.id}`}>
-                            <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                            <TableCell className="uppercase">{row.transactionType}</TableCell>
-                            <TableCell className="capitalize">{(row as CustomerActivePawnTicket).pawnStatus || '—'}</TableCell>
-                            <TableCell>${amount}</TableCell>
-                            <TableCell>{row.transactionDate ? new Date(row.transactionDate).toLocaleDateString() : '—'}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenTicket(row)}
-                                disabled={detailLoading}
-                                aria-label="Edit pawn"
-                              >
-                                {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {ticketResults.length === 0 && !loading && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                            No tickets yet. Search and select a customer.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {ticketResults.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    No tickets yet. Search and select a customer.
+                  </TableCell>
+                </TableRow>
               )}
-            </TabsContent>
-
-            <TabsContent value="ticket" className="space-y-4">
-              <div className="grid grid-cols-12 gap-3 items-end">
-                <div className="col-span-6 space-y-2">
-                  <Label htmlFor="ticket-number">Ticket #</Label>
-                  <Input
-                    id="ticket-number"
-                    value={ticketNumber}
-                    onChange={(e) => setTicketNumber(e.target.value)}
-                    placeholder="Enter ticket number"
-                    disabled={loading}
-                    className="text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !loading) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        searchByTicket();
-                      }
-                    }}
-                  />
-                </div>
-                <div className="col-span-6 flex justify-end gap-2">
-                  <Button variant="outline" onClick={handleClose} disabled={loading}>Close</Button>
-                  <Button onClick={searchByTicket} disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Searching...
-                      </>
-                    ) : 'Find Ticket'}
-                  </Button>
-                </div>
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-            </TabsContent>
-          </Tabs>
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -476,6 +341,7 @@ function PawnsMaintainWorkspaceContent() {
             initialData={transformPawnTicketToFormData(selectedTicket)}
             controlNumber={selectedTicket.controlNumber}
             pawnTicket={selectedTicket}
+            customer={currentCustomer || undefined}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
