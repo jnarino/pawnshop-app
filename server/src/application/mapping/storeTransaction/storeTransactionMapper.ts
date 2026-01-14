@@ -33,7 +33,7 @@ export function toStoreTransactionResponseDto(
         createdAt: i.createdAt.toISOString(),
     }));
 
-    return {
+    const response: StoreTransactionResponseDto = {
         id: tx.id,
         customerId: tx.customerId,
         clerkUserId: tx.clerkUserId,
@@ -53,6 +53,13 @@ export function toStoreTransactionResponseDto(
         tenders,
         items,
     };
+
+    // Add customer info if available (from queries with customer join)
+    if ((tx as any).customer) {
+        response.customer = (tx as any).customer;
+    }
+
+    return response;
 }
 
 /**
