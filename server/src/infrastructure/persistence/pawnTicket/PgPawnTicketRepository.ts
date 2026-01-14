@@ -75,6 +75,11 @@ const SQL_PREVIOUS_ITEMS_BY_CUSTOMER = loadSql(
     'pawnTicket/pawn_ticket_previous_items_by_customer_id'
 );
 
+const SQL_HISTORY_BY_CUSTOMER = loadSql(
+    'queries',
+    'pawnTicket/pawn_ticket_history_by_customer_id'
+);
+
 function mapJsonbToInventoryItem(itemData: any): InventoryItem {
     // Helper to unwrap id/name or fallback to id
     const unwrapLookup = (val: any) => {
@@ -266,6 +271,10 @@ export class PgPawnTicketRepository implements PawnTicketRepository {
         return result.rows.map((row: any) => mapJsonbToInventoryItem(row.item_data));
     }
 
+    async listHistoryByCustomer(customerId: string): Promise<any[]> {
+        const result = await this.db.query(SQL_HISTORY_BY_CUSTOMER, [customerId]);
+        return result.rows;
+    }
 
     async findById(id: string): Promise<PawnTicket | null> {
         const result = await this.db.query(SQL_FIND_BY_ID, [id]);

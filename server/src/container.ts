@@ -39,6 +39,7 @@ import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWo
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { ListPreviousItemsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPreviousItemsByCustomerUseCase';
+import { ListHistoryPawnsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListHistoryPawnsByCustomerUseCase';
 import { GetPawnTicketPaymentsUseCase } from './application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { ListPawnTicketsByControlNumberUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByControlNumberUseCase';
 import { PawnTicketController } from './interfaces/http/controller/pawnTicket/PawnTicketController';
@@ -150,7 +151,7 @@ export async function createApp() {
   const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
   const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo);
   const listPreviousItemsByCustomerUseCase = new ListPreviousItemsByCustomerUseCase(pawnTicketRepo);
-
+  const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
 
   // Store Transaction use-cases
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
@@ -228,6 +229,7 @@ export async function createApp() {
     listPawnTicketsByCustomerUseCase,
     listActivePawnTicketsByCustomerUseCase,
     listPreviousItemsByCustomerUseCase,
+    listHistoryPawnsByCustomerUseCase,
     getPawnTicketPaymentsUseCase,
     getPawnTicketCurrentChargesUseCase,
     payPawnTicketUseCase,

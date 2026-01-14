@@ -87,4 +87,10 @@ export interface PawnTicketRepository {
    * Filters inventory_item by status in ('U','T','V').
    */
   listPreviousItemsByCustomer(customerId: string): Promise<InventoryItem[]>;
+
+  /**
+   * List pawn history for a customer with essential info: ticket dates, amounts, and item descriptions.
+   * Returns simplified history data without enriched lookups.
+   */
+  listHistoryByCustomer(customerId: string): Promise<any[]>;
 }

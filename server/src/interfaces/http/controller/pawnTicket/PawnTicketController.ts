@@ -6,6 +6,7 @@ import { ListPawnTicketsByControlNumberUseCase } from '../../../../application/u
 import { ListPawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { ListPreviousItemsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListPreviousItemsByCustomerUseCase';
+import { ListHistoryPawnsByCustomerUseCase } from '../../../../application/use-case/pawnTicket/query/ListHistoryPawnsByCustomerUseCase';
 import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
 import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
@@ -20,6 +21,7 @@ export class PawnTicketController {
         private readonly listByCustomerUseCase: ListPawnTicketsByCustomerUseCase,
         private readonly listActiveByCustomerUseCase: ListActivePawnTicketsByCustomerUseCase,
         private readonly listPreviousItemsByCustomerUseCase: ListPreviousItemsByCustomerUseCase,
+        private readonly listHistoryPawnsByCustomerUseCase: ListHistoryPawnsByCustomerUseCase,
         private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
         private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
         private readonly payPawnTicketUseCase: PayPawnTicketUseCase,
@@ -171,6 +173,24 @@ export class PawnTicketController {
         try {
             const customerId = req.params.customerId;
             const result = await this.listPreviousItemsByCustomerUseCase.execute({ customerId });
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * List pawn history for a customer with ticket dates, amounts, and item descriptions.
+     * GET /api/pawn-ticket/customer/:customerId/history
+     */
+    listHistoryByCustomer = async (
+        req: AuthenticatedRequest,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const customerId = req.params.customerId;
+            const result = await this.listHistoryPawnsByCustomerUseCase.execute({ customerId });
             return res.json(result);
         } catch (err) {
             return next(err);

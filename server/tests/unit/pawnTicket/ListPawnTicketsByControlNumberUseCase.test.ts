@@ -14,6 +14,7 @@ class MockPawnTicketRepository implements PawnTicketRepository {
   findByDateRange = jest.fn();
   listActiveByCustomer = jest.fn();
   listPreviousItemsByCustomer = jest.fn();
+  listHistoryByCustomer = jest.fn();
   updatePaymentFields = jest.fn();
   findById = jest.fn(async (id: string) => null);
 }
