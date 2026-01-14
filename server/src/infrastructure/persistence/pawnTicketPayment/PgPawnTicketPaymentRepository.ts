@@ -12,7 +12,8 @@ function mapRowToPayment(row: any): PawnTicketPayment {
     pawnTicketId: row.id,
     paymentDate: new Date(row.occurred_at),
     principalPaid: row.amount !== null ? Number(row.amount) : 0,
-    clerkUserId: row.username || null
+    clerkUserId: row.username || null,
+    transactionTypeName: row.type_name || ''
   });
 }
 

@@ -26,68 +26,139 @@ export class GetPawnTicketCurrentChargesUseCase {
         // ---------- 2) payments (asc) ----------
         const raw = await this.getPawnTicketPaymentsUseCase.execute({ pawnTicketId: ticket.id });
 
-        // Aggregate payments by UTC day to neutralize voids on the same day and accumulate multi-month payments cleanly
-        const paymentsByDay = new Map<string, { paymentDate: Date; principalPaid: number }>();
-        for (const p of raw) {
-            if (!p || !p.paymentDate) continue;
-            const d = new Date(p.paymentDate);
-            const key = d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-            const existing = paymentsByDay.get(key);
+        // Sort payments chronologically first
+        const sortedPayments = raw
+            .filter(p => p && p.paymentDate)
+            .map(p => ({
+                paymentDate: new Date(p.paymentDate),
+                principalPaid: p.principalPaid,
+                transactionTypeName: p.transactionTypeName || ''
+            }))
+            .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime());
+
+        // Separate increases (negative amounts that are actual pawn transactions, not payment voids)
+        // from regular payments
+        const isPawnIncrease = (p: typeof sortedPayments[0]) => {
+            return p.principalPaid < 0 && 
+                   (p.transactionTypeName === 'PAWN (loan cash out)' || 
+                    p.transactionTypeName === 'PAWN DEFAULTED (status)');
+        };
+        
+        const increases = sortedPayments.filter(isPawnIncrease);
+        const chargePays = sortedPayments.filter(p => !isPawnIncrease(p));
+
+        // For charge payments (including voids), aggregate by day to handle voids
+        const chargePaymentsByDay = new Map<string, { paymentDate: Date; principalPaid: number; transactionTypeName: string }>();
+        for (const p of chargePays) {
+            const key = p.paymentDate.toISOString().slice(0, 10);
+            const existing = chargePaymentsByDay.get(key);
             if (existing) {
                 existing.principalPaid += p.principalPaid;
             } else {
-                // Keep the actual timestamp for ordering so same-day payments after createdDate are retained
-                paymentsByDay.set(key, { paymentDate: d, principalPaid: p.principalPaid });
+                chargePaymentsByDay.set(key, { ...p });
             }
         }
 
-        const payments = Array.from(paymentsByDay.values())
-            .filter(p => p.principalPaid !== 0) // drop fully voided days
+        const aggregatedChargePays = Array.from(chargePaymentsByDay.values())
+            .filter(p => p.principalPaid !== 0);
+
+        // Combine increases and aggregated charge payments, then sort
+        const payments = [...increases, ...aggregatedChargePays]
             .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime());
 
-        const increases = payments.filter(p => p.principalPaid < 0);    // negative = increase
-        const chargePays = payments.filter(p => p.principalPaid > 0);   // positive = monthly charge payment
-
         // ---------- 3) initial pawn date and anchor ----------
-        // Determine the starting point: use createdDate (if sane), else transactionDate, else first activity
+        // Determine the starting point for charge calculations
+        // Use the ORIGINAL pawn date for calculating total periods owed
+        // Re-pawn is only used to determine current pawn amount
         const created = ticket.createdDate ? new Date(ticket.createdDate) : undefined;
         const createdIsSane = created && created.getUTCFullYear() >= 2000;
+        
+        // Find the last re-pawn (PAWN DEFAULTED with negative amount)
+        const lastRepawn = increases
+            .filter(p => p.transactionTypeName === 'PAWN DEFAULTED (status)')
+            .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())[0];
+        
         const firstChargePayDate = chargePays.length ? new Date(chargePays[0].paymentDate) : undefined;
         const firstIncreaseDate = increases.length ? new Date(increases[0].paymentDate) : undefined;
 
-        const initialPawnDate =
-            (createdIsSane ? created! : firstIncreaseDate) ??
-            (ticket.transactionDate ? new Date(ticket.transactionDate) :
+        // Use createdDate for initial pawn date (not re-pawn date)
+        const initialPawnDate = (createdIsSane ? created! : firstIncreaseDate) ??
+              (ticket.transactionDate ? new Date(ticket.transactionDate) :
                 (firstChargePayDate ?? new Date(referenceDate)));
 
         // ---------- 4) compute due dates and periods ----------
-        const daysFromStart = Math.max(0, Math.floor((referenceDate.getTime() - initialPawnDate.getTime()) / dayMs));
+        // Normalize to UTC midnight for consistent day counting
+        const initialPawnDateNorm = new Date(Date.UTC(
+            initialPawnDate.getUTCFullYear(),
+            initialPawnDate.getUTCMonth(),
+            initialPawnDate.getUTCDate()
+        ));
+        const referenceDateNorm = new Date(Date.UTC(
+            referenceDate.getUTCFullYear(),
+            referenceDate.getUTCMonth(),
+            referenceDate.getUTCDate()
+        ));
+        
+        const daysFromStart = Math.max(0, Math.floor((referenceDateNorm.getTime() - initialPawnDateNorm.getTime()) / dayMs));
         const periodsElapsedToRef = Math.floor(daysFromStart / 30);
-        const lastDueDate = addDays(initialPawnDate, 30 * periodsElapsedToRef);
-        const daysSinceLastDue = Math.max(0, Math.min(30, Math.floor((referenceDate.getTime() - lastDueDate.getTime()) / dayMs)));
+        const lastDueDate = addDays(initialPawnDateNorm, 30 * periodsElapsedToRef);
+        const daysSinceLastDue = Math.max(0, Math.min(30, Math.floor((referenceDateNorm.getTime() - lastDueDate.getTime()) / dayMs)));
 
         // ---------- 5) track pawn amount over time and calculate periods paid ----------
         const periodsDueAt = (date: Date) => {
-            const elapsedDays = Math.max(0, Math.floor((date.getTime() - initialPawnDate.getTime()) / dayMs));
+            // Normalize payment date to midnight UTC for consistent day counting
+            const dateNorm = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+            const elapsedDays = Math.max(0, Math.floor((dateNorm.getTime() - initialPawnDateNorm.getTime()) / dayMs));
             const elapsedPeriods = Math.floor(elapsedDays / 30);
-            const lastDue = addDays(initialPawnDate, 30 * elapsedPeriods);
-            const daysSince = Math.max(0, Math.min(30, Math.floor((date.getTime() - lastDue.getTime()) / dayMs)));
+            const lastDue = addDays(initialPawnDateNorm, 30 * elapsedPeriods);
+            const daysSince = Math.max(0, Math.min(30, Math.floor((dateNorm.getTime() - lastDue.getTime()) / dayMs)));
             return elapsedPeriods + (daysSince > 0 ? 1 : 0);
         };
 
         // Process all payments chronologically to track running pawn amount and periods paid
-        // If there are increases, start from 0 and add them; otherwise use amountFinanced
-        let runningPawnAmount = increases.length > 0 ? 0 : (typeof ticket.amountFinanced === 'number' ? ticket.amountFinanced : 0);
+        // If there's a re-pawn, only consider the last increase (re-pawn amount)
+        // Otherwise if there are increases, start from 0 and add them; otherwise use amountFinanced
+        
+        // Check if we have any history transactions (increases or re-pawns)
+        const hasHistory = payments.some(p => p.principalPaid < 0);
+        
+        // Initialize running pawn amount
+        // If we have history, start at 0 and let the transaction log build it up
+        // If no history found (legacy), start with amountFinanced
+        let runningPawnAmount = hasHistory ? 0 : (typeof ticket.amountFinanced === 'number' ? ticket.amountFinanced : 0);
         let periodsPaid = 0;
 
         for (const payment of payments) {
-            if (payment.paymentDate.getTime() < initialPawnDate.getTime()) continue;
-            if (payment.paymentDate.getTime() > referenceDate.getTime()) break;
+            // Skip payments before initialPawnDate
+            if (payment.paymentDate.getTime() < initialPawnDate.getTime()) {
+                continue;
+            }
+            
+            // Include payments on or before the reference date
+            // Compare dates only (not time) to include all payments made on the reference date
+            const paymentDay = new Date(payment.paymentDate.toISOString().slice(0, 10));
+            const referenceDay = new Date(referenceDate.toISOString().slice(0, 10));
+            if (paymentDay.getTime() > referenceDay.getTime()) break;
 
+            // Handle Increases and Re-pawns (Negative Principal)
             if (payment.principalPaid < 0) {
-                // Increase: add to pawn amount
-                runningPawnAmount += Math.abs(payment.principalPaid);
-            } else if (payment.principalPaid > 0) {
+                if (payment.transactionTypeName === 'PAWN DEFAULTED (status)') {
+                    // Re-pawn: This resets/sets the principal amount (e.g. recovery re-pawn)
+                    runningPawnAmount = Math.abs(payment.principalPaid);
+                } else {
+                    // Regular Increase (loan cash out): Add to principal
+                    runningPawnAmount += Math.abs(payment.principalPaid);
+                }
+                continue;
+            }
+
+            // Skip recovery payments (positive PAWN DEFAULTED payments - these are paying off the old pawn, not the new one)
+            if (payment.transactionTypeName === 'PAWN DEFAULTED (status)' && payment.principalPaid > 0) {
+                continue;
+            }
+
+            // Process charge payments
+            if (payment.principalPaid > 0) {
                 // Charge payment: calculate periods based on current pawn amount
                 const monthlyAtPayment = round2(periodicRate * runningPawnAmount);
                 if (monthlyAtPayment <= 0) continue;
@@ -96,8 +167,12 @@ export class GetPawnTicketCurrentChargesUseCase {
                 const outstanding = Math.max(0, dueSoFar - periodsPaid);
                 if (outstanding === 0) continue;
 
-                const paymentPeriods = Math.min(Math.floor(payment.principalPaid / monthlyAtPayment), outstanding);
-                periodsPaid += paymentPeriods;
+                // Handle partial payments strictly? No, floor it.
+                // But ensure we don't divide by zero if runningPawnAmount is somehow 0
+                if (monthlyAtPayment > 0) {
+                    const paymentPeriods = Math.min(Math.floor(payment.principalPaid / monthlyAtPayment), outstanding);
+                    periodsPaid += paymentPeriods;
+                }
             }
         }
 
@@ -117,11 +192,17 @@ export class GetPawnTicketCurrentChargesUseCase {
         // ---------- 7) current charges & redemption ----------
 
         // Special rule: if maturity is <= 60 days from initialPawnDate, always charge full period(s)
+        // BUT: this early window logic does NOT apply if there's been a re-pawn
         let currentCharges = 0;
         let redemptionAmount = 0;
         const maturityDate = ticket.maturityDate ? new Date(ticket.maturityDate) : undefined;
-        const maturityDays = maturityDate ? Math.floor((maturityDate.getTime() - initialPawnDate.getTime()) / dayMs) : undefined;
-        const withinEarlyWindow = maturityDays !== undefined && maturityDays <= 60 && !!maturityDate && maturityDate.getTime() >= referenceDate.getTime();
+        const maturityDateNorm = maturityDate ? new Date(Date.UTC(
+            maturityDate.getUTCFullYear(),
+            maturityDate.getUTCMonth(),
+            maturityDate.getUTCDate()
+        )) : undefined;
+        const maturityDays = maturityDateNorm ? Math.floor((maturityDateNorm.getTime() - initialPawnDateNorm.getTime()) / dayMs) : undefined;
+        const withinEarlyWindow = !lastRepawn && maturityDays !== undefined && maturityDays <= 60 && !!maturityDateNorm && maturityDateNorm.getTime() >= referenceDateNorm.getTime();
         if (withinEarlyWindow) {
             // If <= 30 days, charge 1 full period; if >30 and <=60, charge 2 full periods ONLY if more than 30 days have elapsed
             let forcedPeriods = 1;

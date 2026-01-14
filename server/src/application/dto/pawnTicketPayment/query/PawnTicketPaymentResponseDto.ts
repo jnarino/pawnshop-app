@@ -3,4 +3,5 @@ export interface PawnTicketPaymentResponseDto {
   paymentDate: string;
   principalPaid: number;
   clerkUserId: string | null;
+  transactionTypeName: string;
 }
