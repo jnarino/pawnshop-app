@@ -19,6 +19,16 @@ function hasTimeComponent(raw: string): boolean {
   return /[T ]\d{1,2}:\d{2}/.test(s);
 }
 
+/**
+ * Check if a date is at exactly midnight (00:00:00.000) in UTC
+ */
+function isMidnight(date: Date): boolean {
+  return date.getUTCHours() === 0 && 
+         date.getUTCMinutes() === 0 && 
+         date.getUTCSeconds() === 0 && 
+         date.getUTCMilliseconds() === 0;
+}
+
 function parseBoundary(raw: string, kind: 'from' | 'to'): Date {
   const s = raw.trim();
   const d = new Date(s);
@@ -30,10 +40,13 @@ function parseBoundary(raw: string, kind: 'from' | 'to'): Date {
   // If no explicit time, clamp to full-day bounds
   if (!hasTimeComponent(s)) {
     if (kind === 'from') {
-      d.setHours(0, 0, 0, 0);
+      d.setUTCHours(0, 0, 0, 0);
     } else {
-      d.setHours(23, 59, 59, 999);
+      d.setUTCHours(23, 59, 59, 999);
     }
+  } else if (kind === 'to' && isMidnight(d)) {
+    // If 'to' date has time but it's midnight, treat it as end of that day
+    d.setUTCHours(23, 59, 59, 999);
   }
 
   return d;
