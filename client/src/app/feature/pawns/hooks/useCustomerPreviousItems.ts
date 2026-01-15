@@ -26,30 +26,52 @@ export const useCustomerPreviousItems = (customerId: string | undefined): UseCus
             const itemsList = await pawnTicketApi.getPreviousItemsByCustomer(customerId);
 
             const allItems: InventoryItemDraft[] = itemsList.map((item, index) => {
-                const attributes = item.attributes || {};
+                const attributes = (item.attributes || {}) as any;
 
-                if (index === 1) {
-                    console.log({ item });
-                }
+                const brand = item.brand;
+                const brandId = typeof brand === 'object' && brand !== null ? (brand as any).id : '';
+                const brandName = (typeof brand === 'object' && brand !== null ? (brand as any).name : (typeof brand === 'string' ? brand : '')).replace(/'$/, '').trim();
+
+                const colorObj = item.colorId;
+                const colorIdVal = typeof colorObj === 'object' && colorObj !== null ? (colorObj as any).id : (typeof colorObj === 'string' ? colorObj : '');
+                const colorNameVal = typeof colorObj === 'object' && colorObj !== null ? (colorObj as any).name : '';
+
+                const sizeLengthVal = typeof attributes.sizeLength === 'object' && attributes.sizeLength !== null
+                    ? attributes.sizeLength.id
+                    : attributes.sizeLength;
+
+                const rawUnit = attributes.weightUnit || '';
+                const weightUnit = rawUnit.toUpperCase() === 'GRM' ? 'Grams' : rawUnit;
 
                 return {
                     id: item.id || crypto.randomUUID(),
                     type: item.inventoryCategory?.id || '',
                     categoryName: item.inventoryCategory?.name || 'Unknown',
-                    subCategoryName: item.inventorySubcategory?.name || 'Unknown',
+                    subcategoryName: item.inventorySubcategory?.name || 'Unknown',
                     subcategoryId: item.inventorySubcategory?.id || '',
                     description: item.itemDescription || '',
-                    brand: item.brand,
-                    color: item.colorId,
+                    brandId: brandId,
+                    brandName: brandName,
+                    brand: brandName,
+                    color: colorIdVal,
+                    colorName: colorNameVal,
                     model: item.model,
                     serial: item.serialNumber,
                     quantity: String(item.quantity || 1),
                     amount: String(item.priceAmount || 0),
+                    resale: String(item.resale || ''),
+                    minResale: String(item.minResale || ''),
+                    replace: String(item.itemReplace || ''),
+                    condition: item.itemCondition || '',
                     status: item.status || 'P',
                     ownerNumber: item.inventoryNumber || '',
                     metal: attributes.metal,
                     karat: attributes.karat,
-                    weight: String(attributes.weight || ''),
+                    style: attributes.style,
+                    gender: attributes.gender,
+                    sizeLength: sizeLengthVal,
+                    weightUnit: weightUnit,
+                    weight: String(item.extra?.weight || attributes.weight || ''),
                     stones: (item.extra?.stones as any[]) || [],
                 };
             });

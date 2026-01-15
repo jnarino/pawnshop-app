@@ -63,13 +63,29 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
         />
       </div>
 
-      {brands.length > 0 && (
+      {brands.length > 0 ? (
         <BrandSelect
           value={draft.brandId || ''}
           options={brands}
           onChange={handleBrandChange}
           disabled={disabled}
         />
+      ) : (
+        <div className="space-y-1 col-span-3">
+          <Label className="text-xs font-semibold">
+            Brand <span className="text-red-600">*</span>
+          </Label>
+          <Input
+            value={draft.brandName || draft.brand || ''}
+            onChange={(e) => {
+              updateField('brandName', e.target.value);
+              updateField('brand', e.target.value);
+            }}
+            placeholder="ENTER BRAND"
+            className="h-8 text-xs uppercase"
+            disabled={disabled}
+          />
+        </div>
       )}
 
       {/* Row 2: Model */}

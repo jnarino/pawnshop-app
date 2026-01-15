@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLookup } from '@/app/shared/hooks/useLookup';
 import type { LookupTypeName } from '@/app/shared/types/lookup';
