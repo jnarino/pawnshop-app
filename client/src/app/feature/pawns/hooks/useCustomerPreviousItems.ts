@@ -25,23 +25,30 @@ export const useCustomerPreviousItems = (customerId: string | undefined): UseCus
         try {
             const itemsList = await pawnTicketApi.getPreviousItemsByCustomer(customerId);
 
-            const allItems: InventoryItemDraft[] = itemsList.map(item => {
+            const allItems: InventoryItemDraft[] = itemsList.map((item, index) => {
                 const attributes = item.attributes || {};
+
+                if (index === 1) {
+                    console.log({ item });
+                }
 
                 return {
                     id: item.id || crypto.randomUUID(),
-                    type: 'Item',
+                    type: item.inventoryCategory?.id || '',
                     categoryName: item.inventoryCategory?.name || 'Unknown',
+                    subCategoryName: item.inventorySubcategory?.name || 'Unknown',
+                    subcategoryId: item.inventorySubcategory?.id || '',
                     description: item.itemDescription || '',
-                    brandName: (typeof item.brand === 'object' ? item.brand?.name : item.brand) || '',
-                    model: item.model || '',
-                    serial: item.serialNumber || '',
+                    brand: item.brand,
+                    color: item.colorId,
+                    model: item.model,
+                    serial: item.serialNumber,
                     quantity: String(item.quantity || 1),
                     amount: String(item.priceAmount || 0),
                     status: item.status || 'P',
                     ownerNumber: item.inventoryNumber || '',
-                    metal: (attributes.metal as any)?.name,
-                    karat: (attributes.karat as any)?.name,
+                    metal: attributes.metal,
+                    karat: attributes.karat,
                     weight: String(attributes.weight || ''),
                     stones: (item.extra?.stones as any[]) || [],
                 };

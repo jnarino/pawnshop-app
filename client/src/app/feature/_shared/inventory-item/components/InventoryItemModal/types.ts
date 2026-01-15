@@ -1,4 +1,4 @@
-import type { Stone } from './stones/types';
+import type { LookupTypeStones, Stone } from './stones/types';
 
 export interface ScrappedItem {
   inventoryNumber?: string;
@@ -19,16 +19,16 @@ export interface InventoryItemDraft {
   brand?: string;
   model?: string;
   serial?: string;
-  color?: string;
+  color?: LookupTypeStones;
   colorName?: string;
   amount?: string;
   quantity?: string;
-  metal?: string;
-  karat?: string;
+  metal?: LookupTypeStones;
+  karat?: LookupTypeStones;
   weight?: string;
   weightUnit?: string;
-  gender?: string;
-  style?: string;
+  gender?: LookupTypeStones;
+  style?: LookupTypeStones;
   sizeLength?: string;
   description?: string;
   resale?: string;

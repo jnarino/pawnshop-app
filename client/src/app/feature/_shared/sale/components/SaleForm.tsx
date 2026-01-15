@@ -242,8 +242,6 @@ export function SaleForm({
     updateFormData({ [key]: value });
   }, [updateFormData]);
 
-  console.log({ items: formData.items });
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>

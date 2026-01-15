@@ -65,7 +65,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
 
       {brands.length > 0 && (
         <BrandSelect
-          value={draft.brandId || ''}
+          value={draft.brand || ''}
           options={brands}
           onChange={handleBrandChange}
           disabled={disabled}

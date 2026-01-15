@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface BrandSelectProps {
-    readonly value: string;
+    readonly value: { id: string, name: string };
     readonly options: CategoryOption[];
     readonly onChange: (value: string) => void;
     readonly disabled?: boolean;
@@ -33,7 +33,7 @@ export const BrandSelect = React.memo(function BrandSelect({
             <Label className="text-xs font-semibold">
                 Brand <span className="text-red-600">*</span>
             </Label>
-            <Select value={value} onValueChange={onChange} disabled={disabled}>
+            <Select value={value.id} onValueChange={onChange} disabled={disabled}>
                 <SelectTrigger className="h-8 text-xs uppercase">
                     <SelectValue placeholder="SELECT BRAND..." />
                 </SelectTrigger>

@@ -31,8 +31,8 @@ export function CategoryFields({
         <Label className="text-xs font-semibold">
           Category <span className="text-red-600">*</span>
         </Label>
-        <Select 
-          value={draft.type} 
+        <Select
+          value={draft.type}
           onValueChange={handleCategoryChange}
           disabled={isLoading || disabled}
         >
@@ -59,8 +59,8 @@ export function CategoryFields({
           Type <span className="text-red-600">*</span>
         </Label>
         {subcategories.length > 0 ? (
-          <Select 
-            value={draft.subcategoryId || ''} 
+          <Select
+            value={draft.subcategoryId || ''}
             onValueChange={handleSubcategoryChange}
             disabled={disabled}
           >

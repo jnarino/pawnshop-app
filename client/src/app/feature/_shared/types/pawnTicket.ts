@@ -9,7 +9,7 @@ export interface PawnTicketItem {
   brand?: string | { id: string; name: string };
   model?: string;
   serialNumber?: string;
-  colorId?: string;
+  colorId?: string | { id: string; name: string };
   itemCondition?: string;
   ownerMark?: string | null;
   itemDescription?: string;
