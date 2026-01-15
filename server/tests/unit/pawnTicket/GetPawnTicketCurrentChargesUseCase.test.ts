@@ -350,5 +350,63 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             redemptionAmount: 600
 
         });
+    });
+
+    it('handles redemption amount (should be 450 not 375)', async () => {
+        const mockTicket = {
+            id: '0eb665bf-63c1-44b0-a178-4e37f1793cc6',
+            controlNumber: 'PAWN-117448',
+            transactionType: 'PAWN' as const,
+            customerId: '68edf3f9-17bf-49a6-8e4e-e6036f6111fc',
+            customer: { firstName: '', lastName: '' },
+            clerkUserId: '',
+            amountFinanced: 300,
+            originalPawnAmount: 300,
+            periodicRate: 0.25,
+            apr: 304.17,
+            purchaseTradeValue: null,
+            transactionDate: '2025-12-15T16:13:00.000Z',
+            maturityDate: '2026-01-15T00:00:00.000Z',
+            defaultDate: '2026-02-13T00:00:00.000Z',
+            createdDate: '2025-10-17T13:33:00.000Z',
+            pawnStatus: 'P' as const,
+            itemIds: [],
+            items: []
+        };
+
+        const payments = [
+            { 
+                pawnTicketId: "0eb665bf-63c1-44b0-a178-4e37f1793cc6",
+                paymentDate: "2025-12-15T16:13:14.000Z",
+                principalPaid: 75,
+                clerkUserId: "JN",
+                transactionTypeName: "PAWN PAYMENT (interest/principal)"
+            },
+            {
+                pawnTicketId: "0eb665bf-63c1-44b0-a178-4e37f1793cc6",
+                paymentDate: "2025-10-17T13:33:22.000Z",
+                principalPaid: -300,
+                clerkUserId: "JL",
+                transactionTypeName: "PAWN (loan cash out)"
+            }
+        ];
+
+        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        paymentsUseCase.execute.mockResolvedValue(payments as any);
+
+        const result = await useCase.execute({ 
+            controlNumber: 'PAWN-117448', 
+            // Current Date from prompt: January 15, 2026
+            referenceDate: new Date('2026-01-15T00:00:00.000Z') 
+        });
+
+        expect(result).toEqual({
+            pawnTicketId: '0eb665bf-63c1-44b0-a178-4e37f1793cc6',
+            currentCharges: 150,
+            pawnAmount: 300,
+            periodsBehind: 2,
+            redemptionAmount: 450
         });
     });
+
+});
