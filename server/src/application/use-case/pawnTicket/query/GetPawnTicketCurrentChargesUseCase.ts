@@ -215,7 +215,16 @@ export class GetPawnTicketCurrentChargesUseCase {
             currentCharges = round2(periodsBehind * monthly);
             if (periodsBehind > 0) {
                 const prorated = round2(daily * daysSinceLastDue);
-                redemptionAmount = round2(pawnAmount + (periodsBehind - 1) * monthly + prorated);
+
+                // Redemption Logic:
+                // See docs/PAWN_REDEMPTION_LOGIC.md for detailed explanation.
+                // Fixes discrepancy where exact 30-day boundaries resulted in lower redemption than current charges.
+                
+                if (daysSinceLastDue === 0 && periodsBehind > 0) {
+                     redemptionAmount = round2(pawnAmount + periodsBehind * monthly);
+                } else {
+                    redemptionAmount = round2(pawnAmount + (periodsBehind - 1) * monthly + prorated);
+                }
             } else {
                 redemptionAmount = round2(pawnAmount);
             }
