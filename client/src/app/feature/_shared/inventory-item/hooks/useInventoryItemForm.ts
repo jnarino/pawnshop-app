@@ -30,34 +30,42 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
         if (initial.subcategoryId && initial.subcategoryName) {
           setSubcategories([{ id: initial.subcategoryId, name: initial.subcategoryName }]);
         }
-        if (initial.brandId && initial.brandName) {
-          setBrands([{ id: initial.brandId, name: initial.brandName }]);
+        if (initial.brandId && (initial.brandName || initial.brand)) {
+          const brandName = (initial.brandName || (typeof initial.brand === 'string' ? initial.brand : initial.brand?.name) || '').trim();
+          setBrands([{ id: initial.brandId, name: brandName }]);
         }
       }
       return;
     }
 
     let cancelled = false;
-    
+
     const loadCategoriesAndInitialData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Load root categories
         const rootCategoriesData = await getRootCategories();
         if (cancelled) return;
         setRootCategories(rootCategoriesData);
-        
+
         // For MODIFY mode with initial data, pre-load subcategories and brands
         if (mode === ViewMode.MODIFY && initial?.type) {
           const [subcategoriesData, brandsData] = await Promise.all([
             getSubcategories(initial.type),
             getBrands(initial.type)
           ]);
-          
+
           if (cancelled) return;
           setSubcategories(subcategoriesData);
-          setBrands(brandsData);
+
+          // Ensure initial brand is in the list even if missing from API
+          let finalBrands = brandsData;
+          if (initial.brandId && !brandsData.find(b => b.id === initial.brandId)) {
+            const brandName = (initial.brandName || (typeof initial.brand === 'string' ? initial.brand : initial.brand?.name) || 'Selected Brand').trim();
+            finalBrands = [...brandsData, { id: initial.brandId, name: brandName }];
+          }
+          setBrands(finalBrands);
         }
       } catch (err) {
         if (!cancelled) {
@@ -71,7 +79,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     };
 
     loadCategoriesAndInitialData();
-    
+
     return () => {
       cancelled = true;
     };
@@ -94,14 +102,14 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     }
 
     let cancelled = false;
-    
+
     const loadSubcategoriesAndBrands = async () => {
       try {
         const [subcategoriesData, brandsData] = await Promise.all([
           getSubcategories(draft.type),
           getBrands(draft.type)
         ]);
-        
+
         if (!cancelled) {
           setSubcategories(subcategoriesData);
           setBrands(brandsData);
@@ -118,7 +126,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     };
 
     loadSubcategoriesAndBrands();
-    
+
     return () => {
       cancelled = true;
     };
@@ -152,13 +160,14 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
 
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
-    
+
     // Don't uppercase IDs, description, or fields that store lookup IDs
-    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action', 'style', 'stones'];
+    // Don't uppercase IDs, description, or fields that store lookup IDs
+    const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action', 'style', 'stones', 'brandId', 'subcategoryId'];
     if (typeof value === 'string' && !noUppercaseFields.includes(field)) {
       processedValue = value.toUpperCase();
     }
-    
+
     setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 

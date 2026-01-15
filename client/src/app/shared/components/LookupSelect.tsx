@@ -1,10 +1,11 @@
+import { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLookup } from '@/app/shared/hooks/useLookup';
 import type { LookupTypeName } from '@/app/shared/types/lookup';
 
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
-  readonly value: { id: string; name: string } | undefined;
+  readonly value: string | { id: string; name: string } | undefined;
   readonly onChange: (value: string, displayValue?: any) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
@@ -28,6 +29,18 @@ export function LookupSelect({
 }: LookupSelectProps) {
   const { options, isLoading } = useLookup(typeName);
 
+  const selectedId = useMemo(() => {
+    const rawId = typeof value === 'string' ? value : value?.id;
+    if (!rawId) return '';
+
+    // If it's a valid ID in options, use it
+    if (options.some(opt => opt.id === rawId)) return rawId;
+
+    // If not, try to match by name (case-insensitive)
+    const match = options.find(opt => opt.value.trim().toUpperCase() === rawId.trim().toUpperCase());
+    return match?.id ?? '';
+  }, [value, options]);
+
   if (isLoading) {
     return <div className="h-8 flex items-center text-xs text-gray-500">Loading...</div>;
   }
@@ -35,12 +48,12 @@ export function LookupSelect({
   const handleValueChange = (selectedId: string) => {
     const option = options.find(opt => opt.id === selectedId);
     if (option) {
-      onChange(selectedId, { id: option.id, name: option.value });
+      onChange(selectedId, option.value);
     }
   };
 
   return (
-    <Select value={value?.id ?? ''} onValueChange={handleValueChange} required={required} disabled={disabled}>
+    <Select value={selectedId} onValueChange={handleValueChange} required={required} disabled={disabled}>
       <SelectTrigger className={`h-8 text-xs ${className}`}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
