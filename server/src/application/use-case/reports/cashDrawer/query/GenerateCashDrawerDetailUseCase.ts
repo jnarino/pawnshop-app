@@ -129,7 +129,7 @@ export class GenerateCashDrawerDetailUseCase {
 
             const amt = record.amount;
 
-            if (type === 'RETAIL SALE' || type === 'SALE') {
+            if (type === 'RETAIL SALE' || type === 'SALE' || type === 'VOIDED SALE') {
                 sales += amt;
             } else if (type.includes('LAYAWAY')) {
                 layaways += amt;
