@@ -50,6 +50,7 @@ import { PullPawnTicketItemsToInventoryUseCase } from './application/use-case/pa
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
 import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { CreateInventoryAttributeValueUseCase } from './application/use-case/inventory/command/CreateInventoryAttributeValueUseCase';
 import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
 import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { CreateInventoryCategoryUseCase } from './application/use-case/inventory/command/CreateInventoryCategoryUseCase';
@@ -144,6 +145,7 @@ export async function createApp() {
   // Inventory Attribute use-cases
   const getAllInventoryAttributeTypesUseCase = new GetAllInventoryAttributeTypesUseCase(inventoryAttributeRepo);
   const getInventoryAttributeValuesByTypeUseCase = new GetInventoryAttributeValuesByTypeUseCase(inventoryAttributeRepo);
+  const createInventoryAttributeValueUseCase = new CreateInventoryAttributeValueUseCase(inventoryAttributeRepo);
 
 
   // Pawn Ticket use-cases  
@@ -220,7 +222,8 @@ export async function createApp() {
 
   const inventoryAttributeController = new InventoryAttributeController(
     getAllInventoryAttributeTypesUseCase,
-    getInventoryAttributeValuesByTypeUseCase
+    getInventoryAttributeValuesByTypeUseCase,
+    createInventoryAttributeValueUseCase
   );
 
   const payPawnTicketUseCase = new PayPawnTicketUseCase(

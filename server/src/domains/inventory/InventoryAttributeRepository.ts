@@ -11,4 +11,9 @@ export interface InventoryAttributeRepository {
    * Get all attribute values for a specific type ID
    */
   findValuesByTypeId(attributeTypeId: string): Promise<InventoryAttributeValue[]>;
+
+  /**
+   * Create a new attribute value
+   */
+  createValue(attributeValue: InventoryAttributeValue): Promise<InventoryAttributeValue>;
 }
