@@ -1,5 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { InventoryCategory } from '../../../domains/inventory/InventoryCategory';
+import { InventorySubCategory } from '../../../domains/inventory/InventorySubCategory';
 import { InventoryCategoryRepository } from '../../../domains/inventory/InventoryCategoryRepository';
 import { loadSql } from '../../db/sqlLoader';
 
@@ -30,10 +31,28 @@ const SQL_EXISTS_BY_CODE = loadSql(
     'queries',
     'inventory/inventory_category_exists_by_code'
 );
+const SQL_SUBCATEGORY_EXISTS_BY_CODE = loadSql(
+    'queries',
+    'inventory/inventory_subcategory_exists_by_code'
+);
+const SQL_SUBCATEGORY_CREATE = loadSql(
+    'commands',
+    'inventory/inventory_subcategory_create'
+);
 
 function mapRowToInventoryCategory(row: any): InventoryCategory {
     return new InventoryCategory({
         id: row.id,
+        name: row.name,
+        code: row.code,
+        isActive: row.is_active
+    });
+}
+
+function mapRowToInventorySubCategory(row: any): InventorySubCategory {
+    return new InventorySubCategory({
+        id: row.id,
+        inventoryCategoryId: row.inventory_category_id,
         name: row.name,
         code: row.code,
         isActive: row.is_active
@@ -57,6 +76,22 @@ export class PgInventoryCategoryRepository
             category.isActive ?? true
         ]);
         return mapRowToInventoryCategory(result.rows[0]);
+    }
+
+    async existsSubCategoryByCode(code: string): Promise<boolean> {
+        const result = await this.db.query(SQL_SUBCATEGORY_EXISTS_BY_CODE, [code]);
+        return (result.rowCount ?? 0) > 0;
+    }
+
+    async createSubCategory(subCategory: InventorySubCategory): Promise<InventorySubCategory> {
+        const result = await this.db.query(SQL_SUBCATEGORY_CREATE, [
+            subCategory.id,
+            subCategory.inventoryCategoryId,
+            subCategory.name,
+            subCategory.code,
+            subCategory.isActive ?? true
+        ]);
+        return mapRowToInventorySubCategory(result.rows[0]);
     }
 
     async getSubcategoriesGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]> {

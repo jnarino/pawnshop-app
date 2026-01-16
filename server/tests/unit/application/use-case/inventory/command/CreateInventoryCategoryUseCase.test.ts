@@ -14,6 +14,8 @@ describe('CreateInventoryCategoryUseCase', () => {
             getSubcategoriesGivenCategoryRoot: jest.fn(),
             getBrandsGivenCategoryRoot: jest.fn(),
             getCategoryBySubcategoryId: jest.fn(),
+            existsSubCategoryByCode: jest.fn(),
+            createSubCategory: jest.fn(),
         };
         useCase = new CreateInventoryCategoryUseCase(mockRepo);
     });

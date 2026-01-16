@@ -54,6 +54,7 @@ import { CreateInventoryAttributeValueUseCase } from './application/use-case/inv
 import { GetRootCategoriesUseCase } from './application/use-case/inventory/query/GetRootCategoriesUseCase';
 import { GetSubCategoriesUseCase } from './application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { CreateInventoryCategoryUseCase } from './application/use-case/inventory/command/CreateInventoryCategoryUseCase';
+import { CreateInventorySubCategoryUseCase } from './application/use-case/inventory/command/CreateInventorySubCategoryUseCase';
 import { ListPawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase';
 import { ListStoreTransactionsByCustomerUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByCustomerUseCase';
 import { ListStoreTransactionsByDateRangeUseCase } from './application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
@@ -141,6 +142,7 @@ export async function createApp() {
   const getBrandsByCategoryRootUseCase = new GetBrandsByCategoryRootUseCase(inventoryCategoryRepo);
   const getSubcategoriesByCategoryUseCase = new GetSubCategoriesUseCase(inventoryCategoryRepo);
   const createInventoryCategoryUseCase = new CreateInventoryCategoryUseCase(inventoryCategoryRepo);
+  const createInventorySubCategoryUseCase = new CreateInventorySubCategoryUseCase(inventoryCategoryRepo);
 
   // Inventory Attribute use-cases
   const getAllInventoryAttributeTypesUseCase = new GetAllInventoryAttributeTypesUseCase(inventoryAttributeRepo);
@@ -217,7 +219,8 @@ export async function createApp() {
     getRootCategoriesUseCase,
     getSubcategoriesByCategoryUseCase,
     getBrandsByCategoryRootUseCase,
-    createInventoryCategoryUseCase
+    createInventoryCategoryUseCase,
+    createInventorySubCategoryUseCase
   );
 
   const inventoryAttributeController = new InventoryAttributeController(
