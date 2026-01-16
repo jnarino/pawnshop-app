@@ -35,8 +35,8 @@ export class PgCashDrawerReportRepository implements CashDrawerReportRepository 
             remarks: row.remarks,
             paymentMethod: row.payment_method,
             balance: 0, // Will be calculated in use case
-            principalComponent: row.principal_component ? Number(row.principal_component) : undefined,
-            interestComponent: row.interest_component ? Number(row.interest_component) : undefined,
+            principalComponent: (row.principal_component !== null && row.principal_component !== undefined) ? Number(row.principal_component) : undefined,
+            interestComponent: (row.interest_component !== null && row.interest_component !== undefined) ? Number(row.interest_component) : undefined,
         }));
     }
 }
