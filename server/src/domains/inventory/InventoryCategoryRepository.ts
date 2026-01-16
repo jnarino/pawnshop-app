@@ -30,4 +30,8 @@ export interface InventoryCategoryRepository {
    * @returns The parent category or null if not found
    */
   getCategoryBySubcategoryId(subcategoryId: string): Promise<InventoryCategory | null>;
+
+  existsByCode(code: string): Promise<boolean>;
+
+  create(category: InventoryCategory): Promise<InventoryCategory>;
 }

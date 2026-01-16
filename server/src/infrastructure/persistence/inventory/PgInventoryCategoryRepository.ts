@@ -22,17 +22,42 @@ const SQL_GET_CATEGORY_BY_SUBCATEGORY_ID = loadSql(
     'queries',
     'inventory/inventory_category_get_by_subcategory_id'
 );
+const SQL_CREATE = loadSql(
+    'commands',
+    'inventory/inventory_category_create'
+);
+const SQL_EXISTS_BY_CODE = loadSql(
+    'queries',
+    'inventory/inventory_category_exists_by_code'
+);
 
 function mapRowToInventoryCategory(row: any): InventoryCategory {
     return new InventoryCategory({
         id: row.id,
-        name: row.name
+        name: row.name,
+        code: row.code,
+        isActive: row.is_active
     });
 }
 
 export class PgInventoryCategoryRepository
     implements InventoryCategoryRepository {
     constructor(private readonly db: DbClient) { }
+
+    async existsByCode(code: string): Promise<boolean> {
+        const result = await this.db.query(SQL_EXISTS_BY_CODE, [code]);
+        return (result.rowCount ?? 0) > 0;
+    }
+
+    async create(category: InventoryCategory): Promise<InventoryCategory> {
+        const result = await this.db.query(SQL_CREATE, [
+            category.id,
+            category.name,
+            category.code,
+            category.isActive ?? true
+        ]);
+        return mapRowToInventoryCategory(result.rows[0]);
+    }
 
     async getSubcategoriesGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]> {
         const result = await this.db.query(SQL_GET_SUBCATEGORIES, [categoryId]);
