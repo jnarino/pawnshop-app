@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const http = require('http');
 const { Server } = require("socket.io");
 const path = require('path');
@@ -138,8 +139,8 @@ app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
 
     log(`Using backup file at: ${backupPath} (User provided: ${req.file ? req.file.originalname : path.basename(backupPath)})`);
 
-    // 1. Restore
     try {
+        // 1. Restore
         log('Restoring SQL Server...', 'step');
         const restoreSuccess = await restoreSqlServer(backupPath, env);
         if (!restoreSuccess) throw new Error('Restore Failed');
@@ -151,18 +152,23 @@ app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
         if (!migrateSuccess) throw new Error('Migration Scripts Failed');
 
         log('Migration Complete!', 'success');
-
-        // Cleanup uploaded file
-        if (req.file) {
-            try { fs.unlinkSync(backupPath); } catch (e) {
-                log(`Failed to delete uploaded file ${backupPath}: ${e.message}`, 'warn');
-            }
-        }
-
         res.json({ success: true });
+
     } catch (e) {
         log(e.message, 'error');
         res.status(500).json({ error: e.message });
+    } finally {
+        // Cleanup uploaded file
+        if (req.file) {
+            try { 
+                if (fs.existsSync(backupPath)) {
+                    fs.unlinkSync(backupPath); 
+                    log('Cleaned up uploaded file.', 'info');
+                }
+            } catch (e) {
+                log(`Failed to delete uploaded file ${backupPath}: ${e.message}`, 'warn');
+            }
+        }
     }
 });
 
