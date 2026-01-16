@@ -139,12 +139,12 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
         ...DEFAULT_ITEM,
         ...initial,
         condition: initial.condition || '',
-        gender: initial.gender || '',
+        gender: initial.gender,
         weightUnit: initial.weightUnit || 'Grams'
       } : {
         ...DEFAULT_ITEM,
         condition: '',
-        gender: '',
+        gender: undefined,
         weightUnit: 'Grams'
       };
       setDraft(formData);
@@ -182,7 +182,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       brandId: '',
       brandName: '',
       sub1: '',
-      brand: ''
+      brand: undefined
     }));
     setSubcategories([]);
     setBrands([]);
@@ -197,8 +197,8 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       sub1: subcategory?.name || '',
       brandId: '',
       brandName: '',
-      brand: '',
-      style: ''
+      brand: undefined,
+      style: undefined
     }));
   }, [subcategories]);
 
@@ -208,7 +208,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       ...prev,
       brandId,
       brandName: brand?.name || '',
-      brand: brand?.name || ''
+      brand: brand
     }));
   }, [brands]);
 
@@ -227,6 +227,8 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     e.preventDefault();
     setError(null);
 
+    console.log('draft', draft);
+
     if (!draft.type.trim()) {
       setError('Type is required');
       return;
@@ -237,7 +239,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       return;
     }
 
-    if (!draft.brandId?.trim()) {
+    if (!draft.brand?.id?.trim()) {
       setError('Brand is required');
       return;
     }
@@ -247,7 +249,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       return;
     }
 
-    if (isJewelry && (!draft.metal || !draft.karat || !draft.weight)) {
+    if (isJewelry && (!draft.metal?.id?.trim() || !draft.karat?.id.trim() || !draft.weight)) {
       setError('Metal, Karat and Weight are required for jewelry');
       return;
     }

@@ -45,9 +45,9 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     karat: item.attributes?.karat,
     weight: extractId(item.extra?.weight),
     weightUnit: extractId(item.extra?.weightUnit) || 'Grams',
-    gender: item.extra?.gender,
+    gender: item.attributes?.gender,
     style: item.attributes?.style,
-    sizeLength: extractId(item.extra?.size),
+    sizeLength: item.attributes?.sizeLength,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stones: transformStones(item.extra?.stones as any),
   }));

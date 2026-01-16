@@ -61,12 +61,12 @@ const inventoryItemToDraft = (item: InventoryItem): InventoryItemDraft => {
         ownerNumber: item.ownerMark || '',
         description: item.itemDescription || '',
         // Jewelry attributes (UUIDs from lookup)
-        metal: attributes.metal?.id || '',
-        karat: attributes.karat?.id || '',
-        style: attributes.style?.id || '',
+        metal: attributes.metal,
+        karat: attributes.karat,
+        style: attributes.style,
         // Extra fields
-        gender: attributes.gender?.id || '',
-        sizeLength: attributes.sizeLength?.id || '',
+        gender: attributes.gender,
+        sizeLength: attributes.sizeLength,
         weight: String(extra.weight || ''),
         weightUnit: String(extra.weightUnit || 'Grams'),
         // Stones

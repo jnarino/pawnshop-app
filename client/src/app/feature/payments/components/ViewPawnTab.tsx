@@ -17,12 +17,6 @@ interface ViewPawnTabProps {
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
-  const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
-    if (!brand) return '';
-    if (typeof brand === 'object' && brand.name) return brand.name;
-    if (typeof brand === 'string') return brand;
-    return '';
-  };
 
   const transformedItems: InventoryItemDraft[] = (pawnTicket.items || []).map((item) => ({
     id: item.id,
@@ -45,9 +39,9 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     karat: item.attributes?.karat,
     weight: extractId(item.extra?.weight),
     weightUnit: extractId(item.extra?.weightUnit) || 'Grams',
-    gender: item.extra?.gender,
+    gender: item.attributes?.gender,
     style: item.attributes?.style,
-    sizeLength: extractId(item.extra?.size),
+    sizeLength: item.attributes?.size,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stones: transformStones(item.extra?.stones as any),
   }));

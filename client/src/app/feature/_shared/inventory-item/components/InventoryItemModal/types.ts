@@ -1,4 +1,5 @@
-import type { LookupTypeStones, Stone } from './stones/types';
+import { Lookup } from '@/app/core/api/pawnTicketApi';
+import type { Stone } from './stones/types';
 
 export interface ScrappedItem {
   inventoryNumber?: string;
@@ -16,20 +17,20 @@ export interface InventoryItemDraft {
   brandId?: string;
   brandName?: string;
   sub1?: string;
-  brand?: string | { id: string, name: string };
+  brand?: Lookup;
   model?: string;
   serial?: string;
-  color?: string | { id: string; name: string };
+  color?: Lookup;
   colorName?: string;
   amount?: string;
   quantity?: string;
-  metal?: string | { id: string; name: string };
-  karat?: string | { id: string; name: string };
+  metal?: Lookup;
+  karat?: Lookup;
   weight?: string;
   weightUnit?: string;
-  gender?: string | { id: string; name: string };
-  style?: string | { id: string; name: string };
-  sizeLength?: string | { id: string; name: string };
+  gender?: Lookup;
+  style?: Lookup;
+  sizeLength?: Lookup;
   description?: string;
   resale?: string;
   replace?: string;
@@ -47,6 +48,9 @@ export interface InventoryItemDraft {
   minResale?: string;
   scrappedIntoInvItem?: ScrappedItem[];
   sourceItemId?: string;
+  inventoryItem?: any;
+  priceEach?: number;
+
 }
 
 export const DEFAULT_ITEM: InventoryItemDraft = {

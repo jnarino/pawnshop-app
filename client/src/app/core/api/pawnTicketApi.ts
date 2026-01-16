@@ -113,11 +113,11 @@ export type Extra = {
 };
 
 export type Attributes = {
-  karat?: Lookup | null;
-  metal?: Lookup | null;
-  style?: Lookup | null;
-  gender?: Lookup | null;
-  sizeLength?: Lookup | null;
+  karat?: Lookup;
+  metal?: Lookup;
+  style?: Lookup;
+  gender?: Lookup;
+  sizeLength?: Lookup;
   [key: string]: unknown;
 };
 
@@ -129,10 +129,10 @@ export type InventoryItem = {
   status: string;
   quantity: number;
 
-  brand: Lookup | null;
+  brand?: Lookup;
   model: string | null;
   serialNumber: string | null;
-  colorId: Lookup | null;
+  colorId?: Lookup;
   itemCondition: string | null;
   ownerMark: string | null;
   itemDescription: string | null;
