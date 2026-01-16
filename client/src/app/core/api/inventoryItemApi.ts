@@ -1,4 +1,5 @@
 import { http } from './http';
+import { Attributes, Extra, Lookup } from './pawnTicketApi';
 
 export interface InventoryItem {
   id: string;
@@ -35,10 +36,10 @@ export interface InventoryItemApiResponse {
   inventoryCategory?: { id: string; name: string };
   status?: string;
   quantity?: number;
-  brand?: { id: string; name: string } | null;
+  brand?: Lookup;
   model?: string | null;
   serialNumber?: string | null;
-  colorId?: string | null;
+  colorId?: Lookup;
   itemCondition?: string | null;
   ownerMark?: string | null;
   itemDescription?: string | null;
@@ -46,8 +47,8 @@ export interface InventoryItemApiResponse {
   resale?: number | null;
   minResale?: number | null;
   itemReplace?: number | null;
-  extra?: Record<string, unknown>;
-  attributes?: Record<string, unknown>;
+  extra?: Extra;
+  attributes?: Attributes;
 }
 
 export interface UpdateInventoryItemPayload {

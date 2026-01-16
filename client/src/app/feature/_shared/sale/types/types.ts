@@ -1,5 +1,4 @@
-import type { InventoryItemDraft } from '../components/InventoryItemModal';
-
+import type { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 export type FormMode = 'CREATE' | 'VIEW';
 
 export interface PawnDraft {
