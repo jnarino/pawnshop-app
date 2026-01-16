@@ -136,10 +136,9 @@ function SalesMaintainWorkspaceContent() {
             </TableHeader>
             <TableBody>
               {sales.map((row) => {
-                const customerName = row.customer
-                  ? `${row.customer.lastName}, ${row.customer.firstName}`
-                  : row.customerId;
-
+                const customerName = row.customer?.id
+                  ? `${row.customer.lastName || ''}, ${row.customer.firstName || ''}`
+                  : row.customerId ? row.customerId : '';
                 return (
                   <TableRow key={`${row.controlNumber}-${row.id}`}>
                     <TableCell className="font-semibold">{row.controlNumber}</TableCell>

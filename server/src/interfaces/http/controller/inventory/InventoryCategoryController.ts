@@ -4,12 +4,17 @@ import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { GetBrandsByCategoryRootUseCase } from '../../../../application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetRootCategoriesUseCase } from '../../../../application/use-case/inventory/query/GetRootCategoriesUseCase';
 import { GetSubCategoriesUseCase } from '../../../../application/use-case/inventory/query/GetSubCategoriesUseCase';
+import { CreateInventoryCategoryUseCase } from '../../../../application/use-case/inventory/command/CreateInventoryCategoryUseCase';
+import { CreateInventorySubCategoryUseCase } from '../../../../application/use-case/inventory/command/CreateInventorySubCategoryUseCase';
+
 export class InventoryCategoryController {
     constructor(
 
         private readonly getRootCategoriesUseCase: GetRootCategoriesUseCase,
         private readonly getSubCategoriesUseCase: GetSubCategoriesUseCase,
-        private readonly getBrandsByCategoryRootUseCase: GetBrandsByCategoryRootUseCase
+        private readonly getBrandsByCategoryRootUseCase: GetBrandsByCategoryRootUseCase,
+        private readonly createInventoryCategoryUseCase: CreateInventoryCategoryUseCase,
+        private readonly createInventorySubCategoryUseCase: CreateInventorySubCategoryUseCase
 
     ) { }
 
@@ -52,6 +57,32 @@ export class InventoryCategoryController {
             const { categoryId } = req.params;
             const result = await this.getBrandsByCategoryRootUseCase.execute(categoryId);
             return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Create a new category
+     * POST /api/category
+     */
+    create = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.createInventoryCategoryUseCase.execute(req.body);
+            return res.status(201).json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Create a new subcategory
+     * POST /api/category/subcategory
+     */
+    createSubCategory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.createInventorySubCategoryUseCase.execute(req.body);
+            return res.status(201).json(result);
         } catch (err) {
             return next(err);
         }

@@ -6,9 +6,19 @@ import { loadSql } from '../../db/sqlLoader';
 
 const sqlFindAllTypes = loadSql('queries', 'inventory/inventory_attribute_types_find_all');
 const sqlFindValuesByType = loadSql('queries', 'inventory/inventory_attribute_values_by_type');
+const sqlCreateValue = loadSql('commands', 'inventory/inventory_attribute_value_create');
 
 export class PgInventoryAttributeRepository implements InventoryAttributeRepository {
   constructor(private readonly pool: Pool) {}
+
+  async createValue(attributeValue: InventoryAttributeValue): Promise<InventoryAttributeValue> {
+    const result = await this.pool.query(sqlCreateValue, [
+      attributeValue.id,
+      attributeValue.attributeTypeId,
+      attributeValue.value
+    ]);
+    return this.mapValueRow(result.rows[0]);
+  }
 
   async findAllTypes(): Promise<InventoryAttributeType[]> {
     const result = await this.pool.query(sqlFindAllTypes);

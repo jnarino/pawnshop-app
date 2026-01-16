@@ -83,7 +83,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
             type="number"
             step="0.25"
             min="0"
-            value={draft.sizeLength || ''}
+            value={typeof draft.sizeLength === 'object' ? draft.sizeLength.name : (draft.sizeLength || '')}
             onChange={(e) => updateField('sizeLength', e.target.value)}
             placeholder="0"
             disabled={disabled}

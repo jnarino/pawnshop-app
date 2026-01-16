@@ -76,5 +76,40 @@ export function createInventoryAttributeRouter(
    */
   router.get('/values/:attributeTypeId', auth, controller.getValuesByType);
 
-  return router;
+/**
+     * @openapi
+     * /api/inventory/attributes/values:
+     *   post:
+     *     tags:
+     *       - Inventory Attributes
+     *     summary: Create new attribute value
+     *     description: Create a new value for a specific attribute type
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - attributeTypeId
+     *               - value
+     *             properties:
+     *               attributeTypeId:
+     *                 type: string
+     *                 format: uuid
+     *               value:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Attribute value created
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/values', auth, controller.createValue);
+
+    return router;
 }

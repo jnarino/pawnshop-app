@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { CategoryOption } from '@/app/core/api/categoryApi';
 
 interface BrandSelectProps {
-    readonly value: string;
+    readonly value: string | { id: string, name: string } | undefined;
     readonly options: CategoryOption[];
     readonly onChange: (value: string) => void;
     readonly disabled?: boolean;
@@ -16,6 +16,17 @@ export const BrandSelect = React.memo(function BrandSelect({
     onChange,
     disabled = false,
 }: BrandSelectProps) {
+    const selectedId = useMemo(() => {
+        const rawId = typeof value === 'string' ? value : value?.id;
+        if (!rawId) return '';
+
+        // If it's a valid ID in options, use it
+        if (options.some(opt => opt.id === rawId)) return rawId;
+
+        // If not, try to match by name (case-insensitive)
+        const match = options.find(opt => opt.name.trim().toUpperCase() === rawId.trim().toUpperCase());
+        return match?.id ?? '';
+    }, [value, options]);
     // Optimization: If the list is huge, this memo prevents re-mapping on every render
     // unless options actually change.
     // Note: Radix Select can still be heavy with thousands of items.
@@ -33,7 +44,7 @@ export const BrandSelect = React.memo(function BrandSelect({
             <Label className="text-xs font-semibold">
                 Brand <span className="text-red-600">*</span>
             </Label>
-            <Select value={value} onValueChange={onChange} disabled={disabled}>
+            <Select value={selectedId ?? ''} onValueChange={onChange} disabled={disabled}>
                 <SelectTrigger className="h-8 text-xs uppercase">
                     <SelectValue placeholder="SELECT BRAND..." />
                 </SelectTrigger>

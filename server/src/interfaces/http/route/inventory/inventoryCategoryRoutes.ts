@@ -12,6 +12,73 @@ export function createInventoryCategoryRouter(
 
     /**
      * @openapi
+     * /api/category:
+     *   post:
+     *     tags:
+     *       - Inventory Categories
+     *     summary: Create new category
+     *     description: Create a new inventory category with auto-generated unique code
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 description: Name of the category
+     *     responses:
+     *       201:
+     *         description: Category created successfully
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/', auth, controller.create);
+
+    /**
+     * @openapi
+     * /api/category/subcategory:
+     *   post:
+     *     tags:
+     *       - Inventory Categories
+     *     summary: Create new subcategory
+     *     description: Create a new inventory subcategory (requires category ID)
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - inventoryCategoryId
+     *             properties:
+     *               name:
+     *                 type: string
+     *               inventoryCategoryId:
+     *                 type: string
+     *                 format: uuid
+     *     responses:
+     *       201:
+     *         description: Subcategory created successfully
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+     router.post('/subcategory', auth, controller.createSubCategory);
+
+    /**
+     * @openapi
      * /api/category/root:
      *   get:
      *     tags:

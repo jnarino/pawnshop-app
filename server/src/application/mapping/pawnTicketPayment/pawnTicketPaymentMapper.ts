@@ -6,6 +6,7 @@ export function toPawnTicketPaymentResponseDto(payment: PawnTicketPayment): Pawn
     pawnTicketId: payment.pawnTicketId,
     paymentDate: payment.paymentDate.toISOString(),
     principalPaid: payment.principalPaid,
-    clerkUserId: payment.clerkUserId
+    clerkUserId: payment.clerkUserId,
+    transactionTypeName: payment.transactionTypeName
   };
 }

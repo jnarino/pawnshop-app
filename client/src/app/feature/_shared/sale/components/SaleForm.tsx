@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { type InventoryItemDraft } from './InventoryItemModal/types';
+import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { SaleTransactionDetails } from './SaleTransactionDetails';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -242,8 +242,6 @@ export function SaleForm({
     updateFormData({ [key]: value });
   }, [updateFormData]);
 
-  console.log({ items: formData.items });
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -295,7 +293,7 @@ export function SaleForm({
                       className={item.id === editingRowId ? "bg-amber-50 border-l-4 border-amber-500" : ""}
                     >
                       <TableCell>
-                        {item.inventoryItem?.inventoryNumber || item.inventoryNumber}
+                        {item.inventoryItem?.inventoryNumber || item.inventoryNumber || item.controlNumber}
                       </TableCell>
                       <TableCell>{item.description || ''}</TableCell>
                       <TableCell>{item.quantity || 1}</TableCell>
@@ -307,6 +305,7 @@ export function SaleForm({
                             <Button
                               variant="ghost"
                               size="icon"
+                              className='!p-0'
                             >
                               <img
                                 src={packageIcon}

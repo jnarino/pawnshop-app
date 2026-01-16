@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBarcodeScan } from '@/app/shared/hooks/useBarcodeScan';
-import { InventoryItemDraft, DEFAULT_ITEM } from '../components/InventoryItemModal/types';
 import { getRootCategories, getSubcategories, getBrands, CategoryOption } from '@/app/core/api/categoryApi';
+import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
+import { DEFAULT_ITEM } from '@/app/feature/_shared/inventory-item/components/InventoryItemModal/types';
 
 interface UseInventoryItemFormProps {
   open: boolean;
@@ -21,7 +22,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
 
   useEffect(() => {
     let cancelled = false;
-    
+
     const loadRootCategories = async () => {
       try {
         setIsLoading(true);
@@ -41,7 +42,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     };
 
     loadRootCategories();
-    
+
     return () => {
       cancelled = true;
     };
@@ -55,14 +56,14 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     }
 
     let cancelled = false;
-    
+
     const loadSubcategoriesAndBrands = async () => {
       try {
         const [subcategoriesData, brandsData] = await Promise.all([
           getSubcategories(draft.type),
           getBrands(draft.type)
         ]);
-        
+
         if (!cancelled) {
           setSubcategories(subcategoriesData);
           setBrands(brandsData);
@@ -79,7 +80,7 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
     };
 
     loadSubcategoriesAndBrands();
-    
+
     return () => {
       cancelled = true;
     };
@@ -113,13 +114,13 @@ export function useInventoryItemForm({ open, initial, onSave }: UseInventoryItem
 
   const updateField = useCallback((field: keyof InventoryItemDraft, value: any) => {
     let processedValue = value;
-    
+
     // Don't uppercase IDs, description, or fields that store lookup IDs
     const noUppercaseFields = ['description', 'ownerNumber', 'type', 'metal', 'karat', 'gender', 'sizeLength', 'color', 'caliber', 'action'];
     if (typeof value === 'string' && !noUppercaseFields.includes(field)) {
       processedValue = value.toUpperCase();
     }
-    
+
     setDraft(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 

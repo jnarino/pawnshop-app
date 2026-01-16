@@ -129,7 +129,7 @@ export class GenerateCashDrawerDetailUseCase {
 
             const amt = record.amount;
 
-            if (type === 'RETAIL SALE' || type === 'SALE') {
+            if (type === 'RETAIL SALE' || type === 'SALE' || type === 'VOIDED SALE') {
                 sales += amt;
             } else if (type.includes('LAYAWAY')) {
                 layaways += amt;
@@ -179,10 +179,18 @@ export class GenerateCashDrawerDetailUseCase {
         let pawnPayments = 0;
         let pawnRedeems = 0;
 
+        const seenTx = new Set<string>();
+
         for (const record of records) {
             const type = record.transactionType.toUpperCase();
 
             if (this.shouldIgnoreForTotals(type)) continue;
+
+            const txKey = `${record.occurredAt.getTime()}_${record.ticketNumber}_${record.employee}_${record.transactionType}`;
+            if (seenTx.has(txKey)) {
+                continue; // only count once per transaction (ignore multi-tender duplicates)
+            }
+            seenTx.add(txKey);
 
             if (type.includes('BUY')) {
                 buys += record.amount;

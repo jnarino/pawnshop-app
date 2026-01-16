@@ -60,11 +60,10 @@ export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): Inve
     categoryName: item.inventoryCategory?.name || '',
     subcategoryId: item.inventorySubcategory?.id || '',
     subcategoryName: item.inventorySubcategory?.name || '',
-    brandId: item.brand?.id || '',
-    brandName: item.brand?.name || '',
+    brand: item.brand,
     model: item.model || '',
     serial: item.serialNumber || '',
-    color: extractId(item.colorId),
+    color: item.colorId,
     condition: item.itemCondition || '',
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
@@ -73,16 +72,16 @@ export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): Inve
     ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
     // Jewelry attributes (UUIDs from lookup)
-    metal: extractId(attributes.metal),
-    karat: extractId(attributes.karat),
-    style: extractId(attributes.style),
+    metal: attributes.metal,
+    karat: attributes.karat,
+    style: attributes.style,
+    gender: attributes.gender,
+    sizeLength: attributes.sizeLength,
     // Extra fields
-    gender: extractId(extra.gender),
-    sizeLength: extractId(extra.size),
     weight: extractId(extra.weight),
     weightUnit: extractId(extra.weightUnit) || 'Grams',
     // Stones
-    stones: transformStones(extra.stones as Stone[]),
+    stones: transformStones(extra.stones as any[]),
     // Store original data for update
     status: item.status,
     inventoryNumber: item.inventoryNumber,
@@ -98,6 +97,7 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
   if (draft.metal) attributes.metal = draft.metal;
   if (draft.karat) attributes.karat = draft.karat;
   if (draft.style) attributes.style = draft.style;
+  if (draft.gender) attributes.gender = draft.gender;
 
   // Firearm attributes
   if (draft.caliber) attributes.caliber = draft.caliber;
@@ -107,7 +107,6 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
   // Build extra object (weight, weightUnit, gender, size, stones)
   if (draft.weight) extra.weight = draft.weight;
   if (draft.weightUnit) extra.weightUnit = draft.weightUnit;
-  if (draft.gender) extra.gender = draft.gender;
   if (draft.sizeLength) extra.size = draft.sizeLength;
 
   // Build stones array for backend (convert string values to numbers where needed)
@@ -136,7 +135,7 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
     brand: draft.brandId || undefined,
     model: draft.model || undefined,
     serialNumber: draft.serial || undefined,
-    colorId: draft.color || undefined,
+    colorId: draft.color?.id || undefined,
     itemCondition: draft.condition || undefined,
     ownerMark: draft.ownerNumber || undefined,
     itemDescription: draft.description || undefined,

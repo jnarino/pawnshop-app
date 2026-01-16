@@ -31,7 +31,7 @@ LEFT JOIN tender_type AS ttype
   ON ttype.id = stt.tender_type_id
 LEFT JOIN pawn_ticket AS pt
   ON sttype.code = 'PPU'
- AND pt.control_number = st.legacy_ticketnum
+ AND pt.id = st.pawn_ticket_id
 WHERE st.occurred_at > $1::timestamptz
   AND st.occurred_at <  date_trunc('day', $2::timestamptz) + interval '1 day'
   AND sttype.code NOT IN ('T', 'MB','PD')

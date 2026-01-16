@@ -2,11 +2,13 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { GetAllInventoryAttributeTypesUseCase } from '../../../../application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from '../../../../application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
+import { CreateInventoryAttributeValueUseCase } from '../../../../application/use-case/inventory/command/CreateInventoryAttributeValueUseCase';
 
 export class InventoryAttributeController {
   constructor(
     private readonly getAllTypesUseCase: GetAllInventoryAttributeTypesUseCase,
-    private readonly getValuesByTypeUseCase: GetInventoryAttributeValuesByTypeUseCase
+    private readonly getValuesByTypeUseCase: GetInventoryAttributeValuesByTypeUseCase,
+    private readonly createValueUseCase: CreateInventoryAttributeValueUseCase
   ) {}
 
   /**
@@ -32,6 +34,19 @@ export class InventoryAttributeController {
         attributeTypeId: req.params.attributeTypeId
       });
       return res.json(result);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * Create a new attribute value
+   * POST /api/inventory/attributes/values
+   */
+  createValue = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.createValueUseCase.execute(req.body);
+      return res.status(201).json(result);
     } catch (err) {
       return next(err);
     }

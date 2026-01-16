@@ -1,4 +1,5 @@
 import { InventoryCategory } from './InventoryCategory';
+import { InventorySubCategory } from './InventorySubCategory';
 
 export interface InventoryCategoryRepository {
 
@@ -30,4 +31,12 @@ export interface InventoryCategoryRepository {
    * @returns The parent category or null if not found
    */
   getCategoryBySubcategoryId(subcategoryId: string): Promise<InventoryCategory | null>;
+
+  existsByCode(code: string): Promise<boolean>;
+
+  create(category: InventoryCategory): Promise<InventoryCategory>;
+
+  existsSubCategoryByCode(code: string): Promise<boolean>;
+
+  createSubCategory(subCategory: InventorySubCategory): Promise<InventorySubCategory>;
 }
