@@ -85,11 +85,6 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       return new Date(dateStr).toISOString();
     };
 
-    const removeNullish = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
-      return Object.fromEntries(
-        Object.entries(obj).filter(([, v]) => v != null && v !== '')
-      ) as Partial<T>;
-    };
 
     const pawnData = removeNullish({
       customerId: customerId || formData.customerId,
@@ -102,62 +97,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       defaultDate: toISOString(formData.expirationDate),
     });
 
-    const payload = {
-      pawn: pawnData,
-      items: formData.items.map(item => {
-        const attributes = removeNullish({
-          sub1: item.sub1,
-          metal: item.metal,
-          karat: item.karat,
-          weight: item.weight,
-          weightUnit: item.weightUnit,
-          gender: item.gender,
-          style: item.style,
-          sizeLength: item.sizeLength,
-          caliber: item.caliber,
-          action: item.action,
-          barrelLength: item.barrelLength,
-          capacity: item.capacity,
-        });
-
-        // Build stones array for backend (convert string values to numbers where needed)
-        const stones = item.stones?.map(stone => removeNullish({
-          quantity: Number(stone.quantity) || 1,
-          type: stone.type || undefined,
-          shape: stone.shape || undefined,
-          carat: stone.carat ? Number(stone.carat) : undefined,
-          color: stone.color || undefined,
-          weight: stone.weight ? Number(stone.weight) : undefined,
-          length: stone.length ? Number(stone.length) : undefined,
-          width: stone.width ? Number(stone.width) : undefined,
-          clarity: stone.clarity || undefined,
-        }));
-
-        const extra = removeNullish({
-          weight: item.weight,
-          weightUnit: item.weightUnit,
-          stones: stones && stones.length > 0 ? stones : undefined,
-        });
-
-        return removeNullish({
-          inventorySubcategoryId: item.subcategoryId,
-          quantity: Number(item.quantity) || 1,
-          brand: item.brandId,
-          model: item.model,
-          serialNumber: item.serial,
-          itemDescription: item.description,
-          priceAmount: Number(item.amount) || 0,
-          resale: Number(item.resale) || 0,
-          minResale: undefined,
-          itemReplace: item.replace ? Number(item.replace) : undefined,
-          ownerMark: item.ownerNumber,
-          colorId: item.color,
-          itemCondition: item.condition,
-          extra: Object.keys(extra).length > 0 ? extra : undefined,
-          attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
-        });
-      }),
-    };
+    const payload = transformTicketsToPayload(pawnData, formData);
 
     const ticketResponse = await createTicket(payload);
     if (ticketResponse && customer) {
@@ -219,6 +159,71 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
       });
     }
   }, [customerId, createTicket, onTicketCreated, customer, printTransactionForm, buildPrintItems]);
+
+  const removeNullish = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([, v]) => v != null && v !== '')
+    ) as Partial<T>;
+  }; 
+
+  const transformTicketsToPayload = (pawnData: any, formData: any) => {
+    return {
+      pawn: pawnData,
+      items: formData.items.map((item: any) => {
+        const attributes = removeNullish({
+          sub1: item.sub1,
+          metal: item.metal?.id,
+          karat: item.karat?.id,
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          gender: item.gender?.id,
+          style: item.style?.id,
+          sizeLength: item.sizeLength?.id,
+          caliber: item.caliber,
+          action: item.action,
+          barrelLength: item.barrelLength,
+          capacity: item.capacity,
+        });
+
+        // Build stones array for backend (convert string values to numbers where needed)
+        const stones = item.stones?.map((stone: any) => removeNullish({
+          quantity: Number(stone.quantity) || 1,
+          type: stone.type.id || undefined,
+          shape: stone.shape?.id || undefined,
+          carat: stone.carat ? Number(stone.carat) : undefined,
+          color: stone.color?.id || undefined,
+          weight: stone.weight ? Number(stone.weight) : undefined,
+          length: stone.length ? Number(stone.length) : undefined,
+          width: stone.width ? Number(stone.width) : undefined,
+          clarity: stone.clarity?.id || undefined,
+        }));
+
+        const extra = removeNullish({
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          stones: stones && stones.length > 0 ? stones : undefined,
+        });
+
+        return removeNullish({
+          inventorySubcategoryId: item.subcategoryId,
+          quantity: Number(item.quantity) || 1,
+          brand: item.brandId,
+          model: item.model,
+          serialNumber: item.serial,
+          itemDescription: item.description,
+          priceAmount: Number(item.amount) || 0,
+          resale: Number(item.resale) || 0,
+          minResale: undefined,
+          itemReplace: item.replace ? Number(item.replace) : undefined,
+          ownerMark: item.ownerNumber,
+          colorId: item.color?.id,
+          itemCondition: item.condition,
+          extra: Object.keys(extra).length > 0 ? extra : undefined,
+          attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+        });
+      }),
+    }
+  }
 
   return (
     <div className="max-w-[1200px] mx-auto bg-white">

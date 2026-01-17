@@ -10,6 +10,7 @@ export interface PawnItemsTableProps {
     items: InventoryItemDraft[];
     isViewMode: boolean;
     disabled?: boolean;
+    isEditMode?: boolean;
     onView?: (item: InventoryItemDraft) => void;
     onEdit?: (item: InventoryItemDraft) => void;
     onRemove?: (itemId: string) => void;
@@ -23,6 +24,7 @@ export function PawnItemsTable({
     items,
     isViewMode,
     disabled = false,
+    isEditMode = false,
     onView,
     onEdit,
     onRemove,
@@ -74,7 +76,7 @@ export function PawnItemsTable({
                         </TableHead>
                     )}
                     <TableHead sticky className="w-[300px] bg-white z-20">Item</TableHead>
-                    {isViewMode && <TableHead sticky className="bg-white z-20">Status</TableHead>}
+                    {(isViewMode || isEditMode) && <TableHead sticky className="bg-white z-20">Status</TableHead>}
                     <TableHead sticky className="bg-white z-20">Quantity</TableHead>
                     <TableHead sticky className="bg-white z-20">Value</TableHead>
                     <TableHead sticky className="bg-white z-20">Total</TableHead>
@@ -103,7 +105,7 @@ export function PawnItemsTable({
                                 {item.model && <div className="text-sm text-gray-600">Model: {item.model}</div>}
                             </div>
                         </TableCell>
-                        {isViewMode && (
+                        {(isViewMode || isEditMode) && (
                             <TableCell>
                                 <Badge variant="outline">
                                     {item.status === "B" ? "PURCHASED" : item.status === "P" ? "PAWN" : item.status === "U" ? "PICKED UP" : "-"}

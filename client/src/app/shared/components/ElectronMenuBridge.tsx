@@ -89,15 +89,15 @@ export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): Inve
 }
 
 // Map InventoryItemDraft back to API update payload
-function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventoryItemPayload, 'id'> {
+export function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventoryItemPayload, 'id'> {
   const attributes: Record<string, unknown> = {};
   const extra: Record<string, unknown> = {};
 
   // Build attributes for jewelry/firearm
-  if (draft.metal) attributes.metal = draft.metal;
-  if (draft.karat) attributes.karat = draft.karat;
-  if (draft.style) attributes.style = draft.style;
-  if (draft.gender) attributes.gender = draft.gender;
+  if (draft.metal) attributes.metal = draft.metal?.id;
+  if (draft.karat) attributes.karat = draft.karat?.id;
+  if (draft.style) attributes.style = draft.style?.id;
+  if (draft.gender) attributes.gender = draft.gender?.id;
 
   // Firearm attributes
   if (draft.caliber) attributes.caliber = draft.caliber;
@@ -115,14 +115,14 @@ function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateInventor
       const stoneData: Record<string, unknown> = {
         quantity: Number(stone.quantity) || 1,
       };
-      if (stone.type) stoneData.type = stone.type;
-      if (stone.shape) stoneData.shape = stone.shape;
+      if (stone.type) stoneData.type = stone.type?.id;
+      if (stone.shape) stoneData.shape = stone.shape?.id;
       if (stone.carat) stoneData.carat = Number(stone.carat);
-      if (stone.color) stoneData.color = stone.color;
+      if (stone.color) stoneData.color = stone.color?.id;
       if (stone.weight) stoneData.weight = Number(stone.weight);
       if (stone.length) stoneData.length = Number(stone.length);
       if (stone.width) stoneData.width = Number(stone.width);
-      if (stone.clarity) stoneData.clarity = stone.clarity;
+      if (stone.clarity) stoneData.clarity = stone.clarity?.id;
       return stoneData;
     });
     extra.stones = stones;
@@ -203,8 +203,7 @@ export default function ElectronMenuBridge() {
         await updateInventoryItem(draft.id, payload);
       }
       toast.success('Inventory item updated successfully!');
-      setInventoryItemModalOpen(false);
-      setInventoryItem(null);
+      handleCloseInventoryItem();
     } catch (err) {
       console.error('Failed to update inventory item:', err);
       toast.error('Failed to update inventory item');

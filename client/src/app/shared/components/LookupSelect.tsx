@@ -6,7 +6,7 @@ import type { LookupTypeName } from '@/app/shared/types/lookup';
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
   readonly value: string | { id: string; name: string } | undefined;
-  readonly onChange: (value: string, displayValue?: any) => void;
+  readonly onChange: (value: string, displayValue?: any, option?: any) => void;
   readonly placeholder?: string;
   readonly disabled?: boolean;
   readonly required?: boolean;
@@ -31,6 +31,7 @@ export function LookupSelect({
 
   const selectedId = useMemo(() => {
     const rawId = typeof value === 'string' ? value : value?.id;
+    console.log({value, rawId});
     if (!rawId) return '';
 
     // If it's a valid ID in options, use it
@@ -48,7 +49,7 @@ export function LookupSelect({
   const handleValueChange = (selectedId: string) => {
     const option = options.find(opt => opt.id === selectedId);
     if (option) {
-      onChange(selectedId, option.value);
+      onChange(selectedId, option.value, option);
     }
   };
 

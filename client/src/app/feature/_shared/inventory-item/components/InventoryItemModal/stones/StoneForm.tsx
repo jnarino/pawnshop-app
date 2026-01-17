@@ -77,8 +77,8 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.TYPE}
             value={formData.type}
-            onChange={(_, stone) => {
-              updateField('type', stone)
+            onChange={(_, _label, option) => {
+              updateField('type', {...option, name: _label})
             }}
             placeholder="Select type..."
           />
@@ -89,7 +89,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.SHAPE}
             value={formData.shape}
-            onChange={(_, stone) => updateField('shape', stone)}
+            onChange={(_, _label, option) => updateField('shape', {...option, name: _label})}
             placeholder="Select shape..."
           />
         </div>
@@ -111,7 +111,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.COLOR}
             value={formData.color}
-            onChange={(_, stone) => updateField('color', stone)}
+            onChange={(_, _label, option) => updateField('color', {...option, name: _label})}
             placeholder="Select color..."
           />
         </div>
@@ -157,7 +157,7 @@ export function StoneForm({ initialStone, onSubmit, onCancel, disabled }: StoneF
           <LookupSelect
             typeName={LookupTypeName.CLARITY}
             value={formData.clarity}
-            onChange={(_, stone) => updateField('clarity', stone)}
+            onChange={(_, _label, option) => updateField('clarity', {...option, name: _label})}
             placeholder="Select clarity..."
           />
         </div>

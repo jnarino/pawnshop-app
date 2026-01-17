@@ -32,7 +32,6 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
   const isViewMode = mode === ViewMode.VIEW;
   const isPullMode = mode === ViewMode.PULL;
   const isCreateMode = mode === ViewMode.CREATE;
-  console.log('inventory modal', initial);
   const {
     draft,
     error,

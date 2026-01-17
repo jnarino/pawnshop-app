@@ -147,7 +147,13 @@ export const MaintainSearch = ({
                             type="date"
                             value={dateOfBirth}
                             onChange={(e) => setDateOfBirth(e.target.value)}
-
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !loading) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    searchCustomers();
+                                }
+                            }}
                             disabled={loading}
                             className="text-sm"
                         />

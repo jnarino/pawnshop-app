@@ -19,13 +19,14 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
   return (
     <>
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Style</Label>
+        <Label className="text-xs font-semibold">Style<span className="text-red-600">*</span></Label>
         <LookupSelect
           typeName={LookupTypeName.STYLE}
           value={draft.style || ''}
-          onChange={(value) => updateField('style', value)}
+          onChange={(_value, _label, option) => updateField('style', option)}
           placeholder="SELECT STYLE..."
           disabled={disabled}
+          required
         />
       </div>
 
@@ -36,7 +37,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         <LookupSelect
           typeName={LookupTypeName.METAL}
           value={draft.metal || ''}
-          onChange={(value) => handleMetalChange(value)}
+          onChange={(_value, _lable, option) => handleMetalChange(option)}
           placeholder="SELECT METAL..."
           disabled={disabled}
           required
@@ -45,12 +46,12 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
 
       <div className="space-y-1 col-span-3">
         <Label className="text-xs font-semibold">
-          Karat <span className="text-red-600">*</span>
+          Karat
         </Label>
         <LookupSelect
           typeName={LookupTypeName.KARAT}
           value={draft.karat || ''}
-          onChange={(value) => updateField('karat', value)}
+          onChange={(_value, _label, option) => updateField('karat', option)}
           placeholder="SELECT KARAT..."
           disabled={disabled}
           required
@@ -62,34 +63,22 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
         <LookupSelect
           typeName={LookupTypeName.GENDER}
           value={draft.gender || ''}
-          onChange={(value) => updateField('gender', value)}
+          onChange={(_value, _label, option) => updateField('gender', option)}
           placeholder="SELECT..."
           disabled={disabled}
         />
       </div>
 
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Size/Length</Label>
-        {isRing ? (
+        <Label className="text-xs font-semibold">Size/Length <span className="text-red-600">*</span></Label>
           <LookupSelect
             typeName={LookupTypeName.SIZE}
             value={draft.sizeLength || ''}
-            onChange={(value) => updateField('sizeLength', value)}
-            placeholder="RING SIZE..."
+            onChange={(_value, _label, option) => updateField('sizeLength', option)}
+            placeholder="SIZE/LENGTH"
             disabled={disabled}
+            required
           />
-        ) : (
-          <Input
-            type="number"
-            step="0.25"
-            min="0"
-            value={typeof draft.sizeLength === 'object' ? draft.sizeLength.name : (draft.sizeLength || '')}
-            onChange={(e) => updateField('sizeLength', e.target.value)}
-            placeholder="0"
-            disabled={disabled}
-            className="text-xs h-8"
-          />
-        )}
       </div>
 
       <div className="space-y-1 col-span-3">
@@ -103,7 +92,7 @@ export function JewelryFields({ draft, updateField, handleMetalChange, isRing, d
           max="999.99"
           value={draft.weight || ''}
           onChange={(e) => updateField('weight', e.target.value)}
-          placeholder="5.25"
+          placeholder="0.00"
           required
           disabled={disabled}
           className="h-8 text-xs"

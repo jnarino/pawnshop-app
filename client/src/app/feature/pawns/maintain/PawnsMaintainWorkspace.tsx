@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 import { pawnTicketApi, type CustomerActivePawnTicket, type TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
@@ -315,7 +315,7 @@ function PawnsMaintainWorkspaceContent() {
                         disabled={detailLoading}
                         aria-label="Edit pawn"
                       >
-                        {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+                        {detailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </TableCell>
                   </TableRow>

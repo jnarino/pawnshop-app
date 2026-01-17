@@ -301,6 +301,7 @@ export function PawnTicketForm({
               <PawnItemsTable
                 items={formData.items}
                 isViewMode={isViewMode}
+                isEditMode={isEditMode}
                 disabled={disabled}
                 onView={handleViewItem}
                 onEdit={handleEditItem}

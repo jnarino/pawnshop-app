@@ -244,13 +244,13 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       return;
     }
 
-    if (!draft.amount) {
-      setError('Value is required');
+    if (!draft.color?.id) {
+      setError('Color is required');
       return;
     }
 
-    if (isJewelry && (!draft.metal?.id?.trim() || !draft.karat?.id.trim() || !draft.weight)) {
-      setError('Metal, Karat and Weight are required for jewelry');
+    if (isJewelry && (!draft.metal?.id?.trim() || !draft.weight || !draft.gender?.id || !draft.style?.id || !draft.sizeLength)) {
+      setError('Metal, Weight, Gender, Style and Size are required for jewelry');
       return;
     }
 
@@ -263,9 +263,9 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
   }, [draft, isJewelry, onSave]);
 
   // Auto-fill karat when metal changes
-  const handleMetalChange = useCallback((metal: string) => {
-    updateField('metal', metal || '');
-    updateField('karat', '');
+  const handleMetalChange = useCallback((metal: any) => {
+    updateField('metal', metal );
+    updateField('karat', null);
   }, [updateField]);
 
   return {

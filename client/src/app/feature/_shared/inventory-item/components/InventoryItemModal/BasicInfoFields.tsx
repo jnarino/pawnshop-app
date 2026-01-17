@@ -98,16 +98,17 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
 
       {/* Row 2: Color */}
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'}</Label>
+        <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'} <span className="text-red-600">*</span></Label>
         <LookupSelect
           typeName={isFirearm ? LookupTypeName.FINISH : LookupTypeName.COLOR}
           value={draft.color || ''}
-          onChange={(value, option) => {
-            updateField('color', value);
+          onChange={(_value, option, completeOption) => {
+            updateField('color', completeOption);
             updateField('colorName', option?.name);
           }}
           placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."}
           disabled={disabled}
+          required
         />
       </div>
     </>
