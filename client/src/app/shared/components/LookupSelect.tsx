@@ -1,7 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLookup } from '@/app/shared/hooks/useLookup';
 import type { LookupTypeName } from '@/app/shared/types/lookup';
+import { Plus } from 'lucide-react';
+import { Tooltip } from '@/components/ui/tooltip';
+import NewOptionModal from './NewOptionModal';
+import { createAttributeValue } from '@/app/core/api/lookupApi';
 
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
@@ -11,6 +15,7 @@ interface LookupSelectProps {
   readonly disabled?: boolean;
   readonly required?: boolean;
   readonly className?: string;
+  readonly showAddButton?: boolean;
 }
 
 /**
@@ -18,6 +23,7 @@ interface LookupSelectProps {
  * Values are cached in Redux after the first load, preventing duplicate API calls.
  * Use LookupTypeName enum to specify which lookup type to display (e.g., KARAT, METAL, GENDER).
  */
+// ... component ...
 export function LookupSelect({
   typeName,
   value,
@@ -26,25 +32,18 @@ export function LookupSelect({
   disabled = false,
   required = false,
   className = '',
+  showAddButton = false
 }: LookupSelectProps) {
-  const { options, isLoading } = useLookup(typeName);
+  const { options, isLoading, typeId, refreshValues } = useLookup(typeName);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const selectedId = useMemo(() => {
     const rawId = typeof value === 'string' ? value : value?.id;
-    console.log({value, rawId});
     if (!rawId) return '';
-
-    // If it's a valid ID in options, use it
     if (options.some(opt => opt.id === rawId)) return rawId;
-
-    // If not, try to match by name (case-insensitive)
     const match = options.find(opt => opt.value.trim().toUpperCase() === rawId.trim().toUpperCase());
     return match?.id ?? '';
   }, [value, options]);
-
-  if (isLoading) {
-    return <div className="h-8 flex items-center text-xs text-gray-500">Loading...</div>;
-  }
 
   const handleValueChange = (selectedId: string) => {
     const option = options.find(opt => opt.id === selectedId);
@@ -53,18 +52,65 @@ export function LookupSelect({
     }
   };
 
+  const handleConfirmAdd = async (description: string) => {
+    if (!typeId || !description.trim()) return;
+
+    try {
+      const response = await createAttributeValue({
+        value: description,
+        attributeTypeId: typeId
+      });
+      if (response && response.id) {
+        refreshValues();
+        onChange(response.id, response.value, response);
+        setShowAddModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to create new option', error);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="h-8 flex items-center text-xs text-gray-500">Loading...</div>;
+  }
+
   return (
-    <Select value={selectedId} onValueChange={handleValueChange} required={required} disabled={disabled}>
-      <SelectTrigger className={`h-8 text-xs ${className}`}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map(opt => (
-          <SelectItem key={opt.id} value={opt.id} className="text-xs">
-            {opt.value}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <>
+      <div className='flex items-center w-full'>
+        <Select value={selectedId} onValueChange={handleValueChange} required={required} disabled={disabled}>
+          <SelectTrigger className={`flex-1 min-w-0 h-8 text-xs ${className} ${showAddButton ? "rounded-r-none rounded-l-lg" : "rounded-lg"}`}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent showSearch>
+            {options.map(opt => (
+              <SelectItem key={opt.id} value={opt.id} className="text-xs">
+                {opt.value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {showAddButton && (
+          <Tooltip content={`Add ${typeName?.toLowerCase()}`}>
+            <button
+              type="button"
+              className="shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none cursor-pointer flex items-center justify-center hover:bg-muted"
+              disabled={disabled}
+              onClick={() => setShowAddModal(true)}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        )}
+      </div>
+
+      <NewOptionModal
+        open={showAddModal}
+        onCancel={() => setShowAddModal(false)}
+        onConfirm={handleConfirmAdd}
+        title={`Add new ${typeName?.toLowerCase()}`}
+        message="Enter the description for the new option."
+        confirmText="Add"
+      />
+    </>
   );
 }

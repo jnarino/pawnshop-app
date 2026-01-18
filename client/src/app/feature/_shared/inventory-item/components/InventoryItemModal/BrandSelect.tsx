@@ -2,12 +2,14 @@ import React, { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { CategoryOption } from '@/app/core/api/categoryApi';
-
+import { Plus } from 'lucide-react';
+import { Tooltip } from '@/components/ui/tooltip';
 interface BrandSelectProps {
     readonly value: string | { id: string, name: string } | undefined;
     readonly options: CategoryOption[];
     readonly onChange: (value: string) => void;
     readonly disabled?: boolean;
+    readonly showAddButton?: boolean;
 }
 
 export const BrandSelect = React.memo(function BrandSelect({
@@ -15,6 +17,7 @@ export const BrandSelect = React.memo(function BrandSelect({
     options,
     onChange,
     disabled = false,
+    showAddButton = false,
 }: BrandSelectProps) {
     const selectedId = useMemo(() => {
         const rawId = typeof value === 'string' ? value : value?.id;
@@ -44,14 +47,23 @@ export const BrandSelect = React.memo(function BrandSelect({
             <Label className="text-xs font-semibold">
                 Brand <span className="text-red-600">*</span>
             </Label>
-            <Select value={selectedId ?? ''} onValueChange={onChange} disabled={disabled}>
-                <SelectTrigger className="h-8 text-xs uppercase">
-                    <SelectValue placeholder="SELECT BRAND..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {selectItems}
-                </SelectContent>
-            </Select>
+            <div className='flex items-center w-full'>
+                <Select value={selectedId ?? ''} onValueChange={onChange} disabled={disabled}>
+                    <SelectTrigger className={`h-8 text-xs uppercase ${showAddButton ? "rounded-r-none rounded-l-lg" : "rounded-lg"}`}>
+                        <SelectValue placeholder="SELECT BRAND..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {selectItems}
+                    </SelectContent>
+                </Select>
+                {showAddButton && (
+                    <Tooltip content={`Add brand`}>
+                        <button className={`shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"} flex items-center justify-center`} disabled={disabled}>
+                            <Plus className="h-4 w-4" />
+                        </button>
+                    </Tooltip>
+                )}
+            </div>
         </div>
     );
 });

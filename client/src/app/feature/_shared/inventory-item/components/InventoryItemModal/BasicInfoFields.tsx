@@ -68,6 +68,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
           value={draft.brand || ''}
           options={brands}
           onChange={handleBrandChange}
+          showAddButton
           disabled={disabled}
         />
       )}
@@ -108,6 +109,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
           }}
           placeholder={isFirearm ? "SELECT FINISH..." : "SELECT COLOR..."}
           disabled={disabled}
+          showAddButton
           required
         />
       </div>

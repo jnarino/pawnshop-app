@@ -1,4 +1,4 @@
-INSERT INTO inventory_attribute_value (
+INSERT INTO item_attribute_value (
   id,
   attribute_type_id,
   value,

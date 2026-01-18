@@ -81,6 +81,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               handleSubcategoryChange={handleSubcategoryChange}
               updateField={updateField}
               disabled={isViewMode || isPullMode}
+              showAddButton={true}
             />
 
             <BasicInfoFields

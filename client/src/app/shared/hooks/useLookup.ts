@@ -64,11 +64,32 @@ export function useLookup(typeName?: LookupTypeName | string) {
   const isLoading = typeName ? valuesLoading.includes(typeName.toUpperCase()) : typesLoading;
   const isLoaded = typeName ? valuesLoaded.includes(typeName.toUpperCase()) : typesLoaded;
 
+  const typeDefinition = typeName ? types.find(t => t.name.toUpperCase() === typeName.toUpperCase()) : undefined;
+  const typeId = typeDefinition?.id;
+
+  const refreshValues = useCallback(() => {
+    if (typeName) {
+      const upperName = typeName.toUpperCase();
+      if (!typeId) return;
+      (async () => {
+        try {
+          const data = await getAttributeValues(typeId);
+          setValues(upperName, data);
+        } catch (error) {
+          console.error(`Failed to refresh values for ${upperName}`, error);
+        }
+      })();
+    }
+  }, [typeName, typeId, setValues]);
+
+
   return {
     options,
     isLoading,
     isLoaded,
     loadTypes,
-    loadValues
+    loadValues,
+    typeId,
+    refreshValues
   };
 }

@@ -19,3 +19,18 @@ export async function getAttributeTypes(): Promise<AttributeType[]> {
 export async function getAttributeValues(typeId: string): Promise<AttributeValue[]> {
   return http(`/api/inventory/attributes/values/${typeId}`);
 }
+
+export async function createAttributeType(payload: any) {
+  return http(`/api/inventory/attributes/values`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createAttributeValue(payload: any) {
+  return http(`/api/inventory/attributes/values`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
