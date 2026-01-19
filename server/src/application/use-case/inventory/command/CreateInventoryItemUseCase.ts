@@ -52,6 +52,12 @@ export class CreateInventoryItemUseCase {
             }
         );
 
+        let inventoryNumber = dto.inventoryNumber;
+        if (!inventoryNumber) {
+            const nextNum = await this.inventoryItemRepo.getNextInventoryNumber();
+            inventoryNumber = `I-${nextNum}`;
+        }
+
         const item = new InventoryItem({
             id: crypto.randomUUID(),
 
@@ -80,7 +86,7 @@ export class CreateInventoryItemUseCase {
             legacyCategoryDescription: dto.legacyCategoryDescription ?? null,
             legacyBrandColorDescription: dto.legacyBrandColorDescription ?? null,
 
-            inventoryNumber: dto.inventoryNumber ?? null,
+            inventoryNumber: inventoryNumber ?? null,
             lastUpdatedUserId: null, // we can set this from auth context later
 
             createdAt: now,

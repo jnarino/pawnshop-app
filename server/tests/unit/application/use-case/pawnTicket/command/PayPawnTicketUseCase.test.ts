@@ -33,6 +33,7 @@ describe('PayPawnTicketUseCase', () => {
       findByInventoryNumber: jest.fn(),
       findAvailableByInventoryNumber: jest.fn(),
       findBySerialNumber: jest.fn(),
+      getNextInventoryNumber: jest.fn(),
     } as any;
     storeTransactionRepository = {
       createPayment: jest.fn(),
