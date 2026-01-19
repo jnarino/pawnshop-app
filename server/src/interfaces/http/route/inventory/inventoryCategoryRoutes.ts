@@ -163,5 +163,40 @@ export function createInventoryCategoryRouter(
      */
     router.get('/:categoryId/brands', auth, controller.getBrandsByCategoryRoot);
 
+    /**
+     * @openapi
+     * /api/category/brand:
+     *   post:
+     *     tags:
+     *       - Inventory Categories
+     *     summary: Create new brand
+     *     description: Create a new brand for a category
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - inventoryCategoryId
+     *               - name
+     *             properties:
+     *               inventoryCategoryId:
+     *                 type: string
+     *                 format: uuid
+     *               name:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Brand created successfully
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/brand', auth, controller.createBrand);
+
     return router;
 }

@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { InventoryCategory } from '../../../domains/inventory/InventoryCategory';
 import { InventorySubCategory } from '../../../domains/inventory/InventorySubCategory';
+import { InventoryBrand } from '../../../domains/inventory/InventoryBrand';
 import { InventoryCategoryRepository } from '../../../domains/inventory/InventoryCategoryRepository';
 import { loadSql } from '../../db/sqlLoader';
 
@@ -39,6 +40,14 @@ const SQL_SUBCATEGORY_CREATE = loadSql(
     'commands',
     'inventory/inventory_subcategory_create'
 );
+const SQL_BRAND_EXISTS_BY_CODE = loadSql(
+    'queries',
+    'inventory/inventory_brand_exists_by_code'
+);
+const SQL_BRAND_CREATE = loadSql(
+    'commands',
+    'inventory/inventory_brand_create'
+);
 
 function mapRowToInventoryCategory(row: any): InventoryCategory {
     return new InventoryCategory({
@@ -51,6 +60,16 @@ function mapRowToInventoryCategory(row: any): InventoryCategory {
 
 function mapRowToInventorySubCategory(row: any): InventorySubCategory {
     return new InventorySubCategory({
+        id: row.id,
+        inventoryCategoryId: row.inventory_category_id,
+        name: row.name,
+        code: row.code,
+        isActive: row.is_active
+    });
+}
+
+function mapRowToInventoryBrand(row: any): InventoryBrand {
+    return new InventoryBrand({
         id: row.id,
         inventoryCategoryId: row.inventory_category_id,
         name: row.name,
@@ -92,6 +111,22 @@ export class PgInventoryCategoryRepository
             subCategory.isActive ?? true
         ]);
         return mapRowToInventorySubCategory(result.rows[0]);
+    }
+
+    async existsBrandByCode(code: string): Promise<boolean> {
+        const result = await this.db.query(SQL_BRAND_EXISTS_BY_CODE, [code]);
+        return (result.rowCount ?? 0) > 0;
+    }
+
+    async createBrand(brand: InventoryBrand): Promise<InventoryBrand> {
+        const result = await this.db.query(SQL_BRAND_CREATE, [
+            brand.id,
+            brand.inventoryCategoryId,
+            brand.name,
+            brand.code,
+            brand.isActive ?? true
+        ]);
+        return mapRowToInventoryBrand(result.rows[0]);
     }
 
     async getSubcategoriesGivenCategoryRoot(categoryId: string): Promise<InventoryCategory[]> {
