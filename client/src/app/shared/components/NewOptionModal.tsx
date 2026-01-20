@@ -60,7 +60,7 @@ export default function NewOptionModal({
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={() => handleConfirm()}
             className="bg-destructive hover:bg-destructive/90"
             disabled={!value.trim()}
           >

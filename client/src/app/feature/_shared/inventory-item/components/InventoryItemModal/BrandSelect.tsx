@@ -1,23 +1,28 @@
 import React, { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { CategoryOption } from '@/app/core/api/categoryApi';
+import { CategoryOption, createNewBrand } from '@/app/core/api/categoryApi';
 import { Plus } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useNewOptionModal } from '@/app/shared/hooks/useNewOptionModal';
 interface BrandSelectProps {
     readonly value: string | { id: string, name: string } | undefined;
+    readonly categoryId: any;
     readonly options: CategoryOption[];
     readonly onChange: (value: string) => void;
     readonly disabled?: boolean;
     readonly showAddButton?: boolean;
+    readonly loadSubcategoriesAndBrands: () => Promise<void>;
 }
 
 export const BrandSelect = React.memo(function BrandSelect({
     value,
+    categoryId,
     options,
     onChange,
     disabled = false,
     showAddButton = false,
+    loadSubcategoriesAndBrands
 }: BrandSelectProps) {
     const selectedId = useMemo(() => {
         const rawId = typeof value === 'string' ? value : value?.id;
@@ -42,6 +47,30 @@ export const BrandSelect = React.memo(function BrandSelect({
         ));
     }, [options]);
 
+    const handleConfirmAdd = async (name: string) => {
+        if (!categoryId || !name.trim()) return;
+
+        try {
+            const response = await createNewBrand({
+                name,
+                inventoryCategoryId: categoryId
+            });
+            if (response && response.id) {
+                await loadSubcategoriesAndBrands();
+                onChange(response.id);
+            }
+        } catch (error) {
+            console.error('Failed to create new option', error);
+        }
+    };
+
+    const { NewOptionModalWrapper, setShowAddModal } = useNewOptionModal(handleConfirmAdd, "brand");
+
+    const handleOpenModal = (e: any) => {
+        e.preventDefault();
+        setShowAddModal(true)
+    }
+
     return (
         <div className="space-y-1 col-span-3">
             <Label className="text-xs font-semibold">
@@ -58,12 +87,13 @@ export const BrandSelect = React.memo(function BrandSelect({
                 </Select>
                 {showAddButton && (
                     <Tooltip content={`Add brand`}>
-                        <button className={`shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"} flex items-center justify-center`} disabled={disabled}>
+                        <button className={`shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"} flex items-center justify-center`} disabled={disabled} onClick={handleOpenModal}>
                             <Plus className="h-4 w-4" />
                         </button>
                     </Tooltip>
                 )}
             </div>
+            <NewOptionModalWrapper />
         </div>
     );
 });

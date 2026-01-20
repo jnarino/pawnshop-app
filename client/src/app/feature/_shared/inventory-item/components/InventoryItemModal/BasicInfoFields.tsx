@@ -14,9 +14,10 @@ interface BasicInfoFieldsProps {
   readonly disabled?: boolean;
   readonly brands: CategoryOption[];
   readonly handleBrandChange: (brandId: string) => void;
+  readonly loadSubcategoriesAndBrands: () => Promise<void>;
 }
 
-export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, brands, handleBrandChange }: BasicInfoFieldsProps) {
+export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, brands, handleBrandChange, loadSubcategoriesAndBrands }: BasicInfoFieldsProps) {
   return (
     <>
       {/* Row 1: Value (62%) + Qty (38%) combined */}
@@ -65,9 +66,11 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
 
       {brands.length > 0 && (
         <BrandSelect
+          categoryId={draft.type}
           value={draft.brand || ''}
           options={brands}
           onChange={handleBrandChange}
+          loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
           showAddButton
           disabled={disabled}
         />

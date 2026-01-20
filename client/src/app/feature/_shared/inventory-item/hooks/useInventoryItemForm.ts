@@ -85,6 +85,24 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     };
   }, [mode, initial]);
 
+  const loadSubcategoriesAndBrands = async () => {
+    console.log('Loading subcategories and brands...');
+    try {
+      const [subcategoriesData, brandsData] = await Promise.all([
+        getSubcategories(draft.type),
+        getBrands(draft.type)
+      ]);
+      setSubcategories(subcategoriesData);
+      setBrands(brandsData);
+    } catch (err) {
+      setSubcategories([]);
+      setBrands([]);
+      if (err instanceof Error) {
+        console.error('Failed to load subcategories and brands:', err.message);
+      }
+    }
+  };
+
   useEffect(() => {
     if (mode === ViewMode.VIEW) {
       return;
@@ -101,35 +119,8 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       return;
     }
 
-    let cancelled = false;
-
-    const loadSubcategoriesAndBrands = async () => {
-      try {
-        const [subcategoriesData, brandsData] = await Promise.all([
-          getSubcategories(draft.type),
-          getBrands(draft.type)
-        ]);
-
-        if (!cancelled) {
-          setSubcategories(subcategoriesData);
-          setBrands(brandsData);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setSubcategories([]);
-          setBrands([]);
-          if (err instanceof Error) {
-            console.error('Failed to load subcategories and brands:', err.message);
-          }
-        }
-      }
-    };
-
     loadSubcategoriesAndBrands();
 
-    return () => {
-      cancelled = true;
-    };
   }, [draft.type, mode]);
 
   // Initialize form data
@@ -189,7 +180,9 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
   }, [rootCategories]);
 
   const handleSubcategoryChange = useCallback((subcategoryId: string) => {
+    if (!subcategoryId) return;
     const subcategory = subcategories.find(s => s.id === subcategoryId);
+    console.log('handle subcategory change', subcategoryId);
     setDraft(prev => ({
       ...prev,
       subcategoryId,
@@ -264,7 +257,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
 
   // Auto-fill karat when metal changes
   const handleMetalChange = useCallback((metal: any) => {
-    updateField('metal', metal );
+    updateField('metal', metal);
     updateField('karat', null);
   }, [updateField]);
 
@@ -280,6 +273,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     isJewelry,
     isFirearm,
     isRing,
+    loadSubcategoriesAndBrands,
     updateField,
     handleCategoryChange,
     handleSubcategoryChange,

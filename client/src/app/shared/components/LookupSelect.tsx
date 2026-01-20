@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
 import NewOptionModal from './NewOptionModal';
 import { createAttributeValue } from '@/app/core/api/lookupApi';
+import { useNewOptionModal } from '../hooks/useNewOptionModal';
 
 interface LookupSelectProps {
   readonly typeName: LookupTypeName;
@@ -35,7 +36,6 @@ export function LookupSelect({
   showAddButton = false
 }: LookupSelectProps) {
   const { options, isLoading, typeId, refreshValues } = useLookup(typeName);
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const selectedId = useMemo(() => {
     const rawId = typeof value === 'string' ? value : value?.id;
@@ -70,6 +70,13 @@ export function LookupSelect({
     }
   };
 
+  const { NewOptionModalWrapper, setShowAddModal } = useNewOptionModal(handleConfirmAdd, typeName?.toLocaleLowerCase());
+
+  const handleOpenModal = (e: any) => {
+    e.preventDefault();
+    setShowAddModal(true)
+  }
+
   if (isLoading) {
     return <div className="h-8 flex items-center text-xs text-gray-500">Loading...</div>;
   }
@@ -95,22 +102,14 @@ export function LookupSelect({
               type="button"
               className="shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none cursor-pointer flex items-center justify-center hover:bg-muted"
               disabled={disabled}
-              onClick={() => setShowAddModal(true)}
+              onClick={handleOpenModal}
             >
               <Plus className="h-4 w-4" />
             </button>
           </Tooltip>
         )}
       </div>
-
-      <NewOptionModal
-        open={showAddModal}
-        onCancel={() => setShowAddModal(false)}
-        onConfirm={handleConfirmAdd}
-        title={`Add new ${typeName?.toLowerCase()}`}
-        message="Enter the description for the new option."
-        confirmText="Add"
-      />
+      <NewOptionModalWrapper />
     </>
   );
 }

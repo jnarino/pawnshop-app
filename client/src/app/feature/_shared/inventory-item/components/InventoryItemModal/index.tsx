@@ -50,6 +50,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
     handleBrandChange,
     handleSubmit,
     handleMetalChange,
+    loadSubcategoriesAndBrands
   } = useInventoryItemForm({ open, initial, onSave: onSave || (() => { }), mode });
 
   const isDisabled = draft.itemStatus === 'I' ?
@@ -82,6 +83,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               updateField={updateField}
               disabled={isViewMode || isPullMode}
               showAddButton={true}
+              loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
             />
 
             <BasicInfoFields
@@ -90,6 +92,7 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               isFirearm={isFirearm}
               brands={brands}
               handleBrandChange={handleBrandChange}
+              loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
               disabled={isViewMode || isPullMode}
             />
 
