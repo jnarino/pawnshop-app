@@ -13,7 +13,7 @@ interface BasicInfoFieldsProps {
   readonly isFirearm: boolean;
   readonly disabled?: boolean;
   readonly brands: CategoryOption[];
-  readonly handleBrandChange: (brandId: string) => void;
+  readonly handleBrandChange: (brandId: string, explicitBrand?: CategoryOption) => void;
   readonly loadSubcategoriesAndBrands: () => Promise<void>;
 }
 

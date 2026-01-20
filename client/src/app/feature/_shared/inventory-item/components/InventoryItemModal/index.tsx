@@ -16,19 +16,21 @@ import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
 import { ViewMode } from '@/app/feature/_shared/types/viewMode';
 import type { InventoryItemDraft } from './types';
 import { DollarInput } from '@/components/ui/dollar-input';
+import { PriceFields } from './PriceFields';
 
 export type { InventoryItemDraft } from './types';
 
 interface InventoryItemModalProps {
   readonly mode?: ViewMode;
   readonly open: boolean;
+  readonly isInventory?: boolean;
   readonly initial?: InventoryItemDraft | null;
   readonly onCancel: () => void;
   readonly onSave?: (item: InventoryItemDraft) => void;
   readonly scrapItems?: { itemDescription: string; inventoryNumber: string }[];
 }
 
-export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
+export function InventoryItemModal({ mode = ViewMode.CREATE, open, isInventory, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
   const isViewMode = mode === ViewMode.VIEW;
   const isPullMode = mode === ViewMode.PULL;
   const isCreateMode = mode === ViewMode.CREATE;
@@ -93,8 +95,16 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, initial, onCa
               brands={brands}
               handleBrandChange={handleBrandChange}
               loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
-              disabled={isViewMode || isPullMode}
+              disabled={isViewMode || isPullMode || !draft.type}
             />
+
+            {isInventory && (
+              <PriceFields
+                draft={draft}
+                updateField={updateField}
+                disabled={isViewMode || isPullMode}
+              />
+            )}
 
             {!isJewelry && !isFirearm && <div></div>}
 

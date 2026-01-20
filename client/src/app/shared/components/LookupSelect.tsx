@@ -98,12 +98,7 @@ export function LookupSelect({
         </Select>
         {showAddButton && (
           <Tooltip content={`Add ${typeName?.toLowerCase()}`}>
-            <button
-              type="button"
-              className="shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none cursor-pointer flex items-center justify-center hover:bg-muted"
-              disabled={disabled}
-              onClick={handleOpenModal}
-            >
+            <button className={`shrink-0 !p-0 h-8 w-8 border border-l-0 rounded-r-lg rounded-l-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"} flex items-center justify-center`} disabled={disabled} onClick={handleOpenModal}>
               <Plus className="h-4 w-4" />
             </button>
           </Tooltip>

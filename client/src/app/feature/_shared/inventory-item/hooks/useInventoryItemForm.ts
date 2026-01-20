@@ -35,7 +35,6 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
           setBrands([{ id: initial.brandId, name: brandName }]);
         }
       }
-      return;
     }
 
     let cancelled = false;
@@ -195,8 +194,9 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
     }));
   }, [subcategories]);
 
-  const handleBrandChange = useCallback((brandId: string) => {
-    const brand = brands.find(b => b.id === brandId);
+  const handleBrandChange = useCallback((brandId: string, explicitBrand?: CategoryOption) => {
+    if (!brandId) return;
+    const brand = explicitBrand || brands.find(b => b.id === brandId);
     setDraft(prev => ({
       ...prev,
       brandId,

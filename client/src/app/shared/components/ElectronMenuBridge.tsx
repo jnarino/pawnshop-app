@@ -68,6 +68,7 @@ export function mapApiToInventoryItemDraft(item: InventoryItemApiResponse): Inve
     quantity: String(item.quantity || 1),
     amount: String(item.priceAmount || 0),
     resale: String(item.resale || 0),
+    minResale: String(item.minResale || 0),
     replace: String(item.itemReplace || 0),
     ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
@@ -141,6 +142,7 @@ export function mapDraftToUpdatePayload(draft: InventoryItemDraft): Omit<UpdateI
     itemDescription: draft.description || undefined,
     priceAmount: Number.parseFloat(draft.amount || '0') || 0,
     resale: Number.parseFloat(draft.resale || '0') || 0,
+    minResale: Number.parseFloat(draft.minResale || '0') || 0,
     itemReplace: Number.parseFloat(draft.replace || '0') || 0,
     extra: Object.keys(extra).length > 0 ? extra : undefined,
     attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
@@ -241,6 +243,7 @@ export default function ElectronMenuBridge() {
 
       <InventoryItemModal
         mode={ViewMode.MODIFY}
+        isInventory
         open={inventoryItemModalOpen}
         initial={inventoryItem}
         onCancel={handleCloseInventoryItem}
@@ -249,6 +252,7 @@ export default function ElectronMenuBridge() {
 
       <InventoryItemModal
         mode={ViewMode.CREATE}
+        isInventory
         open={showNewInventoryItem}
         initial={inventoryItem}
         onCancel={handleCloseInventoryItem}

@@ -9,7 +9,7 @@ interface BrandSelectProps {
     readonly value: string | { id: string, name: string } | undefined;
     readonly categoryId: any;
     readonly options: CategoryOption[];
-    readonly onChange: (value: string) => void;
+    readonly onChange: (value: string, explicitBrand?: CategoryOption) => void;
     readonly disabled?: boolean;
     readonly showAddButton?: boolean;
     readonly loadSubcategoriesAndBrands: () => Promise<void>;
@@ -22,7 +22,7 @@ export const BrandSelect = React.memo(function BrandSelect({
     onChange,
     disabled = false,
     showAddButton = false,
-    loadSubcategoriesAndBrands
+    loadSubcategoriesAndBrands,
 }: BrandSelectProps) {
     const selectedId = useMemo(() => {
         const rawId = typeof value === 'string' ? value : value?.id;
@@ -57,7 +57,7 @@ export const BrandSelect = React.memo(function BrandSelect({
             });
             if (response && response.id) {
                 await loadSubcategoriesAndBrands();
-                onChange(response.id);
+                onChange(response.id, { id: response.id, name: response.name || name });
             }
         } catch (error) {
             console.error('Failed to create new option', error);
