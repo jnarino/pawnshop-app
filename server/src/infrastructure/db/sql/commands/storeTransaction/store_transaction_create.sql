@@ -11,7 +11,9 @@ INSERT INTO store_transaction (
   state_tax,
   tender_change,
   gun_proc_fee,
-  note
+  note,
+  created_at,
+  updated_at
 ) VALUES (
   $1,  -- id
   get_next_store_sale_control_number(),  -- legacy_ticketnum (auto-generated)
@@ -25,6 +27,8 @@ INSERT INTO store_transaction (
   $9,  -- state_tax
   $10, -- tender_change
   $11, -- gun_proc_fee
-  $12  -- note
+  $12, -- note
+  $13, -- created_at
+  $14  -- updated_at
 )
 RETURNING *;

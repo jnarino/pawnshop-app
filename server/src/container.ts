@@ -164,7 +164,7 @@ export async function createApp() {
   const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
 
   // Store Transaction use-cases
-  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo);
+  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
   const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo);

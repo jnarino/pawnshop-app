@@ -4,11 +4,19 @@ import { StoreTransactionTender } from '../../../../domains/storeTransaction/Sto
 import { StoreTransactionItem } from '../../../../domains/storeTransaction/StoreTransactionItem';
 import { CreateStoreTransactionDto } from '../../../dto/storeTransaction/CreateStoreTransactionDto';
 import { InventoryItemRepository } from '../../../../domains/inventory/InventoryItemRepository';
+import { CustomerRepository } from '../../../../domains/customer/CustomerRepository';
+
+// EST is UTC-5
+const getEstDate = () => {
+    const now = new Date();
+    return new Date(now.getTime() - (5 * 60 * 60 * 1000));
+};
 
 export class CreateStoreTransactionUseCase {
     constructor(
         private readonly storeTransactionRepository: StoreTransactionRepository,
-        private readonly inventoryItemRepository: InventoryItemRepository
+        private readonly inventoryItemRepository: InventoryItemRepository,
+        private readonly customerRepository: CustomerRepository
     ) { }
 
     async execute(input: CreateStoreTransactionDto, clerkUserId: string): Promise<StoreTransaction> {
@@ -54,7 +62,7 @@ export class CreateStoreTransactionUseCase {
                 countyTaxExempt: false, // Default
                 returned: false,
                 status: 'S', // Sold
-                createdAt: new Date()
+                createdAt: getEstDate()
             }));
         }
 
@@ -88,7 +96,7 @@ export class CreateStoreTransactionUseCase {
                 sequence: index + 1,
                 tenderTypeId: tenderDto.tenderTypeId,
                 amount: tenderDto.amount,
-                createdAt: new Date()
+                createdAt: getEstDate()
             }));
             tenderTotal += tenderDto.amount;
         }
@@ -96,7 +104,16 @@ export class CreateStoreTransactionUseCase {
         const tenderChange = tenderTotal - totalAmount;
 
         // Ensure customerId is null if not provided or empty
-        const customerId = input.customerId && input.customerId.trim() !== '' ? input.customerId : null;
+        let customerId = input.customerId && input.customerId.trim() !== '' ? input.customerId : null;
+
+        if (!customerId) {
+            // No customer provided -> Lookup "CASH CUSTOMER"
+            // We use findCustomer criteria. Assuming only one or we take the first.
+            const cashCustomers = await this.customerRepository.findCustomer({ lastName: 'CASH CUSTOMER' });
+            if (cashCustomers && cashCustomers.length > 0) {
+                customerId = cashCustomers[0].id;
+            }
+        }
 
         // Construct Transaction
         const tx = new StoreTransaction({
@@ -104,7 +121,7 @@ export class CreateStoreTransactionUseCase {
             customerId: customerId,
             clerkUserId: clerkUserId,
             typeId: 10, // Retail Sale
-            occurredAt: new Date(),
+            occurredAt: getEstDate(),
             amount: totalAmount,
             taxSales: taxSales,
             stateTax: taxSales,
@@ -114,8 +131,8 @@ export class CreateStoreTransactionUseCase {
             note: input.note,
             tenders: tenders,
             items: items,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: getEstDate(),
+            updatedAt: getEstDate()
         });
 
         // Persist

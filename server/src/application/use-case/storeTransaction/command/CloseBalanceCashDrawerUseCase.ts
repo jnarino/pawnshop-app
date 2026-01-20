@@ -11,6 +11,12 @@ import { toStoreTransactionResponseDto } from '../../../mapping/storeTransaction
 import { StoreTransactionResponseDto } from '../../../dto/storeTransaction/query/StoreTransactionResponseDto';
 import { ValidationError } from '../../../common/errors';
 
+// EST is UTC-5
+const getEstDate = () => {
+    const now = new Date();
+    return new Date(now.getTime() - (5 * 60 * 60 * 1000));
+};
+
 // Tender type mapping
 const TENDER_MAP: Record<string, number> = {
   'CASH': 1,
@@ -35,7 +41,7 @@ export class CloseBalanceCashDrawerUseCase {
   async execute(input: unknown, clerkUserId: string): Promise<StoreTransactionResponseDto[]> {
     const dto: CloseBalanceCashDrawerRequestDto = closeBalanceCashDrawerRequestSchema.parse(input);
 
-    const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
+    const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : getEstDate();
 
     // 1. Get last MAIN BALANCE and activity since then
     const lastClose = await this.storeTransactionRepo.getLastClose();

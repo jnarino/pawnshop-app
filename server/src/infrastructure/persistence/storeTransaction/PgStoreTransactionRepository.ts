@@ -209,6 +209,8 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 tx.tenderChange,
                 tx.gunProcFee,
                 tx.note,
+                tx.createdAt,
+                tx.updatedAt,
             ]);
 
             const header = mapRowToStoreTransactionHeader(headerResult.rows[0]);
