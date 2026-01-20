@@ -16,7 +16,7 @@ export function PriceFields({
 
   const updateResale = (value: string) => {
     updateField('resale', value);
-    updateField('minResale', (Number.parseFloat(value) * 0.2).toFixed(2));
+    updateField('minResale', (Number.parseFloat(value) * 0.8).toFixed(2));
   };
 
   return (
