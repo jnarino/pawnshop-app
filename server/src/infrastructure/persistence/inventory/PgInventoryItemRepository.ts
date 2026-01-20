@@ -20,6 +20,7 @@ const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
 const SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS = loadSql(
     'queries', 'inventory/inventory_item_find_by_scrap_inventory_numbers'
 );
+const SQL_GET_NEXT_NUMBER = loadSql('commands', 'inventory/inventory_item_get_next_number');
 
 function mapRowToInventoryItem(row: any): InventoryItem {
     const item = new InventoryItem({
@@ -195,5 +196,10 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
             inventoryNumber: row.inventory_number,
             itemDescription: row.item_description
         }));
+    }
+
+    async getNextInventoryNumber(): Promise<string> {
+        const result = await this.db.query(SQL_GET_NEXT_NUMBER);
+        return result.rows[0].next_val;
     }
 }

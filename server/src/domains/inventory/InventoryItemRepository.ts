@@ -34,4 +34,10 @@ export interface InventoryItemRepository {
    * Returns inventory_number and item_description only.
    */
   findByInventoryNumbers(inventoryNumbers: string[]): Promise<Array<{ inventoryNumber: string; itemDescription: string | null }>>;
+
+  /**
+   * Generates the next available inventory number from app_settings.
+   * Returns the raw number (e.g. "1", "2").
+   */
+  getNextInventoryNumber(): Promise<string>;
 }

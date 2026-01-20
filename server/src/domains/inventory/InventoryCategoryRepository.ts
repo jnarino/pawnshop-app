@@ -1,5 +1,6 @@
 import { InventoryCategory } from './InventoryCategory';
 import { InventorySubCategory } from './InventorySubCategory';
+import { InventoryBrand } from './InventoryBrand';
 
 export interface InventoryCategoryRepository {
 
@@ -39,4 +40,8 @@ export interface InventoryCategoryRepository {
   existsSubCategoryByCode(code: string): Promise<boolean>;
 
   createSubCategory(subCategory: InventorySubCategory): Promise<InventorySubCategory>;
+
+  existsBrandByCode(code: string): Promise<boolean>;
+
+  createBrand(brand: InventoryBrand): Promise<InventoryBrand>;
 }

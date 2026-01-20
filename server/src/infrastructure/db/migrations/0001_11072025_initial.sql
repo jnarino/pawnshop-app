@@ -806,7 +806,8 @@ VALUES
   ('pawn_ticket_control_number_next', '100001', 'Next control number for pawn tickets (PAWN type)'),
   ('purchase_ticket_control_number_next', '1', 'Next control number for purchase tickets (PURCHASE type)'),
   ('store_sale_control_number_next', '1', 'Next control number for store sales (retail, layaway, etc)'),
-  ('gun_transfer_number_next', '1', 'Next control number for gun log transactions')
+  ('gun_transfer_number_next', '1', 'Next control number for gun log transactions'),
+  ('new_inventory_number_next', '1', 'Next inventory number for manually added items (I- prefix)')
 ON CONFLICT (key) DO NOTHING;
 
 -- NOTE: After migration, run a script to set store_sale_control_number_next to (max ticketnum + 1) from legacy acct table for types:

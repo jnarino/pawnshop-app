@@ -13,6 +13,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
   findByInventoryNumbers = jest.fn();
+  getNextInventoryNumber = jest.fn().mockResolvedValue('12345');
 }
 
 class MockItemAttributeMapper {
@@ -100,5 +101,40 @@ describe('CreateInventoryItemUseCase', () => {
     expect(repo.create).toHaveBeenCalled();
     expect(result.extra).toEqual({ custom: 'value' });
     expect(result.attributes).toEqual({ color: 'blue' });
+  });
+
+  it('should generate inventory number if missing', async () => {
+    const repo = new MockInventoryItemRepository();
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreateInventoryItemUseCase(repo, mapper as any);
+
+    const result = await useCase.execute({
+      inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 100,
+      status: 'I',
+      quantity: 1
+    });
+
+    expect(repo.getNextInventoryNumber).toHaveBeenCalled();
+    expect(result.inventoryNumber).toBe('I-12345');
+  });
+
+  it('should use provided inventory number if present', async () => {
+    const repo = new MockInventoryItemRepository();
+    const mapper = new MockItemAttributeMapper();
+    const useCase = new CreateInventoryItemUseCase(repo, mapper as any);
+
+    const result = await useCase.execute({
+      inventorySubcategoryId: validSubcategoryId,
+      brand: validBrandId,
+      priceAmount: 100,
+      status: 'I',
+      quantity: 1,
+      inventoryNumber: 'CUSTOM-123'
+    });
+
+    expect(repo.getNextInventoryNumber).not.toHaveBeenCalled();
+    expect(result.inventoryNumber).toBe('CUSTOM-123');
   });
 });

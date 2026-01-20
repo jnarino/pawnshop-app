@@ -6,6 +6,7 @@ import { GetRootCategoriesUseCase } from '../../../../application/use-case/inven
 import { GetSubCategoriesUseCase } from '../../../../application/use-case/inventory/query/GetSubCategoriesUseCase';
 import { CreateInventoryCategoryUseCase } from '../../../../application/use-case/inventory/command/CreateInventoryCategoryUseCase';
 import { CreateInventorySubCategoryUseCase } from '../../../../application/use-case/inventory/command/CreateInventorySubCategoryUseCase';
+import { CreateBrandUseCase } from '../../../../application/use-case/inventory/command/CreateBrandUseCase';
 
 export class InventoryCategoryController {
     constructor(
@@ -14,7 +15,8 @@ export class InventoryCategoryController {
         private readonly getSubCategoriesUseCase: GetSubCategoriesUseCase,
         private readonly getBrandsByCategoryRootUseCase: GetBrandsByCategoryRootUseCase,
         private readonly createInventoryCategoryUseCase: CreateInventoryCategoryUseCase,
-        private readonly createInventorySubCategoryUseCase: CreateInventorySubCategoryUseCase
+        private readonly createInventorySubCategoryUseCase: CreateInventorySubCategoryUseCase,
+        private readonly createBrandUseCase: CreateBrandUseCase
 
     ) { }
 
@@ -82,6 +84,19 @@ export class InventoryCategoryController {
     createSubCategory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
             const result = await this.createInventorySubCategoryUseCase.execute(req.body);
+            return res.status(201).json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Create a new brand
+     * POST /api/category/brand
+     */
+    createBrand = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.createBrandUseCase.execute(req.body);
             return res.status(201).json(result);
         } catch (err) {
             return next(err);

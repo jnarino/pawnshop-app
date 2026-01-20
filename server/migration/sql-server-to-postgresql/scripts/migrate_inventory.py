@@ -590,8 +590,8 @@ def migrate_inventory():
                     row['RESALEAMT'],
                     row['LOWSLPRICE'],
                     row['INSREPCOST'],
-                    safe_str(row['OWNERNUM']),# owner_mark
-                    safe_str(row['DESCRIPT']), # Item Description
+                    safe_str(row['OWNERNUM']).strip() if row['OWNERNUM'] else None,# owner_mark
+                    safe_str(row['DESCRIPT']).strip() if row['DESCRIPT'] else None, # Item Description (Trimmed)
                     safe_str(row['BIN']), # Bin Location
                     row.get('storagefee'),
                     json.dumps(extra_data),
@@ -599,7 +599,7 @@ def migrate_inventory():
                     safe_str(row['INVNUM']).strip(), # legacy_inventory_number
                     safe_str(row['Items_ID']),   # legacy_item_guid (Using Items_ID as proxy)
                     None, # legacy_category_description
-                    safe_str(row['DESCRIPT2']), # legacy_brand_color_description
+                    safe_str(row['DESCRIPT2']).strip() if row['DESCRIPT2'] else None, # legacy_brand_color_description
                     safe_str(row['INVNUM']).strip(), # inventory_number
                     user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
@@ -621,6 +621,9 @@ def migrate_inventory():
         if batch_data:
             _insert_batch(pg_cursor, batch_data)
             pg_conn.commit()
+
+        # Update sequence
+        migrate_inventory_number_sequence()
             
         print(f"✅ Inventory Migration Completed! ({errors} errors/skipped)")
         
@@ -671,5 +674,56 @@ def _insert_batch(cursor, data):
     """
     execute_values(cursor, sql, data)
 
+def migrate_inventory_number_sequence():
+    print("Migrating inventory number sequence...")
+    try:
+        # SQL Server check
+        conn_ss = pymssql.connect(**SQLSERVER_CONFIG)
+        cursor_ss = conn_ss.cursor(as_dict=True)
+        
+        # Get all I- numbers
+        cursor_ss.execute("SELECT INVNUM FROM dbo.items WHERE INVNUM LIKE 'I-%'")
+        rows = cursor_ss.fetchall()
+        
+        max_num = 0
+        import re
+        
+        for row in rows:
+            inv_num = row['INVNUM']
+            if not inv_num:
+                continue
+            # Extract numeric part "I-12345" -> 12345 (handle potential spaces)
+            match = re.search(r'I\s*-\s*(\d+)', inv_num, re.IGNORECASE)
+            if match:
+                try:
+                    num = int(match.group(1))
+                    if num > max_num:
+                        max_num = num
+                except ValueError:
+                    pass
+        
+        conn_ss.close()
+        
+        next_val = max_num + 1
+        print(f"Max inventory number found: {max_num}. Next new_inventory_number_next value: {next_val}")
+        
+        # Postgres update
+        conn_pg = psycopg2.connect(**POSTGRES_CONFIG)
+        cursor_pg = conn_pg.cursor()
+        
+        sql = """
+            INSERT INTO app_settings (key, value, description) 
+            VALUES ('new_inventory_number_next', %s, 'Next inventory number for manually added items (I- prefix)')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        """
+        cursor_pg.execute(sql, (str(next_val),))
+        conn_pg.commit()
+        conn_pg.close()
+        print("Updated new_inventory_number_next in app_settings.")
+        
+    except Exception as e:
+        print(f"Error migrating inventory number sequence: {e}")
+
 if __name__ == "__main__":
     migrate_inventory()
+    migrate_inventory_number_sequence()

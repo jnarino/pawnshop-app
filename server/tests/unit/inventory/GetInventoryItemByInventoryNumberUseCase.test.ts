@@ -13,6 +13,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   findAvailableByInventoryNumber = jest.fn();
   findBySerialNumber = jest.fn();
   findByInventoryNumbers = jest.fn();
+  getNextInventoryNumber = jest.fn();
 }
 
 describe('GetInventoryItemByInventoryNumberUseCase', () => {
