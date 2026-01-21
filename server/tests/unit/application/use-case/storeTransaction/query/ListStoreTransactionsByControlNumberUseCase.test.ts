@@ -1,18 +1,24 @@
 import { ListStoreTransactionsByControlNumberUseCase } from '../../../../../../src/application/use-case/storeTransaction/query/ListStoreTransactionsByControlNumberUseCase';
 import { StoreTransactionRepository } from '../../../../../../src/domains/storeTransaction/StoreTransactionRepository';
+import { InventoryItemRepository } from '../../../../../../src/domains/inventory/InventoryItemRepository';
 import { StoreTransaction } from '../../../../../../src/domains/storeTransaction/StoreTransaction';
 
 describe('ListStoreTransactionsByControlNumberUseCase', () => {
     let storeTransactionRepo: jest.Mocked<StoreTransactionRepository>;
+    let inventoryItemRepo: jest.Mocked<InventoryItemRepository>;
     let useCase: ListStoreTransactionsByControlNumberUseCase;
 
     beforeEach(() => {
         storeTransactionRepo = {
             listByControlNumber: jest.fn(),
         } as any;
+        inventoryItemRepo = {
+            getInventoryNumberById: jest.fn().mockResolvedValue('12345'),
+        } as any;
 
-        useCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo);
+        useCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo, inventoryItemRepo);
     });
+
 
     it('returns a list of store transactions when found', async () => {
         const mockTransactions = [

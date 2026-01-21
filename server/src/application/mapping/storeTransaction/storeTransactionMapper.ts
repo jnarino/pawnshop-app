@@ -22,6 +22,7 @@ export function toStoreTransactionResponseDto(
         controlNumber: i.controlNumber,
         sequence: i.sequence,
         inventoryItemId: i.inventoryItemId,
+        inventoryNumber: (i as any).inventoryNumber,
         description: i.description,
         quantity: i.quantity,
         lineAmount: i.lineAmount,

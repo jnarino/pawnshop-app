@@ -1,9 +1,11 @@
 import { ListStoreTransactionsByDateRangeUseCase } from '../../../../../../src/application/use-case/storeTransaction/query/ListStoreTransactionsByDateRangeUseCase';
 import { StoreTransactionRepository } from '../../../../../../src/domains/storeTransaction/StoreTransactionRepository';
+import { InventoryItemRepository } from '../../../../../../src/domains/inventory/InventoryItemRepository';
 
 describe('ListStoreTransactionsByDateRangeUseCase', () => {
   let useCase: ListStoreTransactionsByDateRangeUseCase;
   let mockRepo: jest.Mocked<StoreTransactionRepository>;
+  let mockInventoryRepo: jest.Mocked<InventoryItemRepository>;
 
   beforeEach(() => {
     mockRepo = {
@@ -17,8 +19,13 @@ describe('ListStoreTransactionsByDateRangeUseCase', () => {
       getActivitySinceClose: jest.fn()
     } as jest.Mocked<StoreTransactionRepository>;
 
-    useCase = new ListStoreTransactionsByDateRangeUseCase(mockRepo);
+    mockInventoryRepo = {
+        getInventoryNumberById: jest.fn().mockResolvedValue('12345'),
+    } as any;
+
+    useCase = new ListStoreTransactionsByDateRangeUseCase(mockRepo, mockInventoryRepo);
   });
+
 
   it('should query with full day range when no time component provided', async () => {
     mockRepo.listByDateRange.mockResolvedValue([]);

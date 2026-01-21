@@ -168,9 +168,9 @@ export async function createApp() {
 
   // Store Transaction use-cases
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo);
-  const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo);
-  const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo);
-  const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo);
+  const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo, inventoryItemRepo);
+  const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo, inventoryItemRepo);
+  const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo, inventoryItemRepo);
   const removeCashFromMainDrawerUseCase = new RemoveCashFromMainDrawerUseCase(storeTransactionRepo);
   const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
   const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);

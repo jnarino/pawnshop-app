@@ -12,6 +12,7 @@ export interface StoreTransactionItemResponseDto {
     controlNumber: string | null;
     sequence: number;
     inventoryItemId: string | null;
+    inventoryNumber?: string | null; // Added field
     description: string | null;
     quantity: number;
     lineAmount: number | null;

@@ -42,4 +42,9 @@ export interface InventoryItemRepository {
   getNextInventoryNumber(): Promise<string>;
 
   updateStatusAndQuantity(id: string, status: string, quantity: number): Promise<void>;
+
+  /**
+   * Get inventory number by item ID
+   */
+  getInventoryNumberById(id: string): Promise<string | null>;
 }

@@ -211,6 +211,7 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 tx.note,
                 tx.createdAt,
                 tx.updatedAt,
+                tx.controlNumber // $15 - Optional Control Number
             ]);
 
             const header = mapRowToStoreTransactionHeader(headerResult.rows[0]);

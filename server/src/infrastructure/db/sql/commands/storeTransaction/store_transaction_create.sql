@@ -16,7 +16,7 @@ INSERT INTO store_transaction (
   updated_at
 ) VALUES (
   $1,  -- id
-  get_next_store_sale_control_number(),  -- legacy_ticketnum (auto-generated)
+  COALESCE($15, get_next_store_sale_control_number()),  -- legacy_ticketnum (use provided or generate)
   $2,  -- customer_id
   $3,  -- clerk_user_id
   $4,  -- type_id

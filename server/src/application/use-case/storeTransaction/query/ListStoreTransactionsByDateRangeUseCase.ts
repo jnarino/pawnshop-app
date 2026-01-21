@@ -1,4 +1,5 @@
 import { StoreTransactionRepository } from '../../../../domains/storeTransaction/StoreTransactionRepository';
+import { InventoryItemRepository } from '../../../../domains/inventory/InventoryItemRepository';
 import {
   listStoreTransactionsByDateRangeRequestSchema,
   ListStoreTransactionsByDateRangeRequestDto,
@@ -8,6 +9,7 @@ import { toStoreTransactionResponseDto } from '../../../mapping/storeTransaction
 
 /**
  * Detect whether a date string has an explicit time component.
+
  * Examples treated as "has time":
  *   "2025-12-02T10:00:00"
  *   "2025-12-02 10:00"
@@ -67,7 +69,8 @@ function buildDateRange(
 
 export class ListStoreTransactionsByDateRangeUseCase {
   constructor(
-    private readonly storeTransactionRepository: StoreTransactionRepository
+    private readonly storeTransactionRepository: StoreTransactionRepository,
+    private readonly inventoryItemRepository: InventoryItemRepository
   ) {}
 
   /**
@@ -92,6 +95,21 @@ export class ListStoreTransactionsByDateRangeUseCase {
       to,
     });
 
-    return transactions.map(toStoreTransactionResponseDto);
+    const dtos = transactions.map(toStoreTransactionResponseDto);
+
+    // Enrich items with inventory number
+    for (const dto of dtos) {
+        for (const item of dto.items) {
+            if (item.inventoryItemId) {
+                const inventoryNumber = await this.inventoryItemRepository.getInventoryNumberById(item.inventoryItemId);
+                if (inventoryNumber) {
+                    item.inventoryNumber = inventoryNumber;
+                }
+            }
+        }
+    }
+
+    return dtos;
   }
 }
+
