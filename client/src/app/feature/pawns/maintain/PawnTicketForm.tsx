@@ -368,20 +368,22 @@ export function PawnTicketForm({
         )}
       </form>
 
-      <InventoryItemModal
-        mode={(() => {
-          if (isViewMode) return ViewMode.VIEW;
-          if (editingItem) return ViewMode.MODIFY;
-          return ViewMode.CREATE;
-        })()}
-        open={showItemModal}
-        initial={editingItem}
-        onCancel={() => {
-          setShowItemModal(false);
-          setEditingItem(null);
-        }}
-        onSave={handleSaveItem}
-      />
+      {showItemModal && (
+        <InventoryItemModal
+          mode={(() => {
+            if (isViewMode) return ViewMode.VIEW;
+            if (editingItem) return ViewMode.MODIFY;
+            return ViewMode.CREATE;
+          })()}
+          open={showItemModal}
+          initial={editingItem}
+          onCancel={() => {
+            setShowItemModal(false);
+            setEditingItem(null);
+          }}
+          onSave={handleSaveItem}
+        />
+      )}
     </div>
   );
 }

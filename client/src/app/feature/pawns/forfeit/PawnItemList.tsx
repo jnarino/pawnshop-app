@@ -116,15 +116,17 @@ export const PawnItemList = () => {
                     }
                 </TableBody>
             </Table>
-            <InventoryItemModal
-                mode={ViewMode.PULL}
-                open={!!inventoryItemSelected}
-                initial={inventoryItemSelected}
-                onCancel={handleCloseInventoryItem}
-                onSave={handleSaveInventoryItem}
-                hasNextItem={currentEditIndex < items.length - 1}
-                scrapItems={scrapItems}
-            />
+            {inventoryItemSelected && (
+                <InventoryItemModal
+                    mode={ViewMode.PULL}
+                    open={!!inventoryItemSelected}
+                    initial={inventoryItemSelected}
+                    onCancel={handleCloseInventoryItem}
+                    onSave={handleSaveInventoryItem}
+                    hasNextItem={currentEditIndex < items.length - 1}
+                    scrapItems={scrapItems}
+                />
+            )}
         </>
     )
 }

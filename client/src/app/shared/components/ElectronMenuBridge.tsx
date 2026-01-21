@@ -241,23 +241,31 @@ export default function ElectronMenuBridge() {
         infoMessage="You can type the inventory number manually or use a barcode scanner."
       />
 
-      <InventoryItemModal
-        mode={ViewMode.MODIFY}
-        isInventory
-        open={inventoryItemModalOpen}
-        initial={inventoryItem}
-        onCancel={handleCloseInventoryItem}
-        onSave={handleSaveInventoryItem}
-      />
+      {
+        inventoryItemModalOpen && (
+          <InventoryItemModal
+            mode={ViewMode.MODIFY}
+            isInventory
+            open={inventoryItemModalOpen}
+            initial={inventoryItem}
+            onCancel={handleCloseInventoryItem}
+            onSave={handleSaveInventoryItem}
+          />
+        )
+      }
 
-      <InventoryItemModal
-        mode={ViewMode.CREATE}
-        isInventory
-        open={showNewInventoryItem}
-        initial={inventoryItem}
-        onCancel={handleCloseInventoryItem}
-        onSave={(editingItem) => handleSaveInventoryItem(editingItem, true)}
-      />
+      {
+        showNewInventoryItem && (
+          <InventoryItemModal
+            mode={ViewMode.CREATE}
+            isInventory
+            open={showNewInventoryItem}
+            initial={inventoryItem}
+            onCancel={handleCloseInventoryItem}
+            onSave={(editingItem) => handleSaveInventoryItem(editingItem, true)}
+          />
+        )
+      }
     </>
   );
 }
