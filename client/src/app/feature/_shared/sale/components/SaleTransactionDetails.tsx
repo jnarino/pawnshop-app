@@ -14,6 +14,7 @@ interface SaleTransactionDetailsProps {
   readonly disabled?: boolean;
   readonly inventoryNumber?: string;
   readonly inventoryItem?: InventoryItem;
+  readonly status?: string;
   readonly occurredAt?: string;
   readonly quantity?: number;
   readonly description?: string;
@@ -32,6 +33,7 @@ interface SaleTransactionDetailsProps {
 export function SaleTransactionDetails({
   disabled = false,
   inventoryNumber,
+  status,
   inventoryItem,
   occurredAt,
   quantity,
@@ -44,7 +46,8 @@ export function SaleTransactionDetails({
   handleSaveItem,
   handleFieldByKey,
   isEditing,
-  onCancelEdit
+  onCancelEdit,
+  isViewMode
 }: SaleTransactionDetailsProps) {
   return (
     <Card className={`border-2 mb-6 ${isEditing ? 'border-amber-400 bg-amber-50/30' : ''}`}>
@@ -53,8 +56,9 @@ export function SaleTransactionDetails({
       </CardHeader>
       <CardContent className="p-6 grid gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {disabled ? (<>
+          {isViewMode ? (<>
             <p><strong>Ticket Number:</strong> {inventoryNumber}</p>
+            <p><strong>Status:</strong> {status}</p>
             <p><strong>Date in:</strong> {formatDate(occurredAt)}</p>
           </>) : (
             <>

@@ -83,9 +83,10 @@ export const salesApi = {
         return http(`/api/store-transaction/by-date?from=${startDate}&to=${endDate}`);
     },
 
-    voidSale: async (id: string): Promise<SaleResponse> => {
-        return http(`/api/store-transaction/void/${id}`, {
-            method: 'PUT',
+    voidSale: async (id: string, payload: any): Promise<SaleResponse> => {
+        return http(`/api/store-transaction/void`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
         });
     },
 };

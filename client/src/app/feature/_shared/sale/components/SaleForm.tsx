@@ -23,6 +23,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindAvailableItemByNumber';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
 import { PaymentDetailsModal } from '@/app/feature/_shared/modal/PaymentDetailsModal';
+import { ReturnSaleModal } from '@/app/feature/_shared/modal/ReturnSaleModal';
+import PaymentMethodModal, { TenderMethod } from '@/app/feature/_shared/modal/PaymentMethodModal';
+import { salesApi } from '@/app/core/api/salesApi';
 
 const TAX_RATE = 0.065;
 
@@ -54,6 +57,7 @@ interface SaleTicketFormProps {
     readonly stateTax?: number;
     readonly tenderChange?: number;
     readonly tenders?: any[];
+    readonly typeName?: string;
   };
   readonly externalDraft?: SaleFormDraftState;
   readonly onDraftChange?: (draft: SaleFormDraftState) => void;
@@ -87,6 +91,10 @@ export function SaleForm({
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
 
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showRefundPaymentModal, setShowRefundPaymentModal] = useState(false);
+  const [refundData, setRefundData] = useState<{ items: any[], reason: string, total: number } | null>(null);
+
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
   const [localFormData, setLocalFormData] = useState({
@@ -99,7 +107,8 @@ export function SaleForm({
     quantity: initialData?.quantity,
     items: initialData?.items || [] as any[], // TODO: any
     taxExemptUsed: initialData?.taxExemptUsed || false,
-    eatTax: initialData?.eatTax || false
+    eatTax: initialData?.eatTax || false,
+    status: initialData?.typeName
   });
 
   const formData = {
@@ -256,7 +265,47 @@ export function SaleForm({
   const handleFieldByKey = useCallback((key: string, value: any) => {
     updateFormData({ [key]: value });
   }, [updateFormData]);
-  console.log({ formData });
+
+  const handleReturnClick = () => {
+    setShowReturnModal(true);
+  };
+
+  const handleReturnConfirm = (selectedItems: any[], reason: string) => {
+    const total = selectedItems.reduce((sum, i) => sum + Number(i.lineAmount) || 0, 0);
+
+    console.log({ total, selectedItems })
+    setRefundData({ items: selectedItems, reason, total });
+    setShowReturnModal(false);
+    setShowRefundPaymentModal(true);
+  };
+
+  const handleRefundPaymentDone = async (tenders: TenderMethod[]) => {
+    if (!refundData || !initialData?.id) return;
+
+    try {
+      const payload = {
+        controlNumber: initialData.controlNumber,
+        items: refundData.items.map(item => ({
+          inventoryItemId: item.inventoryItem?.id || (item as any).inventoryItemId,
+          price: Number(item.lineAmount)
+        })),
+        tenders: tenders.map(t => ({
+          tenderTypeId: t.tenderTypeId,
+          amount: Number(t.amount)
+        }))
+      };
+
+      await salesApi.voidSale(initialData.id, payload);
+      alert('Sale voided/returned successfully');
+      setShowRefundPaymentModal(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to void sale', error);
+      alert('Failed to void sale');
+    }
+  };
+
+  console.log({ formData, refundData });
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -271,36 +320,41 @@ export function SaleForm({
           occurredAt={formData.occurredAt}
           handleFieldByKey={handleFieldByKey}
           disabled={isViewMode}
+          isViewMode={isViewMode}
+          status={formData.status}
           customer={customer}
           taxExemptUsed={formData.taxExemptUsed}
           setTaxExemptUsed={(value) => updateFormData({ taxExemptUsed: value })}
           isEditing={!!editingRowId}
           onCancelEdit={handleCancelEdit}
         />
-        <div className="flex items-center justify-end my-2 gap-2 items-end">
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => { }}
-          >
-            Return
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowPaymentInfo(true)}
-          >
-            Payment information
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => { }}
-          >
-            Print ticket
-          </Button>
-        </div>
-
+        {isViewMode && (
+          <div className="flex items-center justify-end my-2 gap-2 items-end">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleReturnClick}
+              disabled={!initialData?.id || initialData.items?.some(i => i.status === 'V')} // Disable if already voided (status check simplified)
+            >
+              Return
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowPaymentInfo(true)}
+            >
+              Payment information
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => { }}
+            >
+              Print ticket
+            </Button>
+          </div>
+        )
+        }
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -426,15 +480,36 @@ export function SaleForm({
       </form>
 
       {initialData && (
-        <PaymentDetailsModal
-          open={showPaymentInfo}
-          onClose={() => setShowPaymentInfo(false)}
-          data={{
-            totalAmount: (initialData.amount || 0) + (initialData.stateTax || 0),
-            tenderChange: initialData.tenderChange || 0,
-            tenders: initialData.tenders || []
-          }}
-        />
+        <>
+          <PaymentDetailsModal
+            open={showPaymentInfo}
+            onClose={() => setShowPaymentInfo(false)}
+            data={{
+              totalAmount: (initialData.amount || 0) + (initialData.stateTax || 0),
+              tenderChange: initialData.tenderChange || 0,
+              tenders: initialData.tenders || []
+            }}
+          />
+          <ReturnSaleModal
+            open={showReturnModal}
+            items={initialData.items || []}
+            onCancel={() => setShowReturnModal(false)}
+            onConfirm={handleReturnConfirm}
+          />
+          {refundData && (
+            <PaymentMethodModal
+              open={showRefundPaymentModal}
+              totalAmount={refundData.total * (formData.taxExemptUsed ? 1 : 1.065)}
+              allowedTenderTypes={[1, 2, 3, 4, 5]} // TODO: Pass allowed types dynamically if needed
+              onCancel={() => setShowRefundPaymentModal(false)}
+              onDone={handleRefundPaymentDone}
+              history={{
+                tenders: initialData.tenders || [],
+                change: initialData.tenderChange || 0
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -21,9 +21,13 @@ interface Props {
   allowedTenderTypes: number[];
   onCancel: () => void;
   onDone: (tenders: TenderMethod[]) => void;
+  readonly history?: {
+    tenders: any[];
+    change: number;
+  };
 }
 
-export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone }: Props) {
+export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone, history }: Props) {
   const [tenders, setTenders] = useState<TenderMethod[]>([]);
   const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -102,6 +106,8 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
 
   if (!open) return null;
 
+  console.log({ totalAmount })
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="sm:max-w-[500px]">
@@ -110,13 +116,34 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
         </DialogHeader>
 
         <div className="py-6">
+          {history && (
+            <div className="mb-6 bg-slate-50 p-4 rounded-md border text-sm">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                Payment history
+              </h4>
+              <div className="space-y-1">
+                {history.tenders.map((t, i) => {
+                  const typeName = availableTypes.find(type => type.id === t.tenderTypeId)?.name || t.name || 'Unknown';
+                  return (
+                    <div key={i} className="flex justify-between text-muted-foreground">
+                      <span>{typeName}:</span>
+                      <span>${Number(t.amount).toFixed(2)}</span>
+                    </div>
+                  )
+                })}
+                <div className="flex justify-between font-medium pt-2 border-t mt-2">
+                  <span>Change Due:</span>
+                  <span>${Number(history.change).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col items-center justify-center mb-8 bg-muted/30 p-4 rounded-lg border border-dashed">
             <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Total Payment Required</Label>
             <div className="text-3xl font-bold tracking-tight text-primary">
               ${totalAmount.toFixed(2)}
             </div>
           </div>
-
           <div className="space-y-4">
             <Label className="text-xs font-medium uppercase text-muted-foreground flex justify-between items-center px-1">
               <span>Payment Methods</span>
@@ -213,7 +240,7 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
             disabled={getTotalTendered() < totalAmount}
             className={cn("w-full sm:w-auto", getTotalTendered() >= totalAmount ? "bg-green-600 hover:bg-green-700" : "")}
           >
-            Process Payment
+            Process {!!history ? "Return" : "Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
