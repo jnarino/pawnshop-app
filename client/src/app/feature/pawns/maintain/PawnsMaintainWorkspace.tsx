@@ -11,7 +11,7 @@ import { formatDate } from '@/lib/utils';
 import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
 import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
 
-type TicketResult = (CustomerActivePawnTicket | TicketByControlNumber) & { items?: CustomerActivePawnTicket['items'] };
+type TicketResult = CustomerActivePawnTicket | TicketByControlNumber;
 
 function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
@@ -264,6 +264,18 @@ function PawnsMaintainWorkspaceContent() {
     searchByTicket(ticketNumber);
   }
 
+  const getPawnsByDateRange = async (startDate: string, endDate: string) => {
+    const pawns = await pawnTicketApi.findByDateRange(startDate, endDate);
+    setTicketResults(pawns);
+    setShowTicketTable(true);
+  }
+
+  const handleSearchByDateRange = (startDate: string, endDate: string) => {
+    setSelectedCustomer(null);
+    setTicketResults([]);
+    getPawnsByDateRange(startDate, endDate);
+  }
+
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">{modalTitle}</h1>
@@ -272,8 +284,8 @@ function PawnsMaintainWorkspaceContent() {
           <MaintainSearch
             handleSearchControlNumber={handleSearchControlNumber}
             handleSelectedCustomer={handleSelectedCustomer}
+            handleSearchByDateRange={handleSearchByDateRange}
             setShowTicketTable={setShowTicketTable}
-            showDateRangeTab={false}
           />
         </div>
       )}
