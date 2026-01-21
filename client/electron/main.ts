@@ -97,6 +97,14 @@ function buildMenu() {
             label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:sales-maintain'),
           },
+          {
+            label: 'Layaway',
+            click: () => mainWindow?.webContents.send('menu:sales-layaway'),
+          },
+          {
+            label: 'Maintain layaway',
+            click: () => mainWindow?.webContents.send('menu:sales-maintain-layaway'),
+          }
         ],
       },
       {
