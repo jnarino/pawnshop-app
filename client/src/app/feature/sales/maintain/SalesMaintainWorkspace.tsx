@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import type { CustomerData, PawnTicketData } from '@/app/feature/_shared/types/pawnTicket';
+import type { CustomerData } from '@/app/feature/_shared/types/pawnTicket';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
 import { apiToRecordLoose, CustomerRecord } from '../../_shared/customer';
@@ -101,7 +101,6 @@ function SalesMaintainWorkspaceContent() {
     getCustomerInformationById(row.customerId);
   };
 
-  console.log({ sales, selectedTicket });
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">{modalTitle}</h1>
@@ -183,10 +182,10 @@ function SalesMaintainWorkspaceContent() {
             initialData={selectedTicket}
             externalDraft={selectedTicket}
             customer={currentCustomer || undefined}
+            disabled={true}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
-            <Button onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Void or return sale</Button>
           </div>
         </div>
       )}

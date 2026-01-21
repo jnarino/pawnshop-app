@@ -82,4 +82,10 @@ export const salesApi = {
     getByDateRange: async (startDate: string, endDate: string): Promise<any[]> => {
         return http(`/api/store-transaction/by-date?from=${startDate}&to=${endDate}`);
     },
+
+    voidSale: async (id: string): Promise<SaleResponse> => {
+        return http(`/api/store-transaction/void/${id}`, {
+            method: 'PUT',
+        });
+    },
 };

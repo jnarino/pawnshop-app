@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFindAvailableItemByNumber } from '@/app/feature/sales/hooks/useFindAvailableItemByNumber';
 import { InventoryItem } from '@/app/core/api/inventoryApi';
+import { PaymentDetailsModal } from '@/app/feature/_shared/modal/PaymentDetailsModal';
 
 const TAX_RATE = 0.065;
 
@@ -36,6 +37,9 @@ export interface SaleFormDraftState {
 interface SaleTicketFormProps {
   readonly mode?: FormMode;
   readonly initialData?: {
+    readonly id?: string;
+    readonly controlNumber?: string;
+    readonly occurredAt?: string;
     readonly customerId?: string;
     readonly inventoryNumber?: string;
     readonly inventoryItem?: InventoryItem;
@@ -45,6 +49,11 @@ interface SaleTicketFormProps {
     readonly items?: InventoryItemDraft[];
     readonly taxExemptUsed?: boolean;
     readonly eatTax?: boolean;
+    readonly amount?: number;
+    readonly lineAmount?: number;
+    readonly stateTax?: number;
+    readonly tenderChange?: number;
+    readonly tenders?: any[];
   };
   readonly externalDraft?: SaleFormDraftState;
   readonly onDraftChange?: (draft: SaleFormDraftState) => void;
@@ -71,15 +80,19 @@ export function SaleForm({
   onSubmit,
   disabled = false
 }: SaleTicketFormProps) {
+  console.log({ initialData })
   const isViewMode = mode === 'VIEW';
+  console.log({ isViewMode })
   const { findAvailableItemByNumber } = useFindAvailableItemByNumber();
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
 
+  const [showPaymentInfo, setShowPaymentInfo] = useState(false);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId,
-    inventoryNumber: initialData?.inventoryNumber || '',
+    inventoryNumber: initialData?.controlNumber || '',
+    occurredAt: initialData?.occurredAt,
     inventoryItem: initialData?.inventoryItem,
     description: initialData?.description || '',
     priceEach: initialData?.priceEach || '',
@@ -88,8 +101,6 @@ export function SaleForm({
     taxExemptUsed: initialData?.taxExemptUsed || false,
     eatTax: initialData?.eatTax || false
   });
-
-  console.log('externalDraft', externalDraft);
 
   const formData = {
     ...localFormData,
@@ -115,7 +126,11 @@ export function SaleForm({
   }, 0);
 
   let subtotal, taxAmount, totalAmount;
-  if (formData.taxExemptUsed) {
+  if (isViewMode && initialData?.amount !== undefined) {
+    subtotal = initialData.amount;
+    taxAmount = initialData.stateTax || 0;
+    totalAmount = subtotal + taxAmount;
+  } else if (formData.taxExemptUsed) {
     subtotal = subtotalSum;
     taxAmount = 0;
     totalAmount = subtotalSum;
@@ -241,7 +256,7 @@ export function SaleForm({
   const handleFieldByKey = useCallback((key: string, value: any) => {
     updateFormData({ [key]: value });
   }, [updateFormData]);
-
+  console.log({ formData });
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -253,6 +268,7 @@ export function SaleForm({
           description={formData.description}
           priceEach={formData.priceEach}
           handleSaveItem={handleSaveItem}
+          occurredAt={formData.occurredAt}
           handleFieldByKey={handleFieldByKey}
           disabled={isViewMode}
           customer={customer}
@@ -261,6 +277,29 @@ export function SaleForm({
           isEditing={!!editingRowId}
           onCancelEdit={handleCancelEdit}
         />
+        <div className="flex items-center justify-end my-2 gap-2 items-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => { }}
+          >
+            Return
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowPaymentInfo(true)}
+          >
+            Payment information
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => { }}
+          >
+            Print ticket
+          </Button>
+        </div>
 
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
@@ -297,42 +336,26 @@ export function SaleForm({
                       </TableCell>
                       <TableCell>{item.description || ''}</TableCell>
                       <TableCell>{item.quantity || 1}</TableCell>
-                      <TableCell>${Number(item.priceEach || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-medium">${(Number(item.priceEach || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
+                      <TableCell>${Number(item.priceEach || item.lineAmount || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">${(Number(item.priceEach || item.lineAmount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex gap-2 justify-center items-center">
-                          {isViewMode ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className='!p-0'
-                            >
-                              <img
-                                src={packageIcon}
-                                alt="View"
-                                className="w-4 h-4"
-                              />
-                            </Button>
-                          ) : (
-                            <>
-                              <Button className='!p-0'
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditItem(item)}
-                                disabled={disabled || !!editingRowId}
-                              >
-                                <img src={editIcon} alt="Edit" className="w-4 h-4" />
-                              </Button>
-                              <Button className='!p-0'
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveItem(item.id!)}
-                                disabled={disabled}
-                              >
-                                <img src={deleteIcon} alt="Delete" className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
+                          <Button className='!p-0'
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditItem(item)}
+                            disabled={disabled || !!editingRowId}
+                          >
+                            <img src={editIcon} alt="Edit" className="w-4 h-4" />
+                          </Button>
+                          <Button className='!p-0'
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.id!)}
+                            disabled={disabled}
+                          >
+                            <img src={deleteIcon} alt="Delete" className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -343,49 +366,52 @@ export function SaleForm({
           </CardContent>
         </Card>
 
-        {!isViewMode && (
-          <div className="flex justify-end mt-2 gap-2 items-end">
+        <div className="flex justify-end mt-2 gap-2 items-end">
+          {!isViewMode && (
             <Button
               type="submit"
               disabled={disabled || formData.items.length === 0}
               size="lg"
               className="px-8"
             >
-              {disabled ? 'Processing...' : `Save sale`}
+              Save sale
             </Button>
-            <div>
-              <Label>Subtotal</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={subtotal.toFixed(2)}
-                readOnly
-                disabled={true}
-                className="bg-slate-100"
-              />
-            </div>
-            <div>
-              <Label>Tax</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={taxAmount.toFixed(2)}
-                readOnly
-                disabled={true}
-                className="bg-slate-100"
-              />
-            </div>
-            <div>
-              <Label>Total</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={totalAmount.toFixed(2)}
-                readOnly
-                disabled={true}
-                className="bg-slate-100"
-              />
-            </div>
+          )}
+
+          <div>
+            <Label>Subtotal</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={subtotal.toFixed(2)}
+              readOnly
+              disabled={true}
+              className="bg-slate-100"
+            />
+          </div>
+          <div>
+            <Label>Tax</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={taxAmount.toFixed(2)}
+              readOnly
+              disabled={true}
+              className="bg-slate-100"
+            />
+          </div>
+          <div>
+            <Label>Total</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={totalAmount.toFixed(2)}
+              readOnly
+              disabled={true}
+              className="bg-slate-100"
+            />
+          </div>
+          {!isViewMode && (
             <div className="flex gap-2 items-center pb-2">
               <Checkbox
                 id="eatTax"
@@ -395,9 +421,21 @@ export function SaleForm({
               />
               <Label htmlFor="eatTax" className="mb-0">Eat tax?</Label>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </form>
+
+      {initialData && (
+        <PaymentDetailsModal
+          open={showPaymentInfo}
+          onClose={() => setShowPaymentInfo(false)}
+          data={{
+            totalAmount: (initialData.amount || 0) + (initialData.stateTax || 0),
+            tenderChange: initialData.tenderChange || 0,
+            tenders: initialData.tenders || []
+          }}
+        />
+      )}
     </div>
   );
 }
