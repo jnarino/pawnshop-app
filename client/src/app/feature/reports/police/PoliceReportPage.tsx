@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { RangeDatePicker } from "@/components/ui/range-date-picker";
 import { reportsApi } from "@/app/core/api/reportsApi";
 import { Loader2 } from "lucide-react";
+import { AlertModal } from '@/app/shared/components/AlertModal';
 
 
 export const PoliceReportPage = () => {
@@ -13,6 +14,7 @@ export const PoliceReportPage = () => {
     const today = new Date();
     const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     const form = useForm({
         defaultValues: {
@@ -34,7 +36,7 @@ export const PoliceReportPage = () => {
                 });
 
                 if (!result) {
-                    alert("No police report records found.");
+                    setAlertMessage("No police report records found.");
                     return;
                 }
 
@@ -55,9 +57,9 @@ export const PoliceReportPage = () => {
         } catch (error) {
             console.error(error);
             if (error instanceof Error) {
-                alert(error.message);
+                setAlertMessage(error.message);
             } else {
-                alert('An error occurred while generating the report.');
+                setAlertMessage('An error occurred while generating the report.');
             }
         } finally {
             setLoading(false);
@@ -92,5 +94,10 @@ export const PoliceReportPage = () => {
                 </FieldSet>
             </div>
         </form>
+        <AlertModal
+            open={!!alertMessage}
+            onOpenChange={(open) => !open && setAlertMessage(null)}
+            message={alertMessage}
+        />
     </div>;
 }

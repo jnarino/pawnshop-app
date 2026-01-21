@@ -17,6 +17,7 @@ import { tenderTypeApi, TenderType } from '@/app/core/api/tenderTypeApi';
 import { salesApi } from '@/app/core/api/salesApi';
 import { useAuthStore } from '@/app/core/store/useAuthStore';
 import { toast } from 'sonner';
+import { AlertModal } from '@/app/shared/components/AlertModal';
 
 type CashAction = 'add' | 'remove';
 
@@ -34,6 +35,7 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
   const [availableMethods, setAvailableMethods] = useState<TenderType[]>([]);
   const [loadingMethods, setLoadingMethods] = useState(false);
   const [isFromBank, setIsFromBank] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -88,11 +90,28 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
         await salesApi.removeCashFromMainDrawer(payload);
 
         // Success dialog
-        alert("Money removed successfully");
+        setAlertMessage("Money removed successfully");
 
-        // Close dialog and finish session
-        onOpenChange(false);
-        useAuthStore.getState().clearUser();
+        // We will delay closing until alert is dismissed, but since AlertModal is non-blocking in this flow logic,
+        // we might want to just show alert and rely on user closing it.
+        // However, the original logic closed the dialog right after alert.
+        // We'll set a callback to close dialog when alert is closed?
+        // For simplicity: setAlertMessage and handle external close logic or rework flow. 
+        // Actually, let's keep it simple: Show alert. When alert closes (onOpenChange), we can check a flag or just close manually.
+        // Better yet: just Toast for success? User specifically requested Modal.
+        // Let's use AlertMessage. When user clicks OK, we can optionally perform an action.
+        // But for minimal invasiveness, I'll just set message. The user closes the AlertModal, and we need to close the main dialog?
+        // The original code: alert() -> BLOCK -> onOpenChange(false).
+        // New code: setAlertMessage() -> RENDER -> User clicks OK -> onOpenChange(false).
+
+        // I will implement a standard AlertModal usage, but since I cannot easily wire a callback to "OK" purely via state boolean in one go without extra state,
+        // I'll add an `onClose` prop to my AlertModal logic or just use a useEffect or specific handler.
+        // Wait, AlertModal I defined has onOpenChange.
+        // I will add a 'success-remove' type logic or just use a simple state. 
+        // For now, I'll set the message. But I also need to close the main dialog.
+        // If I close main dialog immediately, AlertModal might unmount if it's inside Dialog? No, AlertModal is likely portal-ed.
+        // But if ManageCashDialog unmounts, AlertModal unmounts if it is a child.
+        // So I must NOT close ManageCashDialog until AlertModal is closed.
         return;
       }
 
@@ -252,6 +271,20 @@ export default function ManageCashDialog({ open, onOpenChange }: ManageCashDialo
           {loading ? 'Processing...' : action === 'add' ? 'Add' : 'Remove'}
         </Button>
       </DialogContent>
+      <AlertModal
+        open={!!alertMessage}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAlertMessage(null);
+            // If it was the success message for remove, we proceed to close everything
+            if (action === 'remove' && !loading) { // simplistic check
+              onOpenChange(false);
+              useAuthStore.getState().clearUser();
+            }
+          }
+        }}
+        message={alertMessage}
+      />
     </Dialog>
   );
 }
