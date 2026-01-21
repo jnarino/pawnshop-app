@@ -55,5 +55,5 @@ SELECT
 FROM store_transaction st
 INNER JOIN store_transaction_type stt ON stt.id = st.type_id
 LEFT JOIN store_transaction_item sti ON sti.store_transaction_id = st.id
-WHERE stt.code = 'SS' AND st.customer_id = $1
+WHERE stt.code in ('SS','SSV') AND st.customer_id = $1
 ORDER BY st.occurred_at DESC;

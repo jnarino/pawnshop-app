@@ -109,7 +109,7 @@ FROM store_transaction st
 JOIN store_transaction_type stt ON stt.id = st.type_id
 INNER JOIN customer ON customer.id = st.customer_id
 LEFT JOIN store_transaction_item sti ON sti.store_transaction_id = st.id
-WHERE stt.code = 'SS'
+WHERE stt.code in ('SS','SSV')
   AND st.occurred_at >= $1
   AND st.occurred_at <= $2
 ORDER BY st.occurred_at DESC;
