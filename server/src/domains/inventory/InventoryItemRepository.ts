@@ -40,4 +40,6 @@ export interface InventoryItemRepository {
    * Returns the raw number (e.g. "1", "2").
    */
   getNextInventoryNumber(): Promise<string>;
+
+  updateStatusAndQuantity(id: string, status: string, quantity: number): Promise<void>;
 }

@@ -85,7 +85,10 @@ import { ListStoreTransactionsByControlNumberUseCase } from './application/use-c
 
 
 
+import { VoidStoreTransactionUseCase } from './application/use-case/storeTransaction/command/VoidStoreTransactionUseCase';
+
 export async function createApp() {
+
   await runMigrations();
 
   // Repositories
@@ -172,6 +175,7 @@ export async function createApp() {
   const addMoneyToMainDrawerUseCase = new AddMoneyToMainDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
   const listBalanceCashDrawerUseCase = new ListBalanceCashDrawerUseCase(storeTransactionRepo);
   const closeBalanceCashDrawerUseCase = new CloseBalanceCashDrawerUseCase(storeTransactionRepo, tenderTypeRepository);
+  const voidStoreTransactionUseCase = new VoidStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo);
 
   // Tender Type use-cases
   const listTenderTypesUseCase = new ListTenderTypesUseCase(tenderTypeRepository);
@@ -260,7 +264,8 @@ export async function createApp() {
     removeCashFromMainDrawerUseCase,
     addMoneyToMainDrawerUseCase,
     listBalanceCashDrawerUseCase,
-    closeBalanceCashDrawerUseCase
+    closeBalanceCashDrawerUseCase,
+    voidStoreTransactionUseCase
   );
 
   const policeReportController = new PoliceReportController(

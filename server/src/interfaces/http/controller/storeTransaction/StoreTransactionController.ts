@@ -11,6 +11,8 @@ import { ListBalanceCashDrawerUseCase } from '../../../../application/use-case/s
 import { CloseBalanceCashDrawerUseCase } from '../../../../application/use-case/storeTransaction/command/CloseBalanceCashDrawerUseCase';
 import { ValidationError } from '../../../../application/common/errors';
 import { ListStoreTransactionsByControlNumberUseCase } from '../../../../application/use-case/storeTransaction/query/ListStoreTransactionsByControlNumberUseCase';
+import { VoidStoreTransactionUseCase } from '../../../../application/use-case/storeTransaction/command/VoidStoreTransactionUseCase';
+import { VoidStoreTransactionRequestDto } from '../../../../application/dto/storeTransaction/command/VoidStoreTransactionRequestDto';
 
 export class StoreTransactionController {
   constructor(
@@ -21,7 +23,8 @@ export class StoreTransactionController {
     private readonly removeCashFromMainDrawerUseCase: RemoveCashFromMainDrawerUseCase,
     private readonly addMoneyToMainDrawerUseCase: AddMoneyToMainDrawerUseCase,
     private readonly listBalanceCashDrawerUseCase: ListBalanceCashDrawerUseCase,
-    private readonly closeBalanceCashDrawerUseCase: CloseBalanceCashDrawerUseCase
+    private readonly closeBalanceCashDrawerUseCase: CloseBalanceCashDrawerUseCase,
+    private readonly voidStoreTransactionUseCase: VoidStoreTransactionUseCase
   ) { }
 
   /**
@@ -131,6 +134,17 @@ export class StoreTransactionController {
       return res.json(result);
     } catch (error) {
       return next(error);
+    }
+  }
+
+  voidTransaction = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const actor = this.getActor(req);
+        const dto = req.body as VoidStoreTransactionRequestDto;
+        const result = await this.voidStoreTransactionUseCase.execute(dto, actor.id);
+        return res.status(201).json(result);
+    } catch (error) {
+        return next(error);
     }
   }
 

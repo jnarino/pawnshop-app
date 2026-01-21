@@ -202,4 +202,9 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         const result = await this.db.query(SQL_GET_NEXT_NUMBER);
         return result.rows[0].next_val;
     }
+
+    async updateStatusAndQuantity(id: string, status: string, quantity: number): Promise<void> {
+        const sql = loadSql('commands', 'inventory/inventory_item_update_status_and_quantity');
+        await this.db.query(sql, [id, status, quantity]);
+    }
 }

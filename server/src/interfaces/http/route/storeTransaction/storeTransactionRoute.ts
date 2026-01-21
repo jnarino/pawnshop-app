@@ -347,5 +347,48 @@ export function createStoreTransactionRouter(
      */
     router.post('/', auth, controller.create);
 
+    /**
+     * @openapi
+     * /api/store-transaction/void:
+     *   post:
+     *     tags:
+     *       - Store Transactions
+     *     summary: Void a sale transaction
+     *     security:
+     *       - bearerAuth: []
+     *     descriptions: Reverse items to inventory and create negative ledger entries.
+     *     requestBody:
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [controlNumber, items, tenders]
+     *             properties:
+     *               controlNumber:
+     *                 type: string
+     *               items:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                      inventoryItemId: 
+     *                          type: string
+     *                      price:
+     *                          type: number
+     *               tenders:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                      tenderTypeId:
+     *                          type: number
+     *                      amount:
+     *                          type: number
+     *     responses:
+     *       201:
+     *         description: Transaction Voided
+     */
+    router.post('/void', auth, controller.voidTransaction);
+
     return router;
 }
