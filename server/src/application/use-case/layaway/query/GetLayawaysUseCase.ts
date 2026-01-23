@@ -32,6 +32,8 @@ export class GetLayawaysUseCase {
           stateTax: layaway.stateTax,
           returnedAmt: layaway.returnedAmt,
           customerId: layaway.customerId,
+          customerFirstName: layaway.customerFirstName,
+          customerLastName: layaway.customerLastName,
           note: layaway.note,
           status: layaway.status,
           defaultDate: layaway.defaultDate ? layaway.defaultDate.toISOString() : null,

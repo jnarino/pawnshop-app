@@ -9,6 +9,8 @@ export interface LayawayAgreementProps {
   stateTax: number | null;
   returnedAmt: number | null;
   customerId: string | null;
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   note: string | null;
   status: string | null;
   defaultDate: Date | null;
@@ -42,6 +44,8 @@ export class LayawayAgreement {
   readonly stateTax: number | null;
   readonly returnedAmt: number | null;
   readonly customerId: string | null;
+  readonly customerFirstName?: string | null;
+  readonly customerLastName?: string | null;
   readonly note: string | null;
   readonly status: string | null;
   readonly defaultDate: Date | null;
@@ -74,6 +78,8 @@ export class LayawayAgreement {
     this.stateTax = props.stateTax;
     this.returnedAmt = props.returnedAmt;
     this.customerId = props.customerId;
+    this.customerFirstName = props.customerFirstName;
+    this.customerLastName = props.customerLastName;
     this.note = props.note;
     this.status = props.status;
     this.defaultDate = props.defaultDate;

@@ -70,6 +70,8 @@ export class PgLayawayRepository implements LayawayRepository {
       stateTax: row.state_tax ? Number(row.state_tax) : null,
       returnedAmt: row.returned_amt ? Number(row.returned_amt) : null,
       customerId: row.customer_id,
+      customerFirstName: row.customer_first_name,
+      customerLastName: row.customer_last_name,
       note: row.note,
       status: row.status,
       defaultDate: row.default_date,

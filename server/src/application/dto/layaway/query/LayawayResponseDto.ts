@@ -22,6 +22,8 @@ export type LayawayResponseDto = {
   stateTax: number | null;
   returnedAmt: number | null;
   customerId: string | null;
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   note: string | null;
   status: string | null;
   defaultDate: string | null;

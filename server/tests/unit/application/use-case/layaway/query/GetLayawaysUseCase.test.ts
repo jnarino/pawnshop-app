@@ -33,6 +33,8 @@ describe('GetLayawaysUseCase', () => {
       stateTax: 5,
       returnedAmt: 0,
       customerId: 'cust1',
+      customerFirstName: 'John', 
+      customerLastName: 'Doe',
       note: 'note',
       status: 'Active',
       defaultDate,
@@ -72,6 +74,8 @@ describe('GetLayawaysUseCase', () => {
     
     // Check header
     expect(result[0].ticketnum).toBe('L100');
+    expect(result[0].customerFirstName).toBe('John');
+    expect(result[0].customerLastName).toBe('Doe');
     expect(result[0].amount).toBe(100);
 
     // Check items

@@ -28,8 +28,11 @@ SELECT
   la.item_last_updated_user_id,
   la.items_id,
   la.created_at,
-  la.updated_at
+  la.updated_at,
+  c.first_name as customer_first_name,
+  c.last_name as customer_last_name
 FROM layaway_agreement la
+LEFT JOIN customer c ON c.id = la.customer_id
 WHERE 
   ($1::text IS NULL OR la.status = $1)
   AND ($2::timestamptz IS NULL OR la.date_in >= $2)
