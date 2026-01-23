@@ -648,33 +648,41 @@ CREATE INDEX IF NOT EXISTS idx_store_tx_item_inventory ON store_transaction_item
 -----------------------
 CREATE TABLE IF NOT EXISTS layaway_agreement (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sale_store_tx_id UUID NOT NULL UNIQUE REFERENCES store_transaction(id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','completed','voided','defaulted')),
-  service_charge_percent NUMERIC(9,4),
-  service_charge_grace_days INT,
-  service_charge_amount NUMERIC(12,2),
-  deposit NUMERIC(12,2),
-  period_days INT,
-  late_fee NUMERIC(12,2),
-  message TEXT,
-  reminder BOOLEAN,
-  county_taxable NUMERIC(12,2),
+  ticketnum TEXT,
+  clerk_user_id UUID,
+  date_in TIMESTAMPTZ,
+  last_updated_at TIMESTAMPTZ,
+  amount NUMERIC(12,2),
+  tax_sales NUMERIC(12,2),
+  state_tax NUMERIC(12,2),
+  returned_amt NUMERIC(12,2),
+  customer_id UUID,
+  note TEXT,
+  status TEXT,
+  default_date TIMESTAMPTZ,
+  total_of_payments NUMERIC(12,2),
+  period INTEGER,
+  extra_note TEXT,
+  gun_proc_fee NUMERIC(12,2),
+  last_updated_user_id UUID,
+  inventory_number TEXT,
+  number_sold INTEGER,
+  item_amount NUMERIC(12,2),
+  description TEXT,
+  tax_exempt BOOLEAN,
+  return_sold BOOLEAN,
+  item_status TEXT,
+  county_tax_exempt BOOLEAN,
+  item_last_updated_user_id UUID,
+  items_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 DROP TRIGGER IF EXISTS trg_layaway_agreement_updated ON layaway_agreement;
 CREATE TRIGGER trg_layaway_agreement_updated
 BEFORE UPDATE ON layaway_agreement
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
-
-CREATE TABLE IF NOT EXISTS layaway_payment (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  layaway_agreement_id UUID NOT NULL REFERENCES layaway_agreement(id) ON DELETE CASCADE,
-  store_transaction_id UUID NOT NULL UNIQUE REFERENCES store_transaction(id) ON DELETE CASCADE,
-  amount NUMERIC(12,2),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_layaway_payment_agreement ON layaway_payment(layaway_agreement_id);
 
 -----------------------
 -- ATF Bound Book (gunlog)
