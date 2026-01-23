@@ -90,6 +90,7 @@ import { PgLayawayRepository } from './infrastructure/persistence/layaway/PgLaya
 import { PgLayawayUnitOfWork } from './infrastructure/db/PgLayawayUnitOfWork'; // Added
 import { CreateLayawayUseCase } from './application/use-case/layaway/command/CreateLayawayUseCase'; // Added
 import { GetLayawaysUseCase } from './application/use-case/layaway/query/GetLayawaysUseCase';
+import { GetLayawaysByCustomerUseCase } from './application/use-case/layaway/query/GetLayawaysByCustomerUseCase';
 import { LayawayController } from './interfaces/http/controller/layaway/LayawayController';
 
 export async function createApp() {
@@ -194,6 +195,7 @@ export async function createApp() {
 
   // Layaway use-cases
   const getLayawaysUseCase = new GetLayawaysUseCase(layawayRepo);
+  const getLayawaysByCustomerUseCase = new GetLayawaysByCustomerUseCase(layawayRepo);
   const createLayawayUseCase = new CreateLayawayUseCase(layawayUnitOfWork, controlNumberRepository, customerRepo);
 
   // Controllers
@@ -286,7 +288,7 @@ export async function createApp() {
     generateCashDrawerDetailUseCase
   );
 
-  const layawayController = new LayawayController(getLayawaysUseCase, createLayawayUseCase);
+  const layawayController = new LayawayController(getLayawaysUseCase, createLayawayUseCase, getLayawaysByCustomerUseCase);
 
   const app = createExpressApp({
     authController,

@@ -4,6 +4,7 @@ export interface FindLayawaysCriteria {
   status?: string;
   startDate?: Date;
   endDate?: Date;
+  customerId?: string;
 }
 
 export interface LayawayRepository {

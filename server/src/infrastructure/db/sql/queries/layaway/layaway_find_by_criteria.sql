@@ -38,4 +38,5 @@ WHERE
   ($1::text IS NULL OR la.status = $1)
   AND ($2::timestamptz IS NULL OR la.date_in >= $2)
   AND ($3::timestamptz IS NULL OR la.date_in <= $3)
+  AND ($4::uuid IS NULL OR la.customer_id = $4)
 ORDER BY la.date_in DESC;

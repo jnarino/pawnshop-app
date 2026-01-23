@@ -45,6 +45,35 @@ export function createLayawayRouter(
 
   /**
    * @openapi
+   * /api/layaway/customer/{customerId}:
+   *   get:
+   *     tags:
+   *       - Layaways
+   *     summary: List layaways by customer
+   *     description: List layaways for a specific customer, optionally filtering by status
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: customerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Customer ID
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *         description: Filter by status
+   *     responses:
+   *       200:
+   *         description: List of customer's layaways
+   */
+  router.get('/customer/:customerId', auth, controller.findByCustomer);
+
+  /**
+   * @openapi
    * /api/layaway:
    *   post:
    *     tags:

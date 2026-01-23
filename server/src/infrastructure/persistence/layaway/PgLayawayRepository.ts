@@ -10,12 +10,13 @@ export class PgLayawayRepository implements LayawayRepository {
   constructor(private readonly db: Pool | PoolClient) {}
 
   async findByCriteria(criteria: FindLayawaysCriteria): Promise<LayawayAgreement[]> {
-    const { status, startDate, endDate } = criteria;
+    const { status, startDate, endDate, customerId } = criteria;
 
     const result = await this.db.query(sqlFindByCriteria, [
       status || null,
       startDate || null,
       endDate || null,
+      customerId || null,
     ]);
 
     return result.rows.map(this.mapRow);
