@@ -24,6 +24,7 @@ import SalesWorkspace from '@/app/feature/sales/SalesWorkspace';
 import SalesMaintainWorkspace from '@/app/feature/sales/maintain/SalesMaintainWorkspace';
 import LayawayWorkspace from '@/app/feature/sales/layaway/LayawayWorkspace';
 import LayawayMaintainWorkspace from '@/app//feature/sales/layaway/maintain/LayawayMaintainWorkspace';
+import LayawayForfeitWorkspace from '@/app/feature/sales/forfeit/LayawayForfeitWorkspace';
 
 export default function AppRouter() {
   return (
@@ -57,6 +58,7 @@ export default function AppRouter() {
       <Route path="/sales/maintain" element={<Protected><SalesMaintainWorkspace /></Protected>} />
       <Route path="/sales/layaway" element={<Protected><LayawayWorkspace /></Protected>} />
       <Route path="/sales/layaway/maintain" element={<Protected><LayawayMaintainWorkspace /></Protected>} />
+      <Route path="/sales/layaway/forfeit" element={<Protected><LayawayForfeitWorkspace /></Protected>} />
 
       {/* fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -2,19 +2,19 @@ import { Button } from '@/components/ui/button';
 import { FieldLegend, FieldSet } from '@/components/ui/field';
 import { CancelButton } from '@/app/shared/components/CancelButton';
 import { PrintLabelsModal } from '@/app/feature/_shared/pawn-ticket/components/PrintLabelsModal';
-import { PawnList } from './PawnList';
-import { PawnItemList } from './PawnItemList';
-import { useForfeitStore } from './stores/forfeitStore';
+// import { PawnList } from './PawnList';
+// import { PawnItemList } from './PawnItemList';
+import { useForfeitStore } from '@/app/feature/pawns/forfeit/stores/forfeitStore';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ForfeitSearchBar } from '@/app/shared/components/ForfeitSearchBar';
 
-function ForfeitWorkspaceContent() {
+function LayawayForfeitWorkspaceContent() {
   const { submitForfeit, selectedItems, reset, createdItems, closePrintModal, selectedPawn, loadingProcessPull, submitError } = useForfeitStore();
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold mb-2.5">Forfeit (Pull)</h1>
+      <h1 className="text-2xl font-extrabold mb-2.5">Layaway Forfeit (Pull)</h1>
 
       <div className="flex flex-col space-y-4">
         <div className='self-end'>
@@ -27,12 +27,12 @@ function ForfeitWorkspaceContent() {
             <ForfeitSearchBar />
           </FieldSet>
           <div className='col-span-3'>
-            <PawnList />
+            {/* <PawnList /> */}
           </div>
         </div>
 
         <div className='mt-4'>
-          <PawnItemList />
+          {/* <PawnItemList /> */}
         </div>
 
         {selectedItems.length > 0 && (
@@ -71,8 +71,8 @@ function ForfeitWorkspaceContent() {
   );
 }
 
-export default function ForfeitWorkspace() {
+export default function LayawayForfeitWorkspace() {
   return (
-    <ForfeitWorkspaceContent />
+    <LayawayForfeitWorkspaceContent />
   );
 }

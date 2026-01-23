@@ -49,6 +49,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:sales-layaway', handler);
     },
 
+    onForfeitLayaway: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:sales-forfeit-layaway', handler);
+        return () => ipcRenderer.removeListener('menu:sales-forfeit-layaway', handler);
+    },
+
     onMaintainLayaway: (cb: () => void) => {
         const handler = () => cb();
         ipcRenderer.on('menu:sales-maintain-layaway', handler);

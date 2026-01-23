@@ -147,7 +147,7 @@ function LayawayMaintainWorkspaceContent() {
         <div className="border rounded-lg mt-8">
           <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
             <span>Layaways for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
-            <span className="text-xs">Scope: {scope}</span>
+            <span className="text-xs">Status: {status}</span>
           </div>
           <Table stickyHeader>
             <TableHeader>
@@ -174,8 +174,8 @@ function LayawayMaintainWorkspaceContent() {
                     <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{row.typeName || row.status || '—'}</TableCell>
-                    <TableCell>${row.amount}</TableCell>
-                    <TableCell>${row.amountDue}</TableCell>
+                    <TableCell>${row.totalOfPayments}</TableCell>
+                    <TableCell>${(row.totalOfPayments - (row.taxSales + row.stateTax))}</TableCell>
                     <TableCell className="text-right">
                       <Tooltip content="View sale">
                         <Button

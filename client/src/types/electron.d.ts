@@ -14,6 +14,7 @@ declare global {
       onSalesMaintain?: (cb: () => void) => () => void;
       onLayaway: (cb: () => void) => () => void;
       onMaintainLayaway: (cb: () => void) => () => void;
+      onForfeitLayaway: (cb: () => void) => () => void;
 
       onManageCash?: (cb: () => void) => () => void;
       onBalanceDrawer?: (cb: () => void) => () => void;

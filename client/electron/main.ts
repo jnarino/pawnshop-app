@@ -104,6 +104,10 @@ function buildMenu() {
           {
             label: 'Maintain layaway',
             click: () => mainWindow?.webContents.send('menu:sales-maintain-layaway'),
+          },
+          {
+            label: 'Forfeit layaway',
+            click: () => mainWindow?.webContents.send('menu:sales-forfeit-layaway'),
           }
         ],
       },

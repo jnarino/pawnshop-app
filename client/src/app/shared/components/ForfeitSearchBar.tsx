@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { RangeDatePicker } from '@/components/ui/range-date-picker';
-import { useForfeitStore } from './stores/forfeitStore';
+import { useForfeitStore } from '@/app/feature/pawns/forfeit/stores/forfeitStore';
 
 export const ForfeitSearchBar = () => {
     const { searchCriteria, setSearchCriteria, searchPawns, loading } = useForfeitStore();
