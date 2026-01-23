@@ -166,6 +166,8 @@ export default function ElectronMenuBridge() {
     onPawnsMaintain: () => navigate('/pawns/maintain', { replace: true }),
     onPawnsForfeitPull: () => navigate('/pawns/forfeit', { replace: true }),
     onSalesMaintain: () => navigate('/sales/maintain', { replace: true }),
+    onLayaway: () => navigate('/sales/layaway', { replace: true }),
+    onMaintainLayaway: () => navigate('/sales/layaway/maintain', { replace: true }),
     onManageCash: () => setCashDialogOpen(true),
     onBalanceDrawer: () => setDrawerBalanceDialogOpen(true),
     onInventoryMaintain: () => {

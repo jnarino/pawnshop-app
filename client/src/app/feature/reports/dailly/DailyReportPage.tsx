@@ -8,6 +8,7 @@ import { reportsApi } from "@/app/core/api/reportsApi";
 import { Loader2, Printer, Download } from "lucide-react";
 import { CashDrawerDetailWithSummaryResponseDto } from "@/app/core/dto/CashDrawerReportDto";
 import { generateDailyReportPdf } from "./generateDailyReportPdf";
+import { AlertModal } from '@/app/shared/components/AlertModal';
 
 export const DailyReportPage = () => {
     const today = new Date();
@@ -16,6 +17,7 @@ export const DailyReportPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     const form = useForm({
         defaultValues: {
@@ -42,7 +44,7 @@ export const DailyReportPage = () => {
                 });
 
                 if (!result || !result.transactions) {
-                    alert("No daily report records found.");
+                    setAlertMessage("No daily report records found.");
                     return;
                 }
 
@@ -50,14 +52,14 @@ export const DailyReportPage = () => {
                 const url = window.URL.createObjectURL(pdfBlob);
                 setPdfUrl(url);
             } else {
-                alert('Please select a date range.');
+                setAlertMessage('Please select a date range.');
             }
         } catch (error) {
             console.error(error);
             if (error instanceof Error) {
-                alert(error.message);
+                setAlertMessage(error.message);
             } else {
-                alert('An error occurred while generating the report.');
+                setAlertMessage('An error occurred while generating the report.');
             }
         } finally {
             setLoading(false);
@@ -143,6 +145,11 @@ export const DailyReportPage = () => {
                     <div className="text-sm">Select a date range and click generate to view the report preview</div>
                 </div>
             )}
+            <AlertModal
+                open={!!alertMessage}
+                onOpenChange={(open) => !open && setAlertMessage(null)}
+                message={alertMessage}
+            />
         </div>
     );
 };

@@ -7,12 +7,14 @@ import { RangeDatePicker } from "@/components/ui/range-date-picker";
 import { reportsApi } from "@/app/core/api/reportsApi";
 import { Loader2, Printer, Download } from "lucide-react";
 import { generateForfeitPdf, ForfeitReportData } from "./generateForfeitPdf";
+import { AlertModal } from '@/app/shared/components/AlertModal';
 
 export const ForfeitReportPage = () => {
     const today = new Date();
     const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
     const [loading, setLoading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     const form = useForm({
         defaultValues: {
@@ -35,7 +37,7 @@ export const ForfeitReportPage = () => {
                 }) as ForfeitReportData;
 
                 if (!result || (result.buys?.length === 0 && result.pawns?.length === 0)) {
-                    alert("No forfeit report records found.");
+                    setAlertMessage("No forfeit report records found.");
                     return;
                 }
 
@@ -44,14 +46,14 @@ export const ForfeitReportPage = () => {
                 setPdfUrl(url);
 
             } else {
-                alert('Please select a date range.');
+                setAlertMessage('Please select a date range.');
             }
         } catch (error) {
             console.error(error);
             if (error instanceof Error) {
-                alert(error.message);
+                setAlertMessage(error.message);
             } else {
-                alert('An error occurred while generating the report.');
+                setAlertMessage('An error occurred while generating the report.');
             }
         } finally {
             setLoading(false);
@@ -137,6 +139,11 @@ export const ForfeitReportPage = () => {
                     <div className="text-sm">Select a date range and click generate to view the report preview</div>
                 </div>
             )}
+            <AlertModal
+                open={!!alertMessage}
+                onOpenChange={(open) => !open && setAlertMessage(null)}
+                message={alertMessage}
+            />
         </div>
     );
 };

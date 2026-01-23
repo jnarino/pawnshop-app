@@ -22,6 +22,7 @@ import addIcon from '@/assets/icons/add.svg';
 import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { PawnItemsTable } from '../components/PawnItemsTable';
+import { AlertModal } from '@/app/shared/components/AlertModal';
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -79,6 +80,7 @@ export function PawnTicketForm({
   const { printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
@@ -137,7 +139,7 @@ export function PawnTicketForm({
     }
 
     if (formData.items.length === 0) {
-      alert('Please add at least one item');
+      setAlertMessage('Please add at least one item');
       return;
     }
 
@@ -384,6 +386,11 @@ export function PawnTicketForm({
           onSave={handleSaveItem}
         />
       )}
+      <AlertModal
+        open={!!alertMessage}
+        onOpenChange={(open) => !open && setAlertMessage(null)}
+        message={alertMessage}
+      />
     </div>
   );
 }

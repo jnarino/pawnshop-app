@@ -22,6 +22,7 @@ import { ForfeitReportPage } from './feature/reports/forfeit/ForfeitReportPage';
 
 import SalesWorkspace from '@/app/feature/sales/SalesWorkspace';
 import SalesMaintainWorkspace from '@/app/feature/sales/maintain/SalesMaintainWorkspace';
+import LayawayWorkspace from '@/app/feature/sales/layaway/LayawayWorkspace';
 
 export default function AppRouter() {
   return (
@@ -53,6 +54,7 @@ export default function AppRouter() {
       {/* Sales routes */}
       <Route path="/sales" element={<Protected><SalesWorkspace /></Protected>} />
       <Route path="/sales/maintain" element={<Protected><SalesMaintainWorkspace /></Protected>} />
+      <Route path="/sales/layaway" element={<Protected><LayawayWorkspace /></Protected>} />
 
       {/* fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { AlertModal } from '@/app/shared/components/AlertModal';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { SaleTransactionDetails } from './SaleTransactionDetails';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,7 @@ export function SaleForm({
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showRefundPaymentModal, setShowRefundPaymentModal] = useState(false);
   const [refundData, setRefundData] = useState<{ items: any[], reason: string, total: number } | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
@@ -161,7 +163,7 @@ export function SaleForm({
     }
 
     if (formData.items.length === 0) {
-      alert('Please add at least one item');
+      setAlertMessage('Please add at least one item');
       return;
     }
 
@@ -258,7 +260,7 @@ export function SaleForm({
         });
       }
     } catch (e) {
-      alert(e);
+      setAlertMessage(e instanceof Error ? e.message : String(e));
     }
   }, [updateFormData, findAvailableItemByNumber]);
 
@@ -296,12 +298,12 @@ export function SaleForm({
       };
 
       await salesApi.voidSale(initialData.id, payload);
-      alert('Sale voided/returned successfully');
+      setAlertMessage('Sale voided/returned successfully');
       setShowRefundPaymentModal(false);
       window.location.reload();
     } catch (error) {
       console.error('Failed to void sale', error);
-      alert('Failed to void sale');
+      setAlertMessage('Failed to void sale');
     }
   };
 
@@ -511,6 +513,11 @@ export function SaleForm({
           )}
         </>
       )}
+      <AlertModal
+        open={!!alertMessage}
+        onOpenChange={(open) => !open && setAlertMessage(null)}
+        message={alertMessage}
+      />
     </div>
   );
 }

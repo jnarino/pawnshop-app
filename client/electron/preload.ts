@@ -43,6 +43,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:sales-maintain', handler);
     },
 
+    onLayaway: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:sales-layaway', handler);
+        return () => ipcRenderer.removeListener('menu:sales-layaway', handler);
+    },
+
+    onSalesMaintainLayaway: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:sales-maintain-layaway', handler);
+        return () => ipcRenderer.removeListener('menu:sales-maintain-layaway', handler);
+    },
+
     // Cash drawers
     onManageCash: (cb: () => void) => {
         const handler = () => cb();
