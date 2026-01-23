@@ -10,7 +10,9 @@ describe('GetLayawaysByCustomerUseCase', () => {
         mockRepo = {
             findByCriteria: jest.fn(),
             create: jest.fn(),
-        };
+            findByTicketNum: jest.fn(),
+            update: jest.fn(),
+        } as unknown as jest.Mocked<LayawayRepository>;
         useCase = new GetLayawaysByCustomerUseCase(mockRepo);
     });
 

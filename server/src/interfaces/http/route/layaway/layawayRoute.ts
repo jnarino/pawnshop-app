@@ -93,5 +93,43 @@ export function createLayawayRouter(
    */
   router.post('/', auth, controller.create);
 
+  /**
+   * @openapi
+   * /api/layaway/payment:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Make layaway payment
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - ticketnum
+   *               - amount
+   *               - tenderTypeId
+   *               - customerId
+   *             properties:
+   *               customerId:
+   *                 type: string
+   *                 format: uuid
+   *               ticketnum:
+   *                 type: string
+   *               amount:
+   *                 type: number
+   *               tenderTypeId:
+   *                 type: integer
+   *               note:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Payment processed
+   */
+  router.post('/payment', auth, controller.makePayment);
+
   return router;
 }

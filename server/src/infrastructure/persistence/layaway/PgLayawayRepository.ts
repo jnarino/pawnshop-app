@@ -4,7 +4,9 @@ import { LayawayRepository, FindLayawaysCriteria } from '../../../domains/layawa
 import { loadSql } from '../../db/sqlLoader';
 
 const sqlFindByCriteria = loadSql('queries', 'layaway/layaway_find_by_criteria');
+const sqlFindByTicketNum = loadSql('queries', 'layaway/layaway_find_by_ticketnum');
 const sqlCreate = loadSql('commands', 'layaway/layaway_create');
+const sqlUpdate = loadSql('commands', 'layaway/layaway_update');
 
 export class PgLayawayRepository implements LayawayRepository {
   constructor(private readonly db: Pool | PoolClient) {}
@@ -20,6 +22,27 @@ export class PgLayawayRepository implements LayawayRepository {
     ]);
 
     return result.rows.map(this.mapRow);
+  }
+
+  async findByTicketNum(ticketnum: string): Promise<LayawayAgreement[]> {
+    const result = await this.db.query(sqlFindByTicketNum, [ticketnum]);
+    return result.rows.map(this.mapRow);
+  }
+
+  async update(layaway: LayawayAgreement): Promise<LayawayAgreement> {
+    const result = await this.db.query(sqlUpdate, [
+      layaway.id,
+      layaway.totalOfPayments,
+      layaway.status,
+      layaway.numberSold,
+      layaway.lastUpdatedUserId,
+    ]);
+
+    if (result.rowCount === 0) {
+      throw new Error(`Layaway Agreement with id ${layaway.id} not found`);
+    }
+
+    return this.mapRow(result.rows[0]);
   }
 
   async create(layaway: LayawayAgreement): Promise<LayawayAgreement> {
