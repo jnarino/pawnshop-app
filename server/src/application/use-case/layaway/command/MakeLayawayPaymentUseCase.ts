@@ -72,6 +72,11 @@ export class MakeLayawayPaymentUseCase {
       
       const controlNumber = await this.controlNumberRepo.getNextStoreSaleControlNumber();
 
+      // For pickup (Paid Off), we record the tax on the final transaction
+      const txTaxSales = isPaidOff ? (representative.taxSales || 0) : 0;
+      const txStateTax = isPaidOff ? (representative.stateTax || 0) : 0;
+      const txTaxExempt = representative.taxExempt || false;
+
       const tenders: StoreTransactionTender[] = [
         new StoreTransactionTender({
             id: crypto.randomUUID(),
@@ -91,9 +96,9 @@ export class MakeLayawayPaymentUseCase {
             typeId: typeId,
             occurredAt: dateNow,
             amount: dto.amount, // Record the payment amount as transaction amount
-            taxSales: 0, // No new tax (tax was on original sale)
-            stateTax: 0,
-            taxExemptUsed: false,
+            taxSales: txTaxSales,
+            stateTax: txStateTax,
+            taxExemptUsed: txTaxExempt,
             tenderChange: 0, 
             gunProcFee: 0,
             note: dto.note || `Layaway Payment for Ticket ${dto.ticketnum}`,

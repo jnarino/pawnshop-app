@@ -56,7 +56,9 @@ describe('MakeLayawayPaymentUseCase', () => {
     itemsId: 'inv-1',
     numberSold: 1,
     itemAmount: 100,
-    itemStatus: 'L'
+    itemStatus: 'L',
+    taxSales: 6.50,
+    stateTax: 6.50
   };
 
   it('should process partial payment successfully', async () => {
@@ -79,6 +81,7 @@ describe('MakeLayawayPaymentUseCase', () => {
     expect(mockStoreTxRepo.create).toHaveBeenCalled();
     const tx = mockStoreTxRepo.create.mock.calls[0][0];
     expect(tx.typeId).toBe(StoreTransactionTypeId.LAYAWAY_PAYMENT);
+    expect(tx.taxSales).toBe(0); // No tax on partial payment
   });
 
   it('should process full payment (pickup) successfully', async () => {
@@ -102,6 +105,7 @@ describe('MakeLayawayPaymentUseCase', () => {
     expect(mockInventoryRepo.update.mock.calls[0][0].status).toBe('S');
     const tx = mockStoreTxRepo.create.mock.calls[0][0];
     expect(tx.typeId).toBe(StoreTransactionTypeId.LAYAWAY_PICKUP);
+    expect(tx.taxSales).toBe(6.50); // Tax recorded on pickup
   });
 
   it('should throw error if customerId does not match', async () => {
