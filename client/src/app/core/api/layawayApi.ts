@@ -28,4 +28,14 @@ export const layawayApi = {
             body: JSON.stringify(payload)
         });
     },
+    findByControlNumber: async (controlNumber: string): Promise<any[]> => {
+        return http(`/api/store-transaction/by-control-number?controlNumber=${encodeURIComponent(controlNumber)}`);
+    },
+
+    getByCustomer: async (customerId: string): Promise<any[]> => {
+        return http(`/api/store-transaction/by-customer/${customerId}`);
+    },
+    getByDateRange: async (startDate: string, endDate: string, status?: string): Promise<any[]> => {
+        return http(`/api/layaway?${status ? `status=${status}&` : ''}startDate=${startDate}&endDate=${endDate}`);
+    },
 };
