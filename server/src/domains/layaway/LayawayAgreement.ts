@@ -1,0 +1,98 @@
+export interface LayawayAgreementProps {
+  id: string;
+  ticketnum: string | null;
+  clerkUserId: string | null;
+  dateIn: Date | null;
+  lastUpdatedAt: Date | null;
+  amount: number | null;
+  taxSales: number | null;
+  stateTax: number | null;
+  returnedAmt: number | null;
+  customerId: string | null;
+  note: string | null;
+  status: string | null;
+  defaultDate: Date | null;
+  totalOfPayments: number | null;
+  period: number | null;
+  extraNote: string | null;
+  gunProcFee: number | null;
+  lastUpdatedUserId: string | null;
+  inventoryNumber: string | null;
+  numberSold: number | null;
+  itemAmount: number | null;
+  description: string | null;
+  taxExempt: boolean | null;
+  returnSold: boolean | null;
+  itemStatus: string | null;
+  countyTaxExempt: boolean | null;
+  itemLastUpdatedUserId: string | null;
+  itemsId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class LayawayAgreement {
+  readonly id: string;
+  readonly ticketnum: string | null;
+  readonly clerkUserId: string | null;
+  readonly dateIn: Date | null;
+  readonly lastUpdatedAt: Date | null;
+  readonly amount: number | null;
+  readonly taxSales: number | null;
+  readonly stateTax: number | null;
+  readonly returnedAmt: number | null;
+  readonly customerId: string | null;
+  readonly note: string | null;
+  readonly status: string | null;
+  readonly defaultDate: Date | null;
+  readonly totalOfPayments: number | null;
+  readonly period: number | null;
+  readonly extraNote: string | null;
+  readonly gunProcFee: number | null;
+  readonly lastUpdatedUserId: string | null;
+  readonly inventoryNumber: string | null;
+  readonly numberSold: number | null;
+  readonly itemAmount: number | null;
+  readonly description: string | null;
+  readonly taxExempt: boolean | null;
+  readonly returnSold: boolean | null;
+  readonly itemStatus: string | null;
+  readonly countyTaxExempt: boolean | null;
+  readonly itemLastUpdatedUserId: string | null;
+  readonly itemsId: string | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+
+  constructor(props: LayawayAgreementProps) {
+    this.id = props.id;
+    this.ticketnum = props.ticketnum;
+    this.clerkUserId = props.clerkUserId;
+    this.dateIn = props.dateIn;
+    this.lastUpdatedAt = props.lastUpdatedAt;
+    this.amount = props.amount;
+    this.taxSales = props.taxSales;
+    this.stateTax = props.stateTax;
+    this.returnedAmt = props.returnedAmt;
+    this.customerId = props.customerId;
+    this.note = props.note;
+    this.status = props.status;
+    this.defaultDate = props.defaultDate;
+    this.totalOfPayments = props.totalOfPayments;
+    this.period = props.period;
+    this.extraNote = props.extraNote;
+    this.gunProcFee = props.gunProcFee;
+    this.lastUpdatedUserId = props.lastUpdatedUserId;
+    this.inventoryNumber = props.inventoryNumber;
+    this.numberSold = props.numberSold;
+    this.itemAmount = props.itemAmount;
+    this.description = props.description;
+    this.taxExempt = props.taxExempt;
+    this.returnSold = props.returnSold;
+    this.itemStatus = props.itemStatus;
+    this.countyTaxExempt = props.countyTaxExempt;
+    this.itemLastUpdatedUserId = props.itemLastUpdatedUserId;
+    this.itemsId = props.itemsId;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+  }
+}

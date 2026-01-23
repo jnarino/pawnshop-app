@@ -79,44 +79,6 @@ def migrate_layaway():
                 print(f"❌ Failed to create SL type: {e}")
                 raise e
 
-        # 1.5 Ensure Target Table Exists with Correct Schema
-        print("🛠 Checking/Creating 'layaway_agreement' table schema...")
-        pg_cursor.execute("DROP TABLE IF EXISTS layaway_agreement CASCADE")
-        pg_cursor.execute("""
-            CREATE TABLE layaway_agreement (
-                id UUID PRIMARY KEY,
-                ticketnum TEXT,
-                clerk_user_id UUID,
-                date_in TIMESTAMP WITH TIME ZONE,
-                last_updated_at TIMESTAMP WITH TIME ZONE,
-                amount DECIMAL(12, 2),
-                tax_sales DECIMAL(12, 2),
-                state_tax DECIMAL(12, 2),
-                returned_amt DECIMAL(12, 2),
-                customer_id UUID,
-                note TEXT,
-                status TEXT,
-                default_date TIMESTAMP WITH TIME ZONE,
-                total_of_payments DECIMAL(12, 2),
-                period INTEGER,
-                extra_note TEXT,
-                gun_proc_fee DECIMAL(12, 2),
-                last_updated_user_id UUID,
-                inventory_number TEXT,
-                number_sold INTEGER,
-                item_amount DECIMAL(12, 2),
-                description TEXT,
-                tax_exempt BOOLEAN,
-                return_sold BOOLEAN,
-                item_status TEXT,
-                county_tax_exempt BOOLEAN,
-                item_last_updated_user_id UUID,
-                items_id TEXT
-            )
-        """)
-        pg_conn.commit()
-        print("✅ Re-created 'layaway_agreement' table with requested columns.")
-
         # 2. Fetch Source Data
         print("Fetching Joined Layaway Data (sold + sitems)...")
         query = """

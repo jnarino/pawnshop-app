@@ -1,0 +1,37 @@
+SELECT 
+  la.id,
+  la.ticketnum,
+  la.clerk_user_id,
+  la.date_in,
+  la.last_updated_at,
+  la.amount,
+  la.tax_sales,
+  la.state_tax,
+  la.returned_amt,
+  la.customer_id,
+  la.note,
+  la.status,
+  la.default_date,
+  la.total_of_payments,
+  la.period,
+  la.extra_note,
+  la.gun_proc_fee,
+  la.last_updated_user_id,
+  la.inventory_number,
+  la.number_sold,
+  la.item_amount,
+  la.description,
+  la.tax_exempt,
+  la.return_sold,
+  la.item_status,
+  la.county_tax_exempt,
+  la.item_last_updated_user_id,
+  la.items_id,
+  la.created_at,
+  la.updated_at
+FROM layaway_agreement la
+WHERE 
+  ($1::text IS NULL OR la.status = $1)
+  AND ($2::timestamptz IS NULL OR la.date_in >= $2)
+  AND ($3::timestamptz IS NULL OR la.date_in <= $3)
+ORDER BY la.date_in DESC;
