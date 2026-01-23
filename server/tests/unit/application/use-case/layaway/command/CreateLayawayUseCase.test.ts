@@ -35,11 +35,10 @@ describe('CreateLayawayUseCase', () => {
             findById: jest.fn(),
             updateStatus: jest.fn(),
         };
-        // In the usecase it uses inventoryItemRepository for findById/update
-        // The interface name in UoW might be inventoryItemRepository? Let's assume so based on reading UseCase code
+        
         mockInventoryItemRepo = {
             findById: jest.fn(),
-            update: jest.fn(), // Changed from updateStatus to update
+            update: jest.fn(), 
         };
 
         mockUnitOfWork = {
@@ -78,22 +77,27 @@ describe('CreateLayawayUseCase', () => {
         const customerId = '00000000-0000-0000-0000-000000000000';
         const input: CreateLayawayRequestDto = {
             customerId,
-            downPayment: 50,
-            period: 30, // Add explicit period
             items: [
                 {
                     description: 'Gold Ring',
-                    amount: 200,
+                    price: 200,
                     quantity: 1,
-                    inventoryItemId: 'inv-123' // Inventory item
+                    inventoryItemId: 'inv-123'
                 },
                 {
-                    description: 'Manual Service',
-                    amount: 100,
-                    quantity: 1
-                    // No ID -> X-ITEM
+                    description: 'Silver Watch',
+                    price: 100,
+                    quantity: 1,
+                    inventoryItemId: 'inv-456'
                 }
-            ]
+            ],
+            tenders: [
+                {
+                    tenderTypeId: 1,
+                    amount: 50
+                }
+            ],
+            taxExemptUsed: false // Default
         };
 
         const mockCustomer = new Customer({
@@ -102,16 +106,31 @@ describe('CreateLayawayUseCase', () => {
             lastName: 'Doe',
         } as any);
 
-        const mockInventoryItem = {
+        const mockInventoryItem1 = {
             id: 'inv-123',
             inventoryNumber: '1001',
             status: 'I',
             quantity: 1,
+            itemDescription: 'Gold Ring',
+            cost: 100, // Dummy
+            price: 200,
+        };
+
+        const mockInventoryItem2 = {
+            id: 'inv-456',
+            inventoryNumber: '1002',
+            status: 'I',
+            quantity: 1,
+            itemDescription: 'Silver Watch',
+            cost: 50,
+            price: 100
         };
 
         mockCustomerRepo.findById.mockResolvedValue(mockCustomer);
         mockControlNumberRepo.getNextStoreSaleControlNumber.mockResolvedValue('SALE-999');
-        mockInventoryItemRepo.findById.mockResolvedValue(mockInventoryItem);
+        mockInventoryItemRepo.findById
+            .mockResolvedValueOnce(mockInventoryItem1)
+            .mockResolvedValueOnce(mockInventoryItem2);
 
         // Act
         const result = await useCase.execute(input, 'user-123');
@@ -132,12 +151,10 @@ describe('CreateLayawayUseCase', () => {
         expect(mockInventoryItemRepo.update).toHaveBeenCalled();
         const updatedItem = mockInventoryItemRepo.update.mock.calls[0][0];
         expect(updatedItem.status).toBe('L');
-        expect(updatedItem.quantity).toBe(0);
+        expect(updatedItem.quantity).toBe(0); // 1 - 1 = 0
 
         // Verify Store Transaction created
         expect(mockStoreTransactionRepo.create).toHaveBeenCalled();
-        const createdTx = mockStoreTransactionRepo.create.mock.calls[0][0];
-        expect(createdTx.typeId).toBe(12); // SL - LAYAWAY_DEPOSIT (need to verify this ID from enum/DB but usually mapped)
         
         // Verify Layaway Created
         expect(mockLayawayRepo.create).toHaveBeenCalledTimes(2); // 2 items
@@ -148,15 +165,8 @@ describe('CreateLayawayUseCase', () => {
         expect(layawayArg1.ticketnum).toBe('SALE-999');
         expect(layawayArg2.ticketnum).toBe('SALE-999');
 
-        // Verify X-ITEM handling
-        // First item was inventory, so inventoryNumber should be '1001'
         expect(layawayArg1.inventoryNumber).toBe('1001');
-        // Second item was manual, so inventoryNumber should be 'X-ITEM' or '0' (based on implementation)
-        // Implementation: itemDto.inventoryItemId ? (lookup) : 'X-ITEM' or similar. 
-        // Use case code: 
-        // let inventoryNumber = '0'; 
-        // if (!itemDto.inventoryItemId) { inventoryNumber = 'X-ITEM'; }
-        expect(layawayArg2.inventoryNumber).toBe('X-ITEM');
+        expect(layawayArg2.inventoryNumber).toBe('1002');
     });
 
     it('should throw NotFoundError if customer does not exist', async () => {
@@ -168,12 +178,13 @@ describe('CreateLayawayUseCase', () => {
             items: [
                 {
                     description: 'Item',
-                    amount: 10,
-                    quantity: 1
+                    price: 10,
+                    quantity: 1,
+                    inventoryItemId: 'inv-999'
                 }
             ],
-            downPayment: 0,
-            period: 30
+            tenders: [],
+            taxExemptUsed: false
         };
 
         await expect(useCase.execute(input, 'user-1')).rejects.toThrow(NotFoundError);

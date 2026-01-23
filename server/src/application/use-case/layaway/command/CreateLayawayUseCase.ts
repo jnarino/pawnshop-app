@@ -40,9 +40,8 @@ export class CreateLayawayUseCase {
             let totalAmount = 0;
             let totalTax = 0;
             const transactionItems: StoreTransactionItem[] = [];
-            const layawayRows: LayawayAgreement[] = [];
             const transactionId = crypto.randomUUID();
-            const taxRate = 0.065;
+            const taxRate = 0.065; // Fixed 6.5% tax for now
 
             const dateNow = new Date();
             // Calculate Default Date (Expiration) - Always 30 days after transaction
@@ -53,84 +52,69 @@ export class CreateLayawayUseCase {
             const inventoryItemsMap = new Map<string, any>(); // Cache inventory items
 
             for (const [index, itemDto] of dto.items.entries()) {
-                const lineAmount = itemDto.amount * itemDto.quantity; // Assuming quantity 1 for serialized
+                const lineAmount = itemDto.price * itemDto.quantity; // Price from new DTO
                 totalAmount += lineAmount;
 
                 let inventoryNumber = null;
                 let description = itemDto.description;
                 let itemsId = null;
 
-                // 2. Handle Inventory
-                if (itemDto.inventoryItemId) {
-                    const invItem = await inventoryItemRepository.findById(itemDto.inventoryItemId);
-                    if (!invItem) throw new NotFoundError(`Inventory Item ${itemDto.inventoryItemId} not found`);
+                // 2. Handle Inventory (Obligatory)
+                const invItem = await inventoryItemRepository.findById(itemDto.inventoryItemId);
+                if (!invItem) throw new NotFoundError(`Inventory Item ${itemDto.inventoryItemId} not found`);
 
-                    // Cache for later use
-                    inventoryItemsMap.set(itemDto.inventoryItemId, invItem);
+                // Cache for later use
+                inventoryItemsMap.set(itemDto.inventoryItemId, invItem);
 
-                    // Update Inventory Status
-                    // Based on legacy/CSV, status 'L' = Layaway
-                    invItem.status = 'L';
-                    // Decrement quantity (remove from on-hand)
-                    invItem.quantity = invItem.quantity - 1;
-                    await inventoryItemRepository.update(invItem);
+                // Update Inventory Status
+                // Based on legacy/CSV, status 'L' = Layaway
+                invItem.status = 'L';
+                // Decrement quantity
+                invItem.quantity = invItem.quantity - 1;
+                await inventoryItemRepository.update(invItem);
 
-                    inventoryNumber = invItem.inventoryNumber;
-                    description = invItem.itemDescription || itemDto.description;
-                    itemsId = invItem.id;
-                } else {
-                    // Handle X-Item (No Inventory Link)
-                    inventoryNumber = 'X-ITEM';
-                    itemsId = '0'; // Legacy convention for non-inventory items
-                }
+                inventoryNumber = invItem.inventoryNumber;
+                description = invItem.itemDescription || itemDto.description;
+                itemsId = invItem.id;
 
                 // Store Transaction Item
                 transactionItems.push(new StoreTransactionItem({
                     id: crypto.randomUUID(),
                     storeTransactionId: transactionId,
                     sequence: index + 1,
-                    inventoryItemId: itemsId === '0' ? null : itemsId, // Use null for FK if no real item
+                    inventoryItemId: itemsId,
                     description: description,
                     quantity: itemDto.quantity,
                     lineAmount: lineAmount,
-                    lineCost: null, // Could fetch if needed
-                    taxExempt: false,
+                    lineCost: null, 
+                    taxExempt: dto.taxExemptUsed,
                     countyTaxExempt: false,
                     returned: false,
                     status: 'L', // Layaway
                     createdAt: dateNow
                 }));
 
-                // Tax
-                totalTax += lineAmount * taxRate;
+                // Tax Calculation
+                if (!dto.taxExemptUsed) {
+                    totalTax += lineAmount * taxRate;
+                }
             }
 
             totalTax = Math.round(totalTax * 100) / 100;
             const grandTotal = totalAmount + totalTax;
 
-            // 3. Create Store Transaction
-            // Down payment is the "Tender" for this transaction?
-            // Or is the Transaction Amount the full value?
-            // Usually Store Transaction creates a receivable.
-            // But here we just record the initial deposit probably?
-            // User said: "create the store transacion with the ticketnum consecutive from sales"
-            // If I record full sale amount, it impacts sales report.
-            // If it's layaway, usually we record full sale but separate category.
-            // And we handle payments.
-            // `amount` is e.g. 359.00. `total_of_payments` 200.00. 
-            // If `total_of_payments` is the down payment, then we have a balance.
+            // Calculate Deposit from Tenders
+            const depositAmount = dto.tenders.reduce((sum, t) => sum + t.amount, 0);
 
-            const tenders: StoreTransactionTender[] = [];
-            if (dto.downPayment > 0) {
-                tenders.push(new StoreTransactionTender({
-                    id: crypto.randomUUID(),
-                    storeTransactionId: transactionId,
-                    sequence: 1,
-                    tenderTypeId: 1, // Cash
-                    amount: dto.downPayment,
-                    createdAt: dateNow
-                }));
-            }
+            // 3. Create Store Transaction
+            const tenders: StoreTransactionTender[] = dto.tenders.map((t, idx) => new StoreTransactionTender({
+                id: crypto.randomUUID(),
+                storeTransactionId: transactionId,
+                sequence: idx + 1,
+                tenderTypeId: t.tenderTypeId,
+                amount: t.amount,
+                createdAt: dateNow
+            }));
 
             const storeTx = new StoreTransaction({
                 id: transactionId,
@@ -138,15 +122,10 @@ export class CreateLayawayUseCase {
                 clerkUserId: clerkUserId,
                 typeId: StoreTransactionTypeId.LAYAWAY_DEPOSIT,
                 occurredAt: dateNow,
-                amount: grandTotal, // Or just down payment? Usually transaction amount matches tender for cash accounting.
-                // But for SALES accounting, it's the full amount.
-                // Given 'LAYAWAY DEPOSIT' type, maybe it should only be the deposit amount?
-                // But we have items attached.
-                // Let's assume Amount = Grand Total for the Sale record. Tender = Deposit. Balance = Due.
-                // But StoreTransaction struct has `tenderChange`.
+                amount: grandTotal, 
                 taxSales: totalTax,
                 stateTax: totalTax,
-                taxExemptUsed: false,
+                taxExemptUsed: dto.taxExemptUsed,
                 tenderChange: 0,
                 gunProcFee: 0,
                 note: dto.note || '',
@@ -156,9 +135,7 @@ export class CreateLayawayUseCase {
                 updatedAt: dateNow
             });
 
-            // Persist Store Transaction (ignoring inventory updates param since we did manual update above if implicit)
-            // Actually StoreRepo.create takes inventory updates array.
-            // Since we manually updated via inventoryItemRepository, we can pass empty array.
+            // Persist Store Transaction
             await storeTransactionRepository.create(storeTx, []);
 
             // 4. Create Layaway Agreements (Rows)
@@ -166,7 +143,7 @@ export class CreateLayawayUseCase {
 
             for (const itemDto of dto.items) {
                 // Retrieve cached inventory item
-                const invItem = itemDto.inventoryItemId ? inventoryItemsMap.get(itemDto.inventoryItemId) : null;
+                const invItem = inventoryItemsMap.get(itemDto.inventoryItemId);
 
                 const agreement = new LayawayAgreement({
                     id: crypto.randomUUID(),
@@ -179,24 +156,27 @@ export class CreateLayawayUseCase {
                     stateTax: totalTax,
                     returnedAmt: 0,
                     customerId: dto.customerId,
+                    customerFirstName: customer.firstName,
+                    customerLastName: customer.lastName,
                     note: dto.note || '',
                     status: 'Active',
                     defaultDate: defaultDate,
-                    totalOfPayments: dto.downPayment, // Initial payment
+                    totalOfPayments: depositAmount, // Initial payment sum
                     period: LAYAWAY_TERM_DAYS,
                     extraNote: null,
                     gunProcFee: 0,
                     lastUpdatedUserId: clerkUserId,
-                    inventoryNumber: invItem?.inventoryNumber || 'X-ITEM',
+                    inventoryNumber: invItem.inventoryNumber,
                     numberSold: itemDto.quantity,
-                    itemAmount: itemDto.amount,
+                    itemAmount: itemDto.price, // Item Price
                     description: itemDto.description,
-                    taxExempt: false,
+                    taxExempt: dto.taxExemptUsed,
                     returnSold: false,
                     itemStatus: 'L',
                     countyTaxExempt: false,
                     itemLastUpdatedUserId: clerkUserId,
-                    itemsId: invItem?.id || '0',
+                    itemsId: invItem.id,
+
                     createdAt: dateNow,
                     updatedAt: dateNow
                 });

@@ -168,10 +168,10 @@ export function createLayawayRouter(
 
   /**
    * @openapi
-   * /api/layaway/ticket/{ticketnum}:
+   * /api/layaway/{ticketnum}:
    *   get:
    *     tags:
-   *       - Layaway
+   *       - Layaways
    *     summary: Get layaway ticket details
    *     security:
    *       - bearerAuth: []
@@ -187,7 +187,7 @@ export function createLayawayRouter(
    *       404:
    *         description: Ticket not found
    */
-  router.get('/ticket/:ticketnum', auth, controller.findByTicketNum);
+  router.get('/:ticketnum', auth, controller.findByTicketNum);
 
   return router;
 }
