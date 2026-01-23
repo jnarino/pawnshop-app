@@ -25,12 +25,19 @@ interface Props {
     tenders: any[];
     change: number;
   };
+  readonly showDeposit?: boolean;
 }
 
-export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone, history }: Props) {
+export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone, history, showDeposit }: Props) {
   const [tenders, setTenders] = useState<TenderMethod[]>([]);
   const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
+  const [depositAmount, setDepositAmount] = useState<string>(String((totalAmount * 0.1).toFixed(2)));
+  const [totalAmountToPay, setTotalAmountToPay] = useState(showDeposit ? totalAmount * 0.1 : totalAmount);
+
+  useEffect(() => {
+    setTotalAmountToPay(Number(depositAmount));
+  }, [depositAmount]);
 
   useEffect(() => {
     if (open) {
@@ -50,7 +57,7 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
         setTenders([{
           id: '1',
           name: cashType.name,
-          amount: totalAmount.toFixed(2),
+          amount: totalAmountToPay.toFixed(2),
           tenderTypeId: cashType.id
         }]);
       }
@@ -76,7 +83,7 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
     const newTender: TenderMethod = {
       id: Date.now().toString(),
       name: nextAvailableType.name,
-      amount: (totalAmount - getTotalTendered()).toFixed(2),
+      amount: (totalAmountToPay - getTotalTendered()).toFixed(2),
       tenderTypeId: nextAvailableType.id
     };
     setTenders(prev => [...prev, newTender]);
@@ -143,7 +150,26 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
             <div className="text-3xl font-bold tracking-tight text-primary">
               ${totalAmount.toFixed(2)}
             </div>
+            {showDeposit && (
+              <div className="flex flex-col items-center gap-2 mt-2">
+                <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Deposit</Label>
+                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  className="pl-8 text-right font-mono"
+                />
+              </div>
+            )}
+            {showDeposit && Number(depositAmount) >= totalAmount && (
+              <p className="text-xs text-destructive font-medium mt-1">
+                Deposit must be less than total amount
+              </p>
+            )}
           </div>
+
           <div className="space-y-4">
             <Label className="text-xs font-medium uppercase text-muted-foreground flex justify-between items-center px-1">
               <span>Payment Methods</span>
@@ -237,8 +263,8 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
           </Button>
           <Button
             onClick={() => onDone(tenders)}
-            disabled={getTotalTendered() < totalAmount}
-            className={cn("w-full sm:w-auto", getTotalTendered() >= totalAmount ? "bg-green-600 hover:bg-green-700" : "")}
+            disabled={getTotalTendered() < totalAmountToPay || (showDeposit ? Number(depositAmount) >= totalAmount : false)}
+            className={cn("w-full sm:w-auto", getTotalTendered() >= totalAmountToPay ? "bg-green-600 hover:bg-green-700" : "")}
           >
             Process {!!history ? "Return" : "Payment"}
           </Button>
