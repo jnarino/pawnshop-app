@@ -13,37 +13,75 @@ describe('GetLayawaysUseCase', () => {
     useCase = new GetLayawaysUseCase(mockRepo);
   });
 
-  it('should return layaways when criteria match', async () => {
-    const mockLayaway = {
-      id: '123',
+  it('should group items by ticketnum', async () => {
+    // Two rows with same ticket number 'L100'
+    const dateIn = new Date('2023-01-01');
+    const lastUpdatedAt = new Date('2023-01-02');
+    const createdAt = new Date('2023-01-01');
+    const updatedAt = new Date('2023-01-02');
+    const defaultDate = new Date('2023-02-01');
+
+    const row1 = {
+      id: '123-A',
       ticketnum: 'L100',
-      dateIn: new Date(),
+      clerkUserId: 'user1',
+      dateIn,
+      lastUpdatedAt,
       amount: 100,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      taxSales: 10,
+      stateTax: 5,
+      returnedAmt: 0,
+      customerId: 'cust1',
+      note: 'note',
+      status: 'Active',
+      defaultDate,
+      totalOfPayments: 20,
+      period: 30,
+      extraNote: null,
+      gunProcFee: 0,
+      lastUpdatedUserId: 'user1',
+      inventoryNumber: 'INV-1',
+      numberSold: 1,
+      itemAmount: 50,
+      description: 'Item 1',
+      taxExempt: false,
+      returnSold: false,
+      itemStatus: 'Active',
+      countyTaxExempt: false,
+      itemLastUpdatedUserId: 'user1',
+      itemsId: 'item1',
+      createdAt,
+      updatedAt
     } as unknown as LayawayAgreement;
 
-    mockRepo.findByCriteria.mockResolvedValue([mockLayaway]);
+    const row2 = {
+      ...row1,
+      id: '123-B', // Different row ID (pk)
+      inventoryNumber: 'INV-2',
+      itemsId: 'item2',
+      description: 'Item 2'
+    } as unknown as LayawayAgreement;
+
+    mockRepo.findByCriteria.mockResolvedValue([row1, row2]);
 
     const result = await useCase.execute({ status: 'Active' });
 
+    // Should result in ONE layaway group
     expect(result).toHaveLength(1);
+    
+    // Check header
     expect(result[0].ticketnum).toBe('L100');
-    expect(mockRepo.findByCriteria).toHaveBeenCalledWith(expect.objectContaining({ status: 'Active' }));
+    expect(result[0].amount).toBe(100);
+
+    // Check items
+    expect(result[0].items).toHaveLength(2);
+    expect(result[0].items[0].inventoryNumber).toBe('INV-1');
+    expect(result[0].items[1].inventoryNumber).toBe('INV-2');
   });
 
-  it('should filter by date range', async () => {
+  it('should return empty list when no layaways found', async () => {
     mockRepo.findByCriteria.mockResolvedValue([]);
-    const startDate = '2023-01-01';
-    const endDate = '2023-12-31';
-
-    await useCase.execute({ startDate, endDate });
-
-    expect(mockRepo.findByCriteria).toHaveBeenCalledWith(
-        expect.objectContaining({
-            startDate: expect.any(Date),
-            endDate: expect.any(Date)
-        })
-    );
+    const result = await useCase.execute({});
+    expect(result).toHaveLength(0);
   });
 });

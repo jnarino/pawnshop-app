@@ -1,3 +1,16 @@
+export type LayawayItemDto = {
+  inventoryNumber: string | null;
+  numberSold: number | null;
+  itemAmount: number | null;
+  description: string | null;
+  taxExempt: boolean | null;
+  returnSold: boolean | null;
+  itemStatus: string | null;
+  countyTaxExempt: boolean | null;
+  itemLastUpdatedUserId: string | null;
+  itemsId: string | null;
+};
+
 export type LayawayResponseDto = {
   id: string;
   ticketnum: string | null;
@@ -17,16 +30,7 @@ export type LayawayResponseDto = {
   extraNote: string | null;
   gunProcFee: number | null;
   lastUpdatedUserId: string | null;
-  inventoryNumber: string | null;
-  numberSold: number | null;
-  itemAmount: number | null;
-  description: string | null;
-  taxExempt: boolean | null;
-  returnSold: boolean | null;
-  itemStatus: string | null;
-  countyTaxExempt: boolean | null;
-  itemLastUpdatedUserId: string | null;
-  itemsId: string | null;
+  items: LayawayItemDto[];
   createdAt: string;
   updatedAt: string;
 };
