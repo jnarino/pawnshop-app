@@ -114,6 +114,10 @@ export class MakeLayawayPaymentUseCase {
       // We update ALL items matching the ticketnum (even if some were technically separate lines, they share the payment pool)
       // But we filtered for 'Active' ones.
       
+      // Calculate new default date (30 days from payment)
+      const newDefaultDate = new Date(dateNow);
+      newDefaultDate.setDate(newDefaultDate.getDate() + 30);
+
       for (const item of activeItems) {
         // Update Agreement
         const updatedItem = new LayawayAgreement({
@@ -122,6 +126,7 @@ export class MakeLayawayPaymentUseCase {
             lastUpdatedAt: dateNow,
             lastUpdatedUserId: clerkUserId,
             status: isPaidOff ? 'Sold' : 'Active', // Update status if sold
+            defaultDate: newDefaultDate, // Extend expiration by 30 days on payment
             numberSold: item.numberSold, // Keep quantity
             // Update item_status if needed? 
             itemStatus: isPaidOff ? 'S' : item.itemStatus 

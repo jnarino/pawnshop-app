@@ -58,10 +58,11 @@ describe('MakeLayawayPaymentUseCase', () => {
     itemAmount: 100,
     itemStatus: 'L',
     taxSales: 6.50,
-    stateTax: 6.50
+    stateTax: 6.50,
+    defaultDate: new Date('2023-01-01')
   };
 
-  it('should process partial payment successfully', async () => {
+  it('should process partial payment and update defaultDate', async () => {
     mockLayawayRepo.findByTicketNum.mockResolvedValue([baseItem]);
 
     const input = {
@@ -78,6 +79,16 @@ describe('MakeLayawayPaymentUseCase', () => {
     const updatedItem = mockLayawayRepo.update.mock.calls[0][0];
     expect(updatedItem.totalOfPayments).toBe(50);
     expect(updatedItem.status).toBe('Active');
+
+    // Check that defaultDate is updated to approx 30 days from now
+    const now = new Date();
+    const expectedDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const actualDate = updatedItem.defaultDate;
+    
+    // Allow small difference (e.g. 10s buffer) for execution time
+    const diff = Math.abs(actualDate.getTime() - expectedDate.getTime());
+    expect(diff).toBeLessThan(10000);
+
     expect(mockStoreTxRepo.create).toHaveBeenCalled();
     const tx = mockStoreTxRepo.create.mock.calls[0][0];
     expect(tx.typeId).toBe(StoreTransactionTypeId.LAYAWAY_PAYMENT);

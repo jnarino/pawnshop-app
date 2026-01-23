@@ -131,5 +131,63 @@ export function createLayawayRouter(
    */
   router.post('/payment', auth, controller.makePayment);
 
+  /**
+   * @openapi
+   * /api/layaway/payment/void:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Void layaway payment
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - ticketnum
+   *               - amount
+   *               - customerId
+   *             properties:
+   *               customerId:
+   *                 type: string
+   *                 format: uuid
+   *               ticketnum:
+   *                 type: string
+   *               amount:
+   *                 type: number
+   *               note:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Payment voided
+   */
+  router.post('/payment/void', auth, controller.voidPayment);
+
+  /**
+   * @openapi
+   * /api/layaway/ticket/{ticketnum}:
+   *   get:
+   *     tags:
+   *       - Layaway
+   *     summary: Get layaway ticket details
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: ticketnum
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Layaway details
+   *       404:
+   *         description: Ticket not found
+   */
+  router.get('/ticket/:ticketnum', auth, controller.findByTicketNum);
+
   return router;
 }
