@@ -1,4 +1,5 @@
 export interface ControlNumberRepository {
-    getNextPawnControlNumber(db: any): Promise<string>;
-    getNextPurchaseControlNumber(db: any): Promise<string>;
+    getNextPawnControlNumber(db?: any): Promise<string>;
+    getNextPurchaseControlNumber(db?: any): Promise<string>;
+    getNextStoreSaleControlNumber(db?: any): Promise<string>;
 }

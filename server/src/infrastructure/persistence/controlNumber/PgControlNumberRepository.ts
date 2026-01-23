@@ -15,4 +15,9 @@ export class PgControlNumberRepository implements ControlNumberRepository {
         const result = await this.db.query('SELECT get_next_purchase_control_number() AS control_number');
         return result.rows[0].control_number;
     }
+
+    async getNextStoreSaleControlNumber(): Promise<string> {
+        const result = await this.db.query('SELECT get_next_store_sale_control_number() AS control_number');
+        return result.rows[0].control_number;
+    }
 }

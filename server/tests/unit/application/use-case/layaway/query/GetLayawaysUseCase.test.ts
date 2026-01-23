@@ -9,6 +9,7 @@ describe('GetLayawaysUseCase', () => {
   beforeEach(() => {
     mockRepo = {
       findByCriteria: jest.fn(),
+      create: jest.fn(),
     };
     useCase = new GetLayawaysUseCase(mockRepo);
   });

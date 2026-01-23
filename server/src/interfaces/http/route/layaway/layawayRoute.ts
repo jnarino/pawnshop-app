@@ -43,5 +43,26 @@ export function createLayawayRouter(
    */
   router.get('/', auth, controller.findByCriteria);
 
+  /**
+   * @openapi
+   * /api/layaway:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Create new layaway
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateLayawayRequest'
+   *     responses:
+   *       201:
+   *         description: Layaway created successfully
+   */
+  router.post('/', auth, controller.create);
+
   return router;
 }

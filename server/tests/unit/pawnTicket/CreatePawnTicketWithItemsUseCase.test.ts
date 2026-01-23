@@ -6,6 +6,7 @@ import { ControlNumberRepository } from '../../../src/domains/controlNumber/Cont
 class MockControlNumberRepository implements ControlNumberRepository {
   getNextPawnControlNumber = jest.fn(async () => 'MOCK-PAWN-CN');
   getNextPurchaseControlNumber = jest.fn(async () => 'MOCK-PURCHASE-CN');
+  getNextStoreSaleControlNumber = jest.fn(async () => 'MOCK-STORE-CN');
 }
 import { InventoryItem } from '../../../src/domains/inventory/InventoryItem';
 import { InventoryItemRepository } from '../../../src/domains/inventory/InventoryItemRepository';

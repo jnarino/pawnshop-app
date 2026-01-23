@@ -1,23 +1,61 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { LayawayAgreement, LayawayAgreementProps } from '../../../domains/layaway/LayawayAgreement';
 import { LayawayRepository, FindLayawaysCriteria } from '../../../domains/layaway/LayawayRepository';
 import { loadSql } from '../../db/sqlLoader';
 
 const sqlFindByCriteria = loadSql('queries', 'layaway/layaway_find_by_criteria');
+const sqlCreate = loadSql('commands', 'layaway/layaway_create');
 
 export class PgLayawayRepository implements LayawayRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: Pool | PoolClient) {}
 
   async findByCriteria(criteria: FindLayawaysCriteria): Promise<LayawayAgreement[]> {
     const { status, startDate, endDate } = criteria;
 
-    const result = await this.pool.query(sqlFindByCriteria, [
+    const result = await this.db.query(sqlFindByCriteria, [
       status || null,
       startDate || null,
       endDate || null,
     ]);
 
     return result.rows.map(this.mapRow);
+  }
+
+  async create(layaway: LayawayAgreement): Promise<LayawayAgreement> {
+    const result = await this.db.query(sqlCreate, [
+      layaway.id,
+      layaway.ticketnum,
+      layaway.clerkUserId,
+      layaway.dateIn,
+      layaway.lastUpdatedAt,
+      layaway.amount,
+      layaway.taxSales,
+      layaway.stateTax,
+      layaway.returnedAmt,
+      layaway.customerId,
+      layaway.note,
+      layaway.status,
+      layaway.defaultDate,
+      layaway.totalOfPayments,
+      layaway.period,
+      layaway.extraNote,
+      layaway.gunProcFee,
+      layaway.lastUpdatedUserId,
+      layaway.inventoryNumber,
+      layaway.numberSold,
+      layaway.itemAmount,
+      layaway.description,
+      layaway.taxExempt,
+      layaway.returnSold,
+      layaway.itemStatus,
+      layaway.countyTaxExempt,
+      layaway.itemLastUpdatedUserId,
+      layaway.itemsId,
+      layaway.createdAt,
+      layaway.updatedAt
+    ]);
+
+    return this.mapRow(result.rows[0]);
   }
 
   private mapRow(row: any): LayawayAgreement {
