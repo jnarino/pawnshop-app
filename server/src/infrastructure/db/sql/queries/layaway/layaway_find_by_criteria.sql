@@ -30,7 +30,8 @@ SELECT
   la.created_at,
   la.updated_at,
   c.first_name as customer_first_name,
-  c.last_name as customer_last_name
+  c.last_name as customer_last_name,
+  c.date_of_birth as customer_date_of_birth
 FROM layaway_agreement la
 LEFT JOIN customer c ON c.id = la.customer_id
 WHERE 

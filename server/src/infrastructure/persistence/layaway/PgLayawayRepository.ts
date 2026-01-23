@@ -72,6 +72,7 @@ export class PgLayawayRepository implements LayawayRepository {
       customerId: row.customer_id,
       customerFirstName: row.customer_first_name,
       customerLastName: row.customer_last_name,
+      customerDateOfBirth: row.customer_date_of_birth,
       note: row.note,
       status: row.status,
       defaultDate: row.default_date,

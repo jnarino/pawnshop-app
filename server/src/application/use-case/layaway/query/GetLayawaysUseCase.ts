@@ -34,6 +34,7 @@ export class GetLayawaysUseCase {
           customerId: layaway.customerId,
           customerFirstName: layaway.customerFirstName,
           customerLastName: layaway.customerLastName,
+          customerDateOfBirth: layaway.customerDateOfBirth ? layaway.customerDateOfBirth.toISOString() : null,
           note: layaway.note,
           status: layaway.status,
           defaultDate: layaway.defaultDate ? layaway.defaultDate.toISOString() : null,

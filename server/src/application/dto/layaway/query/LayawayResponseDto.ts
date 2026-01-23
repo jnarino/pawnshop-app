@@ -24,6 +24,7 @@ export type LayawayResponseDto = {
   customerId: string | null;
   customerFirstName?: string | null;
   customerLastName?: string | null;
+  customerDateOfBirth?: string | null;
   note: string | null;
   status: string | null;
   defaultDate: string | null;

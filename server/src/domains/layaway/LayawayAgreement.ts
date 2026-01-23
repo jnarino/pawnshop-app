@@ -11,6 +11,7 @@ export interface LayawayAgreementProps {
   customerId: string | null;
   customerFirstName?: string | null;
   customerLastName?: string | null;
+  customerDateOfBirth?: Date | null;
   note: string | null;
   status: string | null;
   defaultDate: Date | null;
@@ -46,6 +47,7 @@ export class LayawayAgreement {
   readonly customerId: string | null;
   readonly customerFirstName?: string | null;
   readonly customerLastName?: string | null;
+  readonly customerDateOfBirth?: Date | null;
   readonly note: string | null;
   readonly status: string | null;
   readonly defaultDate: Date | null;
@@ -80,6 +82,7 @@ export class LayawayAgreement {
     this.customerId = props.customerId;
     this.customerFirstName = props.customerFirstName;
     this.customerLastName = props.customerLastName;
+    this.customerDateOfBirth = props.customerDateOfBirth;
     this.note = props.note;
     this.status = props.status;
     this.defaultDate = props.defaultDate;
