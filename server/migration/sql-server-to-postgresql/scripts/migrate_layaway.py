@@ -222,15 +222,9 @@ def migrate_layaway():
         if 'pg_conn' in locals(): pg_conn.close()
 
 def _flush_batch(cursor, txs, agreements):
-    if txs:
-        execute_values(cursor, """
-            INSERT INTO store_transaction (
-                id, legacy_ticketnum, customer_id, clerk_user_id, type_id, 
-                occurred_at, amount, tax_sales, tax_exempt_used, state_tax, 
-                tender_change, gun_proc_fee, note, created_at, updated_at, legacy_acct_pk
-            ) VALUES %s ON CONFLICT (id) DO NOTHING
-        """, txs)
-        
+    # Skip inserting store_transaction as per user request (only matching needed)
+    # logic to match existing transactions if needed would go here, but for now we won't insert new rows
+    
     if agreements:
         execute_values(cursor, """
             INSERT INTO layaway_agreement (
