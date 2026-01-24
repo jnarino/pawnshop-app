@@ -7,6 +7,7 @@ const sqlFindByCriteria = loadSql('queries', 'layaway/layaway_find_by_criteria')
 const sqlFindByTicketNum = loadSql('queries', 'layaway/layaway_find_by_ticketnum');
 const sqlCreate = loadSql('commands', 'layaway/layaway_create');
 const sqlUpdate = loadSql('commands', 'layaway/layaway_update');
+const sqlGetHistory = loadSql('queries', 'layaway/layaway_get_history');
 
 export class PgLayawayRepository implements LayawayRepository {
   constructor(private readonly db: Pool | PoolClient) {}
@@ -27,6 +28,16 @@ export class PgLayawayRepository implements LayawayRepository {
   async findByTicketNum(ticketnum: string): Promise<LayawayAgreement[]> {
     const result = await this.db.query(sqlFindByTicketNum, [ticketnum]);
     return result.rows.map(this.mapRow);
+  }
+
+  async getHistory(customerId: string, ticketnum: string): Promise<any[]> {
+    const result = await this.db.query(sqlGetHistory, [customerId, ticketnum]);
+    return result.rows.map(row => ({
+      occurredAt: row.occurred_at,
+      transactionType: row.transaction_type,
+      clerkUsername: row.clerk_username,
+      amount: Number(row.amount)
+    }));
   }
 
   async update(layaway: LayawayAgreement): Promise<LayawayAgreement> {

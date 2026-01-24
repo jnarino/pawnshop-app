@@ -12,4 +12,5 @@ export interface LayawayRepository {
   create(layaway: LayawayAgreement): Promise<LayawayAgreement>;
   findByTicketNum(ticketnum: string): Promise<LayawayAgreement[]>;
   update(layaway: LayawayAgreement): Promise<LayawayAgreement>;
+  getHistory(customerId: string, ticketnum: string): Promise<any[]>;
 }

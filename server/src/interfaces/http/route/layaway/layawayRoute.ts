@@ -189,5 +189,31 @@ export function createLayawayRouter(
    */
   router.get('/:ticketnum', auth, controller.findByTicketNum);
 
+  /**
+   * @openapi
+   * /api/layaway/history/{customerId}/{ticketnum}:
+   *   get:
+   *     tags:
+   *       - Layaways
+   *     summary: Get transaction history for a layaway
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: customerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: path
+   *         name: ticketnum
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Layaway history
+   */
+  router.get('/history/:customerId/:ticketnum', auth, controller.getHistory);
+
   return router;
 }
