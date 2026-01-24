@@ -60,6 +60,12 @@ def migrate_layaway():
         pg_cursor.execute("SELECT id, name FROM store_transaction_type")
         types_map = {str(row[1]).upper(): str(row[0]) for row in pg_cursor.fetchall()}
         
+        # Load Inventory Map (inventory_number -> id)
+        print("Loading Inventory Map...")
+        pg_cursor.execute("SELECT inventory_number, id FROM inventory_item")
+        inventory_map = {str(row[0]).strip(): str(row[1]) for row in pg_cursor.fetchall()}
+        print(f"Loaded {len(inventory_map)} inventory items.")
+        
         # User specified 'SL' is 'LAYAWAY DEPOSIT' / Link to agreement
         LAYAWAY_TYPE_ID = types_map.get('SL')
         
@@ -193,7 +199,7 @@ def migrate_layaway():
                  safe_str(row.get('ItemStatus')), # item_status
                  safe_bool(row.get('CountyTaxExempt')), # county_tax_exempt
                  user_map.get(safe_str(row.get('ItemLastUser'))), # item_last_updated_user_id
-                 safe_str(row.get('items_pk'))    # items_id
+                 inventory_map.get(safe_str(row.get('INVNUM')))    # items_id (mapped from inventory_number)
              ))
              
              if len(batch_tx) >= batch_size:

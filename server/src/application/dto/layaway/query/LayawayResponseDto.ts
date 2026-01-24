@@ -1,14 +1,14 @@
 export type LayawayItemDto = {
   inventoryNumber: string | null;
-  numberSold: number | null;
-  itemAmount: number | null;
+  quantity: number | null;
+  lineAmount: number | null;
   description: string | null;
   taxExempt: boolean | null;
   returnSold: boolean | null;
-  itemStatus: string | null;
+  status: string | null;
   countyTaxExempt: boolean | null;
   itemLastUpdatedUserId: string | null;
-  itemsId: string | null;
+  inventoryItemId: string | null;
 };
 
 export type LayawayResponseDto = {
