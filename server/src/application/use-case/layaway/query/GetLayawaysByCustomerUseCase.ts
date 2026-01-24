@@ -5,7 +5,7 @@ import { toLayawayItemDto } from '../../../mapping/layaway/layawayMapper';
 import { LayawayAgreement } from '../../../../domains/layaway/LayawayAgreement';
 
 export class GetLayawaysByCustomerUseCase {
-  constructor(private readonly layawayRepo: LayawayRepository) {}
+  constructor(private readonly layawayRepo: LayawayRepository) { }
 
   async execute(input: unknown): Promise<LayawayResponseDto[]> {
     const criteria: GetLayawaysByCustomerRequestDto = getLayawaysByCustomerRequestSchema.parse(input);
@@ -19,15 +19,15 @@ export class GetLayawaysByCustomerUseCase {
     const groupedMap = new Map<string, LayawayResponseDto>();
 
     for (const layaway of flatLayaways) {
-      const ticketnum = layaway.ticketnum;
-      if (!ticketnum) continue; 
+      const controlNumber = layaway.ticketnum;
+      if (!controlNumber) continue;
 
-      if (!groupedMap.has(ticketnum)) {
-        groupedMap.set(ticketnum, {
+      if (!groupedMap.has(controlNumber)) {
+        groupedMap.set(controlNumber, {
           id: layaway.id,
-          ticketnum: layaway.ticketnum,
+          controlNumber: layaway.ticketnum,
           clerkUserId: layaway.clerkUserId,
-          dateIn: layaway.dateIn ? layaway.dateIn.toISOString() : null,
+          occurredAt: layaway.dateIn ? layaway.dateIn.toISOString() : null,
           lastUpdatedAt: layaway.lastUpdatedAt ? layaway.lastUpdatedAt.toISOString() : null,
           amount: layaway.amount,
           taxSales: layaway.taxSales,
@@ -57,7 +57,7 @@ export class GetLayawaysByCustomerUseCase {
         });
       }
 
-      const group = groupedMap.get(ticketnum)!;
+      const group = groupedMap.get(controlNumber)!;
       group.items.push(toLayawayItemDto(layaway));
     }
 

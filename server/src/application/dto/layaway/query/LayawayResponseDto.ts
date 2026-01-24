@@ -13,9 +13,9 @@ export type LayawayItemDto = {
 
 export type LayawayResponseDto = {
   id: string;
-  ticketnum: string | null;
+  controlNumber: string | null;
   clerkUserId: string | null;
-  dateIn: string | null;
+  occurredAt: string | null;
   lastUpdatedAt: string | null;
   amount: number | null;
   taxSales: number | null;

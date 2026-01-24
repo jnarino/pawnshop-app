@@ -16,16 +16,16 @@ export class GetLayawaysUseCase {
     const groupedMap = new Map<string, LayawayResponseDto>();
 
     for (const layaway of flatLayaways) {
-      const ticketnum = layaway.ticketnum;
-      if (!ticketnum) continue; // Should not happen for valid tickets
+      const controlNumber = layaway.ticketnum;
+      if (!controlNumber) continue; // Should not happen for valid tickets
 
-      if (!groupedMap.has(ticketnum)) {
+      if (!groupedMap.has(controlNumber)) {
         // Initialize the group with header info from the first record
-        groupedMap.set(ticketnum, {
+        groupedMap.set(controlNumber, {
           id: layaway.id,
-          ticketnum: layaway.ticketnum,
+          controlNumber: layaway.ticketnum,
           clerkUserId: layaway.clerkUserId,
-          dateIn: layaway.dateIn ? layaway.dateIn.toISOString() : null,
+          occurredAt: layaway.dateIn ? layaway.dateIn.toISOString() : null,
           lastUpdatedAt: layaway.lastUpdatedAt ? layaway.lastUpdatedAt.toISOString() : null,
           amount: layaway.amount,
           taxSales: layaway.taxSales,
@@ -56,7 +56,7 @@ export class GetLayawaysUseCase {
       }
 
       // Add item to the group
-      const group = groupedMap.get(ticketnum)!;
+      const group = groupedMap.get(controlNumber)!;
       group.items.push(toLayawayItemDto(layaway));
     }
 

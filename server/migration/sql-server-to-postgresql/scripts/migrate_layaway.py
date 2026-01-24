@@ -153,13 +153,13 @@ def migrate_layaway():
              # User specified mapping logic:
              # 'D' -> defaulted (SLD)
              # 'L' -> active (SL)
-             # 'S' -> completed (SLU/SLP)
+             # 'S' -> sold (SLU/SLP)
              # 'V' -> voided (SLV)
              
              if st == 'D': status = 'defaulted'
-             elif st == 'S': status = 'completed'
+             elif st == 'S': status = 'sold'
              elif st == 'V': status = 'voided'
-             elif st == 'C': status = 'completed' # C also commonly used for closed
+             elif st == 'L': status = 'active'
              
              agreement_id = str(uuid.uuid4())
              

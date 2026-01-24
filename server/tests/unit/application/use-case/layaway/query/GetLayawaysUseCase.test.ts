@@ -76,7 +76,7 @@ describe('GetLayawaysUseCase', () => {
     expect(result).toHaveLength(1);
     
     // Check header
-    expect(result[0].ticketnum).toBe('L100');
+    expect(result[0].controlNumber).toBe('L100');
     expect(result[0].customer.firstName).toBe('John');
     expect(result[0].customer.lastName).toBe('Doe');
     expect(result[0].customer.dateOfBirth).toBe(new Date('1990-01-01').toISOString());

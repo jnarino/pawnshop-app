@@ -16,7 +16,7 @@ describe('GetLayawayByTicketNumUseCase', () => {
         id: '1',
         ticketnum: '101',
         clerkUserId: 'clerk1',
-        dateIn: new Date('2023-01-01'),
+        occurredAt: new Date('2023-01-01'),
         lastUpdatedAt: new Date('2023-01-02'),
         amount: 100,
         taxSales: 5,
@@ -55,12 +55,12 @@ describe('GetLayawayByTicketNumUseCase', () => {
         // Mock repo returning 2 items for same ticket
         const row1 = { ...baseHeader, ...baseItem, id: '1', itemsId: 'uuid-1', description: 'Item 1' };
         const row2 = { ...baseHeader, ...baseItem, id: '2', itemsId: 'uuid-2', description: 'Item 2' };
-        
+
         mockLayawayRepo.findByTicketNum.mockResolvedValue([row1, row2]);
 
         const result = await useCase.execute({ ticketnum: '101' });
 
-        expect(result.ticketnum).toBe('101');
+        expect(result.controlNumber).toBe('101');
         expect(result.items).toHaveLength(2);
         expect(result.items[0].description).toBe('Item 1');
         expect(result.items[1].description).toBe('Item 2');

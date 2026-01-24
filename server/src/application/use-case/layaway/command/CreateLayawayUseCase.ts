@@ -25,7 +25,7 @@ export class CreateLayawayUseCase {
         const dto: CreateLayawayRequestDto = createLayawayRequestSchema.parse(input);
 
         // Get Control Number outside transaction (optimistic)
-        const ticketnum = await this.controlNumberRepo.getNextStoreSaleControlNumber();
+        const controlNumber = await this.controlNumberRepo.getNextStoreSaleControlNumber();
 
         // Validate Customer
         const customer = await this.customerRepo.findById(dto.customerId);
@@ -86,7 +86,7 @@ export class CreateLayawayUseCase {
                     description: description,
                     quantity: itemDto.quantity,
                     lineAmount: lineAmount,
-                    lineCost: null, 
+                    lineCost: null,
                     taxExempt: dto.taxExemptUsed,
                     countyTaxExempt: false,
                     returned: false,
@@ -122,7 +122,7 @@ export class CreateLayawayUseCase {
                 clerkUserId: clerkUserId,
                 typeId: StoreTransactionTypeId.LAYAWAY_DEPOSIT,
                 occurredAt: dateNow,
-                amount: grandTotal, 
+                amount: grandTotal,
                 taxSales: totalTax,
                 stateTax: totalTax,
                 taxExemptUsed: dto.taxExemptUsed,
@@ -147,7 +147,7 @@ export class CreateLayawayUseCase {
 
                 const agreement = new LayawayAgreement({
                     id: crypto.randomUUID(),
-                    ticketnum: ticketnum,
+                    ticketnum: controlNumber,
                     clerkUserId: clerkUserId,
                     dateIn: dateNow,
                     lastUpdatedAt: dateNow,
@@ -195,9 +195,9 @@ export class CreateLayawayUseCase {
                 // If response DTO has `items: []`, then `id` at root is ambiguous if rows have different IDs.
                 // But usually the group is identified by ticketnum.
                 // Let's use the first row's ID as representative or leave it.
-                ticketnum: first.ticketnum,
+                controlNumber: first.ticketnum,
                 clerkUserId: first.clerkUserId,
-                dateIn: first.dateIn ? first.dateIn.toISOString() : null,
+                occurredAt: first.dateIn ? first.dateIn.toISOString() : null,
                 lastUpdatedAt: first.lastUpdatedAt ? first.lastUpdatedAt.toISOString() : null,
                 amount: first.amount,
                 taxSales: first.taxSales,
