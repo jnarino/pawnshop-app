@@ -7,7 +7,7 @@ import { apiToRecordLoose, CustomerRecord } from '@/app/feature/_shared/customer
 import { layawayApi } from '@/app/core/api/layawayApi';
 import { Button } from '@/components/ui/button';
 import { Loader2, Eye } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { SaleForm } from '@/app/feature/_shared/sale/components/SaleForm';
 import { http } from '@/app/core/api/http';
@@ -21,6 +21,21 @@ const statusOptions = [
   { value: 'voided', label: 'Voided' },
   { value: '', label: 'All layaways' },
 ];
+
+const statusOptionsMap = {
+  'defaulted': 'Defaulted',
+  'active': 'Layaway',
+  'sold': 'Sold',
+  'voided': 'Voided',
+}
+
+const today = new Date();
+const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+const dates = {
+  from: '1990-01-01',
+  to: localToday
+}
 
 function LayawayMaintainWorkspaceContent() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -46,8 +61,8 @@ function LayawayMaintainWorkspaceContent() {
   }
 
   const getLayawayByControlNumber = async (controlNumber: string) => {
-    const layaways = await layawayApi.findByControlNumber(controlNumber);
-    handleLayawaysResponse(layaways);
+    const layaway = await layawayApi.findByControlNumber(controlNumber);
+    handleLayawaysResponse(layaway ? [layaway] : []);
   }
 
   const getLayawayByDateRange = async (startDate: string, endDate: string, status?: string) => {
@@ -108,7 +123,7 @@ function LayawayMaintainWorkspaceContent() {
   }
 
   const handleOpenTicket = (row: any): void => {
-    setSelectedTicket(row);
+    setSelectedTicket({ ...row, typeName: statusOptionsMap[row.status] });
     getCustomerInformationById(row.customerId);
   };
 
@@ -139,6 +154,8 @@ function LayawayMaintainWorkspaceContent() {
             handleSelectedCustomer={handleSelectedCustomer}
             handleSearchByDateRange={handleSearchByDateRange}
             setShowTicketTable={setShowTicketTable}
+            showCustomerPerformanceTab={true}
+            iniitialDates={dates}
           />
         </div>
       )}
@@ -147,7 +164,7 @@ function LayawayMaintainWorkspaceContent() {
         <div className="border rounded-lg mt-8">
           <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
             <span>Layaways for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
-            <span className="text-xs">Status: {status}</span>
+            <span className="text-xs">Status: {statusOptionsMap[status]}</span>
           </div>
           <Table stickyHeader>
             <TableHeader>
@@ -173,9 +190,9 @@ function LayawayMaintainWorkspaceContent() {
                     <TableCell className="uppercase">{customerName}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
-                    <TableCell className="capitalize">{row.typeName || row.status || '—'}</TableCell>
-                    <TableCell>${row.totalOfPayments}</TableCell>
-                    <TableCell>${(row.totalOfPayments - (row.taxSales + row.stateTax))}</TableCell>
+                    <TableCell className="capitalize">{row.typeName || statusOptionsMap[row.status] || '—'}</TableCell>
+                    <TableCell>{formatCurrency(row.taxSales + row.stateTax)}</TableCell>
+                    <TableCell>{formatCurrency((row.taxSales + row.stateTax) - row.totalOfPayments)}</TableCell>
                     <TableCell className="text-right">
                       <Tooltip content="View sale">
                         <Button
@@ -209,6 +226,7 @@ function LayawayMaintainWorkspaceContent() {
         <div className="space-y-4">
           <SaleForm
             mode="VIEW"
+            isLayaway={true}
             initialData={selectedTicket}
             externalDraft={selectedTicket}
             customer={currentCustomer || undefined}

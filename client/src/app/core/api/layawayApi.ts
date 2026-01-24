@@ -49,4 +49,7 @@ export const layawayApi = {
     getByDateRange: async (startDate: string, endDate: string, status?: string): Promise<any[]> => {
         return http(`/api/layaway?${status ? `status=${status}&` : ''}startDate=${startDate}&endDate=${endDate}`);
     },
+    getPaymentHistory: async (controlNumber: string): Promise<any[]> => {
+        return http(`/api/layaway/${controlNumber}/payments`);
+    }
 };

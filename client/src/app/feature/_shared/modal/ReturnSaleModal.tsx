@@ -16,12 +16,13 @@ interface ExtendedInventoryItemDraft extends InventoryItemDraft {
 
 interface Props {
     readonly open: boolean;
+    readonly isLayaway?: boolean;
     readonly items: InventoryItemDraft[];
     readonly onCancel: () => void;
     readonly onConfirm: (selectedItems: InventoryItemDraft[], reason: string) => void;
 }
 
-export function ReturnSaleModal({ open, items, onCancel, onConfirm }: Props) {
+export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }: Props) {
     const [reason, setReason] = useState('');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -59,7 +60,7 @@ export function ReturnSaleModal({ open, items, onCancel, onConfirm }: Props) {
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
             <DialogContent className="sm:max-w-[700px]">
                 <DialogHeader>
-                    <DialogTitle>Return Items / Void Sale</DialogTitle>
+                    <DialogTitle>Return Items / {isLayaway ? 'Void Layaway' : 'Void Sale'}</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">

@@ -27,6 +27,8 @@ import { PaymentDetailsModal } from '@/app/feature/_shared/modal/PaymentDetailsM
 import { ReturnSaleModal } from '@/app/feature/_shared/modal/ReturnSaleModal';
 import PaymentMethodModal, { TenderMethod } from '@/app/feature/_shared/modal/PaymentMethodModal';
 import { salesApi } from '@/app/core/api/salesApi';
+import { layawayApi } from '@/app/core/api/layawayApi';
+import { PaymentHistoryModal } from '@/app/feature/_shared/modal/PaymentHistoryModal';
 
 const TAX_RATE = 0.065;
 
@@ -40,6 +42,7 @@ export interface SaleFormDraftState {
 
 interface SaleTicketFormProps {
   readonly mode?: FormMode;
+  readonly isLayaway?: boolean;
   readonly initialData?: {
     readonly id?: string;
     readonly controlNumber?: string;
@@ -79,6 +82,7 @@ interface SaleTicketFormProps {
 export function SaleForm({
   mode = 'CREATE',
   initialData,
+  isLayaway,
   externalDraft,
   onDraftChange,
   customer,
@@ -92,6 +96,8 @@ export function SaleForm({
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
 
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [showMakePayment, setShowMakePayment] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showRefundPaymentModal, setShowRefundPaymentModal] = useState(false);
   const [refundData, setRefundData] = useState<{ items: any[], reason: string, total: number } | null>(null);
@@ -297,13 +303,18 @@ export function SaleForm({
         }))
       };
 
-      await salesApi.voidSale(initialData.id, payload);
-      setAlertMessage('Sale voided/returned successfully');
+      if (isLayaway) {
+        await layawayApi.voidLayaway(initialData.id, payload);
+        setAlertMessage('Layaway voided/returned successfully');
+      } else {
+        await salesApi.voidSale(initialData.id, payload);
+        setAlertMessage('Sale voided/returned successfully');
+      }
       setShowRefundPaymentModal(false);
       window.location.reload();
     } catch (error) {
-      console.error('Failed to void sale', error);
-      setAlertMessage('Failed to void sale');
+      console.error(`Failed to void ${isLayaway ? 'layaway' : 'sale'}`, error);
+      setAlertMessage(`Failed to void ${isLayaway ? 'layaway' : 'sale'}`);
     }
   };
 
@@ -340,13 +351,32 @@ export function SaleForm({
             >
               Return
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setShowPaymentInfo(true)}
-            >
-              Payment information
-            </Button>
+            {isLayaway ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setShowPaymentHistory(true)}
+                >
+                  Payment history
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setShowMakePayment(true)}
+                >
+                  Make payment
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowPaymentInfo(true)}
+              >
+                Payment information
+              </Button>
+            )}
             <Button
               type="button"
               size="sm"
@@ -430,7 +460,7 @@ export function SaleForm({
               size="lg"
               className="px-8"
             >
-              Save sale
+              Save {isLayaway ? 'layaway' : 'sale'}
             </Button>
           )}
 
@@ -494,6 +524,7 @@ export function SaleForm({
           />
           <ReturnSaleModal
             open={showReturnModal}
+            isLayaway={isLayaway}
             items={initialData.items || []}
             onCancel={() => setShowReturnModal(false)}
             onConfirm={handleReturnConfirm}
@@ -511,6 +542,11 @@ export function SaleForm({
               }}
             />
           )}
+          <PaymentHistoryModal
+            open={showPaymentHistory}
+            onClose={() => setShowPaymentHistory(false)}
+            controlNumber={initialData.controlNumber || ''}
+          />
         </>
       )}
       <AlertModal
