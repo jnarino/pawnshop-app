@@ -21,10 +21,16 @@ export type LayawayResponseDto = {
   taxSales: number | null;
   stateTax: number | null;
   returnedAmt: number | null;
-  customerId: string | null;
-  customerFirstName?: string | null;
-  customerLastName?: string | null;
-  customerDateOfBirth?: string | null;
+  customer: {
+    id: string | null;
+    firstName: string | null;
+    middleName: string | null;
+    lastName: string | null;
+    dateOfBirth: string | null;
+    phoneNumber: string | null;
+    cellPhone: string | null;
+    email: string | null;
+  };
   note: string | null;
   status: string | null;
   defaultDate: string | null;

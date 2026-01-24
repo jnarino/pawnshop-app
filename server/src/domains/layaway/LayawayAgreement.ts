@@ -10,8 +10,12 @@ export interface LayawayAgreementProps {
   returnedAmt: number | null;
   customerId: string | null;
   customerFirstName?: string | null;
+  customerMiddleName?: string | null;
   customerLastName?: string | null;
   customerDateOfBirth?: Date | null;
+  customerPhoneNumber?: string | null;
+  customerCellPhone?: string | null;
+  customerEmail?: string | null;
   note: string | null;
   status: string | null;
   defaultDate: Date | null;
@@ -46,8 +50,12 @@ export class LayawayAgreement {
   readonly returnedAmt: number | null;
   readonly customerId: string | null;
   readonly customerFirstName?: string | null;
+  readonly customerMiddleName?: string | null;
   readonly customerLastName?: string | null;
   readonly customerDateOfBirth?: Date | null;
+  readonly customerPhoneNumber?: string | null;
+  readonly customerCellPhone?: string | null;
+  readonly customerEmail?: string | null;
   readonly note: string | null;
   readonly status: string | null;
   readonly defaultDate: Date | null;
@@ -81,8 +89,12 @@ export class LayawayAgreement {
     this.returnedAmt = props.returnedAmt;
     this.customerId = props.customerId;
     this.customerFirstName = props.customerFirstName;
+    this.customerMiddleName = props.customerMiddleName;
     this.customerLastName = props.customerLastName;
     this.customerDateOfBirth = props.customerDateOfBirth;
+    this.customerPhoneNumber = props.customerPhoneNumber;
+    this.customerCellPhone = props.customerCellPhone;
+    this.customerEmail = props.customerEmail;
     this.note = props.note;
     this.status = props.status;
     this.defaultDate = props.defaultDate;
