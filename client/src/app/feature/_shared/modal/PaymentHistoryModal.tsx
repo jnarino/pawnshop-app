@@ -6,21 +6,23 @@ import { layawayApi } from "@/app/core/api/layawayApi";
 import { Button } from "@/components/ui/button";
 
 interface PaymentHistoryItem {
-    dateIn: string;
-    action: string;
+    occurredAt: string;
+    transactionType: string;
     amount: number;
-    emp: string;
+    clerkUsername: string;
 }
 
 interface Props {
     open: boolean;
     onClose: () => void;
     controlNumber: string;
+    customerId: string;
 }
 
-export function PaymentHistoryModal({ open, onClose, controlNumber }: Props) {
+export function PaymentHistoryModal({ open, onClose, controlNumber, customerId }: Props) {
     const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
     const [loading, setLoading] = useState(false);
+    const [totalAmount, setTotalAmount] = useState(0);
 
     useEffect(() => {
         if (open && controlNumber) {
@@ -31,8 +33,10 @@ export function PaymentHistoryModal({ open, onClose, controlNumber }: Props) {
     const loadHistory = async () => {
         setLoading(true);
         try {
-            const data = await layawayApi.getPaymentHistory(controlNumber);
+            const data = await layawayApi.getPaymentHistory(controlNumber, customerId);
             setHistory(data);
+            const total = data.reduce((acc, item) => acc + item.amount, 0);
+            setTotalAmount(total);
         } catch (error) {
             console.error("Failed to load payment history", error);
         } finally {
@@ -73,15 +77,20 @@ export function PaymentHistoryModal({ open, onClose, controlNumber }: Props) {
                             ) : (
                                 history.map((item, index) => (
                                     <TableRow key={index}>
-                                        <TableCell>{formatDate(item.dateIn)}</TableCell>
-                                        <TableCell>{item.action}</TableCell>
-                                        <TableCell>{item.emp}</TableCell>
+                                        <TableCell>{formatDate(item.occurredAt, true)}</TableCell>
+                                        <TableCell>{item.transactionType}</TableCell>
+                                        <TableCell>{item.clerkUsername}</TableCell>
                                         <TableCell className="text-right font-medium">
                                             {formatCurrency(item.amount)}
                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-right font-medium">
+                                    Total: {formatCurrency(totalAmount)}
+                                </TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
                 </div>

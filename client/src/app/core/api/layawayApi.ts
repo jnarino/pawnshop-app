@@ -34,8 +34,8 @@ export const layawayApi = {
             body: JSON.stringify(payload)
         });
     },
-    makePayment: async (id: string, payload: any): Promise<any> => {
-        return http(`/api/layaway`, {
+    makePayment: async (payload: any): Promise<any> => {
+        return http(`/api/layaway/payment`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -49,7 +49,7 @@ export const layawayApi = {
     getByDateRange: async (startDate: string, endDate: string, status?: string): Promise<any[]> => {
         return http(`/api/layaway?${status ? `status=${status}&` : ''}startDate=${startDate}&endDate=${endDate}`);
     },
-    getPaymentHistory: async (controlNumber: string): Promise<any[]> => {
-        return http(`/api/layaway/${controlNumber}/payments`);
+    getPaymentHistory: async (controlNumber: string, customerId: string): Promise<any[]> => {
+        return http(`/api/layaway/history/${customerId}/${controlNumber}`);
     }
 };

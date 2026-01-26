@@ -89,6 +89,7 @@ function LayawayMaintainWorkspaceContent() {
   }
 
   const getCustomerInformationById = async (customerId: string) => {
+    if (!customerId) return;
     try {
       const customerDto = await http(`/api/customer/${customerId}`);
       if (customerDto) {
@@ -124,7 +125,7 @@ function LayawayMaintainWorkspaceContent() {
 
   const handleOpenTicket = (row: any): void => {
     setSelectedTicket({ ...row, typeName: statusOptionsMap[row.status] });
-    getCustomerInformationById(row.customerId);
+    getCustomerInformationById(row?.customerId || row?.customer?.id);
   };
 
   return (
@@ -154,7 +155,6 @@ function LayawayMaintainWorkspaceContent() {
             handleSelectedCustomer={handleSelectedCustomer}
             handleSearchByDateRange={handleSearchByDateRange}
             setShowTicketTable={setShowTicketTable}
-            showCustomerPerformanceTab={true}
             iniitialDates={dates}
           />
         </div>
@@ -229,7 +229,7 @@ function LayawayMaintainWorkspaceContent() {
             isLayaway={true}
             initialData={selectedTicket}
             externalDraft={selectedTicket}
-            customer={currentCustomer || undefined}
+            customer={currentCustomer || selectedTicket?.customer}
             disabled={true}
           />
           <div className="flex justify-end gap-2">

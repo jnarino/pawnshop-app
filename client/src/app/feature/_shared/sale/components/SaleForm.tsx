@@ -48,6 +48,7 @@ interface SaleTicketFormProps {
     readonly controlNumber?: string;
     readonly occurredAt?: string;
     readonly customerId?: string;
+    readonly customer?: CustomerData;
     readonly inventoryNumber?: string;
     readonly inventoryItem?: InventoryItem;
     readonly quantity?: number;
@@ -62,6 +63,7 @@ interface SaleTicketFormProps {
     readonly tenderChange?: number;
     readonly tenders?: any[];
     readonly typeName?: string;
+    readonly totalOfPayments?: number;
   };
   readonly externalDraft?: SaleFormDraftState;
   readonly onDraftChange?: (draft: SaleFormDraftState) => void;
@@ -106,7 +108,7 @@ export function SaleForm({
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
   const [localFormData, setLocalFormData] = useState({
-    customerId: initialData?.customerId,
+    customerId: initialData?.customerId || initialData?.customer?.id || customer?.id || '',
     inventoryNumber: initialData?.controlNumber || '',
     occurredAt: initialData?.occurredAt,
     inventoryItem: initialData?.inventoryItem,
@@ -142,7 +144,8 @@ export function SaleForm({
     return sum + (price * qty);
   }, 0);
 
-  let subtotal, taxAmount, totalAmount;
+  let subtotal, taxAmount, totalAmount, totalDebt;
+
   if (isViewMode && initialData?.amount !== undefined) {
     subtotal = initialData.amount;
     taxAmount = initialData.stateTax || 0;
@@ -159,6 +162,10 @@ export function SaleForm({
     subtotal = subtotalSum;
     taxAmount = subtotal * TAX_RATE;
     totalAmount = subtotal + taxAmount;
+  }
+
+  if (isLayaway) {
+    totalDebt = totalAmount - (initialData?.totalOfPayments || 0);
   }
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -317,6 +324,27 @@ export function SaleForm({
       setAlertMessage(`Failed to void ${isLayaway ? 'layaway' : 'sale'}`);
     }
   };
+
+  const handleMakePaymentDone = async (tenders: TenderMethod[]) => {
+    if (!initialData?.id) return;
+    try {
+      const payload = {
+        ticketnum: initialData.controlNumber,
+        tenders: tenders.map(t => ({
+          tenderTypeId: t.tenderTypeId,
+          amount: Number(t.amount)
+        }))
+      };
+      await layawayApi.makePayment(payload);
+      setAlertMessage('Payment made successfully');
+      setShowMakePayment(false);
+      window.location.reload();
+    } catch (error) {
+      console.error(`Failed to make payment`, error);
+      setAlertMessage(`Failed to make payment`);
+    }
+  };
+
 
   console.log({ formData, refundData });
   return (
@@ -510,7 +538,6 @@ export function SaleForm({
           )}
         </div>
       </form>
-
       {initialData && (
         <>
           <PaymentDetailsModal
@@ -529,6 +556,20 @@ export function SaleForm({
             onCancel={() => setShowReturnModal(false)}
             onConfirm={handleReturnConfirm}
           />
+          {showMakePayment && (
+            <PaymentMethodModal
+              open={showMakePayment}
+              totalAmount={totalDebt || totalAmount}
+              allowedTenderTypes={[1, 2, 3, 4, 5]} // TODO: Pass allowed types dynamically if needed
+              onCancel={() => setShowMakePayment(false)}
+              onDone={handleMakePaymentDone}
+              history={{
+                tenders: initialData.tenders || [],
+                change: initialData.tenderChange || 0
+              }}
+            />
+          )
+          }
           {refundData && (
             <PaymentMethodModal
               open={showRefundPaymentModal}
@@ -546,6 +587,7 @@ export function SaleForm({
             open={showPaymentHistory}
             onClose={() => setShowPaymentHistory(false)}
             controlNumber={initialData.controlNumber || ''}
+            customerId={formData.customerId}
           />
         </>
       )}
