@@ -4,7 +4,7 @@ import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { formatDate } from '@/lib/utils';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
-export type TabKey = 'customer' | 'additional' | 'newSale';
+export type TabKey = 'customer' | 'customerPerformance' | 'additional' | 'newSale';
 
 export interface SaleDraftState {
   type: 'PAWN' | 'PURCHASE';

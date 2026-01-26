@@ -4,6 +4,7 @@ import CustomerInfoTab from '@/app/shared/components/CustomerInfoTab';
 import NewSaleTab from '@/app/feature/sales/tabs/NewSaleTab';
 import './sales.css';
 import { CancelButton } from '@/app/shared/components/CancelButton';
+import CustomerPerformanceTab from '@/app/shared/components/CustomerPerformanceTab';
 
 function SalesWorkspaceContent() {
   const {
@@ -11,7 +12,7 @@ function SalesWorkspaceContent() {
     setActiveTab,
     customer,
     setCustomer,
-    navigateToTab
+    navigateToTab,
   } = useSalesWorkflow();
 
   const handleTabChange = (tab: string) => {
@@ -23,9 +24,12 @@ function SalesWorkspaceContent() {
       <h1 className="text-2xl font-extrabold mb-2.5">Sales</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
-          <TabsList className="grid flex-1 grid-cols-2">
+          <TabsList className="grid flex-1 grid-cols-3">
             <TabsTrigger value="customer">
-              Customer Info
+              Customer info
+            </TabsTrigger>
+            <TabsTrigger value="customerPerformance" disabled={!customer?.id}>
+              Customer performance
             </TabsTrigger>
             <TabsTrigger value="newSale">
               Sale
@@ -40,6 +44,9 @@ function SalesWorkspaceContent() {
             onCustomerChange={setCustomer}
             onCustomerSelected={() => setActiveTab('newSale')}
           />
+        </TabsContent>
+        <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
+          <CustomerPerformanceTab customer={customer} />
         </TabsContent>
         <TabsContent value="newSale" keepMounted className="flex-1 min-h-0 pt-4">
           <NewSaleTab
