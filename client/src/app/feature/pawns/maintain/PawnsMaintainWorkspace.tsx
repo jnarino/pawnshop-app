@@ -22,6 +22,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     return '';
   };
 
+
   const transformedItems = (pawnTicket.items || []).map((item) => ({
     id: item.id,
     type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
@@ -41,6 +42,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     ownerNumber: item.ownerMark || '',
     description: item.itemDescription || '',
     status: item.status || '',
+    // jewerly
     metal: item.attributes?.metal,
     karat: item.attributes?.karat,
     weight: extractId(item.extra?.weight),
@@ -50,6 +52,13 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     sizeLength: item.attributes?.sizeLength,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stones: transformStones(item.extra?.stones as any),
+
+    // firearms
+    caliber: item.attributes?.caliber,
+    action: item.attributes?.action,
+    importer: item.attributes?.importer,
+    barrel: item.attributes?.barrel,
+    barrelLength: item.attributes?.barrelLength,
   }));
 
   const transactionType = pawnTicket.transactionType?.toUpperCase();

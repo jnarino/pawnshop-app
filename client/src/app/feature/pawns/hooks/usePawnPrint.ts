@@ -34,6 +34,7 @@ export interface FormDataItem {
   ownerNumber?: string;
   id?: string;
   inventoryNumber?: string;
+  // Jewelry
   jewelryType?: string;
   metal?: string;
   karat?: string;
@@ -52,6 +53,13 @@ export interface FormDataItem {
   stone2Carat?: string;
   stone2Weight?: string;
   stone2Color?: string;
+
+  // Firearm
+  caliber?: string;
+  action?: string;
+  importer?: string;
+  barrel?: string;
+  barrelLength?: string;
 }
 
 interface PrintFormParams {
@@ -186,9 +194,9 @@ export function usePawnPrint(): UsePawnPrintResult {
             description: descWithColor,
             amount: item.amount,
             itemType: ticketItem?.inventorySubcategory.name || 'MISC',
-            jewelryType: item.jewelryType,
+            jewelryType: item.style ? item.jewelryType : '',
             jewelryMetal: item.metal,
-            jewelryKarat: `${item.karat || ''} ${item.weight || ''} ${item.weightUnit || ''}`,
+            jewelryKarat: `${item.karat || ''} ${item.karat ? (item.weight || '') : ''} ${item.karat ? (item.weightUnit || '') : ''}`,
             jewelryGender: item.gender,
             jewelryStyle: item.style,
             jewelrySizeLength: item.sizeLength,
@@ -202,6 +210,12 @@ export function usePawnPrint(): UsePawnPrintResult {
             stone2Carat: item.stone2Carat,
             stone2Weight: item.stone2Weight,
             stone2Color: item.stone2Color,
+            // Firearm
+            caliber: item.caliber,
+            action: item.action,
+            importer: item.importer,
+            barrel: item.barrel,
+            barrelLength: item.barrelLength,
           };
         }),
 

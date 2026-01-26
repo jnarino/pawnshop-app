@@ -36,6 +36,9 @@ export type TransactionItemPrint = {
     barrel?: string;              // barrel length
     amount?: number | string;     // $ per item
     categoryLabel?: string;
+    caliber?: string;
+    importer?: string;
+    barrelLength?: string;
 
     // line 3 jewelry
     jewelryType?: string;
@@ -337,7 +340,7 @@ export class TransactionFormPrinter {
         // Prepare item chunks
         const itemRepeater = TEMPLATE.repeaters?.find(r => r.id === 'items');
         const limit = itemRepeater?.limit ?? 6;
-        console.log("data.items", data.items)
+        console.log("data.items", data.items, fieldValues)
         const allItems = data.items.map(item => ({
             serial: item.serialNumber ?? item.ownerAppliedNumber ?? '',
             type: item.categoryLabel ?? item.itemType ?? '',
@@ -361,6 +364,12 @@ export class TransactionFormPrinter {
             stone2Carat: item.stone2Carat ?? '',
             stone2Weight: item.stone2Weight ?? '',
             stone2Color: item.stone2Color?.at(0) ?? '',
+            // Firearm
+            caliber: item.caliber ?? '',
+            action: item.action?.at(0) ?? '',
+            importer: item.importer ?? '',
+            barrel: item.barrel ?? '',
+            barrelLength: item.barrelLength ?? '',
         }));
 
         const chunks: Record<string, string>[][] = [];

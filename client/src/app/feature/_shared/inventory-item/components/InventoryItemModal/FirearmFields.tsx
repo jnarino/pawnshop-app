@@ -11,6 +11,7 @@ interface FirearmFieldsProps {
 }
 
 export function FirearmFields({ draft, updateField, disabled = false }: FirearmFieldsProps) {
+  console.log('FirearmFields', { draft });
   return (
     <>
       <div className="space-y-1 col-span-3">
@@ -18,7 +19,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
         <LookupSelect
           typeName={LookupTypeName.CALIBER}
           value={draft.caliber || ''}
-          onChange={(value) => updateField('caliber', value)}
+          onChange={(_value, _label, option) => updateField('caliber', option)}
           placeholder="SELECT CALIBER..."
           disabled={disabled}
         />
@@ -29,31 +30,45 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
         <LookupSelect
           typeName={LookupTypeName.ACTION}
           value={draft.action || ''}
-          onChange={(value) => updateField('action', value)}
+          onChange={(_value, _label, option) => updateField('action', option)}
           placeholder="SELECT ACTION..."
           disabled={disabled}
         />
       </div>
 
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Barrel Length</Label>
-        <Input
-          value={draft.barrelLength || ''}
-          onChange={(e) => updateField('barrelLength', e.target.value)}
-          placeholder="16 INCHES"
-          disabled={disabled}
-          className="uppercase text-xs h-8"
-        />
+        <div className='grid grid-cols-5 gap-2'>
+          <div className='col-span-3 space-y-1'>
+            <Label className="text-xs font-semibold">Barrel</Label>
+            <LookupSelect
+              typeName={LookupTypeName.BARREL}
+              value={draft.barrel?.id || ''}
+              onChange={(_value, _label, option) => updateField('barrel', option)}
+              placeholder="SELECT BARREL..."
+              disabled={disabled}
+            />
+          </div>
+          <div className='col-span-2 space-y-1'>
+            <Label className="text-xs font-semibold">Length</Label>
+            <Input
+              value={draft.barrelLength || ''}
+              onChange={(e) => updateField('barrelLength', e.target.value)}
+              placeholder="16 INCHES"
+              disabled={disabled}
+              className="uppercase text-xs h-8"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">Capacity</Label>
-        <Input
-          value={draft.capacity || ''}
-          onChange={(e) => updateField('capacity', e.target.value)}
-          placeholder="15 ROUNDS"
+        <Label className="text-xs font-semibold">Importer</Label>
+        <LookupSelect
+          typeName={LookupTypeName.IMPORTER}
+          value={draft.importer || ''}
+          onChange={(_value, _label, option) => updateField('importer', option)}
+          placeholder="SELECT IMPORTER..."
           disabled={disabled}
-          className="uppercase text-xs h-8"
         />
       </div>
     </>

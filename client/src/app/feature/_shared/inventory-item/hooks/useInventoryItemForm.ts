@@ -137,6 +137,7 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
         gender: undefined,
         weightUnit: 'Grams'
       };
+      console.log('useInventoryItemForm', { formData, initial });
       setDraft(formData);
       setError(null);
     }

@@ -335,6 +335,38 @@
           "uppercase": true
         },
         {
+          "id": "barrelLength",
+          "x": 100,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
+          "id": "action",
+          "x": 110,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
+          "id": "caliber",
+          "x": 120,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
+          "id": "barrel",
+          "x": 140,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
           "id": "amount",
           "x": 172.1,
           "y": 6.8,

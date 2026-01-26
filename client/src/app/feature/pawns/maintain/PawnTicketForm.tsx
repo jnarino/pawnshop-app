@@ -225,6 +225,12 @@ export function PawnTicketForm({
         stone2Weight: (item.stones?.length || 0) > 1 ? item.stones?.[1].weight ? item.stones?.[1].weight : !!item.stones?.[1]?.quantity ? '0.00' : '' : '',
         stone2Color: (item.stones?.length || 0) > 1 ? item.stones?.[1].color?.name : '',
 
+        // Firearm
+        caliber: item.caliber?.name,
+        action: item.action?.name,
+        importer: item.importer?.name,
+        barrel: item.barrel?.name,
+        barrelLength: item.barrelLength,
       }));
 
       await printTransactionForm({
