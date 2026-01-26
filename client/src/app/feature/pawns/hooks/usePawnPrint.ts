@@ -34,6 +34,24 @@ export interface FormDataItem {
   ownerNumber?: string;
   id?: string;
   inventoryNumber?: string;
+  jewelryType?: string;
+  metal?: string;
+  karat?: string;
+  gender?: string;
+  style?: string;
+  sizeLength?: string;
+  weight?: string;
+  weightUnit?: string;
+  stone1Quantity?: string;
+  stone1Shape?: string;
+  stone1Carat?: string;
+  stone1Weight?: string;
+  stone1Color?: string;
+  stone2Quantity?: string;
+  stone2Shape?: string;
+  stone2Carat?: string;
+  stone2Weight?: string;
+  stone2Color?: string;
 }
 
 interface PrintFormParams {
@@ -110,6 +128,9 @@ export function usePawnPrint(): UsePawnPrintResult {
     try {
       const { ticket, customer, items } = params;
 
+      console.log({ items3: items })
+
+
       const printData: TransactionPrintData = {
         transactionDate: ticket.transactionDate,
         maturityDate: ticket.maturityDate,
@@ -165,6 +186,22 @@ export function usePawnPrint(): UsePawnPrintResult {
             description: descWithColor,
             amount: item.amount,
             itemType: ticketItem?.inventorySubcategory.name || 'MISC',
+            jewelryType: item.jewelryType,
+            jewelryMetal: item.metal,
+            jewelryKarat: `${item.karat || ''} ${item.weight || ''} ${item.weightUnit || ''}`,
+            jewelryGender: item.gender,
+            jewelryStyle: item.style,
+            jewelrySizeLength: item.sizeLength,
+            stone1Quantity: item.stone1Quantity,
+            stone1Shape: item.stone1Shape,
+            stone1Carat: item.stone1Carat,
+            stone1Weight: item.stone1Weight,
+            stone1Color: item.stone1Color,
+            stone2Quantity: item.stone2Quantity,
+            stone2Shape: item.stone2Shape,
+            stone2Carat: item.stone2Carat,
+            stone2Weight: item.stone2Weight,
+            stone2Color: item.stone2Color,
           };
         }),
 

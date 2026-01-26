@@ -66,6 +66,13 @@
       "size": 9
     },
     {
+      "id": "maturityDateHeader",
+      "x": 166.1,
+      "y": 35.5,
+      "w": 25,
+      "size": 9
+    },
+    {
       "id": "controlNumber",
       "x": 151.7,
       "y": 21.7,
@@ -331,6 +338,118 @@
           "id": "amount",
           "x": 172.1,
           "y": 6.8,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelryType",
+          "x": 0,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelryMetal",
+          "x": 5,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelryKarat",
+          "x": 9,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelryGender",
+          "x": 35,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelryStyle",
+          "x": 40,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "jewelrySizeLength",
+          "x": 47,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone1Quantity",
+          "x": 60,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone1Shape",
+          "x": 65,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone1Carat",
+          "x": 69,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone1Weight",
+          "x": 78,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone1Color",
+          "x": 89,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone2Quantity",
+          "x": 73,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone2Shape",
+          "x": 78,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone2Carat",
+          "x": 82,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone2Weight",
+          "x": 87,
+          "y": 13.6,
+          "w": 20,
+          "size": 9
+        },
+        {
+          "id": "stone2Color",
+          "x": 92,
+          "y": 13.6,
           "w": 20,
           "size": 9
         }
