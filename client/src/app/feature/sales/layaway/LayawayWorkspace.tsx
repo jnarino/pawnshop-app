@@ -4,6 +4,7 @@ import NewLayawayTab from '@/app/feature/sales/layaway/tabs/NewLayawayTab';
 import './layaway.css';
 import { CancelButton } from '@/app/shared/components/CancelButton';
 import { LayawayWorkflowProvider, useLayawayWorkflow, type TabKey } from './contexts/LayawayWorkflowContext';
+import CustomerPerformanceTab from '@/app/shared/components/CustomerPerformanceTab';
 
 function LayawayWorkspaceContent() {
   const {
@@ -25,7 +26,10 @@ function LayawayWorkspaceContent() {
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-2">
             <TabsTrigger value="customer">
-              Customer Info
+              Customer info
+            </TabsTrigger>
+            <TabsTrigger value="customerPerformance" disabled={!customer?.id}>
+              Customer performance
             </TabsTrigger>
             <TabsTrigger value="newLayaway">
               Layaway
@@ -40,6 +44,9 @@ function LayawayWorkspaceContent() {
             onCustomerChange={setCustomer}
             onCustomerSelected={() => setActiveTab('newLayaway')}
           />
+        </TabsContent>
+        <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
+          <CustomerPerformanceTab customer={customer} />
         </TabsContent>
         <TabsContent value="newLayaway" keepMounted className="flex-1 min-h-0 pt-4">
           <NewLayawayTab

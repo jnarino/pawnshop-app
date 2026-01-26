@@ -2,11 +2,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PawnWorkflowProvider, usePawnWorkflow, type TabKey } from './contexts/PawnWorkflowContext';
 import CustomerInfoTab from '@/app/shared/components/CustomerInfoTab';
 import NewPawnTab from './tabs/NewPawnTab';
-import CustomerPerformanceTab from './tabs/CustomerPerformanceTab';
 import './pawns.css';
 import { CancelButton } from '@/app/shared/components/CancelButton';
 import { PreviousItemsTab } from './tabs/PreviousItemsTab/PreviousItemsTab';
 import HistoryTab from './tabs/HistoryTab/HistoryTab';
+import CustomerPerformanceTab from '@/app/shared/components/CustomerPerformanceTab';
 
 function PawnsWorkspaceContent() {
   const {

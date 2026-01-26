@@ -14,11 +14,10 @@ import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/cus
 import { customerApi } from '@/app/core/api/customerApi';
 import { RangeDatePicker } from '@/components/ui/range-date-picker';
 import { formatDate } from '@/lib/utils';
-import CustomerPerformanceTab from '@/app/feature/pawns/tabs/CustomerPerformanceTab';
 import { CustomerIdScanModal } from '@/app/feature/_shared/customer';
 import { AamvaData } from '../hooks/useIdScan';
 
-type TabKey = 'customer' | 'customer-performance' | 'ticket' | 'date-range';
+type TabKey = 'customer' | 'ticket' | 'date-range';
 export type ScopeFilter = 'all' | 'active';
 
 interface MaintainSearchProps {
@@ -29,7 +28,6 @@ interface MaintainSearchProps {
     showCustomerTab?: boolean;
     showTicketTab?: boolean;
     showDateRangeTab?: boolean;
-    showCustomerPerformanceTab?: boolean;
     iniitialDates?: {
         from: string;
         to: string;
@@ -44,7 +42,6 @@ export const MaintainSearch = ({
     showCustomerTab = true,
     showTicketTab = true,
     showDateRangeTab = true,
-    showCustomerPerformanceTab = true,
     iniitialDates = {
         from: '',
         to: ''
@@ -92,12 +89,11 @@ export const MaintainSearch = ({
         }
     }, [firstName, lastName, dateOfBirth]);
 
-    const tabCount = [showCustomerTab, showTicketTab, showDateRangeTab, showCustomerPerformanceTab].filter(Boolean).length;
+    const tabCount = [showCustomerTab, showTicketTab, showDateRangeTab].filter(Boolean).length;
     const gridColsClass = {
         1: 'grid-cols-1',
         2: 'grid-cols-2',
         3: 'grid-cols-3',
-        4: 'grid-cols-4'
     }[tabCount] || 'grid-cols-4';
 
     function handleScanned(data: AamvaData, raw: string): void {
@@ -116,7 +112,6 @@ export const MaintainSearch = ({
             <div className="flex items-center gap-4 flex-shrink-0">
                 <TabsList className={`grid ${gridColsClass} w-full`}>
                     {showCustomerTab && <TabsTrigger value="customer">By Customer</TabsTrigger>}
-                    {showCustomerPerformanceTab && <TabsTrigger value="customer-performance">Customer Performance</TabsTrigger>}
                     {showTicketTab && <TabsTrigger value="ticket">By Ticket ID</TabsTrigger>}
                     {showDateRangeTab && <TabsTrigger value="date-range">By Date Range</TabsTrigger>}
                 </TabsList>
@@ -271,10 +266,6 @@ export const MaintainSearch = ({
                         </TableBody>
                     </Table>
                 </div>
-            </TabsContent>
-
-            <TabsContent value="customer-performance" keepMounted className="flex-1 min-h-0 pt-4">
-                <CustomerPerformanceTab customer={selectedCustomer} />
             </TabsContent>
 
             <TabsContent value="ticket" className="space-y-4">
