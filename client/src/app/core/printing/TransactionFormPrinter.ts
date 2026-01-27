@@ -36,6 +36,27 @@ export type TransactionItemPrint = {
     barrel?: string;              // barrel length
     amount?: number | string;     // $ per item
     categoryLabel?: string;
+    caliber?: string;
+    importer?: string;
+    barrelLength?: string;
+
+    // line 3 jewelry
+    jewelryType?: string;
+    jewelryMetal?: string;
+    jewelryKarat?: string;
+    jewelryGender?: string;
+    jewelryStyle?: string;
+    jewelrySizeLength?: string;
+    stone1Quantity?: string;
+    stone1Shape?: string;
+    stone1Carat?: string;
+    stone1Weight?: string;
+    stone1Color?: string;
+    stone2Quantity?: string;
+    stone2Shape?: string;
+    stone2Carat?: string;
+    stone2Weight?: string;
+    stone2Color?: string;
 };
 
 export type TransactionPrintData = {
@@ -275,7 +296,8 @@ export class TransactionFormPrinter {
             businessPhone: STORE.phone ?? '',
             transactionDate: txnDate.toLocaleDateString(),
             transactionTime: timeStr,
-            controlNumber: '', // User requested barcode only, no number
+            maturityDateHeader: maturityDate || '',
+            controlNumber: data.controlNumber ?? '', // User requested barcode only, no number
             controlNumberBarcode: barcodeDataUrl ? `<img src="${barcodeDataUrl}" style="height: 100%; max-width: 100%;" />` : '',
             buyCheckbox: data.ticketType === 'PURCHASE' ? 'X' : '',
             pawnCheckbox: data.ticketType === 'PAWN' ? 'X' : '',
@@ -318,6 +340,7 @@ export class TransactionFormPrinter {
         // Prepare item chunks
         const itemRepeater = TEMPLATE.repeaters?.find(r => r.id === 'items');
         const limit = itemRepeater?.limit ?? 6;
+        console.log("data.items", data.items, fieldValues)
         const allItems = data.items.map(item => ({
             serial: item.serialNumber ?? item.ownerAppliedNumber ?? '',
             type: item.categoryLabel ?? item.itemType ?? '',
@@ -325,6 +348,28 @@ export class TransactionFormPrinter {
             modelNumber: item.modelNumber ?? '',
             description: item.description ?? '',
             amount: fmtMoney(item.amount),
+            jewelryType: item.jewelryType?.at(0) ?? '',
+            jewelryMetal: item.jewelryMetal?.at(0) ?? '',
+            jewelryKarat: item.jewelryKarat ?? '',
+            jewelryGender: item.jewelryGender?.at(0) ?? '',
+            jewelryStyle: item.jewelryStyle?.at(0) ?? '',
+            jewelrySizeLength: item.jewelrySizeLength ?? '',
+            stone1Quantity: item.stone1Quantity ?? '',
+            stone1Shape: item.stone1Shape?.at(0) ?? '',
+            stone1Carat: item.stone1Carat ?? '',
+            stone1Weight: item.stone1Weight ?? '',
+            stone1Color: item.stone1Color?.at(0) ?? '',
+            stone2Quantity: item.stone2Quantity ?? '',
+            stone2Shape: item.stone2Shape?.at(0) ?? '',
+            stone2Carat: item.stone2Carat ?? '',
+            stone2Weight: item.stone2Weight ?? '',
+            stone2Color: item.stone2Color?.at(0) ?? '',
+            // Firearm
+            caliber: item.caliber ?? '',
+            action: item.action?.at(0) ?? '',
+            importer: item.importer ?? '',
+            barrel: item.barrel ?? '',
+            barrelLength: item.barrelLength ?? '',
         }));
 
         const chunks: Record<string, string>[][] = [];

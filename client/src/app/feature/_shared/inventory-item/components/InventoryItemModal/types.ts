@@ -36,10 +36,12 @@ export interface InventoryItemDraft {
   replace?: string;
   condition?: string;
   ownerNumber?: string;
-  caliber?: string;
-  action?: string;
+  caliber?: Lookup;
+  action?: Lookup;
+  barrel?: Lookup;
   barrelLength?: string;
   capacity?: string;
+  importer?: Lookup;
   stones?: Stone[];
   // Additional fields for update operations
   status?: string;
@@ -56,6 +58,6 @@ export interface InventoryItemDraft {
 export const DEFAULT_ITEM: InventoryItemDraft = {
   type: '',
   quantity: '1',
-  weightUnit: 'Grams',
+  weightUnit: '',
   stones: []
 };
