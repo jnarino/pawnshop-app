@@ -16,9 +16,27 @@ export function createLayawayRouter(
    *     tags:
    *       - Layaways
    *     summary: Get defaulted layaways
-   *     description: Retrieve all active layaways that have defaulted (default_date + 1 day <= today)
+   *     description: Retrieve defaulted or future defaulted layaways. If ticketNumber is provided, it searches by ticket. If dates are provided, it searches by default_date range. Otherwise, returns currently defaulted items.
    *     security:
    *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: ticketNumber
+   *         schema:
+   *           type: string
+   *         description: Filter by specific layaway ticket number (takes precedence over dates)
+   *       - in: query
+   *         name: startDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Filter by default Date range start (YYYY-MM-DD)
+   *       - in: query
+   *         name: endDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Filter by default Date range end (YYYY-MM-DD)
    *     responses:
    *       200:
    *         description: List of defaulted layaways

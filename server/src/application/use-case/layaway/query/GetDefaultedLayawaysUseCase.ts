@@ -1,19 +1,26 @@
-import { LayawayRepository } from '../../../../domains/layaway/LayawayRepository';
+import { LayawayRepository, FindDefaultedCriteria } from '../../../../domains/layaway/LayawayRepository';
 import { LayawayResponseDto } from '../../../dto/layaway/query/LayawayResponseDto';
 import { toLayawayItemDto } from '../../../mapping/layaway/layawayMapper';
 
 export class GetDefaultedLayawaysUseCase {
   constructor(private readonly layawayRepo: LayawayRepository) {}
 
-  async execute(): Promise<LayawayResponseDto[]> {
-    const today = new Date();
-    // Ensure we compare against current date "as of now"
-    // The query logic is (default_date + 1 day <= $1)
+  async execute(input?: { startDate?: string; endDate?: string; ticketNumber?: string }): Promise<LayawayResponseDto[]> {
+    const criteria: FindDefaultedCriteria = {};
+
+    if (input?.ticketNumber) {
+      criteria.ticketNumber = input.ticketNumber;
+    } else if (input?.startDate && input?.endDate) {
+      // Validate dates
+      const start = new Date(input.startDate);
+      const end = new Date(input.endDate);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        criteria.startDate = start;
+        criteria.endDate = end;
+      }
+    }
     
-    // NOTE: The user requested "filter as todays date". The sql uses $1.
-    // We pass 'today' or 'now'.
-    
-    const flatLayaways = await this.layawayRepo.findDefaulted(today);
+    const flatLayaways = await this.layawayRepo.findDefaulted(criteria);
 
     // Grouping logic (copied from GetLayawaysUseCase to keep consistent output format)
     const groupedMap = new Map<string, LayawayResponseDto>();

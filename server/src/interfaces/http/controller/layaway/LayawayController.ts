@@ -26,7 +26,13 @@ export class LayawayController {
    */
   getDefaulted = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.getDefaultedLayawaysUseCase.execute();
+      const input = {
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        ticketNumber: req.query.ticketNumber as string,
+      };
+
+      const result = await this.getDefaultedLayawaysUseCase.execute(input);
       return res.json(result);
     } catch (err) {
       return next(err);

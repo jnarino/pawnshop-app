@@ -76,7 +76,7 @@ describe('GetDefaultedLayawaysUseCase', () => {
 
     const result = await useCase.execute();
 
-    expect(mockRepo.findDefaulted).toHaveBeenCalled();
+    expect(mockRepo.findDefaulted).toHaveBeenCalledWith({});
     // Should group into 1 layaway result
     expect(result).toHaveLength(1);
     

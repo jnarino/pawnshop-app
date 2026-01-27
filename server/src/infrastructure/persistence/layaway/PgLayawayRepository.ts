@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { LayawayAgreement, LayawayAgreementProps } from '../../../domains/layaway/LayawayAgreement';
-import { LayawayRepository, FindLayawaysCriteria } from '../../../domains/layaway/LayawayRepository';
+import { LayawayRepository, FindLayawaysCriteria, FindDefaultedCriteria } from '../../../domains/layaway/LayawayRepository';
 import { loadSql } from '../../db/sqlLoader';
 
 const sqlFindByCriteria = loadSql('queries', 'layaway/layaway_find_by_criteria');
@@ -9,12 +9,26 @@ const sqlCreate = loadSql('commands', 'layaway/layaway_create');
 const sqlUpdate = loadSql('commands', 'layaway/layaway_update');
 const sqlGetHistory = loadSql('queries', 'layaway/layaway_get_history');
 const sqlFindDefaulted = loadSql('queries', 'layaway/layaway_find_defaulted');
+const sqlFindDefaultedByTicket = loadSql('queries', 'layaway/layaway_find_defaulted_by_ticket');
+const sqlFindDefaultedByDateRange = loadSql('queries', 'layaway/layaway_find_defaulted_by_date_range');
 
 export class PgLayawayRepository implements LayawayRepository {
   constructor(private readonly db: Pool | PoolClient) {}
 
-  async findDefaulted(cutoffDate: Date): Promise<LayawayAgreement[]> {
-    const result = await this.db.query(sqlFindDefaulted, [cutoffDate]);
+  async findDefaulted(criteria?: FindDefaultedCriteria): Promise<LayawayAgreement[]> {
+    if (criteria?.ticketNumber) {
+      const result = await this.db.query(sqlFindDefaultedByTicket, [criteria.ticketNumber]);
+      return result.rows.map(this.mapRow);
+    }
+
+    if (criteria?.startDate && criteria?.endDate) {
+      const result = await this.db.query(sqlFindDefaultedByDateRange, [criteria.startDate, criteria.endDate]);
+      return result.rows.map(this.mapRow);
+    }
+    
+    // Default fallback: Items that have defaulted by today
+    const today = new Date();
+    const result = await this.db.query(sqlFindDefaulted, [today]);
     return result.rows.map(this.mapRow);
   }
 

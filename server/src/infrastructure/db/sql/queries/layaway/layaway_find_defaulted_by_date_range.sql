@@ -1,0 +1,44 @@
+SELECT 
+  la.id,
+  la.ticketnum,
+  la.clerk_user_id,
+  la.date_in,
+  la.last_updated_at,
+  la.amount,
+  la.tax_sales,
+  la.state_tax,
+  la.returned_amt,
+  la.customer_id,
+  c.first_name AS customer_first_name,
+  c.middle_name AS customer_middle_name,
+  c.last_name AS customer_last_name,
+  c.date_of_birth AS customer_date_of_birth,
+  c.phone_number AS customer_phone_number,
+  c.cell_phone AS customer_cell_phone,
+  c.email AS customer_email,
+  la.note,
+  la.status,
+  la.default_date,
+  la.total_of_payments,
+  la.period,
+  la.extra_note,
+  la.gun_proc_fee,
+  la.last_updated_user_id,
+  la.inventory_number,
+  la.number_sold,
+  la.item_amount,
+  la.description,
+  la.tax_exempt,
+  la.return_sold,
+  la.item_status,
+  la.county_tax_exempt,
+  la.item_last_updated_user_id,
+  la.items_id,
+  la.created_at,
+  la.updated_at
+FROM layaway_agreement la
+LEFT JOIN customer c ON la.customer_id = c.id
+WHERE la.status = 'active'
+  AND la.default_date >= $1 
+  AND la.default_date <= $2
+ORDER BY la.default_date ASC;

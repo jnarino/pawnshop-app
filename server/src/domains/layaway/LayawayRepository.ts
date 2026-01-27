@@ -7,12 +7,18 @@ export interface FindLayawaysCriteria {
   customerId?: string;
 }
 
+export interface FindDefaultedCriteria {
+  ticketNumber?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 export interface LayawayRepository {
   findByCriteria(criteria: FindLayawaysCriteria): Promise<LayawayAgreement[]>;
   create(layaway: LayawayAgreement): Promise<LayawayAgreement>;
   findByTicketNum(ticketnum: string): Promise<LayawayAgreement[]>;
   update(layaway: LayawayAgreement): Promise<LayawayAgreement>;
   getHistory(customerId: string, ticketnum: string): Promise<any[]>;
-  findDefaulted(cutoffDate: Date): Promise<LayawayAgreement[]>;
+  findDefaulted(criteria?: FindDefaultedCriteria): Promise<LayawayAgreement[]>;
 }
 
