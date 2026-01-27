@@ -66,6 +66,20 @@ export class CreateInventoryItemOnPawnTicketUseCase {
             }
         );
 
+        // Determine if item is firearm to apply "G-" prefix
+        const isFirearm = await this.attributeMapper.isFirearmCategory(dto.inventorySubcategoryId);
+        
+        // Auto-generate inventory_number: {controlNumber}-{itemIndex}
+        let inventoryNumber = `${controlNumber}-${itemIndex}`;
+        let legacyInventoryNumber = dto.legacyInventoryNumber ?? null;
+
+        if (isFirearm) {
+            inventoryNumber = `G-${inventoryNumber}`;
+            if (legacyInventoryNumber) {
+                legacyInventoryNumber = `G-${legacyInventoryNumber}`;
+            }
+        }
+
         const item = new InventoryItem({
             id: crypto.randomUUID(),
 
@@ -89,13 +103,12 @@ export class CreateInventoryItemOnPawnTicketUseCase {
             extra,
             attributes,
 
-            legacyInventoryNumber: dto.legacyInventoryNumber ?? null,
+            legacyInventoryNumber: legacyInventoryNumber,
             legacyItemGuid: dto.legacyItemGuid ?? null,
             legacyCategoryDescription: dto.legacyCategoryDescription ?? null,
             legacyBrandColorDescription: dto.legacyBrandColorDescription ?? null,
 
-            // Auto-generate inventory_number: {controlNumber}-{itemIndex}
-            inventoryNumber: `${controlNumber}-${itemIndex}`,
+            inventoryNumber,
             lastUpdatedUserId: null,
 
             // created_at is NULL for pawn items (not on inventory yet)

@@ -81,7 +81,7 @@ export class ItemAttributeMapper {
   /**
    * Determine if the category is a firearm category
    */
-  private async isFirearmCategory(subcategoryId: string): Promise<boolean> {
+  public async isFirearmCategory(subcategoryId: string): Promise<boolean> {
     try {
       const category = await this.categoryRepo.getCategoryBySubcategoryId(subcategoryId);
       if (!category) return false;
