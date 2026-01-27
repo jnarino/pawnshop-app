@@ -13,4 +13,6 @@ export interface LayawayRepository {
   findByTicketNum(ticketnum: string): Promise<LayawayAgreement[]>;
   update(layaway: LayawayAgreement): Promise<LayawayAgreement>;
   getHistory(customerId: string, ticketnum: string): Promise<any[]>;
+  findDefaulted(cutoffDate: Date): Promise<LayawayAgreement[]>;
 }
+

@@ -11,6 +11,30 @@ export function createLayawayRouter(
 
   /**
    * @openapi
+   * /api/layaway/defaulted:
+   *   get:
+   *     tags:
+   *       - Layaways
+   *     summary: Get defaulted layaways
+   *     description: Retrieve all active layaways that have defaulted (default_date + 1 day <= today)
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of defaulted layaways
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/LayawayResponse'
+   *       401:
+   *         description: Unauthorized
+   */
+  router.get('/defaulted', auth, controller.getDefaulted);
+
+  /**
+   * @openapi
    * /api/layaway:
    *   get:
    *     tags:

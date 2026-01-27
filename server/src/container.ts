@@ -93,6 +93,7 @@ import { GetLayawaysUseCase } from './application/use-case/layaway/query/GetLaya
 import { GetLayawaysByCustomerUseCase } from './application/use-case/layaway/query/GetLayawaysByCustomerUseCase';
 import { GetLayawayByTicketNumUseCase } from './application/use-case/layaway/query/GetLayawayByTicketNumUseCase';
 import { GetLayawayHistoryUseCase } from './application/use-case/layaway/query/GetLayawayHistoryUseCase';
+import { GetDefaultedLayawaysUseCase } from './application/use-case/layaway/query/GetDefaultedLayawaysUseCase';
 import { MakeLayawayPaymentUseCase } from './application/use-case/layaway/command/MakeLayawayPaymentUseCase';
 import { VoidLayawayPaymentUseCase } from './application/use-case/layaway/command/VoidLayawayPaymentUseCase';
 import { LayawayController } from './interfaces/http/controller/layaway/LayawayController';
@@ -202,6 +203,7 @@ export async function createApp() {
   const getLayawaysByCustomerUseCase = new GetLayawaysByCustomerUseCase(layawayRepo);
   const getLayawayByTicketNumUseCase = new GetLayawayByTicketNumUseCase(layawayRepo);
   const getLayawayHistoryUseCase = new GetLayawayHistoryUseCase(layawayRepo);
+  const getDefaultedLayawaysUseCase = new GetDefaultedLayawaysUseCase(layawayRepo);
   const createLayawayUseCase = new CreateLayawayUseCase(layawayUnitOfWork, controlNumberRepository, customerRepo);
   const makeLayawayPaymentUseCase = new MakeLayawayPaymentUseCase(layawayUnitOfWork, controlNumberRepository);
   const voidLayawayPaymentUseCase = new VoidLayawayPaymentUseCase(layawayUnitOfWork, controlNumberRepository);
@@ -303,7 +305,8 @@ export async function createApp() {
     getLayawayByTicketNumUseCase,
     makeLayawayPaymentUseCase,
     voidLayawayPaymentUseCase,
-    getLayawayHistoryUseCase
+    getLayawayHistoryUseCase,
+    getDefaultedLayawaysUseCase
   );
 
   const app = createExpressApp({

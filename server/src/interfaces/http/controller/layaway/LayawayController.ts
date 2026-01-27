@@ -7,6 +7,7 @@ import { GetLayawayByTicketNumUseCase } from '../../../../application/use-case/l
 import { MakeLayawayPaymentUseCase } from '../../../../application/use-case/layaway/command/MakeLayawayPaymentUseCase';
 import { VoidLayawayPaymentUseCase } from '../../../../application/use-case/layaway/command/VoidLayawayPaymentUseCase';
 import { GetLayawayHistoryUseCase } from '../../../../application/use-case/layaway/query/GetLayawayHistoryUseCase';
+import { GetDefaultedLayawaysUseCase } from '../../../../application/use-case/layaway/query/GetDefaultedLayawaysUseCase';
 
 export class LayawayController {
   constructor(
@@ -16,8 +17,21 @@ export class LayawayController {
     private readonly getLayawayByTicketNumUseCase: GetLayawayByTicketNumUseCase,
     private readonly makeLayawayPaymentUseCase: MakeLayawayPaymentUseCase,
     private readonly voidLayawayPaymentUseCase: VoidLayawayPaymentUseCase,
-    private readonly getLayawayHistoryUseCase: GetLayawayHistoryUseCase
+    private readonly getLayawayHistoryUseCase: GetLayawayHistoryUseCase,
+    private readonly getDefaultedLayawaysUseCase: GetDefaultedLayawaysUseCase
   ) {}
+
+  /**
+   * GET /api/layaway/defaulted
+   */
+  getDefaulted = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.getDefaultedLayawaysUseCase.execute();
+      return res.json(result);
+    } catch (err) {
+      return next(err);
+    }
+  };
 
   findByCriteria = async (req: Request, res: Response, next: NextFunction) => {
     try {

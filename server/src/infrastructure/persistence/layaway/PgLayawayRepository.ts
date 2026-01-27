@@ -8,9 +8,15 @@ const sqlFindByTicketNum = loadSql('queries', 'layaway/layaway_find_by_ticketnum
 const sqlCreate = loadSql('commands', 'layaway/layaway_create');
 const sqlUpdate = loadSql('commands', 'layaway/layaway_update');
 const sqlGetHistory = loadSql('queries', 'layaway/layaway_get_history');
+const sqlFindDefaulted = loadSql('queries', 'layaway/layaway_find_defaulted');
 
 export class PgLayawayRepository implements LayawayRepository {
   constructor(private readonly db: Pool | PoolClient) {}
+
+  async findDefaulted(cutoffDate: Date): Promise<LayawayAgreement[]> {
+    const result = await this.db.query(sqlFindDefaulted, [cutoffDate]);
+    return result.rows.map(this.mapRow);
+  }
 
   async findByCriteria(criteria: FindLayawaysCriteria): Promise<LayawayAgreement[]> {
     const { status, startDate, endDate, customerId } = criteria;
