@@ -11,7 +11,6 @@ interface FirearmFieldsProps {
 }
 
 export function FirearmFields({ draft, updateField, disabled = false }: FirearmFieldsProps) {
-  console.log('FirearmFields', { draft });
   return (
     <>
       <div className="space-y-1 col-span-3">
@@ -21,6 +20,19 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
           value={draft.caliber || ''}
           onChange={(_value, _label, option) => updateField('caliber', option)}
           placeholder="SELECT CALIBER..."
+          showAddButton
+          disabled={disabled}
+        />
+      </div>
+
+      <div className="space-y-1 col-span-3">
+        <Label className="text-xs font-semibold">Finish</Label>
+        <LookupSelect
+          typeName={LookupTypeName.FINISH}
+          value={draft.finish || ''}
+          onChange={(_value, _label, option) => updateField('finish', option)}
+          placeholder="SELECT FINISH..."
+          showAddButton
           disabled={disabled}
         />
       </div>
@@ -32,6 +44,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
           value={draft.action || ''}
           onChange={(_value, _label, option) => updateField('action', option)}
           placeholder="SELECT ACTION..."
+          showAddButton
           disabled={disabled}
         />
       </div>
@@ -45,6 +58,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
               value={draft.barrel?.id || ''}
               onChange={(_value, _label, option) => updateField('barrel', option)}
               placeholder="SELECT BARREL..."
+              showAddButton
               disabled={disabled}
             />
           </div>
@@ -68,6 +82,7 @@ export function FirearmFields({ draft, updateField, disabled = false }: FirearmF
           value={draft.importer || ''}
           onChange={(_value, _label, option) => updateField('importer', option)}
           placeholder="SELECT IMPORTER..."
+          showAddButton
           disabled={disabled}
         />
       </div>

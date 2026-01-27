@@ -27,6 +27,23 @@ export function formatDate(dateStr: string | Date | null | undefined, withTime: 
   }
 }
 
+export function formatTime(dateStr: string | Date | null | undefined): string {
+  if (!dateStr) return '';
+  try {
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'UTC',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    };
+    return new Date(dateStr).toLocaleTimeString('en-US', options);
+  } catch (e) {
+    console.error('Error formatting time:', e);
+    return 'Invalid Time';
+  }
+}
+
 export function formatCurrency(amount?: number | string | null): string {
   if (!amount && amount !== 0) return '$0.00';
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;

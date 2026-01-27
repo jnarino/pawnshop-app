@@ -59,6 +59,8 @@ export interface FormDataItem {
   action?: string;
   importer?: string;
   barrel?: string;
+  finish?: string;
+  firearmType?: string;
   barrelLength?: string;
 }
 
@@ -129,6 +131,130 @@ export function usePawnPrint(): UsePawnPrintResult {
     });
   }, []);
 
+  const getFirearmTypeCode = (typeName: string) => {
+    const TYPE_MAP = {
+      'PISTOL': 'H',
+      'RIFLE': 'R',
+      'SHOTGUN': 'S',
+      'AIRGUN': 'A',
+      'BLACK POWDER': 'B',
+    }
+    return TYPE_MAP[typeName.toUpperCase()] ?? 'X';
+  }
+
+  const getBarrelCode = (barrelName: string) => {
+    const BARREL_MAP = {
+      'SINGLE BARREL': '1',
+      'DOUBLE BARREL': '2',
+      'OVER AND UNDER': '3',
+    }
+    return BARREL_MAP[barrelName.toUpperCase()] ?? '4';
+  }
+
+  const getActionCode = (actionName: string) => {
+    const ACTION_MAP = {
+      'REVOLVER': 'R',
+      'SEMI-AUTOMATIC': 'A',
+      'BOLT ACTION': 'B',
+      'LEVER': 'L',
+      'PUMP': 'P',
+      'SINGLE SHOT': 'S',
+      'SINGLE-SHOT': 'S',
+    }
+    return ACTION_MAP[actionName.toUpperCase()] ?? 'X';
+  }
+
+  const getFinishCode = (finishName: string) => {
+    const FINISH_MAP = {
+      'CHROME NICKEL': 'C',
+      'BLUE STEEL': 'B',
+      'STAINLESS STEEL': 'S',
+    }
+    return FINISH_MAP[finishName.toUpperCase()] ?? 'X';
+  }
+
+  const getJewelryTypeCode = (jewelryName: string) => {
+    const JEWERLRY_TYPE_MAP = {
+      'RING': 'R',
+      'WATCH': 'W',
+      'NECKLACE': 'N',
+      'BRACELET': 'B',
+      'PENDANT/CHARM': 'P',
+      'PENDANT': 'P',
+      'EARRINGS': 'E',
+      'CHAIN': 'C',
+      'CUFFLINKS': 'L',
+    }
+    return JEWERLRY_TYPE_MAP[jewelryName.toUpperCase()] ?? 'X';
+  }
+
+  const getMetalCode = (metalName: string) => {
+    const METAL_MAP = {
+      'YELLOW GOLD': 'Y',
+      'WHITE GOLD': 'W',
+      'STERLING SILVER': 'S',
+      'PLATINUM': 'P',
+      'TRI-COLOR': 'T',
+    }
+    return METAL_MAP[metalName.toUpperCase()] ?? 'X';
+  }
+
+  const getGenderCode = (genderName: string) => {
+    const GENDER_MAP = {
+      'MAN\'S': 'M',
+      'WOMAN\'S': 'W',
+      'NOT APPLICABLE': 'N',
+    }
+    return GENDER_MAP[genderName.toUpperCase()] ?? 'X';
+  }
+
+  const getStyleCode = (styleName: string) => {
+    const STYLE_MAP = {
+      'SERPENTINE': 'S',
+      'HERRIGBONE': 'H',
+      'ROPE': 'R',
+      'BOX LINK': 'B',
+      'FIGARO': 'F',
+      'CAMEO': 'A',
+      'CLASS / SCHOOL': 'C',
+      'BAND': 'P',
+      'SOLITAIRE': 'O',
+      'NUGGET': 'N',
+      'CLUSTER': 'D',
+      'MONOGRAM': 'M',
+    }
+    return STYLE_MAP[styleName.toUpperCase()] ?? 'X';
+  }
+
+  const getStoneShapeCode = (stoneName: string) => {
+    const STONE_MAP = {
+      'OVAL': 'O',
+      'ROUND': 'R',
+      'PEAR': 'P',
+      'EMERALD': 'E',
+      'MARQUISE': 'M',
+      'HEART': 'H',
+    }
+    return STONE_MAP[stoneName.toUpperCase()] ?? 'X';
+  }
+
+  const getStoneColorCode = (stoneColorName: string) => {
+    const STONE_MAP = {
+      'CLEAR': 'C',
+      'GREEN': 'G',
+      'AMBAR': 'A',
+      'PURPLE': 'P',
+      'BLUE': 'B',
+      'RED': 'R',
+      'PINK': 'R',
+      'YELLOW': 'Y',
+      'BLACK': 'K',
+      'BROWN': 'O',
+      'WHITE': 'W',
+    }
+    return STONE_MAP[stoneColorName.toUpperCase()] ?? 'X';
+  }
+
   const printTransactionForm = useCallback(async (params: PrintFormParams): Promise<boolean> => {
     setIsFormPrinting(true);
     setFormError(null);
@@ -136,11 +262,8 @@ export function usePawnPrint(): UsePawnPrintResult {
     try {
       const { ticket, customer, items } = params;
 
-      console.log({ items3: items })
-
-
       const printData: TransactionPrintData = {
-        transactionDate: ticket.transactionDate,
+        transactionDate: ticket.createdDate,
         maturityDate: ticket.maturityDate,
         defaultDate: ticket.defaultDate,
         controlNumber: ticket.controlNumber,
@@ -186,6 +309,9 @@ export function usePawnPrint(): UsePawnPrintResult {
 
           const ticketItem = ticket.items.find((i) => i.id === item.id);
 
+          const isJewelry = !!item.style;
+          const isFirearm = !!item.caliber;
+
           return {
             serialNumber: cleanSerial(item.serial) || undefined,
             ownerAppliedNumber: cleanSerial(item.ownerNumber) || undefined,
@@ -194,28 +320,32 @@ export function usePawnPrint(): UsePawnPrintResult {
             description: descWithColor,
             amount: item.amount,
             itemType: ticketItem?.inventorySubcategory.name || 'MISC',
-            jewelryType: item.style ? item.jewelryType : '',
-            jewelryMetal: item.metal,
-            jewelryKarat: `${item.karat || ''} ${item.karat ? (item.weight || '') : ''} ${item.karat ? (item.weightUnit || '') : ''}`,
-            jewelryGender: item.gender,
-            jewelryStyle: item.style,
-            jewelrySizeLength: item.sizeLength,
-            stone1Quantity: item.stone1Quantity,
-            stone1Shape: item.stone1Shape,
-            stone1Carat: item.stone1Carat,
-            stone1Weight: item.stone1Weight,
-            stone1Color: item.stone1Color,
-            stone2Quantity: item.stone2Quantity,
-            stone2Shape: item.stone2Shape,
-            stone2Carat: item.stone2Carat,
-            stone2Weight: item.stone2Weight,
-            stone2Color: item.stone2Color,
+
+            // Jewelry
+            jewelryType: isJewelry ? getJewelryTypeCode(item.jewelryType || '') : '',
+            jewelryMetal: isJewelry ? getMetalCode(item.metal || '') : '',
+            jewelryKarat: isJewelry ? `${item.karat || ''} ${item.karat ? (item.weight || '') : ''} ${item.karat ? (item.weightUnit || '') : ''}` : '',
+            jewelryGender: isJewelry ? getGenderCode(item.gender || '') : '',
+            jewelryStyle: isJewelry ? getStyleCode(item.style || '') : '',
+            jewelrySizeLength: isJewelry ? item.sizeLength : '',
+            stone1Quantity: isJewelry ? item.stone1Quantity : '',
+            stone1Shape: isJewelry ? getStoneShapeCode(item.stone1Shape || '') : '',
+            stone1Carat: isJewelry ? item.stone1Carat : '',
+            stone1Weight: isJewelry ? item.stone1Weight : '',
+            stone1Color: isJewelry ? getStoneColorCode(item.stone1Color || '') : '',
+            stone2Quantity: isJewelry ? item.stone2Quantity : '',
+            stone2Shape: isJewelry ? getStoneShapeCode(item.stone2Shape || '') : '',
+            stone2Carat: isJewelry ? item.stone2Carat : '',
+            stone2Weight: isJewelry ? item.stone2Weight : '',
+            stone2Color: isJewelry ? getStoneColorCode(item.stone2Color || '') : '',
             // Firearm
-            caliber: item.caliber,
-            action: item.action,
-            importer: item.importer,
-            barrel: item.barrel,
-            barrelLength: item.barrelLength,
+            firearmType: isFirearm ? getFirearmTypeCode(item.firearmType || '') : '',
+            caliber: isFirearm ? item.caliber : '',
+            action: isFirearm ? getActionCode(item.action || '') : '',
+            importer: isFirearm ? item.importer : '',
+            barrel: isFirearm ? getBarrelCode(item.barrel || '') : '',
+            finish: isFirearm ? getFinishCode(item.finish || '') : '',
+            barrelLength: isFirearm ? item.barrelLength : '',
           };
         }),
 

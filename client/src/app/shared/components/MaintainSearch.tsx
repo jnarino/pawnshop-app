@@ -97,7 +97,7 @@ export const MaintainSearch = ({
     }[tabCount] || 'grid-cols-4';
 
     function handleScanned(data: AamvaData, raw: string): void {
-        console.log("Scanner data", { data, raw });
+        setError(null);
         setFirstName(data.firstName || '');
         setLastName(data.lastName || '');
         setDateOfBirth(data.dateOfBirth || '');
@@ -105,6 +105,7 @@ export const MaintainSearch = ({
 
     return (
         <Tabs value={activeTab} onValueChange={(v) => {
+            setError(null);
             setShowTicketTable(false);
             setActiveTab(v as TabKey)
         }

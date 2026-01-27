@@ -343,6 +343,14 @@
           "uppercase": true
         },
         {
+          "id": "firearmType",
+          "x": 105,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
           "id": "action",
           "x": 110,
           "y": 6.8,
@@ -359,8 +367,16 @@
           "uppercase": true
         },
         {
+          "id": "finish",
+          "x": 145,
+          "y": 6.8,
+          "w": 20,
+          "size": 9,
+          "uppercase": true
+        },
+        {
           "id": "barrel",
-          "x": 140,
+          "x": 150,
           "y": 6.8,
           "w": 20,
           "size": 9,

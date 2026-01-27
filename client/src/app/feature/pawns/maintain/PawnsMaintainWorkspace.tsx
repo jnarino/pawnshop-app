@@ -56,6 +56,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     // firearms
     caliber: item.attributes?.caliber,
     action: item.attributes?.action,
+    finish: item.attributes?.finish,
     importer: item.attributes?.importer,
     barrel: item.attributes?.barrel,
     barrelLength: item.attributes?.barrelLength,
@@ -67,7 +68,7 @@ function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     customerId: pawnTicket.customerId,
     type: transactionType === 'PURCHASE' ? 'PURCHASE' as const : 'PAWN' as const,
     periodicRate: String(Math.round((pawnTicket.periodicRate || 0) * 100)),
-    transactionDate: formatDate(pawnTicket.transactionDate),
+    transactionDate: formatDate(pawnTicket.createdDate),
     maturityDate: formatDate(pawnTicket.maturityDate),
     expirationDate: formatDate(pawnTicket.defaultDate),
     items: transformedItems
