@@ -9,11 +9,12 @@ from tqdm import tqdm
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
 
 def safe_str(value):
-    """Return string value or None if input is None"""
+    """Safely convert value to string, strip whitespace and NUL bytes"""
     if value is None:
         return None
-    # Replace NUL characters which break SQL literals
-    return str(value).replace('\x00', '')
+    # Ensure value is string, split null bytes, and strip whitespace (including tabs/newlines)
+    s = str(value).replace('\x00', '').strip()
+    return s if s else None
 
 def parse_composit3_jewelry(composit3_str, attr_lookup):
     """
@@ -314,14 +315,21 @@ def migrate_inventory():
                 'name': r['DESCRIPT']
             }
             
-        # Postgres Brand Map: (CatID, BrandCode) -> BrandID
+        # Postgres Brand Map: (CatID, BrandCode) -> BrandID and (CatID, BrandName) -> BrandID
         # We need this because Brand IDs are generated UUIDs in Postgres
         print("Fetching Postgres Brand Map...")
-        pg_cursor.execute("SELECT id, inventory_category_id, code FROM inventory_brand")
+        pg_cursor.execute("SELECT id, inventory_category_id, code, name FROM inventory_brand")
         pg_brands = pg_cursor.fetchall()
         pg_brand_map = {} # (cat_id, code) -> brand_id
+        pg_brand_name_map = {} # (cat_id, name_upper) -> brand_id
         for r in pg_brands:
-            pg_brand_map[(str(r[1]), str(r[2]))] = str(r[0])
+            cat_id = str(r[1])
+            brand_id = str(r[0])
+            code = str(r[2]) if r[2] else ''
+            name = str(r[3]) if r[3] else ''
+            
+            pg_brand_map[(cat_id, code)] = brand_id
+            pg_brand_name_map[(cat_id, name.upper().strip())] = brand_id
             
         # Verify valid Subcategories in PG
         pg_cursor.execute("SELECT id FROM inventory_subcategory")
@@ -463,9 +471,23 @@ def migrate_inventory():
                     if cat_uuid and brand_info:
                         # Reconstruct Code logic
                         b_name = (brand_info['name'] or 'Unknown').strip()
+                        b_name_upper = b_name.upper()
                         b_code = b_name[:3].strip().upper() # Derived Code
                         
-                        brand_uuid = pg_brand_map.get((cat_uuid, b_code))
+                        # Try name match first (most reliable)
+                        brand_uuid = pg_brand_name_map.get((cat_uuid, b_name_upper))
+                        
+                        # Fallback to code match
+                        if not brand_uuid:
+                            brand_uuid = pg_brand_map.get((cat_uuid, b_code))
+                        
+                        if not brand_uuid:
+                            # Log all brand lookup failures
+                            print(f"⚠️ Brand Lookup Failed: Name='{b_name}', DerivedCode='{b_code}', CatID={cat_uuid}")
+                            # Check if any brand exists for this category with this name to imply code mismatch
+                            matching_map_entries = [k for k in pg_brand_map.keys() if k[0] == cat_uuid and k[1].startswith(b_code[0])]
+                            if len(matching_map_entries) < 10:
+                                print(f"   Did you mean one of these in cat {cat_uuid}? {matching_map_entries}")
 
                 # 3. Attributes & Other Fields
                 item_pk = row['ITEMS_PK']
@@ -590,17 +612,17 @@ def migrate_inventory():
                     row['RESALEAMT'],
                     row['LOWSLPRICE'],
                     row['INSREPCOST'],
-                    safe_str(row['OWNERNUM']).strip() if row['OWNERNUM'] else None,# owner_mark
-                    safe_str(row['DESCRIPT']).strip() if row['DESCRIPT'] else None, # Item Description (Trimmed)
+                    safe_str(row['OWNERNUM']), # owner_mark
+                    safe_str(row['DESCRIPT']), # Item Description
                     safe_str(row['BIN']), # Bin Location
                     row.get('storagefee'),
                     json.dumps(extra_data),
                     json.dumps(attributes),
-                    safe_str(row['INVNUM']).strip(), # legacy_inventory_number
+                    safe_str(row['INVNUM']), # legacy_inventory_number
                     safe_str(row['Items_ID']),   # legacy_item_guid (Using Items_ID as proxy)
                     None, # legacy_category_description
-                    safe_str(row['DESCRIPT2']).strip() if row['DESCRIPT2'] else None, # legacy_brand_color_description
-                    safe_str(row['INVNUM']).strip(), # inventory_number
+                    safe_str(row['DESCRIPT2']), # legacy_brand_color_description
+                    safe_str(row['INVNUM']), # inventory_number
                     user_map.get(str(row['usr_fk'])), # last_updated_user_id
                     created_at,
                     updated_at
