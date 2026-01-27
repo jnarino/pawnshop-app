@@ -57,6 +57,7 @@ class MockItemAttributeMapper {
       extra: input.extra || {}
     };
   });
+  isFirearmCategory = jest.fn().mockResolvedValue(false);
 }
 
 class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
