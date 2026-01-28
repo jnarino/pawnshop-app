@@ -78,7 +78,7 @@ export function PawnTicketForm({
   const isViewMode = mode === 'VIEW';
   const isEditMode = mode === 'MODIFY';
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
-  const { printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
+  const { transformToPrintInformation, printTransactionForm, printLabels, buildPrintItems } = usePawnPrint();
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -195,51 +195,8 @@ export function PawnTicketForm({
 
     setIsPrinting(true);
     try {
-      const items = formData.items.map(item => ({
-        type: item.type,
-        brand: item.brandName,
-        model: item.model,
-        serial: item.serial,
-        description: item.description,
-        amount: item.amount,
-        quantity: item.quantity,
-        ownerNumber: item.ownerNumber,
-        id: item.id,
-        jewelryType: item.subcategoryName,
-        metal: item.metal?.name,
-        karat: item.karat?.name,
-        weight: item.weight,
-        weightUnit: item.weightUnit,
-        gender: item.gender?.name,
-        style: item.style?.name,
-        color: item.color?.name,
-        sizeLength: item.sizeLength?.name,
-        stone1Quantity: (item.stones?.length || 0) > 0 ? item.stones?.[0].quantity : '',
-        stone1Shape: (item.stones?.length || 0) > 0 ? item.stones?.[0].shape?.name : '',
-        stone1Carat: (item.stones?.length || 0) > 0 ? item.stones?.[0].carat ? item.stones?.[0].carat : !!item.stones?.[0]?.quantity ? '0.00' : '' : '',
-        stone1Weight: (item.stones?.length || 0) > 0 ? item.stones?.[0].weight ? item.stones?.[0].weight : !!item.stones?.[0]?.quantity ? '0.00' : '' : '',
-        stone1Color: (item.stones?.length || 0) > 0 ? item.stones?.[0].color?.name : '',
-        stone2Quantity: (item.stones?.length || 0) > 1 ? item.stones?.[1].quantity : '',
-        stone2Shape: (item.stones?.length || 0) > 1 ? item.stones?.[1].shape?.name : '',
-        stone2Carat: (item.stones?.length || 0) > 1 ? item.stones?.[1].carat ? item.stones?.[1].carat : !!item.stones?.[1]?.quantity ? '0.00' : '' : '',
-        stone2Weight: (item.stones?.length || 0) > 1 ? item.stones?.[1].weight ? item.stones?.[1].weight : !!item.stones?.[1]?.quantity ? '0.00' : '' : '',
-        stone2Color: (item.stones?.length || 0) > 1 ? item.stones?.[1].color?.name : '',
-
-        // Firearm
-        firearmType: item.subcategoryName,
-        caliber: item.caliber?.name,
-        action: item.action?.name,
-        importer: item.importer?.name,
-        finish: item.finish?.name,
-        barrel: item.barrel?.name,
-        barrelLength: item.barrelLength,
-      }));
-
-      await printTransactionForm({
-        ticket: pawnTicket as any,
-        customer: customer as any,
-        items
-      });
+      const printInformation = transformToPrintInformation(pawnTicket as any, formData, customer);
+      await printTransactionForm(printInformation);
     } finally {
       setIsPrinting(false);
     }

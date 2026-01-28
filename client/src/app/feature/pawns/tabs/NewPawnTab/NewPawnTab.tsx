@@ -8,9 +8,12 @@ import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
 import { useAuth } from '@/app/core/hooks/useAuth';
 import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { transformPawnTicketToFormData } from '../../maintain/PawnsMaintainWorkspace';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
+  readonly mode;
+  readonly initialTicket;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
@@ -22,12 +25,12 @@ interface PrintState {
   ticketData: TicketByControlNumber | null;
 }
 
-export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+export default function NewPawnTab({ customer, mode, initialTicket, onTicketCreated }: NewPawnTabProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
-  const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
+  const { transformToPrintInformation, printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
   const customerId = customer?.id;
 
   const [printState, setPrintState] = useState<PrintState>({
@@ -139,14 +142,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         colorName: item.colorName,
       }));
 
-      await printTransactionForm({
-        ticket: ticketData,
-        customer,
-        items: formDataItems,
-        financeCharge,
-        totalOfPayments,
-        annualRate,
-      });
+      const printInformation = transformToPrintInformation({ ...ticketData, amountFinanced: amountFinanced, periodicRate: rate, redemptionAmount: totalOfPayments, apr: annualRate }, formData, customer);
+
+      await printTransactionForm(printInformation);
 
       const printItems = buildPrintItems(ticketData, formDataItems);
 
@@ -164,7 +162,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
     return Object.fromEntries(
       Object.entries(obj).filter(([, v]) => v != null && v !== '')
     ) as Partial<T>;
-  }; 
+  };
 
   const transformTicketsToPayload = (pawnData: any, formData: any) => {
     return {
@@ -264,10 +262,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
-          externalDraft={pawnDraft}
+          externalDraft={mode === 'MODIFY' ? undefined : pawnDraft}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || mode === 'MODIFY'}
+          mode={mode}
+          initialData={transformPawnTicketToFormData(initialTicket)}
+          controlNumber={initialTicket?.controlNumber}
+          pawnTicket={initialTicket}
         />
       </div>
 

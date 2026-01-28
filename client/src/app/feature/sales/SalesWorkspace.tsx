@@ -13,6 +13,9 @@ function SalesWorkspaceContent() {
     customer,
     setCustomer,
     navigateToTab,
+    initialTicket,
+    mode,
+    isLayaway,
   } = useSalesWorkflow();
 
   const handleTabChange = (tab: string) => {
@@ -21,7 +24,7 @@ function SalesWorkspaceContent() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold mb-2.5">Sales</h1>
+      {mode !== 'VIEW' && <h1 className="text-2xl font-extrabold mb-2.5">Sales</h1>}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
           <TabsList className="grid flex-1 grid-cols-3">
@@ -32,7 +35,7 @@ function SalesWorkspaceContent() {
               Customer performance
             </TabsTrigger>
             <TabsTrigger value="newSale">
-              Sale
+              {mode === 'VIEW' ? 'View sale' : 'New Sale'}
             </TabsTrigger>
           </TabsList>
           <CancelButton />
@@ -51,6 +54,9 @@ function SalesWorkspaceContent() {
         <TabsContent value="newSale" keepMounted className="flex-1 min-h-0 pt-4">
           <NewSaleTab
             customer={customer}
+            initialTicket={initialTicket}
+            mode={mode}
+            isLayaway={isLayaway}
           />
         </TabsContent>
       </Tabs>
@@ -58,9 +64,9 @@ function SalesWorkspaceContent() {
   );
 }
 
-export default function SalesWorkspace() {
+export default function SalesWorkspace({ initialTicket, mode, isLayaway }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }) {
   return (
-    <SalesWorkflowProvider>
+    <SalesWorkflowProvider initialTicket={initialTicket} mode={mode} isLayaway={isLayaway} >
       <SalesWorkspaceContent />
     </SalesWorkflowProvider>
   );

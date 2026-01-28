@@ -3,6 +3,7 @@ import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 import SellIcon from '@/assets/icons/sell.svg?react';
 import MoneyBagIcon from '@/assets/icons/money_bag.svg?react';
 import ChartReportsIcon from '@/assets/icons/chart_reports.svg?react';
+import LayawayIcon from '@/assets/icons/layaway.svg?react';
 import { ActionCard } from '@/components/ui/ActionCard';
 
 export default function HomePage() {
@@ -28,6 +29,12 @@ export default function HomePage() {
                     subtitle="Sale"
                     title="Sales"
                     to="/sales"
+                />
+                <ActionCard
+                    icon={LayawayIcon}
+                    subtitle="Layaway"
+                    title="Layaways"
+                    to="/sales/layaway"
                 />
                 <ActionCard
                     icon={ChartReportsIcon}

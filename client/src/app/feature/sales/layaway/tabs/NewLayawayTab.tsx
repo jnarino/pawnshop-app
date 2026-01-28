@@ -12,9 +12,12 @@ import PaymentMethodModal from '@/app/feature/_shared/modal/PaymentMethodModal';
 interface NewLayawayTabProps {
   readonly customer: Customer | null;
   readonly onTicketCreated?: (ticketId: string) => void;
+  readonly mode: any;
+  readonly isLayaway: boolean;
+  readonly initialTicket?: any | null;
 }
 
-export default function NewLayawayTab({ customer, onTicketCreated }: NewLayawayTabProps) {
+export default function NewLayawayTab({ customer, onTicketCreated, mode, isLayaway, initialTicket }: NewLayawayTabProps) {
   const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateLayaway();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useLayawayWorkflow();
@@ -126,7 +129,7 @@ export default function NewLayawayTab({ customer, onTicketCreated }: NewLayawayT
           </div>
         )}
         <SaleForm
-          externalDraft={{
+          externalDraft={mode === 'VIEW' ? initialTicket : {
             ...pawnDraft,
             inventoryNumber: '',
             quantity: 1,
@@ -140,7 +143,10 @@ export default function NewLayawayTab({ customer, onTicketCreated }: NewLayawayT
           setEatTax={setEatTax}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || mode === 'VIEW'}
+          mode={mode}
+          isLayaway={isLayaway}
+          initialData={mode === 'VIEW' ? initialTicket : undefined}
         />
       </div>
 

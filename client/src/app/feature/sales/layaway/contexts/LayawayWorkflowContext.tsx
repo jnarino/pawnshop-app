@@ -1,13 +1,17 @@
-import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode, useEffect } from 'react';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 import { formatDate } from '@/lib/utils';
+import { customerApi } from '@/app/core/api/customerApi';
 export type TabKey = 'customer' | 'newLayaway';
 
 export interface LayawayDraftState {
   type: 'PAWN' | 'PURCHASE';
   periodicRate: string;
+  mode: any;
+  initialTicket: any;
+  isLayaway: boolean;
   transactionDate: string;
   maturityDate: string;
   expirationDate: string;
@@ -17,6 +21,9 @@ export interface LayawayDraftState {
 export interface LayawayWorkflowState {
   activeTab: TabKey;
   customer: Customer | null;
+  mode: any;
+  isLayaway: boolean;
+  initialTicket: any;
   setCustomer: (customer: Customer | null) => void;
   pawnDraft: LayawayDraftState;
   updatePawnDraft: (updates: Partial<LayawayDraftState>) => void;
@@ -45,7 +52,7 @@ function createInitialDraft(): LayawayDraftState {
   };
 }
 
-export function LayawayWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
+export function LayawayWorkflowProvider({ children, initialTicket, mode, isLayaway }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
@@ -68,9 +75,22 @@ export function LayawayWorkflowProvider({ children }: Readonly<{ children: React
     setPawnDraft(createInitialDraft());
   }, []);
 
+  useEffect(() => {
+    if (initialTicket) {
+      const fetchCustomer = async () => {
+        const customer = await customerApi.findCustomerById(initialTicket.customer.id);
+        setCustomer(customer);
+      };
+      fetchCustomer();
+    }
+  }, [initialTicket]);
+
   const value = useMemo(() => ({
     activeTab,
     customer,
+    mode: mode || 'CREATE',
+    isLayaway: isLayaway || false,
+    initialTicket,
     setCustomer,
     pawnDraft,
     updatePawnDraft,

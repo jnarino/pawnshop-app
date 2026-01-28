@@ -11,6 +11,9 @@ function LayawayWorkspaceContent() {
     activeTab,
     setActiveTab,
     customer,
+    mode,
+    isLayaway,
+    initialTicket,
     setCustomer,
     navigateToTab
   } = useLayawayWorkflow();
@@ -21,10 +24,12 @@ function LayawayWorkspaceContent() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold mb-2.5">Layaway</h1>
+      {mode !== 'VIEW' && (
+        <h1 className="text-2xl font-extrabold mb-2.5">Layaway</h1>
+      )}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
-          <TabsList className="grid flex-1 grid-cols-2">
+          <TabsList className="grid flex-1 grid-cols-3">
             <TabsTrigger value="customer">
               Customer info
             </TabsTrigger>
@@ -50,6 +55,9 @@ function LayawayWorkspaceContent() {
         </TabsContent>
         <TabsContent value="newLayaway" keepMounted className="flex-1 min-h-0 pt-4">
           <NewLayawayTab
+            mode={mode}
+            isLayaway={isLayaway}
+            initialTicket={initialTicket}
             customer={customer}
           />
         </TabsContent>
@@ -58,9 +66,9 @@ function LayawayWorkspaceContent() {
   );
 }
 
-export default function LayawayWorkspace() {
+export default function LayawayWorkspace({ initialTicket, mode, isLayaway }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }) {
   return (
-    <LayawayWorkflowProvider>
+    <LayawayWorkflowProvider initialTicket={initialTicket} mode={mode} isLayaway={isLayaway}>
       <LayawayWorkspaceContent />
     </LayawayWorkflowProvider>
   );

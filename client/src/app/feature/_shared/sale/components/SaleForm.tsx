@@ -93,7 +93,6 @@ export function SaleForm({
 }: SaleTicketFormProps) {
   console.log({ initialData })
   const isViewMode = mode === 'VIEW';
-  console.log({ isViewMode })
   const { findAvailableItemByNumber } = useFindAvailableItemByNumber();
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
 
@@ -288,7 +287,6 @@ export function SaleForm({
   const handleReturnConfirm = (selectedItems: any[], reason: string) => {
     const total = selectedItems.reduce((sum, i) => sum + Number(i.lineAmount) || 0, 0);
 
-    console.log({ total, selectedItems })
     setRefundData({ items: selectedItems, reason, total });
     setShowReturnModal(false);
     setShowRefundPaymentModal(true);
@@ -345,8 +343,6 @@ export function SaleForm({
     }
   };
 
-
-  console.log({ formData, refundData });
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>

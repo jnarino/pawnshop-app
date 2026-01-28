@@ -7,13 +7,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 
-// Extend the draft type to include controlNumber if it's missing in the base type
-interface ExtendedInventoryItemDraft extends InventoryItemDraft {
-    controlNumber?: string;
-    items?: any; // For status check
-    lineAmount?: number;
-}
-
 interface Props {
     readonly open: boolean;
     readonly isLayaway?: boolean;
@@ -55,6 +48,8 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
         .reduce((sum, i) => sum + (Number(i.amount) || Number((i as any).lineAmount) || Number(i.priceEach) || 0), 0);
 
     if (!open) return null;
+
+    console.log({ items });
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>

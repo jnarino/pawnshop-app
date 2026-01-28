@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode, useEffect } from 'react';
 import type { Customer } from '@/app/feature/_shared/customer';
-import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
+import type { FormMode, InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 import { formatDate } from '@/lib/utils';
+import { customerApi } from '@/app/core/api/customerApi';
 export type TabKey = 'customer' | 'additional' | 'newPawn' | 'previousItems' | 'customerPerformance' | 'history';
 
 export interface PawnDraftState {
@@ -16,6 +17,8 @@ export interface PawnDraftState {
 
 export interface PawnWorkflowState {
   activeTab: TabKey;
+  mode: FormMode;
+  initialTicket: any;
   customer: Customer | null;
   setCustomer: (customer: Customer | null) => void;
   pawnDraft: PawnDraftState;
@@ -45,7 +48,7 @@ function createInitialDraft(): PawnDraftState {
   };
 }
 
-export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
+export function PawnWorkflowProvider({ children, initialTicket, mode }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: FormMode }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
@@ -73,12 +76,24 @@ export function PawnWorkflowProvider({ children }: Readonly<{ children: ReactNod
     customer,
     setCustomer,
     pawnDraft,
+    initialTicket,
+    mode: mode || 'CREATE',
     updatePawnDraft,
     resetPawnDraft,
     setActiveTab,
     navigateToTab,
     canNavigateToTab,
   }), [activeTab, customer, pawnDraft, updatePawnDraft, resetPawnDraft, canNavigateToTab, setActiveTab, navigateToTab]);
+
+  useEffect(() => {
+    if (initialTicket) {
+      const fetchCustomer = async () => {
+        const customer = await customerApi.findCustomerById(initialTicket.customerId);
+        setCustomer(customer);
+      };
+      fetchCustomer();
+    }
+  }, [initialTicket]);
 
   return (
     <PawnWorkflowContext.Provider value={value}>

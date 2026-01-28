@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode, useEffect } from 'react';
 import type { Customer } from '@/app/feature/_shared/customer';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { formatDate } from '@/lib/utils';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
+import { customerApi } from '@/app/core/api/customerApi';
 
 export type TabKey = 'customer' | 'customerPerformance' | 'additional' | 'newSale';
 
@@ -17,6 +18,8 @@ export interface SaleDraftState {
 
 export interface SaleWorkflowState {
   activeTab: TabKey;
+  mode: 'VIEW' | 'CREATE';
+  initialTicket: any;
   customer: Customer | null;
   setCustomer: (customer: Customer | null) => void;
   pawnDraft: SaleDraftState;
@@ -46,7 +49,7 @@ function createInitialDraft(): SaleDraftState {
   };
 }
 
-export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNode }>) {
+export function SalesWorkflowProvider({ children, initialTicket, mode, isLayaway }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
@@ -63,9 +66,21 @@ export function SalesWorkflowProvider({ children }: Readonly<{ children: ReactNo
     setSaleDraft(createInitialDraft());
   }, []);
 
+  useEffect(() => {
+    if (initialTicket) {
+      const fetchCustomer = async () => {
+        const customer = await customerApi.findCustomerById(initialTicket.customer.id);
+        setCustomer(customer);
+      };
+      fetchCustomer();
+    }
+  }, [initialTicket]);
+
   const value = useMemo(() => ({
     activeTab,
     customer,
+    mode: mode || 'CREATE',
+    initialTicket,
     setCustomer,
     pawnDraft: saleDraft,
     updatePawnDraft: updateSaleDraft,

@@ -43,10 +43,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:sales-maintain', handler);
     },
 
-    onLayaway: (cb: () => void) => {
+    // Layaways
+    onMaintainLayaway: (cb: () => void) => {
         const handler = () => cb();
-        ipcRenderer.on('menu:sales-layaway', handler);
-        return () => ipcRenderer.removeListener('menu:sales-layaway', handler);
+        ipcRenderer.on('menu:sales-maintain-layaway', handler);
+        return () => ipcRenderer.removeListener('menu:sales-maintain-layaway', handler);
     },
 
     onForfeitLayaway: (cb: () => void) => {
@@ -55,11 +56,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('menu:sales-forfeit-layaway', handler);
     },
 
-    onMaintainLayaway: (cb: () => void) => {
-        const handler = () => cb();
-        ipcRenderer.on('menu:sales-maintain-layaway', handler);
-        return () => ipcRenderer.removeListener('menu:sales-maintain-layaway', handler);
-    },
 
     // Cash drawers
     onManageCash: (cb: () => void) => {
