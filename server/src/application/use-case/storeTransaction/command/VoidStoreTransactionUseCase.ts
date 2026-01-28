@@ -83,13 +83,14 @@ export class VoidStoreTransactionUseCase {
     
     for (const itemInput of dto.items) {
         // Fetch current inventory item details
-        const invItem = await this.inventoryRepo.findById(itemInput.inventoryItemId);
-        // Note: inventoryRepo.findById might explicitly filter for active items or something? 
-        // If it was sold, it should still exist.
+        let invItem = null;
+        if (itemInput.inventoryItemId) {
+            invItem = await this.inventoryRepo.findById(itemInput.inventoryItemId);
+        }
         
         const description = invItem ? 
             (invItem.itemDescription || `${invItem.brand || ''} ${invItem.model || ''}`.trim()) 
-            : 'Unknown Item';
+            : 'Return of Custom Item';
 
         items.push(new StoreTransactionItem({
             id: crypto.randomUUID(),
@@ -148,8 +149,10 @@ export class VoidStoreTransactionUseCase {
 
     // 6. Update Inventory
     for (const itemInput of dto.items) {
-         // Update inventory item status to Inventory 'I' and increment quantity by 1
-         await this.inventoryRepo.updateStatusAndQuantity(itemInput.inventoryItemId, STATUS_INVENTORY, 1);
+         // Update inventory item status to Inventory 'I' and increment quantity by 1, if inventory item id is provided
+         if (itemInput.inventoryItemId) {
+            await this.inventoryRepo.updateStatusAndQuantity(itemInput.inventoryItemId, STATUS_INVENTORY, 1);
+         }
     }
 
     return toStoreTransactionResponseDto(createdTx);

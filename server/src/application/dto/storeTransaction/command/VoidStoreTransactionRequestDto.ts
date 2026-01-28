@@ -15,7 +15,7 @@ export const voidStoreTransactionRequestSchema = z.object({
    * Items to return/void.
    */
   items: z.array(z.object({
-    inventoryItemId: z.string().uuid(),
+    inventoryItemId: z.string().uuid().optional().nullable(),
     /**
      * The refund amount for this item (should be positive in DTO, converted to negative in logic, 
      * or explicit negative? User said "negative amount", but usually input is "Quantity 1, Price $10" and system handles sign. 

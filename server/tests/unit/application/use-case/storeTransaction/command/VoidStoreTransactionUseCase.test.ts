@@ -142,4 +142,38 @@ describe('VoidStoreTransactionUseCase', () => {
         await expect(useCase.execute(input, 'clerk-123'))
             .rejects.toThrow(NotFoundError);
     });
+
+    it('should successfully void a transaction with a custom item (no inventoryItemId)', async () => {
+        // Arrange
+        mockStoreTransactionRepo.listByControlNumber.mockResolvedValue([originalTx]);
+        mockStoreTransactionRepo.create.mockResolvedValue({
+            ...originalTx,
+            id: 'new-void-tx',
+            typeId: 11,
+            amount: -10.00,
+            items: [],
+            tenders: []
+        } as any);
+
+        const input = {
+            controlNumber: '110914',
+            items: [{ inventoryItemId: null, price: 10.00 }],
+            tenders: [{ tenderTypeId: 1, amount: 10.00 }]
+        };
+
+        // Act
+        const result = await useCase.execute(input as any, 'clerk-123'); // Cast to any to bypass strict checks if types aren't fully updated in test context
+
+        // Assert
+        expect(mockStoreTransactionRepo.listByControlNumber).toHaveBeenCalledWith('110914');
+        expect(mockStoreTransactionRepo.create).toHaveBeenCalled();
+        // Crucial check: updateStatusAndQuantity should NOT be called
+        expect(mockInventoryRepo.updateStatusAndQuantity).not.toHaveBeenCalled();
+        
+        const createdTxArg = mockStoreTransactionRepo.create.mock.calls[0][0];
+        expect(createdTxArg.amount).toBe(-10.00);
+        expect(createdTxArg.items[0].lineAmount).toBe(-10.00);
+        expect(createdTxArg.items[0].description).toBe('Return of Custom Item');
+    });
 });
+
