@@ -7,12 +7,15 @@ import { CancelButton } from '@/app/shared/components/CancelButton';
 import { PreviousItemsTab } from './tabs/PreviousItemsTab/PreviousItemsTab';
 import HistoryTab from './tabs/HistoryTab/HistoryTab';
 import CustomerPerformanceTab from '@/app/shared/components/CustomerPerformanceTab';
+import { FormMode } from './types';
 
 function PawnsWorkspaceContent() {
   const {
     activeTab,
     setActiveTab,
     customer,
+    initialTicket,
+    mode,
     setCustomer,
     canNavigateToTab,
     navigateToTab
@@ -25,10 +28,10 @@ function PawnsWorkspaceContent() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold mb-2.5">Pawn / Buy</h1>
+      {mode === 'CREATE' && <h1 className="text-2xl font-extrabold mb-2.5">Pawn / Buy</h1>}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
         <div className="flex items-center gap-4 flex-shrink-0">
-          <TabsList className="grid flex-1 grid-cols-5">
+          <TabsList className={`grid flex-1 grid-cols-${mode === 'MODIFY' ? '3' : '5'}`}>
             <TabsTrigger value="customer">
               Customer Info
             </TabsTrigger>
@@ -36,14 +39,19 @@ function PawnsWorkspaceContent() {
               Customer Performance
             </TabsTrigger>
             <TabsTrigger value="newPawn" disabled={!canNavigateToTab('newPawn')}>
-              New Pawn
+              {mode === 'MODIFY' ? 'View pawn' : 'New Pawn'}
             </TabsTrigger>
-            <TabsTrigger value="previousItems" disabled={!canNavigateToTab('previousItems')}>
-              Previous Items
-            </TabsTrigger>
-            <TabsTrigger value="history" disabled={!canNavigateToTab('history')}>
-              History
-            </TabsTrigger>
+            {mode !== 'MODIFY' && (
+              <>
+                <TabsTrigger value="previousItems" disabled={!canNavigateToTab('previousItems')}>
+                  Previous Items
+                </TabsTrigger>
+                <TabsTrigger value="history" disabled={!canNavigateToTab('history')}>
+                  History
+                </TabsTrigger>
+              </>
+            )}
+
           </TabsList>
           <CancelButton />
         </div>
@@ -56,31 +64,37 @@ function PawnsWorkspaceContent() {
           />
         </TabsContent>
 
-        <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
-          <NewPawnTab
-            customer={customer}
-          />
-        </TabsContent>
-
-        <TabsContent value="previousItems" keepMounted className="flex-1 min-h-0 pt-4">
-          <PreviousItemsTab customer={customer} />
-        </TabsContent>
-
         <TabsContent value="customerPerformance" keepMounted className="flex-1 min-h-0 pt-4">
           <CustomerPerformanceTab customer={customer} />
         </TabsContent>
 
-        <TabsContent value="history" keepMounted className="flex-1 min-h-0 pt-4">
-          <HistoryTab />
+        <TabsContent value="newPawn" keepMounted className="flex-1 min-h-0 pt-4">
+          <NewPawnTab
+            customer={customer}
+            initialTicket={initialTicket}
+            mode={mode}
+          />
         </TabsContent>
+
+        {mode !== 'MODIFY' && (
+          <>
+            <TabsContent value="previousItems" keepMounted className="flex-1 min-h-0 pt-4">
+              <PreviousItemsTab customer={customer} />
+            </TabsContent>
+
+            <TabsContent value="history" keepMounted className="flex-1 min-h-0 pt-4">
+              <HistoryTab />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </>
   );
 }
 
-export default function PawnsWorkspace() {
+export default function PawnsWorkspace({ mode = 'CREATE', initialTicket }: { mode?: FormMode, initialTicket?: any }) {
   return (
-    <PawnWorkflowProvider>
+    <PawnWorkflowProvider initialTicket={initialTicket} mode={mode}>
       <PawnsWorkspaceContent />
     </PawnWorkflowProvider>
   );

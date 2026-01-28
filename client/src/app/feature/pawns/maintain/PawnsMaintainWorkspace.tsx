@@ -6,14 +6,16 @@ import { pawnTicketApi, type CustomerActivePawnTicket, type TicketByControlNumbe
 import { http } from '@/app/core/api/http';
 import { apiToRecordLoose, type CustomerRecord } from '@/app/feature/_shared/customer/mappers';
 import type { PawnTicketData, CustomerData } from '@/app/feature/_shared/types/pawnTicket';
-import { PawnTicketForm } from './PawnTicketForm';
 import { formatDate } from '@/lib/utils';
 import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
 import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
+import PawnsWorkspace from '../PawnsWorkspace';
 
 type TicketResult = CustomerActivePawnTicket | TicketByControlNumber;
 
-function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
+export function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
+
+  if (!pawnTicket) return null;
 
   const getBrandName = (brand: string | { id: string; name: string } | undefined): string => {
     if (!brand) return '';
@@ -259,7 +261,7 @@ function PawnsMaintainWorkspaceContent() {
     }
   }, [ensureDetail]);
 
-  const modalTitle = selectedTicket ? `Pawn #${selectedTicket.controlNumber}` : 'Maintain Pawn Tickets';
+  const modalTitle = 'Maintain Pawn Tickets';
 
   const handleSelectedCustomer = (customer: CustomerRecord, scope: ScopeFilter) => {
     setTicketResults([]);
@@ -357,13 +359,7 @@ function PawnsMaintainWorkspaceContent() {
 
       {selectedTicket && (
         <div className="space-y-4">
-          <PawnTicketForm
-            mode="MODIFY"
-            initialData={transformPawnTicketToFormData(selectedTicket)}
-            controlNumber={selectedTicket.controlNumber}
-            pawnTicket={selectedTicket}
-            customer={currentCustomer || undefined}
-          />
+          <PawnsWorkspace mode="MODIFY" initialTicket={selectedTicket} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
             <Button onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Update Pawn</Button>

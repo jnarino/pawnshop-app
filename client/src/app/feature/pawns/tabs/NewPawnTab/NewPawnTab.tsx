@@ -8,9 +8,12 @@ import { usePawnWorkflow } from '../../contexts/PawnWorkflowContext';
 import { usePawnPrint, type PrintItem, type FormDataItem } from '../../hooks/usePawnPrint';
 import { useAuth } from '@/app/core/hooks/useAuth';
 import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
+import { transformPawnTicketToFormData } from '../../maintain/PawnsMaintainWorkspace';
 
 interface NewPawnTabProps {
   readonly customer: Customer | null;
+  readonly mode;
+  readonly initialTicket;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
@@ -22,7 +25,7 @@ interface PrintState {
   ticketData: TicketByControlNumber | null;
 }
 
-export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProps) {
+export default function NewPawnTab({ customer, mode, initialTicket, onTicketCreated }: NewPawnTabProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
@@ -259,10 +262,14 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
           </div>
         )}
         <PawnTicketForm
-          externalDraft={pawnDraft}
+          externalDraft={mode === 'MODIFY' ? undefined : pawnDraft}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || mode === 'MODIFY'}
+          mode={mode}
+          initialData={transformPawnTicketToFormData(initialTicket)}
+          controlNumber={initialTicket?.controlNumber}
+          pawnTicket={initialTicket}
         />
       </div>
 

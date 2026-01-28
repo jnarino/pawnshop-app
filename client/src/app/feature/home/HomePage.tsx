@@ -30,6 +30,12 @@ export default function HomePage() {
                     to="/sales"
                 />
                 <ActionCard
+                    icon={SellIcon}
+                    subtitle="Layaway"
+                    title="Layaways"
+                    to="/sales/layaway"
+                />
+                <ActionCard
                     icon={ChartReportsIcon}
                     subtitle="View Reports"
                     title="Reports"

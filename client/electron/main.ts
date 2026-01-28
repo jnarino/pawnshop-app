@@ -97,16 +97,17 @@ function buildMenu() {
             label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:sales-maintain'),
           },
+        ],
+      },
+      {
+        label: 'Layaways',
+        submenu: [
           {
-            label: 'Layaway',
-            click: () => mainWindow?.webContents.send('menu:sales-layaway'),
-          },
-          {
-            label: 'Maintain layaway',
+            label: 'Maintain',
             click: () => mainWindow?.webContents.send('menu:sales-maintain-layaway'),
           },
           {
-            label: 'Forfeit layaway',
+            label: 'Forfeit (Pull)',
             click: () => mainWindow?.webContents.send('menu:sales-forfeit-layaway'),
           }
         ],

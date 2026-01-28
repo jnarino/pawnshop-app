@@ -11,10 +11,12 @@ import { InventoryItemDraft } from '../../_shared/inventory-item';
 
 interface NewSaleTabProps {
   readonly customer: Customer | null;
+  readonly mode: 'VIEW' | 'CREATE';
+  readonly initialTicket?: any;
   readonly onTicketCreated?: (ticketId: string) => void;
 }
 
-export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProps) {
+export default function NewSaleTab({ customer, mode, initialTicket, onTicketCreated }: NewSaleTabProps) {
   const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateSale();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useSalesWorkflow();
@@ -126,13 +128,15 @@ export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProp
           </div>
         )}
         <SaleForm
-          externalDraft={{
+          mode={mode}
+          externalDraft={mode === 'VIEW' ? initialTicket : {
             ...pawnDraft,
             inventoryNumber: '',
             quantity: 1,
             description: '',
             priceEach: 0
           }}
+          initialData={mode === 'VIEW' ? initialTicket : undefined}
           customer={customer || undefined}
           taxExemptUsed={taxExemptUsed}
           setTaxExemptUsed={setTaxExemptUsed}
@@ -140,7 +144,7 @@ export default function NewSaleTab({ customer, onTicketCreated }: NewSaleTabProp
           setEatTax={setEatTax}
           onDraftChange={handleDraftChange}
           onSubmit={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || mode === 'VIEW'}
         />
       </div>
 

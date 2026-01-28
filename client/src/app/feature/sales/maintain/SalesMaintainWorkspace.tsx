@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
-import { SaleForm } from '../../_shared/sale/components/SaleForm';
 import { http } from '@/app/core/api/http';
+import SalesWorkspace from '../SalesWorkspace';
 
 function SalesMaintainWorkspaceContent() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -21,7 +21,7 @@ function SalesMaintainWorkspaceContent() {
   const [currentCustomer, setCurrentCustomer] = useState<CustomerData | null>(null);
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
-  const modalTitle = selectedTicket ? `Sale` : 'Maintain sales';
+  const modalTitle = 'Maintain sales';
   const [showTicketTable, setShowTicketTable] = useState(false);
 
   const handleSalesResponse = (sales: any[]) => {
@@ -177,13 +177,7 @@ function SalesMaintainWorkspaceContent() {
 
       {selectedTicket && (
         <div className="space-y-4">
-          <SaleForm
-            mode="VIEW"
-            initialData={selectedTicket}
-            externalDraft={selectedTicket}
-            customer={currentCustomer || undefined}
-            disabled={true}
-          />
+          <SalesWorkspace initialTicket={selectedTicket} mode="VIEW" />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
           </div>

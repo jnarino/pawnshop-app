@@ -12,7 +12,7 @@ declare global {
       onPawnsForfeitPull?: (cb: () => void) => () => void;
 
       onSalesMaintain?: (cb: () => void) => () => void;
-      onLayaway: (cb: () => void) => () => void;
+
       onMaintainLayaway: (cb: () => void) => () => void;
       onForfeitLayaway: (cb: () => void) => () => void;
 

@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Eye } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
-import { SaleForm } from '@/app/feature/_shared/sale/components/SaleForm';
 import { http } from '@/app/core/api/http';
+import LayawayWorkspace from '../LayawayWorkspace';
 
 const statusOptionsMap = {
   'defaulted': 'Defaulted',
@@ -197,14 +197,7 @@ function LayawayMaintainWorkspaceContent() {
 
       {selectedTicket && (
         <div className="space-y-4">
-          <SaleForm
-            mode="VIEW"
-            isLayaway={true}
-            initialData={selectedTicket}
-            externalDraft={selectedTicket}
-            customer={currentCustomer || selectedTicket?.customer}
-            disabled={true}
-          />
+          <LayawayWorkspace initialTicket={selectedTicket} mode="VIEW" isLayaway={true} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
           </div>
