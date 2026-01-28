@@ -13,20 +13,30 @@ export class PullLayawayUseCase {
       const { layawayRepository, inventoryItemRepository } = repos;
 
       const layaways = await layawayRepository.findByTicketNum(dto.ticketnum);
-      if (!layaways.length) throw new NotFoundError(`Layaway ticket ${dto.ticketnum} not found`);
+      
+      // Filter by customerId
+      const customerLayaways = layaways.filter(l => l.customerId === dto.customerId);
+      
+      if (!customerLayaways.length) {
+        // If ticket found but not for this customer
+        if (layaways.length > 0) {
+            throw new NotFoundError(`Layaway ticket ${dto.ticketnum} does not belong to customer ${dto.customerId}`);
+        }
+        throw new NotFoundError(`Layaway ticket ${dto.ticketnum} not found`);
+      }
 
       // Check if already in final state
-      if (layaways.some(l => l.status === 'Defaulted')) {
+      if (customerLayaways.some(l => l.status === 'Defaulted')) {
           throw new Error(`Layaway ticket ${dto.ticketnum} is already defaulted`);
       }
-      if (layaways.some(l => l.status === 'Voided')) {
+      if (customerLayaways.some(l => l.status === 'Voided')) {
           throw new Error(`Layaway ticket ${dto.ticketnum} is voided`);
       }
-      if (layaways.some(l => l.status === 'Sold')) {
+      if (customerLayaways.some(l => l.status === 'Sold')) {
           throw new Error(`Layaway ticket ${dto.ticketnum} is sold`);
       }
 
-      const activeItems = layaways.filter(l => l.status === 'Active');
+      const activeItems = customerLayaways.filter(l => l.status === 'Active');
       if (!activeItems.length) {
           throw new Error(`No active items found for layaway ticket ${dto.ticketnum}`);
       }

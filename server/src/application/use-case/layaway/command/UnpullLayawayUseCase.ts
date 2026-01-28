@@ -13,11 +13,19 @@ export class UnpullLayawayUseCase {
       const { layawayRepository, inventoryItemRepository } = repos;
 
       const layaways = await layawayRepository.findByTicketNum(dto.ticketnum);
-      if (!layaways.length) throw new NotFoundError(`Layaway ticket ${dto.ticketnum} not found`);
+      
+      const customerLayaways = layaways.filter(l => l.customerId === dto.customerId);
+
+      if (!customerLayaways.length) {
+         if (layaways.length > 0) {
+            throw new NotFoundError(`Layaway ticket ${dto.ticketnum} does not belong to customer ${dto.customerId}`);
+         }
+         throw new NotFoundError(`Layaway ticket ${dto.ticketnum} not found`);
+      }
 
       // Must be Defaulted to Unpull
       // We look for any defaulted items in this ticket.
-      const defaultedItems = layaways.filter(l => l.status === 'Defaulted');
+      const defaultedItems = customerLayaways.filter(l => l.status === 'Defaulted');
       
       if (defaultedItems.length === 0) {
           // If no defaulted items, maybe it's completely paid or void?

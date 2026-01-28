@@ -10,6 +10,7 @@ describe('UnpullLayawayUseCase', () => {
 
     const clerkId = 'clerk-123';
     const ticketnum = 'TICKET-UNPULL';
+    const customerId = '00000000-0000-0000-0000-000000000001';
 
     beforeEach(() => {
         mockLayawayRepo = {
@@ -38,13 +39,14 @@ describe('UnpullLayawayUseCase', () => {
         ticketnum: ticketnum,
         status: 'Defaulted',
         itemsId: 'inv-1',
+        customerId: customerId
     };
 
     it('should unpull layaway if inventory is available', async () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([defaultedItem]);
         mockInventoryRepo.findById.mockResolvedValue({ id: 'inv-1', status: 'I' });
 
-        const result = await useCase.execute({ ticketnum }, clerkId);
+        const result = await useCase.execute({ ticketnum, customerId }, clerkId);
 
         expect(result.message).toBe('Layaway unpulled successfully');
         
@@ -58,14 +60,22 @@ describe('UnpullLayawayUseCase', () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([defaultedItem]);
         mockInventoryRepo.findById.mockResolvedValue({ id: 'inv-1', status: 'S' });
 
-        await expect(useCase.execute({ ticketnum }, clerkId))
+        await expect(useCase.execute({ ticketnum, customerId }, clerkId))
             .rejects.toThrow(/not available/);
     });
 
     it('should throw error if layaway is not defaulted', async () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...defaultedItem, status: 'Active' }]);
 
-        await expect(useCase.execute({ ticketnum }, clerkId))
+        await expect(useCase.execute({ ticketnum, customerId }, clerkId))
             .rejects.toThrow(/has no defaulted items/);
+    });
+
+    it('should throw NotFoundError if ticket exists but belongs to different customer', async () => {
+        mockLayawayRepo.findByTicketNum.mockResolvedValue([defaultedItem]);
+
+        const otherCustomerId = '00000000-0000-0000-0000-000000000002';
+        await expect(useCase.execute({ ticketnum, customerId: otherCustomerId }, clerkId))
+            .rejects.toThrow(/does not belong to customer/);
     });
 });

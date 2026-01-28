@@ -232,6 +232,10 @@ export function createLayawayRouter(
    *               ticketnum:
    *                 type: string
    *                 description: The ticket number of the layaway to pull
+   *               customerId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Customer ID verification
    *     responses:
    *       200:
    *         description: Layaway pulled successfully
@@ -262,6 +266,10 @@ export function createLayawayRouter(
    *               ticketnum:
    *                 type: string
    *                 description: The ticket number of the layaway to unpull
+   *               customerId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Customer ID verification
    *     responses:
    *       200:
    *         description: Layaway unpulled successfully

@@ -10,6 +10,7 @@ describe('PullLayawayUseCase', () => {
 
     const clerkId = 'clerk-123';
     const ticketnum = 'TICKET-PULL';
+    const customerId = '00000000-0000-0000-0000-000000000001';
 
     beforeEach(() => {
         mockLayawayRepo = {
@@ -37,12 +38,13 @@ describe('PullLayawayUseCase', () => {
         ticketnum: ticketnum,
         status: 'Active',
         itemsId: 'inv-1',
+        customerId: customerId
     };
 
     it('should pull active layaway', async () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([activeItem]);
 
-        const result = await useCase.execute({ ticketnum }, clerkId);
+        const result = await useCase.execute({ ticketnum, customerId }, clerkId);
 
         expect(result.message).toBe('Layaway pulled successfully');
         
@@ -55,7 +57,15 @@ describe('PullLayawayUseCase', () => {
     it('should throw error if already defaulted', async () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...activeItem, status: 'Defaulted' }]);
 
-        await expect(useCase.execute({ ticketnum }, clerkId))
+        await expect(useCase.execute({ ticketnum, customerId }, clerkId))
             .rejects.toThrow(/already defaulted/);
+    });
+
+    it('should throw NotFoundError if ticket exists but belongs to different customer', async () => {
+        mockLayawayRepo.findByTicketNum.mockResolvedValue([activeItem]);
+
+        const otherCustomerId = '00000000-0000-0000-0000-000000000002';
+        await expect(useCase.execute({ ticketnum, customerId: otherCustomerId }, clerkId))
+            .rejects.toThrow(/does not belong to customer/);
     });
 });
