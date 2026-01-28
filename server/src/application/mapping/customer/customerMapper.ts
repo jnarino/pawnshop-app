@@ -36,6 +36,8 @@ export function toCustomerResponseDto(customer: Customer): CustomerResponseDto {
         weight: customer.weight,
         hairColorId: customer.hairColorId,
         eyeColorId: customer.eyeColorId,
+        hairColor: customer.hairColor ?? null,
+        eyeColor: customer.eyeColor ?? null,
         race: customer.race,
         sex: customer.sex,
         marks: customer.marks,

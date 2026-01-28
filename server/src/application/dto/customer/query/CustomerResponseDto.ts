@@ -21,6 +21,8 @@ export type CustomerResponseDto = {
   weight: string | null;
   hairColorId: string | null;
   eyeColorId: string | null;
+  hairColor: { id: string; name: string } | null;
+  eyeColor: { id: string; name: string } | null;
   race: string | null;
   sex: string | null;
   marks: string | null;

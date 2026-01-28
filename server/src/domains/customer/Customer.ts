@@ -19,6 +19,11 @@ export class Customer {
   weight: string | null;
   hairColorId: string | null;
   eyeColorId: string | null;
+  
+  // Enriched fields
+  hairColor?: { id: string; name: string } | null;
+  eyeColor?: { id: string; name: string } | null;
+
   race: string | null;
   sex: string | null;
   marks: string | null;
@@ -84,6 +89,8 @@ export class Customer {
     weight?: string | null;
     hairColorId?: string | null;
     eyeColorId?: string | null;
+    hairColor?: { id: string; name: string } | null;
+    eyeColor?: { id: string; name: string } | null;
     race?: string | null;
     sex?: string | null;
     marks?: string | null;
@@ -145,6 +152,8 @@ export class Customer {
     this.weight = params.weight ?? null;
     this.hairColorId = params.hairColorId ?? null;
     this.eyeColorId = params.eyeColorId ?? null;
+    this.hairColor = params.hairColor ?? null;
+    this.eyeColor = params.eyeColor ?? null;
     this.race = params.race ?? null;
     this.sex = params.sex ?? null;
     this.marks = params.marks ?? null;
