@@ -20,18 +20,27 @@ import { AamvaData } from '../hooks/useIdScan';
 type TabKey = 'customer' | 'ticket' | 'date-range';
 export type ScopeFilter = 'all' | 'active';
 
+const statusOptions = [
+    { value: 'defaulted', label: 'Defaulted' },
+    { value: 'active', label: 'Layaway' },
+    { value: 'sold', label: 'Sold' },
+    { value: 'voided', label: 'Voided' },
+    { value: '', label: 'All layaways' },
+];
+
 interface MaintainSearchProps {
     handleSearchControlNumber: (ticketNumber: string) => void;
     handleSelectedCustomer: (params: CustomerRecord, scope: ScopeFilter) => void;
-    handleSearchByDateRange?: (startDate: string, endDate: string) => void;
+    handleSearchByDateRange?: (startDate: string, endDate: string, status?: string) => void;
     setShowTicketTable: (show: boolean) => void;
     showCustomerTab?: boolean;
     showTicketTab?: boolean;
     showDateRangeTab?: boolean;
-    iniitialDates?: {
+    initialDates?: {
         from: string;
         to: string;
     };
+    isLayawayMaintain?: boolean;
 }
 
 export const MaintainSearch = ({
@@ -42,10 +51,11 @@ export const MaintainSearch = ({
     showCustomerTab = true,
     showTicketTab = true,
     showDateRangeTab = true,
-    iniitialDates = {
+    initialDates: iniitialDates = {
         from: '',
         to: ''
-    }
+    },
+    isLayawayMaintain = false
 }: MaintainSearchProps) => {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('customer');
@@ -53,6 +63,7 @@ export const MaintainSearch = ({
     const [customerResults, setCustomerResults] = useState<CustomerRecord[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [showIdScanModal, setShowIdScanModal] = useState(false);
+    const [status, setStatus] = useState('active');
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -97,7 +108,7 @@ export const MaintainSearch = ({
     }[tabCount] || 'grid-cols-4';
 
     function handleScanned(data: AamvaData, raw: string): void {
-        console.log("Scanner data", { data, raw });
+        setError(null);
         setFirstName(data.firstName || '');
         setLastName(data.lastName || '');
         setDateOfBirth(data.dateOfBirth || '');
@@ -105,6 +116,7 @@ export const MaintainSearch = ({
 
     return (
         <Tabs value={activeTab} onValueChange={(v) => {
+            setError(null);
             setShowTicketTable(false);
             setActiveTab(v as TabKey)
         }
@@ -308,6 +320,25 @@ export const MaintainSearch = ({
             </TabsContent>
 
             <TabsContent value="date-range" className="space-y-4">
+                {isLayawayMaintain && (
+                    <div className="flex items-center mt-2 gap-4">
+                        <Label>Status</Label>
+                        <RadioGroup
+                            value={status}
+                            onValueChange={(value) => {
+                                setStatus(value);
+                            }}
+                            className="flex gap-4"
+                        >
+                            {statusOptions.map((option) => (
+                                <div key={option.value} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option.value} id={`scope-${option.value}`} />
+                                    <Label htmlFor={`scope-${option.value}`} className="cursor-pointer">{option.label}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                )}
                 <div className="grid grid-cols-12 gap-3 items-end">
                     <div className="col-span-6 space-y-2">
                         <Label htmlFor="ticket-number">Select Date Range</Label>
@@ -317,7 +348,7 @@ export const MaintainSearch = ({
                         />
                     </div>
                     <div className="col-span-6 flex justify-end gap-2">
-                        <Button onClick={() => handleSearchByDateRange?.(dates.from, dates.to)} disabled={loading}>
+                        <Button onClick={() => handleSearchByDateRange?.(dates.from, dates.to, status)} disabled={loading}>
                             {loading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

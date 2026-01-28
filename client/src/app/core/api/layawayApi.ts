@@ -47,6 +47,9 @@ export const layawayApi = {
         return http(`/api/layaway/customer/${customerId}`);
     },
     getByDateRange: async (startDate: string, endDate: string, status?: string): Promise<any[]> => {
+        if (status === 'defaulted') {
+            return http(`/api/layaway/defaulted?startDate=${startDate}&endDate=${endDate}`);
+        }
         return http(`/api/layaway?${status ? `status=${status}&` : ''}startDate=${startDate}&endDate=${endDate}`);
     },
     getPaymentHistory: async (controlNumber: string, customerId: string): Promise<any[]> => {

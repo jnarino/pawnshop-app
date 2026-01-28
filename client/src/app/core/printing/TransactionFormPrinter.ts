@@ -2,7 +2,7 @@
 // Florida Pawnbroker Transaction Form (layout per user's spec)
 // Print settings: Letter 8.5"x11", Scale 100%, Margins None/0, no "Fit to page".
 
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import templateDef from './templates/floridapawn.template.json';
 import JsBarcode from 'jsbarcode';
 
@@ -39,6 +39,7 @@ export type TransactionItemPrint = {
     caliber?: string;
     importer?: string;
     barrelLength?: string;
+    firearmType?: string;
 
     // line 3 jewelry
     jewelryType?: string;
@@ -272,10 +273,10 @@ export class TransactionFormPrinter {
             throw new Error('Invalid print data: items array required');
         }
 
-        const txnDate = new Date(data.transactionDate);
+        const txnDate = formatDate(data.transactionDate);
         const maturityDate = data.maturityDate ? formatDate(data.maturityDate || '') : undefined;
         const defaultDate = data.defaultDate ? formatDate(data.defaultDate || '') : undefined;
-        const timeStr = txnDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = formatTime(data.transactionDate);
 
         const businessMatch = STORE.address2?.match(CITY_STATE_ZIP);
         const businessCity = businessMatch?.[1] ?? STORE.address2 ?? '';
@@ -294,7 +295,7 @@ export class TransactionFormPrinter {
             businessState,
             businessZip,
             businessPhone: STORE.phone ?? '',
-            transactionDate: txnDate.toLocaleDateString(),
+            transactionDate: txnDate,
             transactionTime: timeStr,
             maturityDateHeader: maturityDate || '',
             controlNumber: data.controlNumber ?? '', // User requested barcode only, no number
@@ -340,7 +341,6 @@ export class TransactionFormPrinter {
         // Prepare item chunks
         const itemRepeater = TEMPLATE.repeaters?.find(r => r.id === 'items');
         const limit = itemRepeater?.limit ?? 6;
-        console.log("data.items", data.items, fieldValues)
         const allItems = data.items.map(item => ({
             serial: item.serialNumber ?? item.ownerAppliedNumber ?? '',
             type: item.categoryLabel ?? item.itemType ?? '',
@@ -348,28 +348,30 @@ export class TransactionFormPrinter {
             modelNumber: item.modelNumber ?? '',
             description: item.description ?? '',
             amount: fmtMoney(item.amount),
-            jewelryType: item.jewelryType?.at(0) ?? '',
-            jewelryMetal: item.jewelryMetal?.at(0) ?? '',
+            jewelryType: item.jewelryType ?? '',
+            jewelryMetal: item.jewelryMetal ?? '',
             jewelryKarat: item.jewelryKarat ?? '',
-            jewelryGender: item.jewelryGender?.at(0) ?? '',
-            jewelryStyle: item.jewelryStyle?.at(0) ?? '',
+            jewelryGender: item.jewelryGender ?? '',
+            jewelryStyle: item.jewelryStyle ?? '',
             jewelrySizeLength: item.jewelrySizeLength ?? '',
             stone1Quantity: item.stone1Quantity ?? '',
-            stone1Shape: item.stone1Shape?.at(0) ?? '',
+            stone1Shape: item.stone1Shape ?? '',
             stone1Carat: item.stone1Carat ?? '',
             stone1Weight: item.stone1Weight ?? '',
-            stone1Color: item.stone1Color?.at(0) ?? '',
+            stone1Color: item.stone1Color ?? '',
             stone2Quantity: item.stone2Quantity ?? '',
-            stone2Shape: item.stone2Shape?.at(0) ?? '',
+            stone2Shape: item.stone2Shape ?? '',
             stone2Carat: item.stone2Carat ?? '',
             stone2Weight: item.stone2Weight ?? '',
-            stone2Color: item.stone2Color?.at(0) ?? '',
+            stone2Color: item.stone2Color ?? '',
             // Firearm
             caliber: item.caliber ?? '',
-            action: item.action?.at(0) ?? '',
+            action: item.action ?? '',
             importer: item.importer ?? '',
             barrel: item.barrel ?? '',
             barrelLength: item.barrelLength ?? '',
+            firearmType: item.firearmType ?? '',
+            finish: item.finish ?? '',
         }));
 
         const chunks: Record<string, string>[][] = [];

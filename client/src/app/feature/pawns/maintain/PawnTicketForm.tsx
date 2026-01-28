@@ -23,6 +23,7 @@ import printerIcon from '@/assets/icons/printer.svg';
 import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { PawnItemsTable } from '../components/PawnItemsTable';
 import { AlertModal } from '@/app/shared/components/AlertModal';
+import { formatDate } from '@/lib/utils';
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -86,9 +87,9 @@ export function PawnTicketForm({
     customerId: initialData?.customerId || 'temp-customer',
     type: initialData?.type || 'PAWN' as const,
     periodicRate: initialData?.periodicRate || '25',
-    transactionDate: initialData?.transactionDate || format(new Date(), 'yyyy-MM-dd'),
-    maturityDate: initialData?.maturityDate || format(addDays(new Date(), 30), 'yyyy-MM-dd'),
-    expirationDate: initialData?.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
+    transactionDate: initialData?.transactionDate || formatDate(new Date()),
+    maturityDate: initialData?.maturityDate || formatDate(addDays(new Date(), 30)),
+    expirationDate: initialData?.expirationDate || formatDate(addDays(new Date(), 60)),
     items: initialData?.items || [] as InventoryItemDraft[]
   });
 
@@ -99,9 +100,9 @@ export function PawnTicketForm({
         customerId: initialData.customerId || 'temp-customer',
         type: initialData.type || 'PAWN',
         periodicRate: initialData.periodicRate || '25',
-        transactionDate: initialData.transactionDate || format(new Date(), 'yyyy-MM-dd'),
-        maturityDate: initialData.maturityDate || format(addDays(new Date(), 30), 'yyyy-MM-dd'),
-        expirationDate: initialData.expirationDate || format(addDays(new Date(), 60), 'yyyy-MM-dd'),
+        transactionDate: initialData.transactionDate || formatDate(new Date()),
+        maturityDate: initialData.maturityDate || formatDate(addDays(new Date(), 30)),
+        expirationDate: initialData.expirationDate || formatDate(addDays(new Date(), 60)),
         items: initialData.items || []
       });
     }
@@ -194,7 +195,6 @@ export function PawnTicketForm({
 
     setIsPrinting(true);
     try {
-      console.log({ items2: formData.items, pawnTicket, initialData });
       const items = formData.items.map(item => ({
         type: item.type,
         brand: item.brandName,
@@ -226,9 +226,11 @@ export function PawnTicketForm({
         stone2Color: (item.stones?.length || 0) > 1 ? item.stones?.[1].color?.name : '',
 
         // Firearm
+        firearmType: item.subcategoryName,
         caliber: item.caliber?.name,
         action: item.action?.name,
         importer: item.importer?.name,
+        finish: item.finish?.name,
         barrel: item.barrel?.name,
         barrelLength: item.barrelLength,
       }));

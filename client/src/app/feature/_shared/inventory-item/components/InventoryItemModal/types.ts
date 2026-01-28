@@ -37,6 +37,7 @@ export interface InventoryItemDraft {
   condition?: string;
   ownerNumber?: string;
   caliber?: Lookup;
+  finish?: Lookup;
   action?: Lookup;
   barrel?: Lookup;
   barrelLength?: string;

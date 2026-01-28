@@ -11,16 +11,6 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { SaleForm } from '@/app/feature/_shared/sale/components/SaleForm';
 import { http } from '@/app/core/api/http';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-
-const statusOptions = [
-  { value: 'defaulted', label: 'Defaulted' },
-  { value: 'active', label: 'Layaway' },
-  { value: 'sold', label: 'Sold' },
-  { value: 'voided', label: 'Voided' },
-  { value: '', label: 'All layaways' },
-];
 
 const statusOptionsMap = {
   'defaulted': 'Defaulted',
@@ -44,7 +34,6 @@ function LayawayMaintainWorkspaceContent() {
   const [layaways, setLayaways] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<CustomerData | null>(null);
-  const [status, setStatus] = useState('active');
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
   const modalTitle = selectedTicket ? `Layaway` : 'Maintain layaways';
@@ -83,7 +72,7 @@ function LayawayMaintainWorkspaceContent() {
     getLayawayByControlNumber(ticketNumber);
   }
 
-  const handleSearchByDateRange = (startDate: string, endDate: string) => {
+  const handleSearchByDateRange = (startDate: string, endDate: string, status?: string) => {
     setSelectedCustomer(null);
     getLayawayByDateRange(startDate, endDate, status);
   }
@@ -133,29 +122,13 @@ function LayawayMaintainWorkspaceContent() {
       <h1 className="text-2xl font-extrabold mb-2.5">{modalTitle}</h1>
       {!selectedTicket && (
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Label>Status</Label>
-            <RadioGroup
-              value={status}
-              onValueChange={(value) => {
-                setStatus(value);
-              }}
-              className="flex gap-4"
-            >
-              {statusOptions.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={option.value} id={`scope-${option.value}`} />
-                  <Label htmlFor={`scope-${option.value}`} className="cursor-pointer">{option.label}</Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
           <MaintainSearch
             handleSearchControlNumber={handleSearchControlNumber}
             handleSelectedCustomer={handleSelectedCustomer}
             handleSearchByDateRange={handleSearchByDateRange}
             setShowTicketTable={setShowTicketTable}
-            iniitialDates={dates}
+            initialDates={dates}
+            isLayawayMaintain
           />
         </div>
       )}

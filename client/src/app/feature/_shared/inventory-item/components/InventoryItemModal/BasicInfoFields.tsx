@@ -18,7 +18,6 @@ interface BasicInfoFieldsProps {
 }
 
 export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, brands, handleBrandChange, loadSubcategoriesAndBrands }: BasicInfoFieldsProps) {
-  console.log('BasicInfoFields', { draft });
   return (
     <>
       {/* Row 1: Value (62%) + Qty (38%) combined */}
@@ -103,7 +102,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
 
       {/* Row 2: Color */}
       <div className="space-y-1 col-span-3">
-        <Label className="text-xs font-semibold">{isFirearm ? 'Finish/Color' : 'Color'} <span className="text-red-600">*</span></Label>
+        <Label className="text-xs font-semibold">Color <span className="text-red-600">*</span></Label>
         <LookupSelect
           typeName={LookupTypeName.COLOR}
           value={draft.color || ''}

@@ -58,6 +58,7 @@ export interface TicketByControlNumber {
   customerId: string;
   amountFinanced: number | null;
   purchaseTradeValue: number | null;
+  createdDate: string;
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;
