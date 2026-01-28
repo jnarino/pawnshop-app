@@ -160,6 +160,7 @@ function mapRowToPawnTicket(row: any): PawnTicket {
         transactionType: row.transaction_type,
         customerId: row.customer_id,
         clerkUserId: row.clerk_user_id || '',
+        clerkUsername: row.clerk_username,
         amountFinanced:
             row.amount_financed !== null ? Number(row.amount_financed) : null,
         originalPawnAmount:

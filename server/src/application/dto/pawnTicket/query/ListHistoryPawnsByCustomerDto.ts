@@ -17,6 +17,7 @@ export type PawnHistoryResponseDto = {
   dateIn: string; // ISO format
   dateOut: string | null; // ISO format, nullable
   status: string;
+  clerkUsername?: string;
   amount: number;
   amountPaid: number;
   items: PawnHistoryItemDto[];

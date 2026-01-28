@@ -15,6 +15,8 @@ SELECT
   pt.maturity_date,
   pt.default_date,
   pt.created_at,
+  pt.created_by AS clerk_user_id,
+  au.username AS clerk_username,
   pts.status AS pawn_status,
   -- Aggregate inventory items as JSONB array
   COALESCE(
@@ -79,6 +81,8 @@ SELECT
 FROM pawn_ticket pt
 LEFT JOIN pawn_ticket_status pts
   ON pts.id = pt.status_id
+LEFT JOIN app_user au
+  ON au.id = pt.created_by
 LEFT JOIN pawn_ticket_item pti
   ON pti.pawn_ticket_id = pt.id
 LEFT JOIN inventory_item ii
@@ -108,5 +112,7 @@ GROUP BY
   pt.maturity_date,
   pt.default_date,
   pt.created_at,
+  pt.created_by,
+  au.username,
   pts.status
 ORDER BY pt.created_at DESC;

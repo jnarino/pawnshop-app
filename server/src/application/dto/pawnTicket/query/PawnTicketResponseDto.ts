@@ -26,6 +26,7 @@ export interface PawnTicketResponseDto {
     lastName: string;
   };
   clerkUserId: string;
+  clerkUsername: string;
 
   itemIds: string[];
 

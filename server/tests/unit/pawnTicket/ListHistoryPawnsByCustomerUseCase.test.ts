@@ -153,6 +153,7 @@ describe('ListHistoryPawnsByCustomerUseCase', () => {
       dateIn: '2026-01-20T00:00:00+00',
       dateOut: '2026-02-20T00:00:00+00',
       status: 'Redeemed',
+      clerkUsername: '',
       amount: 1000,
       amountPaid: 1000,
       items: [

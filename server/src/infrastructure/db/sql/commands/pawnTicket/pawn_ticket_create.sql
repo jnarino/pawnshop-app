@@ -155,8 +155,10 @@ SELECT
   nt.default_date,
   nt.created_at,
   nt.created_by AS clerk_user_id,
+  au.username AS clerk_username,
   pts.status AS pawn_status,
   COALESCE($13, ARRAY[]::uuid[]) AS item_ids,
   COALESCE($14, '[]'::jsonb) AS tenders
 FROM new_ticket nt
-LEFT JOIN pawn_ticket_status pts ON pts.id = nt.status_id;
+LEFT JOIN pawn_ticket_status pts ON pts.id = nt.status_id
+LEFT JOIN app_user au ON au.id = nt.created_by;

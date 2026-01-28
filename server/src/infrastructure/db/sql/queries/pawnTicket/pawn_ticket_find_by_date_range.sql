@@ -21,6 +21,7 @@ SELECT
   pt.default_reason,
   pt.status_id,
   pt.created_by,
+  au.username AS clerk_username,
   pt.created_at,
   pt.updated_at,
 
@@ -73,6 +74,7 @@ SELECT
 
 FROM pawn_ticket pt
 JOIN pawn_ticket_status ps ON ps.id = pt.status_id
+LEFT JOIN app_user au ON au.id = pt.created_by
 LEFT JOIN pawn_ticket_item pti ON pti.pawn_ticket_id = pt.id
 LEFT JOIN inventory_item ii ON ii.id = pti.inventory_item_id
 LEFT JOIN inventory_subcategory isc ON ii.inventory_subcategory_id = isc.id
@@ -104,6 +106,7 @@ GROUP BY
   pt.default_reason,
   pt.status_id,
   pt.created_by,
+  au.username,
   pt.created_at,
   pt.updated_at,
   ps.status,

@@ -14,6 +14,8 @@ SELECT
   pt.transaction_date,
   pt.maturity_date,
   pt.default_date,
+  pt.created_by AS clerk_user_id,
+  au.username AS clerk_username,
   pts.status AS pawn_status,
   COALESCE(
     array_agg(pti.inventory_item_id ORDER BY pti.inventory_item_id)
@@ -27,6 +29,8 @@ LEFT JOIN pawn_ticket_status pts
   ON pt.status_id = pts.id
 LEFT JOIN customer c
   ON pt.customer_id = c.id
+LEFT JOIN app_user au
+  ON au.id = pt.created_by
 WHERE pt.customer_id = $1
 GROUP BY
   pt.id,
@@ -44,5 +48,7 @@ GROUP BY
   pt.transaction_date,
   pt.maturity_date,
   pt.default_date,
+  pt.created_by,
+  au.username,
   pts.status
 ORDER BY pt.transaction_date DESC;

@@ -412,91 +412,91 @@
         },
         {
           "id": "jewelryGender",
-          "x": 45,
+          "x": 44,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "jewelryStyle",
-          "x": 50,
+          "x": 52,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "jewelrySizeLength",
-          "x": 57,
+          "x": 62,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone1Quantity",
-          "x": 70,
+          "x": 80,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone1Shape",
-          "x": 75,
+          "x": 85,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone1Carat",
-          "x": 79,
+          "x": 89,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone1Weight",
-          "x": 88,
+          "x": 98,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone1Color",
-          "x": 99,
+          "x": 109,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone2Quantity",
-          "x": 83,
+          "x": 93,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone2Shape",
-          "x": 88,
+          "x": 98,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone2Carat",
-          "x": 92,
+          "x": 102,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone2Weight",
-          "x": 97,
+          "x": 107,
           "y": 13.6,
           "w": 20,
           "size": 9
         },
         {
           "id": "stone2Color",
-          "x": 102,
+          "x": 112,
           "y": 13.6,
           "w": 20,
           "size": 9

@@ -29,6 +29,7 @@ export class PawnTicket {
   transactionType: PawnTransactionType;
   customerId: string;
   clerkUserId: string;
+  clerkUsername?: string;
 
   /**
    * For PAWN transactions: cash out to customer.
@@ -104,6 +105,7 @@ export class PawnTicket {
       firstName: string;
       lastName: string;
     };
+    clerkUsername?: string;
   }) {
     this.id = params.id;
 
@@ -111,6 +113,7 @@ export class PawnTicket {
     this.transactionType = params.transactionType;
     this.customerId = params.customerId;
     this.clerkUserId = params.clerkUserId;
+    this.clerkUsername = params.clerkUsername;
 
     this.amountFinanced = params.amountFinanced;
     this.originalPawnAmount = params.originalPawnAmount;

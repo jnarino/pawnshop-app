@@ -76,6 +76,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
       transactionType: 'PAWN',
       customerId: customerId,
       clerkUserId: userId,
+      clerkUsername: '',
       amountFinanced: 200,
       originalPawnAmount: 200,
       periodicRate: 0.25,
