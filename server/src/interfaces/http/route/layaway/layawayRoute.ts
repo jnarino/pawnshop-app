@@ -175,6 +175,45 @@ export function createLayawayRouter(
 
   /**
    * @openapi
+   * /api/layaway/void:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Void a layaway agreement request
+   *     description: Voids the layaway, returns items to inventory, and creates a negative transaction (refund).
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               ticketnum:
+   *                 type: string
+   *                 description: The ticket number of the layaway to void
+   *               amountToReturn:
+   *                 type: number
+   *                 description: The amount to be returned to the customer
+   *               tenderTypeId:
+   *                 type: integer
+   *                 description: The ID of the tender type used for the refund
+   *               note:
+   *                 type: string
+   *                 description: Reason for voiding
+   *     responses:
+   *       200:
+   *         description: Layaway voided successfully
+   *       400:
+   *         description: Invalid input or business rule violation
+   *       404:
+   *         description: Layaway not found
+   */
+  router.post('/void', auth, controller.voidLayaway);
+
+  /**
+   * @openapi
    * /api/layaway/payment/void:
    *   post:
    *     tags:

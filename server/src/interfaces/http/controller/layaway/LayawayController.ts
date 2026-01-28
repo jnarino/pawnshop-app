@@ -8,6 +8,7 @@ import { MakeLayawayPaymentUseCase } from '../../../../application/use-case/laya
 import { VoidLayawayPaymentUseCase } from '../../../../application/use-case/layaway/command/VoidLayawayPaymentUseCase';
 import { GetLayawayHistoryUseCase } from '../../../../application/use-case/layaway/query/GetLayawayHistoryUseCase';
 import { GetDefaultedLayawaysUseCase } from '../../../../application/use-case/layaway/query/GetDefaultedLayawaysUseCase';
+import { VoidLayawayUseCase } from '../../../../application/use-case/layaway/command/VoidLayawayUseCase';
 
 export class LayawayController {
   constructor(
@@ -18,8 +19,26 @@ export class LayawayController {
     private readonly makeLayawayPaymentUseCase: MakeLayawayPaymentUseCase,
     private readonly voidLayawayPaymentUseCase: VoidLayawayPaymentUseCase,
     private readonly getLayawayHistoryUseCase: GetLayawayHistoryUseCase,
-    private readonly getDefaultedLayawaysUseCase: GetDefaultedLayawaysUseCase
+    private readonly getDefaultedLayawaysUseCase: GetDefaultedLayawaysUseCase,
+    private readonly voidLayawayUseCase: VoidLayawayUseCase
   ) {}
+
+  /**
+   * POST /api/layaway/void
+   */
+  voidLayaway = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+  
+        const result = await this.voidLayawayUseCase.execute(req.body, userId);
+        return res.status(200).json(result);
+      } catch (err) {
+        return next(err);
+      }
+  };
 
   /**
    * GET /api/layaway/defaulted
