@@ -72,6 +72,46 @@ describe('CreateLayawayUseCase', () => {
         jest.useRealTimers();
     });
 
+    it('should create a layaway for custom "x-item" with no inventory record', async () => {
+        // Arrange
+        const customerId = '00000000-0000-0000-0000-000000000000';
+        const input: CreateLayawayRequestDto = {
+            customerId,
+            items: [
+                {
+                    description: 'Custom Guitar Repair',
+                    price: 200,
+                    quantity: 1,
+                    inventoryItemId: undefined // NO ITEM ID
+                }
+            ],
+            tenders: [],
+            taxExemptUsed: false
+        };
+
+        const mockCustomer = new Customer({
+            id: customerId,
+            firstName: 'John',
+            lastName: 'Doe',
+        } as any);
+
+        mockCustomerRepo.findById.mockResolvedValue(mockCustomer);
+        mockControlNumberRepo.getNextStoreSaleControlNumber.mockResolvedValue('SALE-999');
+
+        // Act
+        const result = await useCase.execute(input, 'user-123');
+
+        // Assert
+        expect(mockInventoryItemRepo.findById).not.toHaveBeenCalled(); // No lookup
+        expect(mockStoreTransactionRepo.create).toHaveBeenCalled(); // Trans created
+        expect(mockLayawayRepo.create).toHaveBeenCalled(); // Layaway created
+
+        const agreement = mockLayawayRepo.create.mock.calls[0][0];
+        expect(agreement.itemsId).toBeNull(); // No itemsId
+        // amount is total with tax (200 + 13 = 213)
+        expect(agreement.amount).toBe(213);
+    });
+
     it('should create a layaway successfully using store_sale_control_number_next', async () => {
         // Arrange
         const customerId = '00000000-0000-0000-0000-000000000000';

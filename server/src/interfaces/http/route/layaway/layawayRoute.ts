@@ -214,6 +214,66 @@ export function createLayawayRouter(
 
   /**
    * @openapi
+   * /api/layaway/pull:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Pull layaway (mark as defaulted)
+   *     description: Moves layaway items back to inventory (Active) and sets layaway status to Defaulted.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               ticketnum:
+   *                 type: string
+   *                 description: The ticket number of the layaway to pull
+   *     responses:
+   *       200:
+   *         description: Layaway pulled successfully
+   *       400:
+   *         description: Invalid input or business rule violation
+   *       404:
+   *         description: Layaway not found
+   */
+  router.post('/pull', auth, controller.pullLayaway);
+
+  /**
+   * @openapi
+   * /api/layaway/unpull:
+   *   post:
+   *     tags:
+   *       - Layaways
+   *     summary: Unpull layaway (revert default)
+   *     description: Reverts a defaulted layaway to Active, removing items from inventory availability.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               ticketnum:
+   *                 type: string
+   *                 description: The ticket number of the layaway to unpull
+   *     responses:
+   *       200:
+   *         description: Layaway unpulled successfully
+   *       400:
+   *         description: Invalid input or business rule violation (e.g., items sold)
+   *       404:
+   *         description: Layaway not found
+   */
+  router.post('/unpull', auth, controller.unpullLayaway);
+
+  /**
+   * @openapi
    * /api/layaway/payment/void:
    *   post:
    *     tags:

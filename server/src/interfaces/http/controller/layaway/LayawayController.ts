@@ -9,6 +9,8 @@ import { VoidLayawayPaymentUseCase } from '../../../../application/use-case/laya
 import { GetLayawayHistoryUseCase } from '../../../../application/use-case/layaway/query/GetLayawayHistoryUseCase';
 import { GetDefaultedLayawaysUseCase } from '../../../../application/use-case/layaway/query/GetDefaultedLayawaysUseCase';
 import { VoidLayawayUseCase } from '../../../../application/use-case/layaway/command/VoidLayawayUseCase';
+import { PullLayawayUseCase } from '../../../../application/use-case/layaway/command/PullLayawayUseCase';
+import { UnpullLayawayUseCase } from '../../../../application/use-case/layaway/command/UnpullLayawayUseCase';
 
 export class LayawayController {
   constructor(
@@ -20,8 +22,44 @@ export class LayawayController {
     private readonly voidLayawayPaymentUseCase: VoidLayawayPaymentUseCase,
     private readonly getLayawayHistoryUseCase: GetLayawayHistoryUseCase,
     private readonly getDefaultedLayawaysUseCase: GetDefaultedLayawaysUseCase,
-    private readonly voidLayawayUseCase: VoidLayawayUseCase
+    private readonly voidLayawayUseCase: VoidLayawayUseCase,
+    private readonly pullLayawayUseCase: PullLayawayUseCase,
+    private readonly unpullLayawayUseCase: UnpullLayawayUseCase
   ) {}
+
+  /**
+   * POST /api/layaway/pull
+   */
+  pullLayaway = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+  
+        const result = await this.pullLayawayUseCase.execute(req.body, userId);
+        return res.status(200).json(result);
+      } catch (err) {
+        return next(err);
+      }
+  };
+
+  /**
+   * POST /api/layaway/unpull
+   */
+  unpullLayaway = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+          return res.status(401).json({ message: 'Unauthorized' });
+        }
+  
+        const result = await this.unpullLayawayUseCase.execute(req.body, userId);
+        return res.status(200).json(result);
+      } catch (err) {
+        return next(err);
+      }
+  };
 
   /**
    * POST /api/layaway/void

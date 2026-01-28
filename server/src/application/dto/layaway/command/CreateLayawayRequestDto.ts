@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createLayawayItemSchema = z.object({
-  inventoryItemId: z.string().min(1),
+  inventoryItemId: z.string().nullable().optional(), // Modified to allow null/undefined for custom items
   inventoryNumber: z.string().optional(),
   description: z.string().min(1),
   price: z.number().min(0),

@@ -59,23 +59,25 @@ export class CreateLayawayUseCase {
                 let description = itemDto.description;
                 let itemsId = null;
 
-                // 2. Handle Inventory (Obligatory)
-                const invItem = await inventoryItemRepository.findById(itemDto.inventoryItemId);
-                if (!invItem) throw new NotFoundError(`Inventory Item ${itemDto.inventoryItemId} not found`);
+                // 2. Handle Inventory (Optional)
+                if (itemDto.inventoryItemId) {
+                    const invItem = await inventoryItemRepository.findById(itemDto.inventoryItemId);
+                    if (!invItem) throw new NotFoundError(`Inventory Item ${itemDto.inventoryItemId} not found`);
 
-                // Cache for later use
-                inventoryItemsMap.set(itemDto.inventoryItemId, invItem);
+                    // Cache for later use
+                    inventoryItemsMap.set(itemDto.inventoryItemId, invItem);
 
-                // Update Inventory Status
-                // Based on legacy/CSV, status 'L' = Layaway
-                invItem.status = 'L';
-                // Decrement quantity
-                invItem.quantity = invItem.quantity - 1;
-                await inventoryItemRepository.update(invItem);
+                    // Update Inventory Status
+                    // Based on legacy/CSV, status 'L' = Layaway
+                    invItem.status = 'L';
+                    // Decrement quantity
+                    invItem.quantity = invItem.quantity - 1;
+                    await inventoryItemRepository.update(invItem);
 
-                inventoryNumber = invItem.inventoryNumber;
-                description = invItem.itemDescription || itemDto.description;
-                itemsId = invItem.id;
+                    inventoryNumber = invItem.inventoryNumber;
+                    description = invItem.itemDescription || itemDto.description;
+                    itemsId = invItem.id;
+                }
 
                 // Store Transaction Item
                 transactionItems.push(new StoreTransactionItem({
@@ -143,7 +145,7 @@ export class CreateLayawayUseCase {
 
             for (const itemDto of dto.items) {
                 // Retrieve cached inventory item
-                const invItem = inventoryItemsMap.get(itemDto.inventoryItemId);
+                const invItem = itemDto.inventoryItemId ? inventoryItemsMap.get(itemDto.inventoryItemId) : null;
 
                 const agreement = new LayawayAgreement({
                     id: crypto.randomUUID(),
@@ -166,7 +168,7 @@ export class CreateLayawayUseCase {
                     extraNote: null,
                     gunProcFee: 0,
                     lastUpdatedUserId: clerkUserId,
-                    inventoryNumber: invItem.inventoryNumber,
+                    inventoryNumber: invItem?.inventoryNumber ?? null,
                     numberSold: itemDto.quantity,
                     itemAmount: itemDto.price, // Item Price
                     description: itemDto.description,
@@ -175,7 +177,7 @@ export class CreateLayawayUseCase {
                     itemStatus: 'L',
                     countyTaxExempt: false,
                     itemLastUpdatedUserId: clerkUserId,
-                    itemsId: invItem.id,
+                    itemsId: invItem?.id ?? null,
 
                     createdAt: dateNow,
                     updatedAt: dateNow
