@@ -74,6 +74,7 @@ export interface TicketByControlNumber {
   apr?: number;
   originalPawnAmount?: number;
   periodicRate?: number;
+  clerkUserName?: string;
 }
 
 export interface HistoryTicket {

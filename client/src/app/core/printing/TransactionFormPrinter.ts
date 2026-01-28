@@ -334,6 +334,7 @@ export class TransactionFormPrinter {
             maturityDate: maturityDate ?? '',
             pawnDefaultDate: defaultDate ?? '',
             amountWith2MonthsInterest: twoMonthAmount,
+            employeeInitials: data.employeeInitials ?? '',
         };
 
         const fieldHtml = TEMPLATE.fields.map(field => renderField(field, fieldValues[field.id] ?? '')).join('');

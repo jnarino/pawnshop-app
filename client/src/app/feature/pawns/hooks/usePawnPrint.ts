@@ -5,6 +5,7 @@ import type { TransactionPrintData } from '@/app/core/printing/TransactionFormPr
 import type { LabelPrintData } from '@/app/core/printing/LabelPrinter';
 import type { TicketByControlNumber } from '@/app/core/api/pawnTicketApi';
 import type { Customer } from '@/app/feature/_shared/customer';
+import { useAuth } from '@/app/core/hooks/useAuth';
 
 export interface PrintItem {
   id: string;
@@ -74,6 +75,7 @@ interface PrintFormParams {
 }
 
 interface UsePawnPrintResult {
+  transformToPrintInformation: (ticket: TicketByControlNumber, formData: any, customer: any) => any;
   printTransactionForm: (params: PrintFormParams) => Promise<boolean>;
   printLabels: (
     ticket: TicketByControlNumber,
@@ -107,6 +109,7 @@ export function usePawnPrint(): UsePawnPrintResult {
   const [isLabelsPrinting, setIsLabelsPrinting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [labelsError, setLabelsError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const buildPrintItems = useCallback((
     ticket: TicketByControlNumber,
@@ -255,105 +258,148 @@ export function usePawnPrint(): UsePawnPrintResult {
     return STONE_MAP[stoneColorName.toUpperCase()] ?? 'X';
   }
 
-  const printTransactionForm = useCallback(async (params: PrintFormParams): Promise<boolean> => {
+  const transformToPrintInformation = (ticket: TicketByControlNumber, formData: any, customer: any): TransactionPrintData => {
+
+    const items = formData.items.map((item: any) => ({
+      type: item.type,
+      brand: item.brandName,
+      model: item.model,
+      serial: item.serial,
+      description: item.description,
+      amount: item.amount,
+      quantity: item.quantity,
+      ownerNumber: item.ownerNumber,
+      id: item.id,
+      jewelryType: item.subcategoryName,
+      metal: item.metal?.name,
+      karat: item.karat?.name,
+      weight: item.weight,
+      weightUnit: item.weightUnit,
+      gender: item.gender?.name,
+      style: item.style?.name,
+      color: item.color?.name,
+      sizeLength: item.sizeLength?.name,
+      stone1Quantity: (item.stones?.length || 0) > 0 ? item.stones?.[0].quantity : '',
+      stone1Shape: (item.stones?.length || 0) > 0 ? item.stones?.[0].shape?.name : '',
+      stone1Carat: (item.stones?.length || 0) > 0 ? item.stones?.[0].carat ? item.stones?.[0].carat : !!item.stones?.[0]?.quantity ? '0.00' : '' : '',
+      stone1Weight: (item.stones?.length || 0) > 0 ? item.stones?.[0].weight ? item.stones?.[0].weight : !!item.stones?.[0]?.quantity ? '0.00' : '' : '',
+      stone1Color: (item.stones?.length || 0) > 0 ? item.stones?.[0].color?.name : '',
+      stone2Quantity: (item.stones?.length || 0) > 1 ? item.stones?.[1].quantity : '',
+      stone2Shape: (item.stones?.length || 0) > 1 ? item.stones?.[1].shape?.name : '',
+      stone2Carat: (item.stones?.length || 0) > 1 ? item.stones?.[1].carat ? item.stones?.[1].carat : !!item.stones?.[1]?.quantity ? '0.00' : '' : '',
+      stone2Weight: (item.stones?.length || 0) > 1 ? item.stones?.[1].weight ? item.stones?.[1].weight : !!item.stones?.[1]?.quantity ? '0.00' : '' : '',
+      stone2Color: (item.stones?.length || 0) > 1 ? item.stones?.[1].color?.name : '',
+
+      // Firearm
+      firearmType: item.subcategoryName,
+      caliber: item.caliber?.name,
+      action: item.action?.name,
+      importer: item.importer?.name,
+      finish: item.finish?.name,
+      barrel: item.barrel?.name,
+      barrelLength: item.barrelLength,
+    }));
+
+    return {
+      transactionDate: ticket.createdDate,
+      maturityDate: ticket.maturityDate,
+      defaultDate: ticket.defaultDate,
+      controlNumber: ticket.controlNumber,
+      ticketType: ticket.transactionType,
+
+      customerLastName: customer.lastName,
+      customerFirst: customer.firstName,
+      customerMiddle: customer.middleName || undefined,
+      customerBirthdate: customer.dateOfBirth ? formatDate(customer.dateOfBirth) : undefined,
+      customerSex: customer.sex || undefined,
+      customerRace: customer.race || undefined,
+
+      customerAddress: customer.streetAddress || undefined,
+      customerCity: customer.city || undefined,
+      customerState: customer.stateUs || undefined,
+      customerZip: customer.zipCode || undefined,
+      customerPhone: customer.phoneNumber || undefined,
+
+      customerEmployer: customer.employerName || undefined,
+
+      customerIdNumber: customer.idNumber || undefined,
+      customerIdType: customer.idType || undefined,
+      customerIdState: customer.idState || undefined,
+
+      customerHeight: customer.height || undefined,
+      customerWeight: customer.weight || undefined,
+      customerEyes: customer.eyeColor || undefined,
+      customerHair: customer.hairColor || undefined,
+
+      items: items.map((item: any) => {
+        const baseDesc = item.description || '';
+        const descWithColor = item.colorName ? `${item.colorName} ${baseDesc}`.trim() : baseDesc;
+
+        // Helper for clean printing (prioritize name, avoid UUIDs)
+        const clean = (preferred?: string, fallback?: string, defaultVal = 'NONE') => {
+          const isUUID = (s?: string) => s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s);
+          if (preferred && !isUUID(preferred)) return preferred;
+          if (fallback && !isUUID(fallback)) return fallback;
+          return defaultVal;
+        };
+
+        const cleanSerial = (s?: string) => (s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s) ? undefined : s);
+
+        const ticketItem = ticket.items.find((i) => i.id === item.id);
+
+        const isJewelry = !!item.style;
+        const isFirearm = !!item.caliber;
+
+        return {
+          serialNumber: cleanSerial(item.serial) || undefined,
+          ownerAppliedNumber: cleanSerial(item.ownerNumber) || undefined,
+          brand: clean(item.brandName, item.brand, 'NONE'),
+          modelNumber: clean(item.subcategoryName, item.model, 'NONE'),
+          description: descWithColor,
+          amount: item.amount,
+          itemType: ticketItem?.inventorySubcategory.name || 'MISC',
+
+          // Jewelry
+          jewelryType: isJewelry ? getJewelryTypeCode(item.jewelryType || '') : '',
+          jewelryMetal: isJewelry ? getMetalCode(item.metal || '') : '',
+          jewelryKarat: isJewelry ? `${item.karat || ''} ${item.karat ? (item.weight || '') : ''} ${item.karat ? (item.weightUnit || '') : ''}` : '',
+          jewelryGender: isJewelry ? getGenderCode(item.gender || '') : '',
+          jewelryStyle: isJewelry ? getStyleCode(item.style || '') : '',
+          jewelrySizeLength: isJewelry ? item.sizeLength : '',
+          stone1Quantity: isJewelry ? item.stone1Quantity : '',
+          stone1Shape: isJewelry ? getStoneShapeCode(item.stone1Shape || '') : '',
+          stone1Carat: isJewelry ? item.stone1Carat : '',
+          stone1Weight: isJewelry ? item.stone1Weight : '',
+          stone1Color: isJewelry ? getStoneColorCode(item.stone1Color || '') : '',
+          stone2Quantity: isJewelry ? item.stone2Quantity : '',
+          stone2Shape: isJewelry ? getStoneShapeCode(item.stone2Shape || '') : '',
+          stone2Carat: isJewelry ? item.stone2Carat : '',
+          stone2Weight: isJewelry ? item.stone2Weight : '',
+          stone2Color: isJewelry ? getStoneColorCode(item.stone2Color || '') : '',
+          // Firearm
+          firearmType: isFirearm ? getFirearmTypeCode(item.firearmType || '') : '',
+          caliber: isFirearm ? item.caliber : '',
+          action: isFirearm ? getActionCode(item.action || '') : '',
+          importer: isFirearm ? item.importer : '',
+          barrel: isFirearm ? getBarrelCode(item.barrel || '') : '',
+          finish: isFirearm ? getFinishCode(item.finish || '') : '',
+          barrelLength: isFirearm ? item.barrelLength : '',
+        };
+      }),
+
+      employeeInitials: ticket.clerkUserName || user?.username || '',
+      amountFinanced: ticket.amountFinanced ?? undefined,
+      financeCharge: ticket.amountFinanced && ticket.periodicRate ? (ticket.amountFinanced * ticket.periodicRate) : undefined,
+      totalOfPayments: ticket.redemptionAmount ?? undefined,
+      annualRate: ticket.apr ?? undefined,
+    }
+  }
+
+  const printTransactionForm = useCallback(async (printData: TransactionPrintData): Promise<boolean> => {
     setIsFormPrinting(true);
     setFormError(null);
 
     try {
-      const { ticket, customer, items } = params;
-
-      const printData: TransactionPrintData = {
-        transactionDate: ticket.createdDate,
-        maturityDate: ticket.maturityDate,
-        defaultDate: ticket.defaultDate,
-        controlNumber: ticket.controlNumber,
-        ticketType: ticket.transactionType,
-
-        customerLastName: customer.lastName,
-        customerFirst: customer.firstName,
-        customerMiddle: customer.middleName || undefined,
-        customerBirthdate: customer.dateOfBirth ? formatDate(customer.dateOfBirth) : undefined,
-        customerSex: customer.sex || undefined,
-        customerRace: customer.race || undefined,
-
-        customerAddress: customer.streetAddress || undefined,
-        customerCity: customer.city || undefined,
-        customerState: customer.stateUs || undefined,
-        customerZip: customer.zipCode || undefined,
-        customerPhone: customer.phoneNumber || undefined,
-
-        customerEmployer: customer.employerName || undefined,
-
-        customerIdNumber: customer.idNumber || undefined,
-        customerIdType: customer.idType || undefined,
-        customerIdState: customer.idState || undefined,
-
-        customerHeight: customer.height || undefined,
-        customerWeight: customer.weight || undefined,
-        customerEyes: customer.eyeColor || undefined,
-        customerHair: customer.hairColor || undefined,
-
-        items: items.map((item) => {
-          const baseDesc = item.description || '';
-          const descWithColor = item.colorName ? `${item.colorName} ${baseDesc}`.trim() : baseDesc;
-
-          // Helper for clean printing (prioritize name, avoid UUIDs)
-          const clean = (preferred?: string, fallback?: string, defaultVal = 'NONE') => {
-            const isUUID = (s?: string) => s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s);
-            if (preferred && !isUUID(preferred)) return preferred;
-            if (fallback && !isUUID(fallback)) return fallback;
-            return defaultVal;
-          };
-
-          const cleanSerial = (s?: string) => (s && /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s) ? undefined : s);
-
-          const ticketItem = ticket.items.find((i) => i.id === item.id);
-
-          const isJewelry = !!item.style;
-          const isFirearm = !!item.caliber;
-
-          return {
-            serialNumber: cleanSerial(item.serial) || undefined,
-            ownerAppliedNumber: cleanSerial(item.ownerNumber) || undefined,
-            brand: clean(item.brandName, item.brand, 'NONE'),
-            modelNumber: clean(item.subcategoryName, item.model, 'NONE'),
-            description: descWithColor,
-            amount: item.amount,
-            itemType: ticketItem?.inventorySubcategory.name || 'MISC',
-
-            // Jewelry
-            jewelryType: isJewelry ? getJewelryTypeCode(item.jewelryType || '') : '',
-            jewelryMetal: isJewelry ? getMetalCode(item.metal || '') : '',
-            jewelryKarat: isJewelry ? `${item.karat || ''} ${item.karat ? (item.weight || '') : ''} ${item.karat ? (item.weightUnit || '') : ''}` : '',
-            jewelryGender: isJewelry ? getGenderCode(item.gender || '') : '',
-            jewelryStyle: isJewelry ? getStyleCode(item.style || '') : '',
-            jewelrySizeLength: isJewelry ? item.sizeLength : '',
-            stone1Quantity: isJewelry ? item.stone1Quantity : '',
-            stone1Shape: isJewelry ? getStoneShapeCode(item.stone1Shape || '') : '',
-            stone1Carat: isJewelry ? item.stone1Carat : '',
-            stone1Weight: isJewelry ? item.stone1Weight : '',
-            stone1Color: isJewelry ? getStoneColorCode(item.stone1Color || '') : '',
-            stone2Quantity: isJewelry ? item.stone2Quantity : '',
-            stone2Shape: isJewelry ? getStoneShapeCode(item.stone2Shape || '') : '',
-            stone2Carat: isJewelry ? item.stone2Carat : '',
-            stone2Weight: isJewelry ? item.stone2Weight : '',
-            stone2Color: isJewelry ? getStoneColorCode(item.stone2Color || '') : '',
-            // Firearm
-            firearmType: isFirearm ? getFirearmTypeCode(item.firearmType || '') : '',
-            caliber: isFirearm ? item.caliber : '',
-            action: isFirearm ? getActionCode(item.action || '') : '',
-            importer: isFirearm ? item.importer : '',
-            barrel: isFirearm ? getBarrelCode(item.barrel || '') : '',
-            finish: isFirearm ? getFinishCode(item.finish || '') : '',
-            barrelLength: isFirearm ? item.barrelLength : '',
-          };
-        }),
-
-        amountFinanced: ticket.amountFinanced ?? undefined,
-        financeCharge: ticket.amountFinanced && ticket.periodicRate ? (ticket.amountFinanced * ticket.periodicRate) : undefined,
-        totalOfPayments: ticket.redemptionAmount ?? params.totalOfPayments ?? undefined,
-        annualRate: ticket.apr ?? params.annualRate ?? undefined,
-      };
 
       const printer = new TransactionFormPrinter();
       const printResult = await printer.print(printData);
@@ -431,6 +477,7 @@ export function usePawnPrint(): UsePawnPrintResult {
 
   return {
     printTransactionForm,
+    transformToPrintInformation,
     printLabels,
     buildPrintItems,
     isFormPrinting,

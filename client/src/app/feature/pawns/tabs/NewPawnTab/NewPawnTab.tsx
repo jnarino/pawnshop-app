@@ -27,7 +27,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
   const { logout } = useAuth();
   const { createTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
-  const { printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
+  const { transformToPrintInformation, printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
   const customerId = customer?.id;
 
   const [printState, setPrintState] = useState<PrintState>({
@@ -139,14 +139,9 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
         colorName: item.colorName,
       }));
 
-      await printTransactionForm({
-        ticket: ticketData,
-        customer,
-        items: formDataItems,
-        financeCharge,
-        totalOfPayments,
-        annualRate,
-      });
+      const printInformation = transformToPrintInformation({ ...ticketData, amountFinanced: amountFinanced, periodicRate: rate, redemptionAmount: totalOfPayments, apr: annualRate }, formData, customer);
+
+      await printTransactionForm(printInformation);
 
       const printItems = buildPrintItems(ticketData, formDataItems);
 
@@ -164,7 +159,7 @@ export default function NewPawnTab({ customer, onTicketCreated }: NewPawnTabProp
     return Object.fromEntries(
       Object.entries(obj).filter(([, v]) => v != null && v !== '')
     ) as Partial<T>;
-  }; 
+  };
 
   const transformTicketsToPayload = (pawnData: any, formData: any) => {
     return {
