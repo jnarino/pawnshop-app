@@ -115,7 +115,10 @@ describe('ListStoreTransactionsByDateRangeUseCase', () => {
       createdAt: new Date('2026-01-06T12:00:00Z'),
       updatedAt: new Date('2026-01-06T12:00:00Z'),
       tenders: [],
-      items: []
+      items: [],
+      pawnTicketId: null,
+      terminalId: 'TERM-1',
+      relatedStoreTransactionId: null
     };
 
     mockRepo.listByDateRange.mockResolvedValue([mockTransaction]);
