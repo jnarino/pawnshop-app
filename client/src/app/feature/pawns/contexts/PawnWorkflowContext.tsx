@@ -90,6 +90,7 @@ export function PawnWorkflowProvider({ children, initialTicket, mode }: Readonly
       const fetchCustomer = async () => {
         const customer = await customerApi.findCustomerById(initialTicket.customerId);
         setCustomer(customer);
+        setActiveTab('newPawn');
       };
       fetchCustomer();
     }

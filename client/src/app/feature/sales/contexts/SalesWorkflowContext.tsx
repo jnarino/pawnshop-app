@@ -49,7 +49,7 @@ function createInitialDraft(): SaleDraftState {
   };
 }
 
-export function SalesWorkflowProvider({ children, initialTicket, mode, isLayaway }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }>) {
+export function SalesWorkflowProvider({ children, initialTicket, mode }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const { activeTab, setActiveTab, navigateToTab } = useWorkspaceTabs<TabKey>({
