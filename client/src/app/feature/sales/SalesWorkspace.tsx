@@ -15,7 +15,6 @@ function SalesWorkspaceContent() {
     navigateToTab,
     initialTicket,
     mode,
-    isLayaway,
   } = useSalesWorkflow();
 
   const handleTabChange = (tab: string) => {
@@ -56,7 +55,6 @@ function SalesWorkspaceContent() {
             customer={customer}
             initialTicket={initialTicket}
             mode={mode}
-            isLayaway={isLayaway}
           />
         </TabsContent>
       </Tabs>
@@ -64,9 +62,9 @@ function SalesWorkspaceContent() {
   );
 }
 
-export default function SalesWorkspace({ initialTicket, mode, isLayaway }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }) {
+export default function SalesWorkspace({ initialTicket, mode }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE' }) {
   return (
-    <SalesWorkflowProvider initialTicket={initialTicket} mode={mode} isLayaway={isLayaway} >
+    <SalesWorkflowProvider initialTicket={initialTicket} mode={mode} >
       <SalesWorkspaceContent />
     </SalesWorkflowProvider>
   );

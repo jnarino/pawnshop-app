@@ -80,6 +80,7 @@ export function LayawayWorkflowProvider({ children, initialTicket, mode, isLayaw
       const fetchCustomer = async () => {
         const customer = await customerApi.findCustomerById(initialTicket.customer.id);
         setCustomer(customer);
+        setActiveTab('newLayaway');
       };
       fetchCustomer();
     }
