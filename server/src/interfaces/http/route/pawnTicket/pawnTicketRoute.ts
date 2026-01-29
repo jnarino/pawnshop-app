@@ -414,5 +414,38 @@ export function createPawnTicketRouter(
      */
     router.get('/:controlNumber/current-charges', auth, controller.getCurrentCharges);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/void:
+     *   post:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Void a pawn ticket
+     *     description: Void a pawn ticket and revert items.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               controlNumber:
+     *                 type: string
+     *               customerId:
+     *                 type: string
+     *               reason:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Void successful
+     *       400:
+     *         description: Invalid input or mismatch
+     *       404:
+     *         description: Ticket not found
+     */
+    router.post('/void', auth, controller.voidTicket);
+
     return router;
 }

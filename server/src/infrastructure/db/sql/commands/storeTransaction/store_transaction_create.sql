@@ -13,7 +13,8 @@ INSERT INTO store_transaction (
   gun_proc_fee,
   note,
   created_at,
-  updated_at
+  updated_at,
+  pawn_ticket_id
 ) VALUES (
   $1,  -- id
   COALESCE($15, get_next_store_sale_control_number()),  -- legacy_ticketnum (use provided or generate)
@@ -29,6 +30,7 @@ INSERT INTO store_transaction (
   $11, -- gun_proc_fee
   $12, -- note
   $13, -- created_at
-  $14  -- updated_at
+  $14, -- updated_at
+  $16  -- pawn_ticket_id
 )
 RETURNING *;

@@ -39,6 +39,7 @@ SELECT
         ),
         'status', ii.status,
         'quantity', ii.quantity,
+        'inventory_number', ii.inventory_number,
         'brand', CASE 
           WHEN ib.id IS NOT NULL THEN jsonb_build_object(
             'id', ib.id,

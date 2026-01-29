@@ -7,6 +7,7 @@ export class StoreTransaction {
   customerId: string | null;
   clerkUserId: string | null;
   controlNumber: string | null;
+  pawnTicketId: string | null;
 
   /**
    * store_transaction_type.id (SMALLINT)
@@ -39,6 +40,7 @@ export class StoreTransaction {
     customerId?: string | null;
     clerkUserId?: string | null;
     controlNumber?: string | null;
+    pawnTicketId?: string | null;
 
     typeId: number;
     occurredAt: Date;
@@ -65,6 +67,7 @@ export class StoreTransaction {
     this.customerId = params.customerId ?? null;
     this.clerkUserId = params.clerkUserId ?? null;
     this.controlNumber = params.controlNumber ?? null;
+    this.pawnTicketId = params.pawnTicketId ?? null;
 
     this.typeId = params.typeId;
     this.occurredAt = params.occurredAt;

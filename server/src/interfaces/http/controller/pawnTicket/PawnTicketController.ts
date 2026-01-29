@@ -10,6 +10,7 @@ import { ListHistoryPawnsByCustomerUseCase } from '../../../../application/use-c
 import { GetPawnTicketPaymentsUseCase } from '../../../../application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 import { GetPawnTicketCurrentChargesUseCase } from '../../../../application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase';
 import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/PayPawnTicketUseCase';
+import { VoidPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/VoidPawnTicketUseCase';
 import { PullPawnTicketItemsToInventoryUseCase } from '../../../../application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
 
 import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
@@ -25,6 +26,7 @@ export class PawnTicketController {
         private readonly getPawnTicketPaymentsUseCase: GetPawnTicketPaymentsUseCase,
         private readonly getPawnTicketCurrentChargesUseCase: GetPawnTicketCurrentChargesUseCase,
         private readonly payPawnTicketUseCase: PayPawnTicketUseCase,
+        private readonly voidPawnTicketUseCase: VoidPawnTicketUseCase,
         private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase,
         private readonly pullPawnTicketItemsToInventoryUseCase: PullPawnTicketItemsToInventoryUseCase
     ) { }
@@ -75,6 +77,22 @@ export class PawnTicketController {
             };
             await this.payPawnTicketUseCase.execute(payload);
             return res.status(200).json({ message: 'Payment processed' });
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * POST /api/pawn-ticket/void
+     */
+    voidTicket = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id
+            };
+            await this.voidPawnTicketUseCase.execute(payload);
+            return res.status(200).json({ message: 'Pawn ticket voided successfully' });
         } catch (err) {
             return next(err);
         }

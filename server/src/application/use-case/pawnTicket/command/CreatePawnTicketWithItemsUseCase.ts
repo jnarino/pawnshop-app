@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
     createPawnTicketWithItemsRequestSchema,
     CreatePawnTicketWithItemsRequestDto,
@@ -8,12 +9,17 @@ import { CreatePawnTicketUseCase } from './CreatePawnTicketUseCase';
 import { PawnTicketResponseDto } from '../../../dto/pawnTicket/query/PawnTicketResponseDto';
 import { ItemAttributeMapper } from '../../../service/ItemAttributeMapper';
 import { ControlNumberRepository } from '../../../../domains/controlNumber/ControlNumberRepository';
+import { CustomerRepository } from '../../../../domains/customer/CustomerRepository';
+import { GunLog } from '../../../../domains/gun/GunLog';
+import { GunTransactionHistory } from '../../../../domains/gun/GunTransactionHistory';
+import { NotFoundError } from '../../../common/errors';
 
 export class CreatePawnTicketWithItemsUseCase {
     constructor(
         private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork,
         private readonly attributeMapper: ItemAttributeMapper,
-        private readonly controlNumberRepository: ControlNumberRepository
+        private readonly controlNumberRepository: ControlNumberRepository,
+        private readonly customerRepository: CustomerRepository
     ) { }
 
     async execute(input: unknown): Promise<PawnTicketResponseDto> {
@@ -23,9 +29,21 @@ export class CreatePawnTicketWithItemsUseCase {
         const pawn = parsed.pawn;
         const items = parsed.items;
 
+        // Fetch customer needed for GunLog
+        const customer = await this.customerRepository.findById(pawn.customerId);
+        if (!customer) {
+            throw new NotFoundError('Customer not found');
+        }
+
         // Everything below happens inside ONE DB transaction
         return this.pawnTicketUnitOfWork.runInTransaction(
-            async ({ inventoryItemRepository, pawnTicketRepository, dbClient }) => {
+            async ({ 
+                inventoryItemRepository, 
+                pawnTicketRepository, 
+                dbClient,
+                gunLogRepository,
+                gunTransactionHistoryRepository
+            }) => {
                 // 1) Get the next control number using the repository
                 const transactionType = pawn.transactionType || 'PAWN';
                 let controlNumber: string;
@@ -51,6 +69,55 @@ export class CreatePawnTicketWithItemsUseCase {
                         transactionType
                     );
                     allItemIds.push(createdItem.id);
+
+                    // --- GUN LOGIC START ---
+                    if (createdItem.inventoryNumber && createdItem.inventoryNumber.startsWith('G-')) {
+                        const attributes = (createdItem.attributes || {}) as any;
+                        const clerkUserId = (pawn as any).clerkUserId;
+
+                        // Create GunLog (Acquisition)
+                        const gunLog = new GunLog({
+                            id: crypto.randomUUID(),
+                            inventoryItemId: createdItem.id,
+                            manufacturer: attributes.manufacturer || 'Unknown',
+                            model: createdItem.model || 'Unknown',
+                            serial: createdItem.serialNumber || 'Unknown',
+                            caliber: attributes.caliber || 'Unknown',
+                            action: attributes.action || 'Unknown',
+                            condition: createdItem.itemCondition || 'Unknown',
+                            gunType: attributes.gunType || 'PISTOL', // Default or extract
+                            importer: attributes.importer,
+                            
+                            buyerAmount: createdItem.priceAmount || 0,
+                            buyerDate: new Date(),
+                            buyerFirstName: customer.firstName,
+                            buyerMiddleName: customer.middleName || undefined,
+                            buyerLastName: customer.lastName,
+                            buyerStreetAddress: customer.streetAddress || '',
+                            buyerCity: customer.city || '',
+                            buyerState: customer.stateUs || '',
+                            buyerZipCode: customer.zipCode || '',
+                            buyerIdType: customer.idType || 'ID',
+                            buyerIdNumber: customer.idNumber || '',
+                        });
+
+                        await gunLogRepository.create(gunLog);
+
+                        // Create GunTransactionHistory (Received)
+                        const history = new GunTransactionHistory({
+                            id: crypto.randomUUID(),
+                            inventoryNumber: createdItem.inventoryNumber,
+                            inventoryItemId: createdItem.id,
+                            transactionDate: new Date(),
+                            // 'Received from Customer' Type ID
+                            typeId: '56857245-a512-4652-a0b6-375f4269984b', 
+                            clerkUserId: clerkUserId,
+                            notes: 'Received from Customer'
+                        });
+
+                        await gunTransactionHistoryRepository.create(history);
+                    }
+                    // --- GUN LOGIC END ---
                 }
 
                 // 3) Create pawn ticket with the items

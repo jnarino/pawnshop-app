@@ -50,10 +50,23 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   getNextInventoryNumber = jest.fn();
 }
 
+
+class MockCustomerRepository {
+  findById = jest.fn().mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      firstName: 'John',
+      lastName: 'Doe',
+      streetAddress: '123 Main St',
+      city: 'Anytown',
+      stateUs: 'NY',
+      zipCode: '10001'
+  });
+}
+
 class MockItemAttributeMapper {
   mapItemAttributes = jest.fn(async (subcategoryId: string, input: any) => {
     return {
-      attributes: input.attributes || {},
+      attributes: input || {},
       extra: input.extra || {}
     };
   });
@@ -61,21 +74,33 @@ class MockItemAttributeMapper {
 }
 
 class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
+  public pawnTicketRepository = new MockPawnTicketRepository();
+  public inventoryItemRepository = new MockInventoryItemRepository();
+  public storeTransactionRepository = { createPayment: jest.fn() };
+  public gunLogRepository = { create: jest.fn() };
+  public gunTransactionHistoryRepository = { create: jest.fn() };
+  public mockDbClient = {
+      query: jest.fn().mockResolvedValue({ rows: [{ control_number: '106489' }] })
+    } as any;
+
   async runInTransaction<T>(
     callback: (repos: {
       pawnTicketRepository: PawnTicketRepository;
       inventoryItemRepository: InventoryItemRepository;
       storeTransactionRepository: any;
+      gunLogRepository: any;
+      gunTransactionHistoryRepository: any;
       dbClient: PoolClient;
     }) => Promise<T>
   ): Promise<T> {
-    const pawnTicketRepository = new MockPawnTicketRepository();
-    const inventoryItemRepository = new MockInventoryItemRepository();
-    const storeTransactionRepository = { createPayment: jest.fn() };
-    const mockDbClient = {
-      query: jest.fn().mockResolvedValue({ rows: [{ control_number: '106489' }] })
-    } as any;
-    return callback({ pawnTicketRepository, inventoryItemRepository, storeTransactionRepository, dbClient: mockDbClient });
+    return callback({ 
+      pawnTicketRepository: this.pawnTicketRepository, 
+      inventoryItemRepository: this.inventoryItemRepository, 
+      storeTransactionRepository: this.storeTransactionRepository, 
+      gunLogRepository: this.gunLogRepository,
+      gunTransactionHistoryRepository: this.gunTransactionHistoryRepository,
+      dbClient: this.mockDbClient 
+    });
   }
 }
 
@@ -84,13 +109,15 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
   let uow: MockPawnTicketUnitOfWork;
   let mapper: MockItemAttributeMapper;
   let controlNumberRepo: MockControlNumberRepository;
+  let customerRepo: MockCustomerRepository;
   let useCase: CreatePawnTicketWithItemsUseCase;
 
   beforeEach(() => {
     uow = new MockPawnTicketUnitOfWork();
     mapper = new MockItemAttributeMapper();
     controlNumberRepo = new MockControlNumberRepository();
-    useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any, controlNumberRepo);
+    customerRepo = new MockCustomerRepository();
+    useCase = new CreatePawnTicketWithItemsUseCase(uow, mapper as any, controlNumberRepo as any, customerRepo as any);
   });
 
   it('should create PAWN transaction with finance details', async () => {
@@ -188,5 +215,54 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
         items: []
       })
     ).rejects.toThrow('At least one item must be provided');
+  });
+
+  it('should create GunLog and GunTransactionHistory for gun items', async () => {
+    // Setup firearm category
+    mapper.isFirearmCategory.mockResolvedValue(true);
+
+    const result = await useCase.execute({
+      pawn: {
+        transactionType: 'PAWN',
+        customerId: '11111111-1111-1111-1111-111111111111',
+        clerkUserId: '22222222-2222-2222-2222-222222222222',
+        amountFinanced: 500,
+        originalPawnAmount: 500,
+        periodicRate: 0.15,
+        transactionDate: new Date().toISOString(),
+        maturityDate: new Date().toISOString(),
+        defaultDate: new Date().toISOString()
+      },
+      items: [
+        {
+          inventorySubcategoryId: '33333333-3333-3333-3333-333333333333',
+          brand: '44444444-4444-4444-4444-444444444444',
+          priceAmount: 500,
+          quantity: 1,
+          status: 'I',
+          attributes: {
+              manufacturer: 'Ruger',
+              model: 'Security 380',
+              serial: '12345',
+              caliber: '380',
+              action: 'Semi-Auto',
+              gunType: 'PISTOL'
+          }
+        }
+      ]
+    });
+
+    expect(result).toBeDefined();
+    expect(uow.gunLogRepository.create).toHaveBeenCalled();
+    expect(uow.gunTransactionHistoryRepository.create).toHaveBeenCalled();
+    
+    // Verify arguments
+    const gunLog = uow.gunLogRepository.create.mock.calls[0][0];
+    expect(gunLog.manufacturer).toBe('Ruger');
+    expect(gunLog.buyerFirstName).toBe('John');
+
+    const history = uow.gunTransactionHistoryRepository.create.mock.calls[0][0];
+    expect(history.notes).toContain('Received from Customer');
+    expect(history.inventoryNumber).toMatch(/^G-/);
   });
 });
