@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 
 interface TransactionDetailsProps {
+  readonly isViewMode: boolean;
   readonly type: 'PAWN' | 'PURCHASE';
   readonly periodicRate: string;
   readonly transactionDate: string;
@@ -12,6 +13,8 @@ interface TransactionDetailsProps {
   readonly expirationDate: string;
   readonly totalValue: number;
   readonly disabled?: boolean;
+  readonly clerkUsername?: string;
+  readonly controlNumber?: string;
   readonly onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
   readonly onPeriodicRateChange: (value: string) => void;
   readonly onTransactionDateChange: (value: string) => void;
@@ -20,6 +23,7 @@ interface TransactionDetailsProps {
 }
 
 export function TransactionDetails({
+  isViewMode,
   type,
   periodicRate,
   transactionDate,
@@ -27,6 +31,8 @@ export function TransactionDetails({
   expirationDate,
   totalValue,
   disabled = false,
+  clerkUsername,
+  controlNumber,
   onTypeChange,
   onPeriodicRateChange,
   onTransactionDateChange,
@@ -40,23 +46,31 @@ export function TransactionDetails({
       </CardHeader>
       <CardContent className="p-6 grid gap-6">
         {/* Radio Group */}
-        <div className="flex flex-col gap-3">
-          <Label>Transaction type</Label>
-          <RadioGroup
-            value={type}
-            onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
-            className="flex gap-4"
-            disabled={disabled}
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PAWN" id="r-pawn" disabled={disabled} />
-              <Label htmlFor="r-pawn">Pawn (Loan)</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="PURCHASE" id="r-buy" disabled={disabled} />
-              <Label htmlFor="r-buy">Buy</Label>
-            </div>
-          </RadioGroup>
+        <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
+            <Label>Transaction type</Label>
+            <RadioGroup
+              value={type}
+              onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
+              className="flex gap-4"
+              disabled={disabled}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PAWN" id="r-pawn" disabled={disabled} />
+                <Label htmlFor="r-pawn">Pawn (Loan)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PURCHASE" id="r-buy" disabled={disabled} />
+                <Label htmlFor="r-buy">Buy</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          {isViewMode && (
+            <>
+              <p><strong>Ticket number:</strong> {controlNumber}</p>
+              <p><strong>Entered by:</strong> {clerkUsername}</p>
+            </>
+          )}
         </div>
 
         {type === 'PAWN' ? (
@@ -102,6 +116,77 @@ export function TransactionDetails({
                 disabled={disabled}
               />
             </div>
+
+            {isViewMode && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Duration</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Period</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Service charge</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Redemption price</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Forfeit</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rate">Total paid</Label>
+                  <Input
+                    id="rate"
+                    type="number"
+                    step="0.01"
+                    value={'0'}
+                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

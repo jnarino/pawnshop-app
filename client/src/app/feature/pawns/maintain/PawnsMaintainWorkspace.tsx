@@ -73,6 +73,7 @@ export function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
     transactionDate: formatDate(pawnTicket.createdDate),
     maturityDate: formatDate(pawnTicket.maturityDate),
     expirationDate: formatDate(pawnTicket.defaultDate),
+    clerkUsername: pawnTicket.clerkUsername,
     items: transformedItems
   };
 }
