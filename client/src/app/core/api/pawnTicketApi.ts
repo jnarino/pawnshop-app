@@ -216,4 +216,11 @@ export const pawnTicketApi = {
   getAllTicketsByCustomer: async (customerId: string): Promise<HistoryTicket[]> => {
     return http(`/api/pawn-ticket/customer/${customerId}/history`);
   },
+
+  voidPawn: async (payload: any): Promise<void> => {
+    return http(`/api/pawn-ticket/void`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };

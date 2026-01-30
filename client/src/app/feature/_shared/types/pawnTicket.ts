@@ -32,6 +32,7 @@ export interface PawnTicketData {
   amountFinanced: number | null;
   purchaseTradeValue: number | null;
   periodicRate: number;
+  clerkUsername: string;
   transactionDate: string;
   maturityDate: string;
   defaultDate: string;

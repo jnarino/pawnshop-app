@@ -24,6 +24,9 @@ import { usePawnPrint } from '@/app/feature/pawns/hooks/usePawnPrint';
 import { PawnItemsTable } from '../components/PawnItemsTable';
 import { AlertModal } from '@/app/shared/components/AlertModal';
 import { formatDate } from '@/lib/utils';
+import { VoidPawnModal } from '../../_shared/modal/VoidPawnModal';
+import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
+import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 
 export interface PawnFormDraftState {
   type: 'PAWN' | 'PURCHASE';
@@ -38,6 +41,7 @@ interface PawnTicketFormProps {
   readonly mode?: FormMode;
   readonly initialData?: {
     readonly customerId?: string;
+    readonly clerkUsername?: string;
     readonly type?: 'PAWN' | 'PURCHASE';
     readonly periodicRate?: string;
     readonly transactionDate?: string;
@@ -82,6 +86,9 @@ export function PawnTicketForm({
   const [isPrinting, setIsPrinting] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [showReasonVoidModal, setShowReasonVoidModal] = useState(false);
+  const [showVoidPawnModal, setShowVoidPawnModal] = useState(false);
+  const [reasonData, setReasonData] = useState<string | null>(null);
 
   const [localFormData, setLocalFormData] = useState({
     customerId: initialData?.customerId || 'temp-customer',
@@ -235,15 +242,49 @@ export function PawnTicketForm({
     setShowLabelModal(false);
   }, [pawnTicket, customer, formData.items, printLabels, buildPrintItems]);
 
+  const handleVoidPawn = useCallback(async (reason: string) => {
+    setReasonData(reason)
+    setShowReasonVoidModal(false)
+    setShowVoidPawnModal(true)
+  }, []);
+
+  const handleVoidPawnPaymentDone = async (tenders: TenderMethod[]) => {
+    if (!reasonData || !controlNumber) return;
+
+    try {
+      const payload = {
+        controlNumber,
+        customerId: formData.customerId,
+        tenders: tenders.map(t => ({
+          tenderTypeId: t.tenderTypeId,
+          amount: Number(t.amount)
+        }))
+      };
+
+      await pawnTicketApi.voidPawn(payload);
+      setAlertMessage('Pawn voided successfully');
+      setShowVoidPawnModal(false);
+      window.location.reload();
+    } catch (error) {
+      console.error(`Failed to void pawn`, error);
+      setAlertMessage(`Failed to void pawn`);
+    }
+  };
+
+  console.log({ initialData, formData, externalDraft })
+
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
         <TransactionDetails
+          isViewMode={isViewMode || isEditMode}
           type={formData.type}
           periodicRate={formData.periodicRate}
           transactionDate={formData.transactionDate}
           maturityDate={formData.maturityDate}
           expirationDate={formData.expirationDate}
+          controlNumber={controlNumber}
+          clerkUsername={initialData?.clerkUsername}
           totalValue={totalValue}
           disabled={isViewMode}
           onTypeChange={(value) => {
@@ -262,6 +303,75 @@ export function PawnTicketForm({
             if (!isViewMode) updateFormData({ expirationDate: value });
           }}
         />
+
+        {(isViewMode || isEditMode) && controlNumber && (
+          <div className="flex items-center justify-end my-2 gap-2 items-end">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowReasonVoidModal(true)}
+            >
+              Void
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => { }}
+            >
+              Payment history
+            </Button>
+            {formData.type === 'PAWN' && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => { }}
+                >
+                  Undo pay
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => { }}
+                >
+                  Due dates
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => { }}
+                >
+                  Increase
+                </Button>
+              </>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={isPrinting}
+                  className="px-8 flex items-center gap-2"
+                >
+                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
+                  {isPrinting ? 'Printing...' : 'Print'}
+                  <ChevronDownIcon className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
+                    Print Ticket
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrintLabels}>
+                    Print Labels
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          </div>
+        )}
 
         <Card className="border-2">
           <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-4">
@@ -299,35 +409,6 @@ export function PawnTicketForm({
           </CardContent>
         </Card>
 
-        {(isViewMode || isEditMode) && controlNumber && (
-          <div className="flex justify-center mt-6">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  disabled={isPrinting}
-                  className="px-8 flex items-center gap-2"
-                >
-                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
-                  {isPrinting ? 'Printing...' : 'Print'}
-                  <ChevronDownIcon className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
-                    {' '}Print Ticket
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePrintLabels}>
-                    {' '}Print Labels
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-
         <PrintLabelsModal
           open={showLabelModal}
           controlNumber={controlNumber || ''}
@@ -355,6 +436,24 @@ export function PawnTicketForm({
           </div>
         )}
       </form>
+
+      {isEditMode && (
+        <VoidPawnModal
+          open={showReasonVoidModal}
+          onCancel={() => setShowReasonVoidModal(false)}
+          onConfirm={handleVoidPawn}
+        />
+      )}
+
+      {showVoidPawnModal && (
+        <PaymentMethodModal
+          open={showVoidPawnModal}
+          totalAmount={totalValue}
+          allowedTenderTypes={[1, 2, 3, 4, 5]} // TODO: Pass allowed types dynamically if needed
+          onCancel={() => setShowVoidPawnModal(false)}
+          onDone={handleVoidPawnPaymentDone}
+        />
+      )}
 
       {showItemModal && (
         <InventoryItemModal
