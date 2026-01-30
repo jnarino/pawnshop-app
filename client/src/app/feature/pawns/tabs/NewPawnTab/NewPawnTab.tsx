@@ -142,7 +142,14 @@ export default function NewPawnTab({ customer, mode, initialTicket, onTicketCrea
         colorName: item.colorName,
       }));
 
-      const printInformation = transformToPrintInformation({ ...ticketData, amountFinanced: amountFinanced, periodicRate: rate, redemptionAmount: totalOfPayments, apr: annualRate }, formData, customer);
+      // Pass rate/100 to transformToPrintInformation because usePawnPrint calculates financeCharge = amount * rate
+      const printInformation = transformToPrintInformation({
+        ...ticketData,
+        amountFinanced: amountFinanced,
+        periodicRate: rate / 100, // ✅ Fix: Convert percentage to decimal for print calc
+        redemptionAmount: totalOfPayments,
+        apr: annualRate
+      }, formData, customer);
 
       await printTransactionForm(printInformation);
 
