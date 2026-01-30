@@ -91,6 +91,16 @@ interface UsePawnPrintResult {
 }
 
 function formatDate(dateStr: string | number | Date): string {
+  if (!dateStr) return '';
+
+  // Hande YYYY-MM-DD string specifically to avoid UTC timezone off-by-one
+  if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    // Note: Month is 0-indexed in Date constructor, but we want the components directly 
+    // actually simpler: just return the string re-arranged if we trust it
+    return `${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}/${y}`;
+  }
+
   const d = new Date(dateStr);
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
