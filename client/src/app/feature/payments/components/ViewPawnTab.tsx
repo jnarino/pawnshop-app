@@ -7,6 +7,7 @@ import { DueDateCalculatorModal } from './DueDateCalculatorModal';
 import { PaymentHistoryModal } from './PaymentHistoryModal';
 import { formatDate } from '@/lib/utils';
 import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
+import { transformPawnTicketToFormData } from '../../pawns/maintain/PawnsMaintainWorkspace';
 
 interface ViewPawnTabProps {
   readonly pawnTicket: PawnTicketData;
@@ -15,49 +16,6 @@ interface ViewPawnTabProps {
   readonly onMakePayment: () => void;
 }
 
-function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
-
-
-  const transformedItems: InventoryItemDraft[] = (pawnTicket.items || []).map((item) => ({
-    id: item.id,
-    type: item.inventoryCategory?.id || item.legacyCategoryDescription || 'Item',
-    categoryName: item.inventoryCategory?.name || item.legacyCategoryDescription || '',
-    subcategoryId: item.inventorySubcategory?.id || '',
-    subcategoryName: item.inventorySubcategory?.name || '',
-    brand: item.brand,
-    model: item.model || '',
-    serial: item.serialNumber || '',
-    color: item.colorId,
-    condition: item.itemCondition || '',
-    quantity: String(item.quantity || 1),
-    amount: String(item.priceAmount || 0),
-    resale: String(item.resale || 0),
-    replace: String(item.itemReplace || 0),
-    ownerNumber: item.inventoryNumber || '',
-    description: item.itemDescription || '',
-    metal: item.attributes?.metal,
-    karat: item.attributes?.karat,
-    weight: extractId(item.extra?.weight),
-    weightUnit: extractId(item.extra?.weightUnit) || 'Grams',
-    gender: item.attributes?.gender,
-    style: item.attributes?.style,
-    sizeLength: item.attributes?.size,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stones: transformStones(item.extra?.stones as any),
-  }));
-
-  const transactionType = pawnTicket.transactionType?.toUpperCase();
-
-  return {
-    customerId: pawnTicket.customerId,
-    type: transactionType === 'PURCHASE' ? 'PURCHASE' as const : 'PAWN' as const,
-    periodicRate: String(Math.round((pawnTicket.periodicRate || 0) * 100)),
-    transactionDate: formatDate(pawnTicket.transactionDate),
-    maturityDate: formatDate(pawnTicket.maturityDate),
-    expirationDate: formatDate(pawnTicket.defaultDate),
-    items: transformedItems
-  };
-}
 
 export function ViewPawnTab({ pawnTicket, customer, onBack, onMakePayment }: ViewPawnTabProps) {
   const pawnData = transformPawnTicketToFormData(pawnTicket);
