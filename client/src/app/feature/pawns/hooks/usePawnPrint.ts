@@ -357,7 +357,7 @@ export function usePawnPrint(): UsePawnPrintResult {
           modelNumber: clean(item.subcategoryName, item.model, 'NONE'),
           description: descWithColor,
           amount: item.amount,
-          itemType: ticketItem?.inventorySubcategory.name || 'MISC',
+          itemType: ticketItem?.inventorySubcategory.name || item.jewelryType || item.firearmType || item.type || 'MISC',
 
           // Jewelry
           jewelryType: isJewelry ? getJewelryTypeCode(item.jewelryType || '') : '',
