@@ -262,7 +262,7 @@
     },
     {
       "id": "amountWith2MonthsInterest",
-      "x": 36.3,
+      "x": 33.3,
       "y": 244.2,
       "w": 30,
       "size": 9
@@ -277,7 +277,7 @@
     {
       "id": "employeeInitials",
       "x": 22.9,
-      "y": 266.1,
+      "y": 261.1,
       "w": 20,
       "size": 9
     }
