@@ -173,6 +173,10 @@ function mapRowToPawnTicket(row: any): PawnTicket {
             row.purchase_trade_value !== null
                 ? Number(row.purchase_trade_value)
                 : null,
+        totalOfPayments: 
+            row.total_of_payments !== null 
+                ? Number(row.total_of_payments) 
+                : null,
         transactionDate: row.transaction_date ? new Date(row.transaction_date) : new Date(0),
         maturityDate: row.maturity_date ? new Date(row.maturity_date) : new Date(0),
         defaultDate: row.default_date ? new Date(row.default_date) : new Date(0),

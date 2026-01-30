@@ -82,6 +82,7 @@ describe('ListActivePawnTicketsByCustomerUseCase', () => {
       periodicRate: 0.25,
       apr: 25,
       purchaseTradeValue: null,
+      totalOfPayments: null,
       transactionDate: activeTickets[0].transactionDate.toISOString(),
       maturityDate: activeTickets[0].maturityDate.toISOString(),
       defaultDate: activeTickets[0].defaultDate.toISOString(),

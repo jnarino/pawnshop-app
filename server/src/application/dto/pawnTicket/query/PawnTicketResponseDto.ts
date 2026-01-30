@@ -41,6 +41,8 @@ export interface PawnTicketResponseDto {
   defaultDate: string;
   createdDate: string;
 
+  totalOfPayments?: number | null; 
+
   pawnStatus: PawnStatusDto;
 
   items: InventoryItemResponseDto[];

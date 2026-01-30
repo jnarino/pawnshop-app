@@ -1,6 +1,7 @@
 import { ListPawnTicketsByCustomerUseCase } from "../../../src/application/use-case/pawnTicket/query/ListPawnTicketsByCustomerUseCase";
 import { PawnTicket } from "../../../src/domains/pawnTicket/PawnTicket";
 import { PawnTicketRepository } from "../../../src/domains/pawnTicket/PawnTicketRepository";
+import { GetPawnTicketCurrentChargesUseCase } from "../../../src/application/use-case/pawnTicket/query/GetPawnTicketCurrentChargesUseCase";
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   addPayment = jest.fn();
@@ -30,6 +31,14 @@ describe('ListPawnTicketsByCustomerUseCase', () => {
   const ticketId1 = '550e8400-e29b-41d4-a716-446655440025';
   const ticketId2 = '550e8400-e29b-41d4-a716-446655440026';
   const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
+
+  let mockChargesUseCase: jest.Mocked<GetPawnTicketCurrentChargesUseCase>;
+
+  beforeEach(() => {
+    mockChargesUseCase = {
+      execute: jest.fn().mockResolvedValue({ redemptionAmount: 550, financeCharges: 50 })
+    } as unknown as jest.Mocked<GetPawnTicketCurrentChargesUseCase>;
+  });
 
   it('should return all tickets for a customer', async () => {
     const repo = new MockPawnTicketRepository();
@@ -75,7 +84,7 @@ describe('ListPawnTicketsByCustomerUseCase', () => {
     ];
     repo.findByCustomer.mockResolvedValue(tickets);
 
-    const useCase = new ListPawnTicketsByCustomerUseCase(repo);
+    const useCase = new ListPawnTicketsByCustomerUseCase(repo, mockChargesUseCase);
 
     const result = await useCase.execute({ customerId: customerId });
 
@@ -83,13 +92,14 @@ describe('ListPawnTicketsByCustomerUseCase', () => {
     expect(result).toHaveLength(2);
     expect(result[0].customerId).toBe(customerId);
     expect(result[1].customerId).toBe(customerId);
+    expect(result[0].redemptionAmount).toBe(550); // Added check
   });
 
   it('should return empty array when customer has no tickets', async () => {
     const repo = new MockPawnTicketRepository();
     repo.findByCustomer.mockResolvedValue([]);
 
-    const useCase = new ListPawnTicketsByCustomerUseCase(repo);
+    const useCase = new ListPawnTicketsByCustomerUseCase(repo, mockChargesUseCase);
 
     const result = await useCase.execute({ customerId: nonExistentId });
 

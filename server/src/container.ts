@@ -174,12 +174,18 @@ export async function createApp() {
 
   // Pawn Ticket use-cases  
   const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper, controlNumberRepository, customerRepo);
-  const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(pawnTicketRepo);
+  const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(
+      pawnTicketRepo
+  );
   const getPawnTicketPaymentsUseCase = new GetPawnTicketPaymentsUseCase(pawnTicketPaymentRepo);
   const getPawnTicketCurrentChargesUseCase = new GetPawnTicketCurrentChargesUseCase(listPawnTicketsByControlNumberUseCase, getPawnTicketPaymentsUseCase)
+  
   const listActivePawnTicketsByCustomerUseCase = new ListActivePawnTicketsByCustomerUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
-  const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(pawnTicketRepo);
-  const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo);
+  const listPawnTicketsByCustomerUseCase = new ListPawnTicketsByCustomerUseCase(
+      pawnTicketRepo,
+      getPawnTicketCurrentChargesUseCase
+  );
+  const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPreviousItemsByCustomerUseCase = new ListPreviousItemsByCustomerUseCase(pawnTicketRepo);
   const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
 

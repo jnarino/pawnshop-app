@@ -41,6 +41,12 @@ export class PawnTicket {
   apr: number | null;
   purchaseTradeValue: number | null;
 
+  /**
+   * Loaded only in some queries.
+   * Total value of payments made by customer (principal + interest + fees).
+   */
+  totalOfPayments: number | null = null;
+
   transactionDate: Date;
   maturityDate: Date;
   defaultDate: Date;
@@ -89,6 +95,8 @@ export class PawnTicket {
     periodicRate: number | null;
     apr: number | null;
     purchaseTradeValue: number | null;
+    
+    totalOfPayments?: number | null;
 
     transactionDate: Date;
     maturityDate: Date;
@@ -118,6 +126,7 @@ export class PawnTicket {
     this.amountFinanced = params.amountFinanced;
     this.originalPawnAmount = params.originalPawnAmount;
     this.periodicRate = params.periodicRate;
+    this.totalOfPayments = params.totalOfPayments ?? null;
     this.apr = params.apr;
     this.purchaseTradeValue = params.purchaseTradeValue;
 

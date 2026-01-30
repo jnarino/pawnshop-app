@@ -137,7 +137,29 @@ export class PawnTicketController {
         try {
             const controlNumber = req.params.controlNumber;
             const result = await this.listByControlNumberUseCase.execute({ controlNumber });
-            return res.json(result);
+
+            // Enhance with redemption amount for active pawn tickets
+            // We cannot do this in the Use Case due to a circular dependency with GetPawnTicketCurrentChargesUseCase
+            const enhancedResult = await Promise.all(result.map(async (dto) => {
+                if (dto.transactionType === 'PAWN' && dto.pawnStatus === 'P') {
+                    try {
+                        const charges = await this.getPawnTicketCurrentChargesUseCase.execute({
+                            controlNumber: dto.controlNumber
+                        });
+                        return {
+                            ...dto,
+                            redemptionAmount: charges.redemptionAmount,
+                            currentCharges : charges.currentCharges,
+                        };
+                    } catch (error) {
+                        // Ignore errors in charges calculation
+                        return dto;
+                    }
+                }
+                return dto;
+            }));
+
+            return res.json(enhancedResult);
         } catch (err) {
             return next(err);
         }

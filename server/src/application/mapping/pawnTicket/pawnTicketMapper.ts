@@ -25,6 +25,7 @@ export class PawnTicketMapper {
       maturityDate: ticket.maturityDate.toISOString(),
       defaultDate: ticket.defaultDate.toISOString(),
       createdDate: ticket.createdDate.toISOString(),
+      totalOfPayments: ticket.totalOfPayments,
       pawnStatus: ticket.pawnStatus,
       items: ticket.items ? ticket.items.map(toInventoryItemResponseDto) : [],
       note: ticket.note,

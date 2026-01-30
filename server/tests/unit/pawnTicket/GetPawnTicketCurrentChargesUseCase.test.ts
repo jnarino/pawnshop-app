@@ -3,18 +3,18 @@ import { ListPawnTicketsByControlNumberUseCase } from '../../../src/application/
 import { GetPawnTicketPaymentsUseCase } from '../../../src/application/use-case/pawnTicketPayment/query/GetPawnTicketPaymentsUseCase';
 
 describe('GetPawnTicketCurrentChargesUseCase', () => {
-    let listByControlNumberUseCase: jest.Mocked<ListPawnTicketsByControlNumberUseCase>;
+    let listPawnTicketsByControlNumberUseCase: jest.Mocked<ListPawnTicketsByControlNumberUseCase>;
     let paymentsUseCase: jest.Mocked<GetPawnTicketPaymentsUseCase>;
     let useCase: GetPawnTicketCurrentChargesUseCase;
 
     beforeEach(() => {
-        listByControlNumberUseCase = {
+        listPawnTicketsByControlNumberUseCase = {
             execute: jest.fn(),
         } as any;
         paymentsUseCase = {
             execute: jest.fn(),
         } as any;
-        useCase = new GetPawnTicketCurrentChargesUseCase(listByControlNumberUseCase, paymentsUseCase);
+        useCase = new GetPawnTicketCurrentChargesUseCase(listPawnTicketsByControlNumberUseCase, paymentsUseCase);
     });
 
     it('charges 1 period if less than 30 days', async () => {
@@ -41,7 +41,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             itemIds: [],
             items: []
         };
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
         // Check on day 10
         const result = await useCase.execute({ controlNumber: 'PAWN-1', referenceDate: new Date('2025-12-11T00:00:00.000Z') });
@@ -78,7 +78,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             itemIds: [],
             items: []
         };
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
         // Check on day 40
         const result = await useCase.execute({ controlNumber: 'PAWN-2', referenceDate: new Date('2026-01-10T00:00:00.000Z') });
@@ -115,7 +115,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             itemIds: [],
             items: []
         };
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue([]);
         // Check on day 61
         const result = await useCase.execute({ controlNumber: 'PAWN-3', referenceDate: new Date('2026-01-31T00:00:00.000Z') });
@@ -189,7 +189,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             { paymentDate: '2022-07-19T15:54:52.000Z', principalPaid: -120, transactionTypeName: 'PAWN (loan cash out)' }
         ];
 
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue(payments as any);
 
         const result = await useCase.execute({ controlNumber: 'PAWN-LONG', referenceDate: new Date('2026-01-14T00:00:00.000Z') });
@@ -236,7 +236,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             { paymentDate: '2025-08-06T12:27:51.000Z', principalPaid: -200, transactionTypeName: 'PAWN (loan cash out)' } // Initial pawn (increase)
         ];
 
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue(payments as any);
 
        
@@ -334,7 +334,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             { paymentDate: '2021-05-22T14:07:59.000Z', principalPaid: -150.00, transactionTypeName: 'PAWN (loan cash out)' }
         ];
 
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue(payments as any);
 
         const result = await useCase.execute({ 
@@ -391,7 +391,7 @@ describe('GetPawnTicketCurrentChargesUseCase', () => {
             }
         ];
 
-        listByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
+        listPawnTicketsByControlNumberUseCase.execute.mockResolvedValue([mockTicket]);
         paymentsUseCase.execute.mockResolvedValue(payments as any);
 
         const result = await useCase.execute({ 
