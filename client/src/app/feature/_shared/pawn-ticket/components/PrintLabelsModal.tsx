@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,8 +58,8 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
-      <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}  >
+      <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto" unclosable>
         <DialogHeader>
           <DialogTitle>Enter # of PAWN Labels</DialogTitle>
         </DialogHeader>
@@ -128,7 +128,7 @@ export function PrintLabelsModal({ open, controlNumber, items, onPrint, onCancel
                 size="sm"
                 onClick={onCancel}
               >
-                Skip Labels
+                Done
               </Button>
 
               <Button

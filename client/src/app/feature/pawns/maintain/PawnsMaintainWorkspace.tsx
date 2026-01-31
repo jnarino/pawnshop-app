@@ -339,7 +339,7 @@ function PawnsMaintainWorkspaceContent() {
                     <TableCell className="uppercase">{row.transactionType}</TableCell>
                     <TableCell className="capitalize">{(row as CustomerActivePawnTicket).pawnStatus || '—'}</TableCell>
                     <TableCell>${amount}</TableCell>
-                    <TableCell>{row.transactionDate ? formatDate(row.transactionDate) : '—'}</TableCell>
+                    <TableCell>{row.createdDate ? formatDate(row.createdDate) : '—'}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

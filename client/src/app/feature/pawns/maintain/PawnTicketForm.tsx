@@ -324,8 +324,8 @@ export function PawnTicketForm({
           clerkUsername={initialData?.clerkUsername}
           totalValue={totalValue}
           serviceCharge={(formData.redemptionAmount - totalValue).toFixed(2)}
-          redemptionAmount={formData.redemptionAmount.toFixed(2)}
-          totalOfPayments={formData.totalOfPayments.toFixed(2)}
+          redemptionAmount={formData.redemptionAmount?.toFixed(2)}
+          totalOfPayments={formData.totalOfPayments?.toFixed(2)}
           disabled={isViewMode}
           onTypeChange={(value) => {
             if (!isViewMode) updateFormData({ type: value });
