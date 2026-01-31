@@ -29,7 +29,8 @@ import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMet
 import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
 import { DueDateCalculatorModal } from '../../payments/components/DueDateCalculatorModal';
 import { PaymentHistoryModal } from '../../_shared/modal/PaymentHistoryModal';
-
+import { IncreasePawnModal } from './IncreasePawnModal';
+import { useAuth } from '@/app/core/hooks/useAuth';
 export interface PawnFormDraftState {
   id: string;
   type: 'PAWN' | 'PURCHASE';
@@ -107,6 +108,8 @@ export function PawnTicketForm({
   const [reasonData, setReasonData] = useState<string | null>(null);
   const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
   const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
+  const [showIncreaseModal, setShowIncreaseModal] = useState(false);
+  const { user } = useAuth();
 
   const handlePayHistory = useCallback(() => {
     setIsPaymentHistoryModalOpen(true);
@@ -313,7 +316,8 @@ export function PawnTicketForm({
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
         <TransactionDetails
-          isViewMode={isViewMode || isEditMode}
+          isViewMode={isViewMode}
+          isEditMode={isEditMode}
           type={formData.type}
           periodicRate={formData.periodicRate}
           transactionDate={formData.transactionDate}
@@ -383,7 +387,7 @@ export function PawnTicketForm({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={() => { }}
+                  onClick={() => setShowIncreaseModal(true)}
                 >
                   Increase
                 </Button>
@@ -421,7 +425,7 @@ export function PawnTicketForm({
                 items={formData.items}
                 isViewMode={isViewMode}
                 isEditMode={isEditMode}
-                disabled={disabled}
+                disabled={isViewMode}
                 onView={handleViewItem}
                 onEdit={handleEditItem}
                 onRemove={handleRemoveItem}
@@ -540,6 +544,36 @@ export function PawnTicketForm({
         customerId={formData.customerId || ''}
         featureName={"PAWN"}
       />
+
+      {controlNumber && (
+        <IncreasePawnModal
+          open={showIncreaseModal}
+          onClose={() => setShowIncreaseModal(false)}
+          items={formData.items.map(item => ({
+            id: item.id || '',
+            description: item.description || '',
+            quantity: Number(item.quantity) || 1,
+            amount: Number(item.amount) || 0,
+          }))}
+          onSave={async (data) => {
+            try {
+              await pawnTicketApi.increasePawnTicket({
+                ...data,
+                id: formData.id,
+                customerId: formData.customerId,
+                controlNumber: controlNumber,
+                amountFinanced: data.amountFinanced + formData.amountFinanced,
+                clerkUserId: user?.id?.toString() || '',
+              });
+              setAlertMessage("Pawn increased successfully");
+              window.location.reload();
+            } catch (error) {
+              console.error("Failed to increase pawn", error);
+              setAlertMessage("Failed to increase pawn");
+            }
+          }}
+        />
+      )}
 
       <AlertModal
         open={!!alertMessage}

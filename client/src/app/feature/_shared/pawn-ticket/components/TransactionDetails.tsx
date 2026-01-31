@@ -7,6 +7,7 @@ import { Customer } from '../../customer';
 
 interface TransactionDetailsProps {
   readonly isViewMode: boolean;
+  readonly isEditMode: boolean;
   readonly type: 'PAWN' | 'PURCHASE';
   readonly periodicRate: string;
   readonly transactionDate: string;
@@ -31,6 +32,7 @@ interface TransactionDetailsProps {
 
 export function TransactionDetails({
   isViewMode,
+  isEditMode,
   type,
   periodicRate,
   transactionDate,
@@ -64,7 +66,7 @@ export function TransactionDetails({
               value={type}
               onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
               className="flex gap-4"
-              disabled={disabled}
+              disabled={isViewMode || isEditMode}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="PAWN" id="r-pawn" disabled={disabled} />
