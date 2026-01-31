@@ -48,6 +48,7 @@ import { PawnTicketController } from './interfaces/http/controller/pawnTicket/Pa
 import { PayPawnTicketUseCase } from './application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 import { VoidPawnTicketUseCase } from './application/use-case/pawnTicket/command/VoidPawnTicketUseCase';
 import { PullPawnTicketItemsToInventoryUseCase } from './application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
+import { IncreasePawnTicketUseCase } from './application/use-case/pawnTicket/command/IncreasePawnTicketUseCase';
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
 import { GetBrandsByCategoryRootUseCase } from './application/use-case/inventory/query/GetBrandsByCategoryRootUseCase';
 import { GetInventoryAttributeValuesByTypeUseCase } from './application/use-case/inventory/query/GetInventoryAttributeValuesByTypeUseCase';
@@ -278,6 +279,7 @@ export async function createApp() {
   );
   const voidPawnTicketUseCase = new VoidPawnTicketUseCase(pawnTicketUnitOfWork);
   const pullPawnTicketItemsToInventoryUseCase = new PullPawnTicketItemsToInventoryUseCase(pawnTicketUnitOfWork);
+  const increasePawnTicketUseCase = new IncreasePawnTicketUseCase(pawnTicketUnitOfWork);
 
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
@@ -291,7 +293,8 @@ export async function createApp() {
     payPawnTicketUseCase,
     voidPawnTicketUseCase,
     listPawnTicketsByDateRangeUseCase,
-    pullPawnTicketItemsToInventoryUseCase
+    pullPawnTicketItemsToInventoryUseCase,
+    increasePawnTicketUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

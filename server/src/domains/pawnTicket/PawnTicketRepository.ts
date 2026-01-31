@@ -40,6 +40,11 @@ export interface PawnTicketRepository {
   findById(id: string): Promise<PawnTicket | null>;
 
   /**
+   * Update pawn ticket amount financed.
+   */
+  updateAmount(id: string, amountFinanced: number): Promise<void>;
+
+  /**
    * Add a payment to a pawn ticket (update total_of_payments and last_payment_at).
    */
   addPayment(pawnTicketId: string, amount: number): Promise<void>;

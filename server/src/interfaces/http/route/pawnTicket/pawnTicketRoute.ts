@@ -447,5 +447,51 @@ export function createPawnTicketRouter(
      */
     router.post('/void', auth, controller.voidTicket);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/increase:
+     *   post:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Increase pawn ticket loan amount
+     *     description: Increases the amount financed on an existing pawn ticket and updates item prices
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               id:
+     *                 type: string
+     *               customerId:
+     *                 type: string
+     *               controlNumber:
+     *                 type: string
+     *               clerkUserId:
+     *                 type: string
+     *               amountFinanced:
+     *                 type: number
+     *               items:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     id:
+     *                       type: string
+     *                     priceAmount:
+     *                       type: number
+     *     responses:
+     *       200:
+     *         description: Pawn ticket increased successfully
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     */
+    router.post('/increase', auth, controller.increaseTicket);
+
     return router;
 }

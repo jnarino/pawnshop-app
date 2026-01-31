@@ -10,6 +10,7 @@ describe('ListHistoryPawnsByCustomerUseCase', () => {
   beforeEach(() => {
     mockRepo = {
       addPayment: jest.fn(),
+      updateAmount: jest.fn(),
       setStatus: jest.fn(),
       updateMarkings: jest.fn(),
       findStatusIdByCode: jest.fn(),

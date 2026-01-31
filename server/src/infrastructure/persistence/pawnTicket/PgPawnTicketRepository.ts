@@ -194,11 +194,20 @@ function mapRowToPawnTicket(row: any): PawnTicket {
     });
 }
 
+const SQL_UPDATE_AMOUNT = loadSql(
+    'commands',
+    'pawnTicket/pawn_ticket_update_amount'
+);
+
 export class PgPawnTicketRepository implements PawnTicketRepository {
     constructor(private readonly db: DbClient) { }
 
     async addPayment(pawnTicketId: string, amount: number): Promise<void> {
         await this.db.query(SQL_ADD_PAYMENT, [pawnTicketId, amount]);
+    }
+
+    async updateAmount(id: string, amountFinanced: number): Promise<void> {
+        await this.db.query(SQL_UPDATE_AMOUNT, [id, amountFinanced]);
     }
 
     async setStatus(pawnTicketId: string, status: string): Promise<void> {

@@ -5,6 +5,7 @@ import { GetPawnTicketCurrentChargesUseCase } from "../../../src/application/use
 
 class MockPawnTicketRepository implements PawnTicketRepository {
   addPayment = jest.fn();
+  updateAmount = jest.fn();
   setStatus = jest.fn();
   updateMarkings = jest.fn();
   findStatusIdByCode = jest.fn();
