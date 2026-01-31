@@ -107,15 +107,29 @@ export class VoidPawnTicketUseCase {
 
             // Create matching tender (Assume Cash Reversal)
             // Since Void Pawn/Buy implies getting money back, we add a positive Cash tender
-            const tender = new StoreTransactionTender({
-                id: crypto.randomUUID(),
-                storeTransactionId: transactionId,
-                sequence: 1,
-                tenderTypeId: TENDER_CASH,
-                amount: amount,
-                createdAt: occurredAt
-            });
-            storeTransaction.tenders.push(tender);
+            if (dto.tenders && dto.tenders.length > 0) {
+                for (const [index, t] of dto.tenders.entries()) {
+                    const tender = new StoreTransactionTender({
+                        id: crypto.randomUUID(),
+                        storeTransactionId: transactionId,
+                        sequence: index + 1,
+                        tenderTypeId: t.tenderTypeId,
+                        amount: t.amount,
+                        createdAt: occurredAt
+                    });
+                    storeTransaction.tenders.push(tender);
+                }
+            } else {
+                const tender = new StoreTransactionTender({
+                    id: crypto.randomUUID(),
+                    storeTransactionId: transactionId,
+                    sequence: 1,
+                    tenderTypeId: TENDER_CASH,
+                    amount: amount,
+                    createdAt: occurredAt
+                });
+                storeTransaction.tenders.push(tender);
+            }
 
             await storeTransactionRepository.create(storeTransaction);
         });

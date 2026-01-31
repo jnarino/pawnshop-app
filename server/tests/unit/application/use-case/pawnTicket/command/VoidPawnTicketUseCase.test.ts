@@ -141,4 +141,35 @@ describe('VoidPawnTicketUseCase', () => {
             notes: 'Voided Transaction'
         }));
     });
+
+    it('should use provided tenders if supplied', async () => {
+        const ticket = {
+            id: 't1',
+            controlNumber: '123',
+            customerId: '50e1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
+            transactionType: 'PAWN',
+            pawnStatus: 'P',
+            amountFinanced: 100,
+            items: []
+        };
+        mockPawnTicketRepo.listByControlNumber.mockResolvedValue([ticket]);
+
+        await useCase.execute({
+            controlNumber: '123',
+            customerId: '50e1c2e9-2a17-44a4-b59c-ca5ca6d1feef',
+            tenders: [
+                { tenderTypeId: 2, amount: 50 },
+                { tenderTypeId: 1, amount: 50 }
+            ]
+        });
+
+        expect(mockStoreTxRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tenders: expect.arrayContaining([
+                    expect.objectContaining({ tenderTypeId: 2, amount: 50 }),
+                    expect.objectContaining({ tenderTypeId: 1, amount: 50 })
+                ])
+            })
+        );
+    });
 });
