@@ -37,6 +37,7 @@ import { InventoryCategoryController } from './interfaces/http/controller/invent
 import { PgPawnTicketRepository } from './infrastructure/persistence/pawnTicket/PgPawnTicketRepository';
 import { PgPawnTicketPaymentRepository } from './infrastructure/persistence/pawnTicketPayment/PgPawnTicketPaymentRepository';
 import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWork';
+import { UndoPawnTicketPaymentUseCase } from './application/use-case/pawnTicket/command/UndoPawnTicketPaymentUseCase';
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { ListPreviousItemsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPreviousItemsByCustomerUseCase';
@@ -280,6 +281,7 @@ export async function createApp() {
   const voidPawnTicketUseCase = new VoidPawnTicketUseCase(pawnTicketUnitOfWork);
   const pullPawnTicketItemsToInventoryUseCase = new PullPawnTicketItemsToInventoryUseCase(pawnTicketUnitOfWork);
   const increasePawnTicketUseCase = new IncreasePawnTicketUseCase(pawnTicketUnitOfWork);
+  const undoPawnTicketPaymentUseCase = new UndoPawnTicketPaymentUseCase(pawnTicketUnitOfWork, pawnTicketPaymentRepo);
 
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
@@ -294,7 +296,8 @@ export async function createApp() {
     voidPawnTicketUseCase,
     listPawnTicketsByDateRangeUseCase,
     pullPawnTicketItemsToInventoryUseCase,
-    increasePawnTicketUseCase
+    increasePawnTicketUseCase,
+    undoPawnTicketPaymentUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

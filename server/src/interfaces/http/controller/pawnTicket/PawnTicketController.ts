@@ -13,6 +13,7 @@ import { PayPawnTicketUseCase } from '../../../../application/use-case/pawnTicke
 import { VoidPawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/VoidPawnTicketUseCase';
 import { PullPawnTicketItemsToInventoryUseCase } from '../../../../application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
 import { IncreasePawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/IncreasePawnTicketUseCase';
+import { UndoPawnTicketPaymentUseCase } from '../../../../application/use-case/pawnTicket/command/UndoPawnTicketPaymentUseCase';
 
 import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
 
@@ -30,7 +31,8 @@ export class PawnTicketController {
         private readonly voidPawnTicketUseCase: VoidPawnTicketUseCase,
         private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase,
         private readonly pullPawnTicketItemsToInventoryUseCase: PullPawnTicketItemsToInventoryUseCase,
-        private readonly increasePawnTicketUseCase: IncreasePawnTicketUseCase
+        private readonly increasePawnTicketUseCase: IncreasePawnTicketUseCase,
+        private readonly undoPawnTicketPaymentUseCase: UndoPawnTicketPaymentUseCase
     ) { }
 
     /**
@@ -124,6 +126,27 @@ export class PawnTicketController {
             return next(err);
         }
     };
+
+    /**
+     * POST /api/pawn-ticket/undo-payment
+     */
+    undoPayment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = {
+                ...req.body
+            };
+            // Ensure clerkUserId is set if not provided in body, using auth user
+            if (!payload.clerkUserId && req.user) {
+                payload.clerkUserId = req.user.id;
+            }
+
+            await this.undoPawnTicketPaymentUseCase.execute(payload);
+            return res.status(200).json({ message: 'Pawn ticket payment undone successfully' });
+        } catch (err) {
+            return next(err);
+        }
+    };
+
 
 
     /**

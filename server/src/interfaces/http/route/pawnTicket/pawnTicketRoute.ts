@@ -493,5 +493,33 @@ export function createPawnTicketRouter(
      */
     router.post('/increase', auth, controller.increaseTicket);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/undo-payment:
+     *   post:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Undo last payment for a pawn ticket
+     *     description: Reverts the last payment by creating a negative store transaction
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UndoPawnTicketPaymentRequest'
+     *     responses:
+     *       200:
+     *         description: Payment undone successfully
+     *       400:
+     *         description: Invalid input or amount mismatch
+     *       401:
+     *         description: Unauthorized
+     *       404:
+     *         description: Pawn ticket or payment not found
+     */
+    router.post('/undo-payment', auth, controller.undoPayment);
+
     return router;
 }
