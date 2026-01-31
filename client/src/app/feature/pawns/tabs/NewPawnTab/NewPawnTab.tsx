@@ -274,6 +274,7 @@ export default function NewPawnTab({ customer, mode, initialTicket, onTicketCrea
           onSubmit={handleSubmit}
           disabled={isLoading || mode === 'MODIFY'}
           mode={mode}
+          customer={customer}
           initialData={transformPawnTicketToFormData(initialTicket)}
           controlNumber={initialTicket?.controlNumber}
           pawnTicket={initialTicket}

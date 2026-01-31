@@ -3,6 +3,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Customer } from '../../customer';
 
 interface TransactionDetailsProps {
   readonly isViewMode: boolean;
@@ -17,6 +18,7 @@ interface TransactionDetailsProps {
   readonly redemptionAmount: string;
   readonly totalOfPayments: string;
   readonly disabled?: boolean;
+  readonly customer?: Customer;
   readonly clerkUsername?: string;
   readonly controlNumber?: string;
   readonly onTypeChange: (value: 'PAWN' | 'PURCHASE') => void;
@@ -40,6 +42,7 @@ export function TransactionDetails({
   totalOfPayments,
   disabled = false,
   clerkUsername,
+  customer,
   controlNumber,
   onTypeChange,
   onPeriodicRateChange,
@@ -173,6 +176,9 @@ export function TransactionDetails({
               Total value of items being purchased by the store.
             </p>
           </div>
+        )}
+        {isViewMode && customer && (
+          <p><b>Customer:</b> {customer?.firstName + ' ' + customer?.lastName}</p>
         )}
       </CardContent>
     </Card>

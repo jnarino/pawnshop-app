@@ -338,8 +338,8 @@ export function usePawnPrint(): UsePawnPrintResult {
 
       customerHeight: customer.height || undefined,
       customerWeight: customer.weight || undefined,
-      customerEyes: customer.eyeColor || undefined,
-      customerHair: customer.hairColor || undefined,
+      customerEyes: customer.eyeColor?.name || undefined,
+      customerHair: customer.hairColor?.name || undefined,
 
       items: items.map((item: any) => {
         const baseDesc = item.description || '';
