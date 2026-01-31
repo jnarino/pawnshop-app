@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createStoreTransactionTenderSchema } from '../../storeTransaction/command/CreateStoreTransactionRequestDto';
 
 export const increasePawnTicketRequestSchema = z.object({
   id: z.string().uuid(),
@@ -8,7 +9,8 @@ export const increasePawnTicketRequestSchema = z.object({
   items: z.array(z.object({
     id: z.string().uuid(),
     priceAmount: z.number().nonnegative()
-  }))
+  })),
+  tenders: z.array(createStoreTransactionTenderSchema).optional()
 });
 
 export type IncreasePawnTicketRequestDto = z.infer<typeof increasePawnTicketRequestSchema>;

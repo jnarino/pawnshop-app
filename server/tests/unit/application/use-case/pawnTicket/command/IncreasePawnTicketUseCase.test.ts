@@ -171,4 +171,75 @@ describe('IncreasePawnTicketUseCase', () => {
             .rejects
             .toThrow(ValidationError);
     });
+
+    it('should successfully increase pawn ticket amount with specific tenders', async () => {
+        // Arrange
+        const currentAmount = 100;
+        const newAmount = 150;
+        const difference = 50;
+        
+        const mockTicket = {
+            id: mockTicketId,
+            controlNumber: 'PAWN-100',
+            amountFinanced: currentAmount,
+            customerId: mockCustomerId
+        };
+
+        mockPawnTicketRepo.findById.mockResolvedValue(mockTicket);
+        mockInventoryRepo.findById.mockResolvedValue({});
+
+        const input = {
+            id: mockTicketId,
+            customerId: mockCustomerId,
+            amountFinanced: newAmount,
+            clerkUserId: mockClerkId,
+            items: [],
+            tenders: [
+                { tenderTypeId: 1, amount: 20 },
+                { tenderTypeId: 2, amount: 30 }
+            ]
+        };
+
+        // Act
+        await useCase.execute(input);
+
+        // Assert
+        expect(mockStoreTxRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+            amount: difference,
+            tenders: expect.arrayContaining([
+                expect.objectContaining({ tenderTypeId: 1, amount: 20 }),
+                expect.objectContaining({ tenderTypeId: 2, amount: 30 })
+            ])
+        }));
+    });
+
+    it('should throw validation error if tenders do not match difference', async () => {
+         // Arrange
+        const currentAmount = 100;
+        const newAmount = 150;
+        const difference = 50;
+        
+        const mockTicket = {
+            id: mockTicketId,
+            controlNumber: 'PAWN-100',
+            amountFinanced: currentAmount,
+            customerId: mockCustomerId
+        };
+
+        mockPawnTicketRepo.findById.mockResolvedValue(mockTicket);
+
+        const input = {
+            id: mockTicketId,
+            customerId: mockCustomerId,
+            amountFinanced: newAmount, // Increase by 50
+            clerkUserId: mockClerkId,
+            items: [],
+            tenders: [
+                { tenderTypeId: 1, amount: 10 } // Only 10 provided, needs 50
+            ]
+        };
+
+        // Act & Assert
+        await expect(useCase.execute(input)).rejects.toThrow(ValidationError);
+    });
 });

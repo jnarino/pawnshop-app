@@ -43,8 +43,40 @@ export class IncreasePawnTicketUseCase {
                  }
             }
 
-            // 5. Create Store Transaction
+            // 5. Build Tenders List
             const txId = crypto.randomUUID();
+            let tenders: StoreTransactionTender[] = [];
+
+            if (dto.tenders && dto.tenders.length > 0) {
+                const totalTender = dto.tenders.reduce((sum, t) => sum + t.amount, 0);
+                // Validate that tenders match the difference
+                if (Math.abs(totalTender - difference) > 0.01) {
+                    throw new ValidationError(`Total tenders amount ($${totalTender.toFixed(2)}) must match the increase amount ($${difference.toFixed(2)})`);
+                }
+
+                tenders = dto.tenders.map((t, index) => new StoreTransactionTender({
+                    id: crypto.randomUUID(),
+                    storeTransactionId: txId,
+                    tenderTypeId: t.tenderTypeId,
+                    amount: t.amount,
+                    sequence: t.sequence ?? (index + 1),
+                    createdAt: new Date()
+                }));
+            } else {
+                // Default to CASH if no tenders provided
+                tenders = [
+                    new StoreTransactionTender({
+                        id: crypto.randomUUID(),
+                        storeTransactionId: txId,
+                        tenderTypeId: 1, // CASH
+                        amount: difference,
+                        sequence: 1,
+                        createdAt: new Date()
+                    })
+                ];
+            }
+
+            // 6. Create Store Transaction
             const transaction = new StoreTransaction({
                 id: txId,
                 typeId: 5, // PAWN (loan cash out)
@@ -63,23 +95,11 @@ export class IncreasePawnTicketUseCase {
                 gunProcFee: 0,
                 note: 'Increase Pawn Ticket Amount',
                 items: [], // No store transaction items, just financial tx
-                tenders: [],
+                tenders: tenders,
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
             
-            // Add Cash tender
-            transaction.tenders = [
-                new StoreTransactionTender({
-                    id: crypto.randomUUID(),
-                    storeTransactionId: txId,
-                    tenderTypeId: 1, // CASH
-                    amount: difference,
-                    sequence: 1,
-                    createdAt: new Date()
-                })
-            ];
-
             await storeTransactionRepository.create(transaction);
         });
     }
