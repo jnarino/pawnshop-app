@@ -40,6 +40,8 @@ export const createStoreTransactionRequestSchema = z.object({
     tenderChange: z.number().nullable().optional(),
 
     gunProcFee: z.number().nullable().optional(),
+    gunFee: z.number().nullable().optional(),
+    nicstn: z.string().nullable().optional(),
 
     note: z.string().max(1000).nullable().optional(),
 

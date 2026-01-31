@@ -25,11 +25,24 @@ export interface GunLogProps {
     buyerIdType: string; // e.g. "FL DRIVERS"
     buyerIdNumber: string;
     
-    // Disposition (Sold) Info - Optional for now
+    // Disposition (Sold) Info
     soldDate?: Date;
-    // ... add sold fields if needed later
+    soldFirstName?: string;
+    soldMiddleName?: string;
+    soldLastName?: string;
+    soldStreetAddress?: string;
+    soldCity?: string;
+    soldState?: string;
+    soldZipCode?: string;
+    soldAmount?: number;
+    soldIdType?: string;
+    soldIdNumber?: string;
+    
+    nicstn?: string;
 
-    transactionNum?: string; // from user example
+    transactionNum?: string;
+    origTransNum?: string; // Added origTransNum
+
     voided?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -59,6 +72,23 @@ export class GunLog {
     buyerIdType: string;
     buyerIdNumber: string;
 
+    // Sold Info
+    soldDate?: Date;
+    soldFirstName?: string;
+    soldMiddleName?: string;
+    soldLastName?: string;
+    soldStreetAddress?: string;
+    soldCity?: string;
+    soldState?: string;
+    soldZipCode?: string;
+    soldAmount?: number;
+    soldIdType?: string;
+    soldIdNumber?: string;
+    nicstn?: string;
+
+    transactionNum?: string; // Added transactionNum
+    origTransNum?: string; // Added origTransNum
+
     createdAt?: Date;
     updatedAt?: Date;
 
@@ -84,6 +114,23 @@ export class GunLog {
         this.buyerZipCode = props.buyerZipCode;
         this.buyerIdType = props.buyerIdType;
         this.buyerIdNumber = props.buyerIdNumber;
+        
+        this.soldDate = props.soldDate;
+        this.soldFirstName = props.soldFirstName;
+        this.soldMiddleName = props.soldMiddleName;
+        this.soldLastName = props.soldLastName;
+        this.soldStreetAddress = props.soldStreetAddress;
+        this.soldCity = props.soldCity;
+        this.soldState = props.soldState;
+        this.soldZipCode = props.soldZipCode;
+        this.soldAmount = props.soldAmount;
+        this.soldIdType = props.soldIdType;
+        this.soldIdNumber = props.soldIdNumber;
+        this.nicstn = props.nicstn;
+        
+        this.transactionNum = props.transactionNum;
+        this.origTransNum = props.origTransNum;
+
         this.createdAt = props.createdAt;
         this.updatedAt = props.updatedAt;
     }

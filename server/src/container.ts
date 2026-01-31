@@ -48,6 +48,8 @@ import { PawnTicketController } from './interfaces/http/controller/pawnTicket/Pa
 
 import { PayPawnTicketUseCase } from './application/use-case/pawnTicket/command/PayPawnTicketUseCase';
 import { VoidPawnTicketUseCase } from './application/use-case/pawnTicket/command/VoidPawnTicketUseCase';
+import { PgGunLogRepository } from './infrastructure/persistence/gun/PgGunLogRepository';
+import { PgGunTransactionHistoryRepository } from './infrastructure/persistence/gun/PgGunTransactionHistoryRepository';
 import { PullPawnTicketItemsToInventoryUseCase } from './application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
 import { IncreasePawnTicketUseCase } from './application/use-case/pawnTicket/command/IncreasePawnTicketUseCase';
 import { GetAllInventoryAttributeTypesUseCase } from './application/use-case/inventory/query/GetAllInventoryAttributeTypesUseCase';
@@ -125,6 +127,8 @@ export async function createApp() {
   const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
   const layawayRepo = new PgLayawayRepository(pool);
   const layawayUnitOfWork = new PgLayawayUnitOfWork(pool);
+  const gunLogRepo = new PgGunLogRepository(pool);
+  const gunTxHistoryRepo = new PgGunTransactionHistoryRepository(pool);
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
@@ -192,7 +196,7 @@ export async function createApp() {
   const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
 
   // Store Transaction use-cases
-  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo);
+  const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo, gunLogRepo, gunTxHistoryRepo, appUserRepo);
   const listStoreTransactionsByCustomerUseCase = new ListStoreTransactionsByCustomerUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByDateRangeUseCase = new ListStoreTransactionsByDateRangeUseCase(storeTransactionRepo, inventoryItemRepo);
   const listStoreTransactionsByControlNumberUseCase = new ListStoreTransactionsByControlNumberUseCase(storeTransactionRepo, inventoryItemRepo);
