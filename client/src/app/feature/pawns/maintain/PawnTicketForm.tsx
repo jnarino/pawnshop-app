@@ -43,6 +43,7 @@ export interface PawnFormDraftState {
   serviceCharge: number;
   redemptionAmount: number;
   amountFinanced: number;
+  statusPawn: string;
   items: InventoryItemDraft[];
 }
 
@@ -63,6 +64,7 @@ interface PawnTicketFormProps {
     readonly totalOfPayments?: number;
     readonly amountFinanced?: number;
     readonly items?: InventoryItemDraft[];
+    readonly statusPawn?: string;
   };
   readonly externalDraft?: PawnFormDraftState;
   readonly onDraftChange?: (draft: PawnFormDraftState) => void;
@@ -110,6 +112,7 @@ export function PawnTicketForm({
   const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
   const [showIncreaseModal, setShowIncreaseModal] = useState(false);
   const { user } = useAuth();
+  const [statusPawn, setStatusPawn] = useState(initialData?.statusPawn || "");
 
   const handlePayHistory = useCallback(() => {
     setIsPaymentHistoryModalOpen(true);
@@ -133,6 +136,7 @@ export function PawnTicketForm({
     redemptionAmount: initialData?.redemptionAmount || 0,
     totalOfPayments: initialData?.totalOfPayments || 0,
     amountFinanced: initialData?.amountFinanced || 0,
+    statusPawn: initialData?.statusPawn || "",
   });
 
   // Keep local state in sync with initialData when it changes (e.g. after search)
@@ -152,6 +156,7 @@ export function PawnTicketForm({
         redemptionAmount: initialData.redemptionAmount || 0,
         totalOfPayments: initialData.totalOfPayments || 0,
         amountFinanced: initialData.amountFinanced || 0,
+        statusPawn: initialData.statusPawn || "",
       });
     }
   }, [initialData]);
@@ -312,6 +317,10 @@ export function PawnTicketForm({
     }
   };
 
+  const isPawnVoided = statusPawn === "V";
+
+  console.log({ isPawnVoided });
+
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -330,7 +339,7 @@ export function PawnTicketForm({
           serviceCharge={(formData.redemptionAmount - totalValue).toFixed(2)}
           redemptionAmount={formData.redemptionAmount?.toFixed(2)}
           totalOfPayments={formData.totalOfPayments?.toFixed(2)}
-          disabled={isViewMode}
+          disabled={isViewMode || isPawnVoided}
           customer={customer}
           onTypeChange={(value) => {
             if (!isViewMode) updateFormData({ type: value });
@@ -352,7 +361,7 @@ export function PawnTicketForm({
           }}
         />
 
-        {(isViewMode || isEditMode) && controlNumber && (
+        {(isViewMode || isEditMode) && controlNumber && !isPawnVoided && (
           <div className="flex items-center justify-end my-2 gap-2 items-end">
             <Button
               type="button"
@@ -425,7 +434,7 @@ export function PawnTicketForm({
                 items={formData.items}
                 isViewMode={isViewMode}
                 isEditMode={isEditMode}
-                disabled={isViewMode}
+                disabled={isViewMode || isPawnVoided}
                 onView={handleViewItem}
                 onEdit={handleEditItem}
                 onRemove={handleRemoveItem}
@@ -524,6 +533,7 @@ export function PawnTicketForm({
             setShowItemModal(false);
             setEditingItem(null);
           }}
+          disabledPrice={isEditMode}
           onSave={handleSaveItem}
         />
       )}

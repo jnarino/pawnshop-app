@@ -12,12 +12,13 @@ interface BasicInfoFieldsProps {
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
   readonly isFirearm: boolean;
   readonly disabled?: boolean;
+  readonly disabledPrice?: boolean;
   readonly brands: CategoryOption[];
   readonly handleBrandChange: (brandId: string, explicitBrand?: CategoryOption) => void;
   readonly loadSubcategoriesAndBrands: () => Promise<void>;
 }
 
-export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, brands, handleBrandChange, loadSubcategoriesAndBrands }: BasicInfoFieldsProps) {
+export function BasicInfoFields({ draft, updateField, isFirearm, disabled = false, disabledPrice, brands, handleBrandChange, loadSubcategoriesAndBrands }: BasicInfoFieldsProps) {
   return (
     <>
       {/* Row 1: Value (62%) + Qty (38%) combined */}
@@ -32,7 +33,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
               onChange={(value) => updateField('amount', value)}
               placeholder="10000.00"
               required
-              disabled={disabled}
+              disabled={disabled || disabledPrice}
               className="h-8 text-xs"
             />
           </div>
