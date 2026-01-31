@@ -44,6 +44,8 @@ export interface PawnTicketData {
   redemptionAmount?: number;
   apr?: number;
   originalPawnAmount?: number;
+  serviceCharge?: number;
+  totalOfPayments?: number;
 }
 
 export interface CustomerData {

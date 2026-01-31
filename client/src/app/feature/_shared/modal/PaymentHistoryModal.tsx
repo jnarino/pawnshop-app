@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { layawayApi } from "@/app/core/api/layawayApi";
 import { Button } from "@/components/ui/button";
+import { pawnTicketPaymentApi, PawnTicketPayment } from "@/app/core/api/pawnTicketPaymentApi";
 
 interface PaymentHistoryItem {
     occurredAt: string;
@@ -17,9 +18,11 @@ interface Props {
     onClose: () => void;
     controlNumber: string;
     customerId: string;
+    id: string;
+    featureName: 'PAWN' | 'LAYAWAY';
 }
 
-export function PaymentHistoryModal({ open, onClose, controlNumber, customerId }: Props) {
+export function PaymentHistoryModal({ open, onClose, controlNumber, customerId, id, featureName }: Props) {
     const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [totalAmount, setTotalAmount] = useState(0);
@@ -33,9 +36,20 @@ export function PaymentHistoryModal({ open, onClose, controlNumber, customerId }
     const loadHistory = async () => {
         setLoading(true);
         try {
-            const data = await layawayApi.getPaymentHistory(controlNumber, customerId);
-            setHistory(data);
-            const total = data.reduce((acc, item) => acc + item.amount, 0);
+            let mappedHistory: PaymentHistoryItem[] = [];
+            if (featureName === 'PAWN') {
+                const data = await pawnTicketPaymentApi.getPaymentHistory(id);
+                mappedHistory = (data as PawnTicketPayment[]).map((payment) => ({
+                    occurredAt: payment.paymentDate,
+                    transactionType: "Payment",
+                    amount: payment.principalPaid,
+                    clerkUsername: payment.clerkUserId || "Unknown",
+                }));
+            } else {
+                mappedHistory = await layawayApi.getPaymentHistory(controlNumber, customerId);
+            }
+            setHistory(mappedHistory);
+            const total = mappedHistory.reduce((acc, item) => acc + item.amount, 0);
             setTotalAmount(total);
         } catch (error) {
             console.error("Failed to load payment history", error);

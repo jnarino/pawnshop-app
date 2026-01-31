@@ -11,7 +11,11 @@ interface TransactionDetailsProps {
   readonly transactionDate: string;
   readonly maturityDate: string;
   readonly expirationDate: string;
+  readonly forfeitDate: string;
   readonly totalValue: number;
+  readonly serviceCharge: string;
+  readonly redemptionAmount: string;
+  readonly totalOfPayments: string;
   readonly disabled?: boolean;
   readonly clerkUsername?: string;
   readonly controlNumber?: string;
@@ -20,6 +24,7 @@ interface TransactionDetailsProps {
   readonly onTransactionDateChange: (value: string) => void;
   readonly onMaturityDateChange: (value: string) => void;
   readonly onExpirationDateChange: (value: string) => void;
+  readonly onForfeitDateChange: (value: string) => void;
 }
 
 export function TransactionDetails({
@@ -27,17 +32,20 @@ export function TransactionDetails({
   type,
   periodicRate,
   transactionDate,
-  maturityDate,
   expirationDate,
+  forfeitDate,
   totalValue,
+  serviceCharge,
+  redemptionAmount,
+  totalOfPayments,
   disabled = false,
   clerkUsername,
   controlNumber,
   onTypeChange,
   onPeriodicRateChange,
   onTransactionDateChange,
-  onMaturityDateChange,
   onExpirationDateChange,
+  onForfeitDateChange,
 }: TransactionDetailsProps) {
   return (
     <Card className="border-2 mb-6">
@@ -101,14 +109,6 @@ export function TransactionDetails({
               />
             </div>
             <div className="space-y-2">
-              <Label>Maturity Date</Label>
-              <DatePicker
-                value={maturityDate}
-                onChange={(date) => onMaturityDateChange(date || '')}
-                disabled={disabled}
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Expiration Date</Label>
               <DatePicker
                 value={expirationDate}
@@ -120,34 +120,12 @@ export function TransactionDetails({
             {isViewMode && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Duration</Label>
-                  <Input
-                    id="rate"
-                    type="number"
-                    step="0.01"
-                    value={'0'}
-                    onChange={(e) => onPeriodicRateChange(e.target.value)}
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rate">Period</Label>
-                  <Input
-                    id="rate"
-                    type="number"
-                    step="0.01"
-                    value={'0'}
-                    onChange={(e) => onPeriodicRateChange(e.target.value)}
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="rate">Service charge</Label>
                   <Input
                     id="rate"
                     type="number"
                     step="0.01"
-                    value={'0'}
+                    value={serviceCharge}
                     onChange={(e) => onPeriodicRateChange(e.target.value)}
                     disabled={disabled}
                   />
@@ -158,19 +136,16 @@ export function TransactionDetails({
                     id="rate"
                     type="number"
                     step="0.01"
-                    value={'0'}
+                    value={redemptionAmount}
                     onChange={(e) => onPeriodicRateChange(e.target.value)}
                     disabled={disabled}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rate">Forfeit</Label>
-                  <Input
-                    id="rate"
-                    type="number"
-                    step="0.01"
-                    value={'0'}
-                    onChange={(e) => onPeriodicRateChange(e.target.value)}
+                  <DatePicker
+                    value={forfeitDate}
+                    onChange={(date) => onForfeitDateChange(date || '')}
                     disabled={disabled}
                   />
                 </div>
@@ -180,7 +155,7 @@ export function TransactionDetails({
                     id="rate"
                     type="number"
                     step="0.01"
-                    value={'0'}
+                    value={totalOfPayments}
                     onChange={(e) => onPeriodicRateChange(e.target.value)}
                     disabled={disabled}
                   />

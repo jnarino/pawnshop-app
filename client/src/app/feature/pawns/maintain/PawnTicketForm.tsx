@@ -27,19 +27,28 @@ import { formatDate } from '@/lib/utils';
 import { VoidPawnModal } from '../../_shared/modal/VoidPawnModal';
 import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
 import { pawnTicketApi } from '@/app/core/api/pawnTicketApi';
+import { DueDateCalculatorModal } from '../../payments/components/DueDateCalculatorModal';
+import { PaymentHistoryModal } from '../../_shared/modal/PaymentHistoryModal';
 
 export interface PawnFormDraftState {
+  id: string;
   type: 'PAWN' | 'PURCHASE';
   periodicRate: string;
   transactionDate: string;
   maturityDate: string;
   expirationDate: string;
+  forfeitDate: string;
+  totalOfPayments: number;
+  serviceCharge: number;
+  redemptionAmount: number;
+  amountFinanced: number;
   items: InventoryItemDraft[];
 }
 
 interface PawnTicketFormProps {
   readonly mode?: FormMode;
   readonly initialData?: {
+    readonly id?: string;
     readonly customerId?: string;
     readonly clerkUsername?: string;
     readonly type?: 'PAWN' | 'PURCHASE';
@@ -47,6 +56,11 @@ interface PawnTicketFormProps {
     readonly transactionDate?: string;
     readonly maturityDate?: string;
     readonly expirationDate?: string;
+    readonly forfeitDate?: string;
+    readonly serviceCharge?: number;
+    readonly redemptionAmount?: number;
+    readonly totalOfPayments?: number;
+    readonly amountFinanced?: number;
     readonly items?: InventoryItemDraft[];
   };
   readonly externalDraft?: PawnFormDraftState;
@@ -63,6 +77,8 @@ interface PawnTicketFormProps {
     transactionDate?: string;
     maturityDate?: string;
     expirationDate?: string;
+    forfeitDate?: string;
+    totalOfPayments?: number;
     items: InventoryItemDraft[];
   }) => Promise<void>;
   readonly disabled?: boolean;
@@ -89,28 +105,50 @@ export function PawnTicketForm({
   const [showReasonVoidModal, setShowReasonVoidModal] = useState(false);
   const [showVoidPawnModal, setShowVoidPawnModal] = useState(false);
   const [reasonData, setReasonData] = useState<string | null>(null);
+  const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
+  const [isPaymentHistoryModalOpen, setIsPaymentHistoryModalOpen] = useState(false);
+
+  const handlePayHistory = useCallback(() => {
+    setIsPaymentHistoryModalOpen(true);
+  }, []);
+
+  const handleDueDates = useCallback(() => {
+    setIsDueDateModalOpen(true);
+  }, []);
 
   const [localFormData, setLocalFormData] = useState({
+    id: initialData?.id || '',
     customerId: initialData?.customerId || 'temp-customer',
     type: initialData?.type || 'PAWN' as const,
     periodicRate: initialData?.periodicRate || '25',
     transactionDate: initialData?.transactionDate || formatDate(new Date()),
     maturityDate: initialData?.maturityDate || formatDate(addDays(new Date(), 30)),
     expirationDate: initialData?.expirationDate || formatDate(addDays(new Date(), 60)),
-    items: initialData?.items || [] as InventoryItemDraft[]
+    forfeitDate: initialData?.forfeitDate || formatDate(addDays(new Date(), 60)),
+    items: initialData?.items || [] as InventoryItemDraft[],
+    serviceCharge: initialData?.serviceCharge || 0,
+    redemptionAmount: initialData?.redemptionAmount || 0,
+    totalOfPayments: initialData?.totalOfPayments || 0,
+    amountFinanced: initialData?.amountFinanced || 0,
   });
 
   // Keep local state in sync with initialData when it changes (e.g. after search)
   useEffect(() => {
     if (initialData) {
       setLocalFormData({
+        id: initialData.id || '',
         customerId: initialData.customerId || 'temp-customer',
         type: initialData.type || 'PAWN',
         periodicRate: initialData.periodicRate || '25',
         transactionDate: initialData.transactionDate || formatDate(new Date()),
         maturityDate: initialData.maturityDate || formatDate(addDays(new Date(), 30)),
         expirationDate: initialData.expirationDate || formatDate(addDays(new Date(), 60)),
-        items: initialData.items || []
+        forfeitDate: initialData.forfeitDate || formatDate(addDays(new Date(), 60)),
+        items: initialData.items || [] as InventoryItemDraft[],
+        serviceCharge: initialData.serviceCharge || 0,
+        redemptionAmount: initialData.redemptionAmount || 0,
+        totalOfPayments: initialData.totalOfPayments || 0,
+        amountFinanced: initialData.amountFinanced || 0,
       });
     }
   }, [initialData]);
@@ -271,8 +309,6 @@ export function PawnTicketForm({
     }
   };
 
-  console.log({ initialData, formData, externalDraft })
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -283,9 +319,13 @@ export function PawnTicketForm({
           transactionDate={formData.transactionDate}
           maturityDate={formData.maturityDate}
           expirationDate={formData.expirationDate}
+          forfeitDate={formData.forfeitDate}
           controlNumber={controlNumber}
           clerkUsername={initialData?.clerkUsername}
           totalValue={totalValue}
+          serviceCharge={(formData.redemptionAmount - totalValue).toFixed(2)}
+          redemptionAmount={formData.redemptionAmount.toFixed(2)}
+          totalOfPayments={formData.totalOfPayments.toFixed(2)}
           disabled={isViewMode}
           onTypeChange={(value) => {
             if (!isViewMode) updateFormData({ type: value });
@@ -302,6 +342,9 @@ export function PawnTicketForm({
           onExpirationDateChange={(value) => {
             if (!isViewMode) updateFormData({ expirationDate: value });
           }}
+          onForfeitDateChange={(value) => {
+            if (!isViewMode) updateFormData({ forfeitDate: value });
+          }}
         />
 
         {(isViewMode || isEditMode) && controlNumber && (
@@ -316,7 +359,7 @@ export function PawnTicketForm({
             <Button
               type="button"
               size="sm"
-              onClick={() => { }}
+              onClick={handlePayHistory}
             >
               Payment history
             </Button>
@@ -332,7 +375,7 @@ export function PawnTicketForm({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={() => { }}
+                  onClick={handleDueDates}
                 >
                   Due dates
                 </Button>
@@ -345,30 +388,7 @@ export function PawnTicketForm({
                 </Button>
               </>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  disabled={isPrinting}
-                  className="px-8 flex items-center gap-2"
-                >
-                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
-                  {isPrinting ? 'Printing...' : 'Print'}
-                  <ChevronDownIcon className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
-                    Print Ticket
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePrintLabels}>
-                    Print Labels
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
 
           </div>
         )}
@@ -408,6 +428,37 @@ export function PawnTicketForm({
             )}
           </CardContent>
         </Card>
+
+
+        {(isViewMode || isEditMode) && controlNumber && (
+          <div className="flex justify-center mt-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={isPrinting}
+                  className="px-8 flex items-center gap-2"
+                >
+                  <img src={printerIcon} alt="Print" className="w-5 h-5 brightness-0" />
+                  {isPrinting ? 'Printing...' : 'Print'}
+                  <ChevronDownIcon className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handlePrintTicket} disabled={isPrinting}>
+                    {' '}Print Ticket
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrintLabels}>
+                    {' '}Print Labels
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
 
         <PrintLabelsModal
           open={showLabelModal}
@@ -471,6 +522,24 @@ export function PawnTicketForm({
           onSave={handleSaveItem}
         />
       )}
+
+      <DueDateCalculatorModal
+        open={isDueDateModalOpen}
+        onClose={() => setIsDueDateModalOpen(false)}
+        pawnAmount={formData.amountFinanced || 0}
+        transactionDate={formData.transactionDate}
+        periodicRate={parseFloat(formData.periodicRate)}
+      />
+
+      <PaymentHistoryModal
+        open={isPaymentHistoryModalOpen}
+        onClose={() => setIsPaymentHistoryModalOpen(false)}
+        controlNumber={controlNumber || ''}
+        id={formData.id || ''}
+        customerId={formData.customerId || ''}
+        featureName={"PAWN"}
+      />
+
       <AlertModal
         open={!!alertMessage}
         onOpenChange={(open) => !open && setAlertMessage(null)}

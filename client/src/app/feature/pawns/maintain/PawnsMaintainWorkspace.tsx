@@ -66,14 +66,22 @@ export function transformPawnTicketToFormData(pawnTicket: PawnTicketData) {
 
   const transactionType = pawnTicket.transactionType?.toUpperCase();
 
+  // created + 1 day
+  const forfeitDate = new Date(pawnTicket.defaultDate);
+  forfeitDate.setDate(forfeitDate.getDate() + 1);
   return {
+    id: pawnTicket.id,
     customerId: pawnTicket.customerId,
     type: transactionType === 'PURCHASE' ? 'PURCHASE' as const : 'PAWN' as const,
     periodicRate: String(Math.round((pawnTicket.periodicRate || 0) * 100)),
     transactionDate: formatDate(pawnTicket.createdDate),
     maturityDate: formatDate(pawnTicket.maturityDate),
     expirationDate: formatDate(pawnTicket.defaultDate),
+    forfeitDate: formatDate(forfeitDate),
     clerkUsername: pawnTicket.clerkUsername,
+    redemptionAmount: pawnTicket.redemptionAmount,
+    totalOfPayments: pawnTicket.totalOfPayments,
+    amountFinanced: pawnTicket.amountFinanced,
     items: transformedItems
   };
 }
