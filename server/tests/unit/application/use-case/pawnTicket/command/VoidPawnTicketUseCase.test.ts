@@ -61,6 +61,7 @@ describe('VoidPawnTicketUseCase', () => {
         expect(mockStoreTxRepo.create).toHaveBeenCalledWith(expect.objectContaining({
             typeId: 9,
             amount: 100, // Positive reversal
+            controlNumber: 'PAWN-1', // Ensure control number is preserved
             tenders: expect.arrayContaining([
                 expect.objectContaining({
                     amount: 100,

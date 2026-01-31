@@ -99,6 +99,7 @@ export class VoidPawnTicketUseCase {
                 note: dto.reason || 'Voided Pawn Ticket',
                 taxExemptUsed: false,
                 pawnTicketId: ticket.id,
+                controlNumber: ticket.controlNumber, // Use original ticket number
                 tenders: [],
                 items: [],
                 createdAt: occurredAt,

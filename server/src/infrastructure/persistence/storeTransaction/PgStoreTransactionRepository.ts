@@ -192,9 +192,25 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
      * in a single DB transaction.
      */
     async create(tx: StoreTransaction, tempInventoryUpdates: { id: string, quantity: number }[] = []): Promise<StoreTransaction> {
-        const client: PoolClient = await (this.pool as Pool).connect();
+        // Check if `this.pool` is already a Client (has 'release' but no 'totalCount') vs a Pool
+        const isClient = 'release' in this.pool && typeof (this.pool as any).release === 'function';
+        
+        // If it's a Pool, we need to acquire a client. If it's a Client, use it directly.
+        // NOTE: if it is a Client (via UnitOfWork), the transaction (BEGIN) is already managed externally.
+        let client: PoolClient;
+        let shouldManageTransaction = false;
+
+        if (isClient) {
+            client = this.pool as PoolClient;
+        } else {
+            client = await (this.pool as Pool).connect();
+            shouldManageTransaction = true;
+        }
+
         try {
-            await client.query('BEGIN');
+            if (shouldManageTransaction) {
+                await client.query('BEGIN');
+            }
 
             const headerResult = await client.query(SQL_CREATE_TX, [
                 tx.id,
@@ -252,7 +268,9 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 await client.query(this.updateInventoryItemSql, [update.id, update.quantity]);
             }
 
-            await client.query('COMMIT');
+            if (shouldManageTransaction) {
+                await client.query('COMMIT');
+            }
 
             return new StoreTransaction({
                 ...header,
@@ -260,10 +278,14 @@ export class PgStoreTransactionRepository implements StoreTransactionRepository 
                 items: tx.items,
             });
         } catch (err) {
-            await client.query('ROLLBACK');
+            if (shouldManageTransaction) {
+                await client.query('ROLLBACK');
+            }
             throw err;
         } finally {
-            client.release();
+            if (shouldManageTransaction) {
+                client.release();
+            }
         }
     }
 
