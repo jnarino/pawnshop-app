@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,8 @@ import type { CustomerActivePawnTicket } from '@/app/core/api/pawnTicketApi';
 import { pawnTicketPaymentApi } from '@/app/core/api/pawnTicketPaymentApi';
 import visibilityIcon from '@/assets/icons/visibility.svg';
 import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
+import { GunLogModal } from './GunLogModal';
+import ConfirmModal from '@/app/shared/components/ConfirmModal';
 
 
 type PaymentSelectionType = 'current' | 'redemption' | 'other' | null;
@@ -54,6 +56,24 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const [showGunLogModal, setShowGunLogModal] = useState(false);
+    const [gunLogSuccessMessage, setGunLogSuccessMessage] = useState<string | null>(null);
+    const [showReceiptConfirmModal, setShowReceiptConfirmModal] = useState(false);
+
+    const isFirearmRedemption = useMemo(() => {
+        const redemptionTickets = Object.entries(paymentSelections)
+            .filter(([_, selection]) => selection?.type === 'redemption')
+            .map(([id]) => filteredTickets.find(t => t.id === id))
+            .filter(Boolean);
+
+        return redemptionTickets.some(ticket =>
+            ticket?.items?.some(item =>
+                (item.inventoryCategory?.name || '').toLowerCase().includes('gun') ||
+                (item.inventoryCategory?.name || '').toLowerCase().includes('firearm')
+            )
+        );
+    }, [paymentSelections, filteredTickets]);
 
     const handlePaymentTypeChange = useCallback((ticketId: string, type: 'current' | 'redemption' | 'other') => {
         const ticket = filteredTickets.find(t => t.id === ticketId);
@@ -200,15 +220,50 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
             setShowPaymentModal(false);
             setPaymentSelections({});
             setOtherAmounts({});
-            // Refresh the tickets list
-            applyFilter();
+
+            // If it was a firearm redemption, trigger the gun log flow
+            if (isFirearmRedemption) {
+                setGunLogSuccessMessage(null); // Reset message
+                setShowGunLogModal(true);
+            } else {
+                applyFilter();
+            }
+
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Payment failed';
             setSubmitError(message);
         } finally {
             setSubmitting(false);
         }
-    }, [paymentSelections, filteredTickets, applyFilter]);
+    }, [paymentSelections, filteredTickets, applyFilter, isFirearmRedemption]);
+
+    const handleGunLogSave = async (data: { nicsNumber: string; comments: string }) => {
+        try {
+            const response = await pawnTicketPaymentApi.updateGunLogInfo(data);
+            setGunLogSuccessMessage(response.message);
+            // Don't close modal here, wait for user to click OK
+        } catch (error) {
+            console.error("Failed to save gun log", error);
+            // Optionally set error state here
+        }
+    };
+
+    const handleGunLogClose = () => {
+        setShowGunLogModal(false);
+        setGunLogSuccessMessage(null);
+        setShowReceiptConfirmModal(true);
+    };
+
+    const handleReceiptConfirm = () => {
+        console.log("Print redemptions receipt confirmed");
+        setShowReceiptConfirmModal(false);
+        applyFilter();
+    };
+
+    const handleReceiptCancel = () => {
+        setShowReceiptConfirmModal(false);
+        applyFilter();
+    };
 
     if (loading) {
         return (
@@ -434,8 +489,26 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                     allowedTenderTypes={[1, 3]} // CASH and DEBIT
                     onCancel={() => setShowPaymentModal(false)}
                     onDone={handlePaymentMethodDone}
+                    showGunProcessingFee={isFirearmRedemption}
                 />
             )}
+
+            <GunLogModal
+                open={showGunLogModal}
+                successMessage={gunLogSuccessMessage}
+                onSave={handleGunLogSave}
+                onClose={handleGunLogClose}
+            />
+
+            <ConfirmModal
+                open={showReceiptConfirmModal}
+                title="Print Confirmation"
+                message="Do you want to print redemptions receipt?"
+                confirmText="Yes, print"
+                cancelText="No"
+                onConfirm={handleReceiptConfirm}
+                onCancel={handleReceiptCancel}
+            />
         </div>
     );
 }

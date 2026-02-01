@@ -26,18 +26,45 @@ interface Props {
     change: number;
   };
   readonly showDeposit?: boolean;
+  readonly showGunProcessingFee?: boolean;
 }
 
-export default function PaymentMethodModal({ open, totalAmount, allowedTenderTypes = [], onCancel, onDone, history, showDeposit }: Props) {
+export default function PaymentMethodModal({
+  open,
+  totalAmount,
+  allowedTenderTypes = [],
+  onCancel,
+  onDone,
+  history,
+  showDeposit,
+  showGunProcessingFee
+}: Props) {
   const [tenders, setTenders] = useState<TenderMethod[]>([]);
   const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [depositAmount, setDepositAmount] = useState<string>(String((totalAmount * 0.1).toFixed(2)));
-  const [totalAmountToPay, setTotalAmountToPay] = useState(showDeposit ? totalAmount * 0.1 : totalAmount);
+  const [gunProcessingFee, setGunProcessingFee] = useState<string>("5.00");
+
+  // Calculate effective total based on props
+  const calculateEffectiveTotal = () => {
+    let total = totalAmount;
+    if (showGunProcessingFee) {
+      total += parseFloat(gunProcessingFee) || 0;
+    }
+    return total;
+  };
+
+  const effectiveTotal = calculateEffectiveTotal();
+
+  const [totalAmountToPay, setTotalAmountToPay] = useState(showDeposit ? totalAmount * 0.1 : effectiveTotal);
 
   useEffect(() => {
-    setTotalAmountToPay(Number(depositAmount));
-  }, [depositAmount]);
+    if (showDeposit) {
+      setTotalAmountToPay(Number(depositAmount));
+    } else {
+      setTotalAmountToPay(calculateEffectiveTotal());
+    }
+  }, [depositAmount, gunProcessingFee, showDeposit, totalAmount, showGunProcessingFee]);
 
   useEffect(() => {
     if (open) {
@@ -108,7 +135,7 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
   };
 
   const getChange = () => {
-    return Math.max(0, getTotalTendered() - totalAmount);
+    return Math.max(0, getTotalTendered() - totalAmountToPay);
   };
 
   if (!open) return null;
@@ -148,8 +175,23 @@ export default function PaymentMethodModal({ open, totalAmount, allowedTenderTyp
           <div className="flex flex-col items-center justify-center mb-8 bg-muted/30 p-4 rounded-lg border border-dashed">
             <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Total Payment Required</Label>
             <div className="text-3xl font-bold tracking-tight text-primary">
-              ${totalAmount.toFixed(2)}
+              ${effectiveTotal.toFixed(2)}
             </div>
+            {showGunProcessingFee && (
+              <div className="flex flex-col items-center gap-2 mt-4 w-full">
+                <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Gun Processing Fee</Label>
+                <div className="relative w-32">
+                  <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={gunProcessingFee}
+                    onChange={(e) => setGunProcessingFee(e.target.value)}
+                    className="pl-8 text-right font-mono"
+                  />
+                </div>
+              </div>
+            )}
             {showDeposit && (
               <div className="flex flex-col items-center gap-2 mt-2">
                 <Label className="text-muted-foreground mb-1 uppercase text-xs tracking-wider">Deposit</Label>
