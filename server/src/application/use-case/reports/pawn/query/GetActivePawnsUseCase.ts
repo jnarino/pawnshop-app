@@ -17,6 +17,7 @@ export class GetActivePawnsUseCase {
     const records = await this.repo.findActive({
       categoryId: dto.categoryId,
       subcategoryId: dto.subcategoryId,
+      excludeJewelryAndFirearm: dto.excludeJewelryAndFirearm ?? false,
     });
 
     if (!records.length) {

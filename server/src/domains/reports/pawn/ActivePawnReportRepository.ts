@@ -3,6 +3,7 @@ import { ActivePawnRecord } from './ActivePawnRecord';
 export type FindActivePawnsCriteria = {
   categoryId?: string;
   subcategoryId?: string;
+  excludeJewelryAndFirearm?: boolean;
 };
 
 export interface ActivePawnReportRepository {

@@ -32,6 +32,12 @@ export function createPawnReportRouter(controller: PawnReportController, jwtSecr
    *           type: string
    *           format: uuid
    *         description: Filter by inventory subcategory id.
+  *       - in: query
+  *         name: excludeJewelryAndFirearm
+  *         required: false
+  *         schema:
+  *           type: boolean
+  *         description: When true, exclude items in categories JEWELRY and FIREARM.
    *     responses:
    *       200:
    *         description: Active pawns list

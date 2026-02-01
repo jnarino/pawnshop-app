@@ -22,8 +22,10 @@ JOIN customer c ON c.id = pt.customer_id
 JOIN app_user au ON au.id = pt.created_by
 JOIN pawn_ticket_status pts ON pts.id = pt.status_id
 LEFT JOIN inventory_subcategory isc ON isc.id = ii.inventory_subcategory_id
+JOIN inventory_category ON inventory_category.id = isc.inventory_category_id
 WHERE pts.status IN ('H', 'P')
   AND pts.transaction_type = 'PAWN'
   AND ($1::uuid IS NULL OR isc.inventory_category_id = $1)
   AND ($2::uuid IS NULL OR ii.inventory_subcategory_id = $2)
+   AND ($3::boolean IS FALSE OR inventory_category.name NOT IN ('JEWELRY', 'FIREARM'))
 ORDER BY pt.control_number ASC;

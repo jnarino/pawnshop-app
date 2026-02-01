@@ -9,7 +9,11 @@ export class PgActivePawnReportRepository implements ActivePawnReportRepository 
   constructor(private readonly pool: Pool) {}
 
   async findActive(criteria: FindActivePawnsCriteria): Promise<ActivePawnRecord[]> {
-    const result = await this.pool.query(sqlActivePawns, [criteria.categoryId ?? null, criteria.subcategoryId ?? null]);
+    const result = await this.pool.query(sqlActivePawns, [
+      criteria.categoryId ?? null,
+      criteria.subcategoryId ?? null,
+      criteria.excludeJewelryAndFirearm ?? false,
+    ]);
     return result.rows.map((row: any) => new ActivePawnRecord({
       pawnTicketId: row.pawn_ticket_id,
       ticketNumber: row.ticket_number,

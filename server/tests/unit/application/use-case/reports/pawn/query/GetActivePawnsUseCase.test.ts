@@ -77,7 +77,7 @@ describe('GetActivePawnsUseCase', () => {
       totalServiceChargesDue: 12,
       totalPoliceHoldAmount: 0,
     });
-    expect(repo.findActive).toHaveBeenCalledWith({ categoryId: undefined, subcategoryId: undefined });
+    expect(repo.findActive).toHaveBeenCalledWith({ categoryId: undefined, subcategoryId: undefined, excludeJewelryAndFirearm: false });
     expect(chargesUseCase.execute).toHaveBeenCalledWith({ controlNumber: '123' });
   });
 
@@ -89,7 +89,7 @@ describe('GetActivePawnsUseCase', () => {
 
     await useCase.execute({ categoryId, subcategoryId });
 
-    expect(repo.findActive).toHaveBeenCalledWith({ categoryId, subcategoryId });
+    expect(repo.findActive).toHaveBeenCalledWith({ categoryId, subcategoryId, excludeJewelryAndFirearm: false });
   });
 
   it('throws NotFoundError when no records', async () => {
@@ -130,5 +130,14 @@ describe('GetActivePawnsUseCase', () => {
     expect(result.totals.totalPawns).toBe(1);
     expect(result.totals.totalPawnAmount).toBe(50);
     expect(result.totals.totalServiceChargesDue).toBe(25);
+  });
+
+  it('passes exclusion flag to repository', async () => {
+    repo.findActive.mockResolvedValue([sampleRecord]);
+    chargesUseCase.execute.mockResolvedValue({ pawnTicketId: 'pt-1', currentCharges: 12, pawnAmount: 200, periodsBehind: 0, redemptionAmount: 0 });
+
+    await useCase.execute({ excludeJewelryAndFirearm: true });
+
+    expect(repo.findActive).toHaveBeenCalledWith({ categoryId: undefined, subcategoryId: undefined, excludeJewelryAndFirearm: true });
   });
 });

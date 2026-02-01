@@ -7,9 +7,14 @@ export class PawnReportController {
 
   getActivePawns = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+      const excludeParam = req.query.excludeJewelryAndFirearm;
+      const excludeJewelryAndFirearm =
+        typeof excludeParam === 'string' ? excludeParam.toLowerCase() === 'true' : Boolean(excludeParam);
+
       const input = {
         categoryId: req.query.categoryId as string | undefined,
         subcategoryId: req.query.subcategoryId as string | undefined,
+        excludeJewelryAndFirearm,
       };
       const result = await this.getActivePawnsUseCase.execute(input);
       return res.json(result);
