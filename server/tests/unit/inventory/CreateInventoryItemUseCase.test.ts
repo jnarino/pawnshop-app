@@ -16,6 +16,7 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   updateStatusAndQuantity = jest.fn().mockResolvedValue(undefined);
   getInventoryNumberById = jest.fn().mockResolvedValue('12345');
   getNextInventoryNumber = jest.fn().mockResolvedValue('12345');
+  findByPawnTicketId = jest.fn().mockResolvedValue([]);
 }
 
 class MockItemAttributeMapper {

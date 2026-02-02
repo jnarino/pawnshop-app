@@ -280,7 +280,8 @@ export async function createApp() {
 
   const payPawnTicketUseCase = new PayPawnTicketUseCase(
     pawnTicketUnitOfWork,
-    getPawnTicketCurrentChargesUseCase
+    getPawnTicketCurrentChargesUseCase,
+    appUserRepo
   );
   const voidPawnTicketUseCase = new VoidPawnTicketUseCase(pawnTicketUnitOfWork);
   const pullPawnTicketItemsToInventoryUseCase = new PullPawnTicketItemsToInventoryUseCase(pawnTicketUnitOfWork);
