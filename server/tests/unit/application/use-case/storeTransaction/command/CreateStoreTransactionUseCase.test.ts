@@ -188,7 +188,7 @@ describe('CreateStoreTransactionUseCase', () => {
         expect(feeTx.items).toHaveLength(0);
     });
 
-    it('should generate and return gunTransferNumber when gun is sold', async () => {
+    it('should generate and return gunTransferNumber and save notes when gun is sold', async () => {
         const input: CreateStoreTransactionDto = {
             customerId: 'cust-123',
             items: [{
@@ -199,7 +199,9 @@ describe('CreateStoreTransactionUseCase', () => {
                 price: 500.00
             }],
             tenders: [],
-            taxExemptUsed: false
+            taxExemptUsed: false,
+            gunNotes1: 'Sold to police officer',
+            gunNotes2: 'Badge #123'
         };
 
         const mockCustomer = { id: 'cust-123', firstName: 'John', lastName: 'Doe' };
@@ -220,7 +222,9 @@ describe('CreateStoreTransactionUseCase', () => {
         expect(mockGunLogRepo.update).toHaveBeenCalledWith(expect.objectContaining({
             id: 'gun-log-1',
             transactionNum: 'GT-100',
-            origTransNum: 'GT-100'
+            origTransNum: 'GT-100',
+            notes1: 'Sold to police officer',
+            notes2: 'Badge #123'
         }));
         
         expect(result).toHaveProperty('gunTransferNumber', 'GT-100');

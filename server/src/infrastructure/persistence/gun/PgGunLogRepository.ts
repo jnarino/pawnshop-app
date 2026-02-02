@@ -31,7 +31,9 @@ export class PgGunLogRepository implements GunLogRepository {
             gunLog.soldIdNumber ?? null,
             gunLog.nicstn ?? null,
             gunLog.transactionNum ?? null,
-            gunLog.origTransNum ?? null
+            gunLog.origTransNum ?? null,
+            gunLog.notes1 ?? null,
+            gunLog.notes2 ?? null
         ]);
     }
 
@@ -75,6 +77,9 @@ export class PgGunLogRepository implements GunLogRepository {
             soldIdNumber: row.sold_id_number,
             nicstn: row.nicstn,
             transactionNum: row.transaction_num,
+            origTransNum: row.orig_trans_num,
+            notes1: row.notes_1,
+            notes2: row.notes_2,
             
             createdAt: new Date(row.created_at),
             updatedAt: new Date(row.updated_at)

@@ -19,4 +19,6 @@ export interface CreateStoreTransactionDto {
     gunProcFee?: number;
     gunFee?: number;
     nicstn?: string;
+    gunNotes1?: string;
+    gunNotes2?: string;
 }

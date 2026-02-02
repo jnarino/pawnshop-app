@@ -96,6 +96,8 @@ export class CreateStoreTransactionUseCase {
                         }
                         gunLog.soldAmount = itemDto.price;
                         gunLog.nicstn = input.nicstn;
+                        gunLog.notes1 = input.gunNotes1 ?? input.note; // Use specific notes or fallback to general note
+                        gunLog.notes2 = input.gunNotes2;
                         gunLog.transactionNum = gunTransferNumber;
                         gunLog.origTransNum = gunTransferNumber;
                         

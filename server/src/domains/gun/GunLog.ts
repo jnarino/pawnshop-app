@@ -40,6 +40,9 @@ export interface GunLogProps {
     
     nicstn?: string;
 
+    notes1?: string;
+    notes2?: string;
+
     transactionNum?: string;
     origTransNum?: string; // Added origTransNum
 
@@ -86,6 +89,9 @@ export class GunLog {
     soldIdNumber?: string;
     nicstn?: string;
 
+    notes1?: string;
+    notes2?: string;
+
     transactionNum?: string; // Added transactionNum
     origTransNum?: string; // Added origTransNum
 
@@ -128,6 +134,9 @@ export class GunLog {
         this.soldIdNumber = props.soldIdNumber;
         this.nicstn = props.nicstn;
         
+        this.notes1 = props.notes1;
+        this.notes2 = props.notes2;
+
         this.transactionNum = props.transactionNum;
         this.origTransNum = props.origTransNum;
 
