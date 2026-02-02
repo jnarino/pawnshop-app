@@ -521,5 +521,35 @@ export function createPawnTicketRouter(
      */
     router.post('/undo-payment', auth, controller.undoPayment);
 
+    /**
+     * @openapi
+     * /api/pawn-ticket/items:
+     *   put:
+     *     tags:
+     *       - Pawn Tickets
+     *     summary: Update items in a pawn ticket
+     *     description: Updates descriptive fields of items belonging to a pawn ticket. request must include pawnTicketId.
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/UpdatePawnTicketItemsRequest'
+     *     responses:
+     *       200:
+     *         description: Items updated successfully
+     *       400:
+     *         description: Invalid input
+     *       401:
+     *         description: Unauthorized
+     *       403:
+     *         description: Forbidden (Item does not belong to ticket)
+     *       404:
+     *         description: Ticket or Item not found
+     */
+    router.put('/items', auth, controller.updateItems);
+
     return router;
 }

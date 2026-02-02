@@ -44,7 +44,8 @@ describe('CreateStoreTransactionUseCase', () => {
         };
 
         mockGunTxHistRepo = {
-            create: jest.fn()
+            create: jest.fn(),
+            getTransactionTypeIdByCode: jest.fn().mockResolvedValue('sale-type-id')
         };
 
         mockAppUserRepo = {

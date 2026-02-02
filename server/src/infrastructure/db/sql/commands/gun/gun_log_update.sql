@@ -1,4 +1,4 @@
-UPDATE gun_log
+UPDATE gunlog
 SET
     sold_date = $2,
     sold_first_name = $3,

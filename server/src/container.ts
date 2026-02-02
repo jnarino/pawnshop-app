@@ -38,6 +38,7 @@ import { PgPawnTicketRepository } from './infrastructure/persistence/pawnTicket/
 import { PgPawnTicketPaymentRepository } from './infrastructure/persistence/pawnTicketPayment/PgPawnTicketPaymentRepository';
 import { PgPawnTicketUnitOfWork } from './infrastructure/db/PgPawnTicketUnitOfWork';
 import { UndoPawnTicketPaymentUseCase } from './application/use-case/pawnTicket/command/UndoPawnTicketPaymentUseCase';
+import { UpdatePawnTicketItemsUseCase } from './application/use-case/pawnTicket/command/UpdatePawnTicketItemsUseCase';
 import { CreatePawnTicketWithItemsUseCase } from './application/use-case/pawnTicket/command/CreatePawnTicketWithItemsUseCase';
 import { ListActivePawnTicketsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListActivePawnTicketsByCustomerUseCase';
 import { ListPreviousItemsByCustomerUseCase } from './application/use-case/pawnTicket/query/ListPreviousItemsByCustomerUseCase';
@@ -280,12 +281,14 @@ export async function createApp() {
 
   const payPawnTicketUseCase = new PayPawnTicketUseCase(
     pawnTicketUnitOfWork,
-    getPawnTicketCurrentChargesUseCase
+    getPawnTicketCurrentChargesUseCase,
+    appUserRepo
   );
   const voidPawnTicketUseCase = new VoidPawnTicketUseCase(pawnTicketUnitOfWork);
   const pullPawnTicketItemsToInventoryUseCase = new PullPawnTicketItemsToInventoryUseCase(pawnTicketUnitOfWork);
   const increasePawnTicketUseCase = new IncreasePawnTicketUseCase(pawnTicketUnitOfWork);
   const undoPawnTicketPaymentUseCase = new UndoPawnTicketPaymentUseCase(pawnTicketUnitOfWork, pawnTicketPaymentRepo);
+  const updatePawnTicketItemsUseCase = new UpdatePawnTicketItemsUseCase(inventoryItemRepo, pawnTicketRepo);
 
   const pawnTicketController = new PawnTicketController(
     createPawnTicketWithItemsUseCase,
@@ -301,7 +304,8 @@ export async function createApp() {
     listPawnTicketsByDateRangeUseCase,
     pullPawnTicketItemsToInventoryUseCase,
     increasePawnTicketUseCase,
-    undoPawnTicketPaymentUseCase
+    undoPawnTicketPaymentUseCase,
+    updatePawnTicketItemsUseCase
   );
 
   const storeTransactionController = new StoreTransactionController(

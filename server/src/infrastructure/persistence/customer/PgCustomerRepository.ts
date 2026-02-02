@@ -1,8 +1,9 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { Customer } from '../../../domains/customer/Customer';
 import { CustomerRepository, FindCustomerCriteria } from '../../../domains/customer/CustomerRepository';
 import { loadSql } from '../../db/sqlLoader';
 
+type DbClient = Pool | PoolClient;
 
 const sqlCreate = loadSql('commands', 'customer/customer_create');
 const sqlUpdate = loadSql('commands', 'customer/customer_update');
@@ -39,16 +40,16 @@ function toPgDate(value: Date | null): string | null {
 }
 
 export class PgCustomerRepository implements CustomerRepository {
-    constructor(private readonly pool: Pool) { }
+    constructor(private readonly db: DbClient) { }
 
     async findById(id: string): Promise<Customer | null> {
-        const result = await this.pool.query(sqlFindById, [id]);
+        const result = await this.db.query(sqlFindById, [id]);
         if (result.rowCount === 0) return null;
         return this.mapRow(result.rows[0]);
     }
 
     async create(customer: Customer): Promise<Customer> {
-        const result = await this.pool.query(sqlCreate, [
+        const result = await this.db.query(sqlCreate, [
             customer.oldCustomerPk,        // 1
             customer.oldCustomerId,        // 2
             customer.firstName,            // 3
@@ -105,7 +106,7 @@ export class PgCustomerRepository implements CustomerRepository {
     }
 
     async update(customer: Customer): Promise<Customer> {
-        const result = await this.pool.query(sqlUpdate, [
+        const result = await this.db.query(sqlUpdate, [
             customer.id,                   // 1
             customer.oldCustomerPk,        // 2
             customer.oldCustomerId,        // 3
@@ -167,7 +168,7 @@ export class PgCustomerRepository implements CustomerRepository {
     }
 
     async delete(id: string): Promise<void> {
-        await this.pool.query(sqlDelete, [id]);
+        await this.db.query(sqlDelete, [id]);
     }
 
     async findCustomer(criteria: FindCustomerCriteria): Promise<Customer[]> {
@@ -209,7 +210,7 @@ export class PgCustomerRepository implements CustomerRepository {
             throw new Error('Invalid findCustomer criteria combination');
         }
 
-        const result = await this.pool.query(sql, params);
+        const result = await this.db.query(sql, params);
         return result.rows.map((row) => this.mapRow(row));
     }
 
@@ -290,7 +291,7 @@ export class PgCustomerRepository implements CustomerRepository {
         totalPawns: number;
         totalSalesAmount: number;
     } | null> {
-        const result = await this.pool.query(sqlGetStatistics, [customerId]);
+        const result = await this.db.query(sqlGetStatistics, [customerId]);
         
         if (result.rowCount === 0) return null;
 

@@ -32,6 +32,7 @@ export class CreateStoreTransactionUseCase {
         const items: StoreTransactionItem[] = [];
         const inventoryUpdates: { id: string, quantity: number }[] = [];
         let gunTransferNumber: string | null = null;
+        let gunTransactionTypeId: string | null = null;
 
         const transactionId = crypto.randomUUID();
 
@@ -103,13 +104,20 @@ export class CreateStoreTransactionUseCase {
                         
                         await this.gunLogRepository.update(gunLog);
 
+                        if (!gunTransactionTypeId) {
+                            gunTransactionTypeId = await this.gunTransactionHistoryRepository.getTransactionTypeIdByCode('SALE');
+                            if (!gunTransactionTypeId) {
+                                throw new Error('Gun Transaction Type "SALE" not found');
+                            }
+                        }
+
                         // Create Gun Transaction History
                          await this.gunTransactionHistoryRepository.create(new GunTransactionHistory({
                             id: crypto.randomUUID(),
                             inventoryNumber: inventoryItem.inventoryNumber || '',
                             inventoryItemId: inventoryItemId,
                             transactionDate: getEstDate(),
-                            typeId: 'c089608b-72ba-4b99-801a-8718a48d0bd0', // Sold from Inventory
+                            typeId: gunTransactionTypeId,
                             clerkUserId: clerkUserId,
                             notes: 'Sold from Inventory',
                             createdAt: getEstDate(),

@@ -21,7 +21,7 @@ export class PayPawnTicketUseCase {
         private readonly appUserRepository: AppUserRepository
     ) { }
 
-    async execute(input: unknown): Promise<{ gunTransferNumber?: string } | void> {
+    async execute(input: unknown): Promise<{ gunTransferNumber?: string, receipts?: any[] } | void> {
         const validatedInput = pawnTicketPaymentRequestSchema.parse(input);
         const { items, tenders, clerkUserId, nicstn, gunNotes1, gunNotes2, gunFee } = validatedInput;
 
@@ -82,6 +82,9 @@ export class PayPawnTicketUseCase {
             }
 
             let gunTransferNumber: string | null = null;
+            const receipts: any[] = [];
+            const clerkUser = await this.appUserRepository.findById(clerkUserId);
+            const clerkUsername = clerkUser ? clerkUser.username : 'Unknown';
 
             // Process each pawn ticket once
             for (const [pawnTicketId, ticketPayments] of paymentsByTicket.entries()) {
@@ -94,6 +97,12 @@ export class PayPawnTicketUseCase {
                     throw new NotFoundError(`Multiple control numbers found for pawn ticket ${pawnTicketId}`);
                 }
 
+                // Fetch ticket entity
+                const pawnTicket = await pawnTicketRepository.findById(pawnTicketId);
+                if (!pawnTicket) {
+                    throw new NotFoundError(`Pawn ticket ${pawnTicketId} not found`);
+                }
+
                 // 1. Get current charges once per ticket
                 const charges = await this.getPawnTicketCurrentChargesUseCase.execute({ controlNumber });
 
@@ -101,6 +110,33 @@ export class PayPawnTicketUseCase {
                 const totalPaymentAmount = ticketPayments.reduce((sum: number, p: any) => sum + p.paymentAmount, 0);
 
                 const isRedemption = totalPaymentAmount >= charges.redemptionAmount;
+
+                // Receipt Data
+                const ticketItems = await inventoryItemRepository.findByPawnTicketId(pawnTicketId);
+                const itemDescriptions = ticketItems.map(i => i.itemDescription || i.model || 'Unknown Item');
+                
+                let customer = null;
+                if (pawnTicket.customerId) {
+                    customer = await customerRepository.findById(pawnTicket.customerId);
+                }
+
+                const maturityDateObj = new Date(pawnTicket.maturityDate);
+                const nextDueDate = new Date(maturityDateObj);
+                nextDueDate.setDate(nextDueDate.getDate() + 30);
+                
+                receipts.push({
+                    pawnTicketId,
+                    controlNumber,
+                    transactionType: isRedemption ? 'REDEEM' : 'PAYMENT',
+                    customer,
+                    items: itemDescriptions,
+                    clerkUsername,
+                    pawnAmount: Number(pawnTicket.amountFinanced || 0),
+                    amountPaid: totalPaymentAmount,
+                    originalCreatedDate: pawnTicket.createdDate.toISOString(),
+                    newDate: getEstDate().toISOString(),
+                    nextDueDate: nextDueDate.toISOString()
+                });
 
                 const now = new Date();
                 const createdDate = firstPayment.createdDate ? new Date(firstPayment.createdDate) : null;
@@ -257,7 +293,10 @@ export class PayPawnTicketUseCase {
                  }
             }
             
-            return gunTransferNumber ? { gunTransferNumber } : undefined;
+            return {
+                gunTransferNumber: gunTransferNumber || undefined,
+                receipts
+            };
         });
     }
 }

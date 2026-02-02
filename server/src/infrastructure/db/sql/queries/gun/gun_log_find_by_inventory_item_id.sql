@@ -35,7 +35,7 @@ SELECT
     transaction_num,
     created_at,
     updated_at
-FROM gun_log
+FROM gunlog
 WHERE inventory_item_id = $1
 ORDER BY created_at DESC
 LIMIT 1;

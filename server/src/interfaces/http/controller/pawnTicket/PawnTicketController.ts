@@ -14,6 +14,7 @@ import { VoidPawnTicketUseCase } from '../../../../application/use-case/pawnTick
 import { PullPawnTicketItemsToInventoryUseCase } from '../../../../application/use-case/pawnTicket/command/PullPawnTicketItemsToInventoryUseCase';
 import { IncreasePawnTicketUseCase } from '../../../../application/use-case/pawnTicket/command/IncreasePawnTicketUseCase';
 import { UndoPawnTicketPaymentUseCase } from '../../../../application/use-case/pawnTicket/command/UndoPawnTicketPaymentUseCase';
+import { UpdatePawnTicketItemsUseCase } from '../../../../application/use-case/pawnTicket/command/UpdatePawnTicketItemsUseCase';
 
 import { ListPawnTicketsByDateRangeUseCase } from '../../../../application/use-case/pawnTicket/query/ListPawnTicketsByDateRangeUseCase';
 
@@ -32,7 +33,8 @@ export class PawnTicketController {
         private readonly listByDateRangeUseCase: ListPawnTicketsByDateRangeUseCase,
         private readonly pullPawnTicketItemsToInventoryUseCase: PullPawnTicketItemsToInventoryUseCase,
         private readonly increasePawnTicketUseCase: IncreasePawnTicketUseCase,
-        private readonly undoPawnTicketPaymentUseCase: UndoPawnTicketPaymentUseCase
+        private readonly undoPawnTicketPaymentUseCase: UndoPawnTicketPaymentUseCase,
+        private readonly updatePawnTicketItemsUseCase: UpdatePawnTicketItemsUseCase
     ) { }
 
     /**
@@ -145,6 +147,23 @@ export class PawnTicketController {
 
             await this.undoPawnTicketPaymentUseCase.execute(payload);
             return res.status(200).json({ message: 'Pawn ticket payment undone successfully' });
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * PUT /api/pawn-ticket/items
+     */
+    updateItems = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const payload = {
+                ...req.body,
+                clerkUserId: req.user?.id
+            };
+            
+            await this.updatePawnTicketItemsUseCase.execute(payload);
+            return res.status(200).json({ message: 'Pawn ticket items updated successfully' });
         } catch (err) {
             return next(err);
         }
