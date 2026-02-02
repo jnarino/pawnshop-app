@@ -26,10 +26,11 @@ export class LabelPrinter {
         throw new Error('No items to print');
       }
 
-      // Electron: Send to GoDEX printer via IPC
-      if (window.electronAPI?.printLabels) {
-        return await window.electronAPI.printLabels(data.items);
-      }
+      // NOTE: We are skipping the electronAPI.printLabels stub because it does not implement printing yet.
+      // Falling back to browser print window.
+      // if (window.electronAPI?.printLabels) {
+      //   return await window.electronAPI.printLabels(data.items);
+      // }
 
       // Browser: Generate HTML for testing
       const html = this.generateHTML(data);
@@ -137,11 +138,11 @@ export class LabelPrinter {
 <html>
 <head>
   <style>
-    @page { size: 2.5in 1.0in; margin: 0; }
+    @page { size: 2.6in 1.6in; margin: 0; }
     body { margin: 0; padding: 0; font-family: monospace; }
     .label {
-      width: 2.5in;
-      height: 1.0in;
+      width: 2.6in;
+      height: 1.6in;
       padding: 0.05in 0.15in;
       display: flex;
       flex-direction: column;

@@ -14,5 +14,7 @@ SET
     nicstn = $13,
     transaction_num = $14,
     orig_trans_num = $15,
+    notes_1 = $16,
+    notes_2 = $17,
     updated_at = NOW()
 WHERE id = $1;
