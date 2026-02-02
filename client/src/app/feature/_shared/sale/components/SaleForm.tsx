@@ -261,6 +261,10 @@ export function SaleForm({
   }, [formData.items, updateFormData, editingRowId, handleCancelEdit]);
 
   const handleOnSearchInventoryItem = useCallback(async (inventoryItem: string) => {
+    if (inventoryItem?.includes("G-") && !customer?.id) {
+      setAlertMessage("You need to assign this sell to a customer, please select a customer first");
+      return;
+    }
     try {
       const item = await findAvailableItemByNumber(inventoryItem);
       if (item) {

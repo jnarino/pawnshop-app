@@ -4,7 +4,7 @@ import { InventoryItemDraft } from './types';
 import { CategoryOption, createNewSubcategory } from '@/app/core/api/categoryApi';
 import { Plus } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNewOptionModal } from '@/app/shared/hooks/useNewOptionModal';
 import { useInventoryItemForm } from '../../hooks/useInventoryItemForm';
 
@@ -19,6 +19,7 @@ interface CategoryFieldsProps {
   readonly updateField: (field: keyof InventoryItemDraft, value: any) => void;
   readonly loadSubcategoriesAndBrands: () => Promise<void>;
   readonly showAddButton?: boolean;
+  readonly autoFocus?: boolean;
 }
 
 export function CategoryFields({
@@ -30,8 +31,20 @@ export function CategoryFields({
   handleCategoryChange,
   handleSubcategoryChange,
   loadSubcategoriesAndBrands,
-  showAddButton = false
+  showAddButton = false,
+  autoFocus = false
 }: CategoryFieldsProps) {
+  const categoryTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (autoFocus && !isLoading && !disabled && categoryTriggerRef.current) {
+      // Small timeout to ensure DOM is ready and accessible logic has run
+      const timer = setTimeout(() => {
+        categoryTriggerRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, disabled, autoFocus]);
 
   const handleConfirmAdd = async (name: string) => {
     if (!draft.type || !name.trim()) return;
@@ -68,7 +81,10 @@ export function CategoryFields({
           onValueChange={handleCategoryChange}
           disabled={isLoading || disabled}
         >
-          <SelectTrigger className="h-8 text-xs uppercase">
+          <SelectTrigger
+            ref={categoryTriggerRef}
+            className="h-8 text-xs uppercase"
+          >
             <SelectValue placeholder={isLoading ? "LOADING..." : "SELECT CATEGORY..."} />
           </SelectTrigger>
           <SelectContent>

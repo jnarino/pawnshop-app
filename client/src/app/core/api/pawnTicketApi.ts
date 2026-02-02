@@ -223,4 +223,18 @@ export const pawnTicketApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  increasePawnTicket: async (data: {
+    id: string;
+    customerId: string;
+    controlNumber: string;
+    clerkUserId: string;
+    amountFinanced: number;
+    items: { id: string; priceAmount: number }[];
+  }) => {
+    return http(`/api/pawn-ticket/increase`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };

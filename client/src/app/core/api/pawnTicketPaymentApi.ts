@@ -40,4 +40,12 @@ export const pawnTicketPaymentApi = {
     });
   },
 
+  updateGunLogInfo: async (data: { nicsNumber: string; comments: string }) => {
+    // Mock API call
+    return new Promise<{ message: string }>((resolve) => {
+      setTimeout(() => {
+        resolve({ message: "The assigned ATF 4473 number is - 6967" });
+      }, 500);
+    });
+  },
 };

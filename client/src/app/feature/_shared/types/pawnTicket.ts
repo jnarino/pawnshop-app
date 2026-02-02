@@ -45,6 +45,7 @@ export interface PawnTicketData {
   apr?: number;
   originalPawnAmount?: number;
   serviceCharge?: number;
+  statusPawn?: string;
   totalOfPayments?: number;
 }
 

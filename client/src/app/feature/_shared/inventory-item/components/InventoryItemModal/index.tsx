@@ -24,13 +24,14 @@ interface InventoryItemModalProps {
   readonly mode?: ViewMode;
   readonly open: boolean;
   readonly isInventory?: boolean;
+  readonly disabledPrice?: boolean;
   readonly initial?: InventoryItemDraft | null;
   readonly onCancel: () => void;
   readonly onSave?: (item: InventoryItemDraft) => void;
   readonly scrapItems?: { itemDescription: string; inventoryNumber: string }[];
 }
 
-export function InventoryItemModal({ mode = ViewMode.CREATE, open, isInventory, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
+export function InventoryItemModal({ mode = ViewMode.CREATE, open, isInventory, disabledPrice, initial, onCancel, onSave, hasNextItem = false, scrapItems = [] }: InventoryItemModalProps & { hasNextItem?: boolean }) {
   const isViewMode = mode === ViewMode.VIEW;
   const isPullMode = mode === ViewMode.PULL;
   const isCreateMode = mode === ViewMode.CREATE;
@@ -86,12 +87,14 @@ export function InventoryItemModal({ mode = ViewMode.CREATE, open, isInventory, 
               disabled={isViewMode || isPullMode}
               showAddButton={true}
               loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
+              autoFocus={true}
             />
 
             <BasicInfoFields
               draft={draft}
               updateField={updateField}
               isFirearm={isFirearm}
+              disabledPrice={disabledPrice}
               brands={brands}
               handleBrandChange={handleBrandChange}
               loadSubcategoriesAndBrands={loadSubcategoriesAndBrands}
