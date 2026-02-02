@@ -20,6 +20,7 @@ const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
 const SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS = loadSql(
     'queries', 'inventory/inventory_item_find_by_scrap_inventory_numbers'
 );
+const SQL_FIND_BY_PAWN_TICKET_ID = loadSql('queries', 'inventory/inventory_item_find_by_pawn_ticket_id');
 const SQL_GET_NEXT_NUMBER = loadSql('commands', 'inventory/inventory_item_get_next_number');
 
 function mapRowToInventoryItem(row: any): InventoryItem {
@@ -206,6 +207,11 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
     async updateStatusAndQuantity(id: string, status: string, quantity: number): Promise<void> {
         const sql = loadSql('commands', 'inventory/inventory_item_update_status_and_quantity');
         await this.db.query(sql, [id, status, quantity]);
+    }
+
+    async findByPawnTicketId(pawnTicketId: string): Promise<InventoryItem[]> {
+        const result = await this.db.query(SQL_FIND_BY_PAWN_TICKET_ID, [pawnTicketId]);
+        return result.rows.map(mapRowToInventoryItem);
     }
 
     async getInventoryNumberById(id: string): Promise<string | null> {

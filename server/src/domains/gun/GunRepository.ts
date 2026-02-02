@@ -10,4 +10,5 @@ export interface GunLogRepository {
 
 export interface GunTransactionHistoryRepository {
     create(history: GunTransactionHistory): Promise<void>;
+    getTransactionTypeIdByCode(code: string): Promise<string | null>;
 }

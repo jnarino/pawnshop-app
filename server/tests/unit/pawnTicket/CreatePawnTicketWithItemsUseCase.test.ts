@@ -49,11 +49,18 @@ class MockInventoryItemRepository implements InventoryItemRepository {
   updateStatusAndQuantity = jest.fn().mockResolvedValue(undefined);
   getInventoryNumberById = jest.fn().mockResolvedValue('12345');
   getNextInventoryNumber = jest.fn();
+  findByPawnTicketId = jest.fn().mockResolvedValue([]);
 }
 
 
-class MockCustomerRepository {
-  findById = jest.fn().mockResolvedValue({
+class MockCustomerRepository implements CustomerRepository {
+    findCustomer = jest.fn();
+    update = jest.fn();
+    create = jest.fn();
+    findByCriteria = jest.fn();
+    delete = jest.fn();
+    getStatistics = jest.fn();
+    findById = jest.fn().mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',
       firstName: 'John',
       lastName: 'Doe',
@@ -74,12 +81,16 @@ class MockItemAttributeMapper {
   isFirearmCategory = jest.fn().mockResolvedValue(false);
 }
 
+import { CustomerRepository } from '../../../src/domains/customer/CustomerRepository';
+import { GunLogRepository, GunTransactionHistoryRepository } from '../../../src/domains/gun/GunRepository';
+
 class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
   public pawnTicketRepository = new MockPawnTicketRepository();
   public inventoryItemRepository = new MockInventoryItemRepository();
   public storeTransactionRepository = { createPayment: jest.fn() };
+  public customerRepository = new MockCustomerRepository();
   public gunLogRepository = { create: jest.fn() };
-  public gunTransactionHistoryRepository = { create: jest.fn() };
+  public gunTransactionHistoryRepository = { create: jest.fn(), getTransactionTypeIdByCode: jest.fn().mockResolvedValue('MOCK-TYPE-ID') };
   public mockDbClient = {
       query: jest.fn().mockResolvedValue({ rows: [{ control_number: '106489' }] })
     } as any;
@@ -89,6 +100,7 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
       pawnTicketRepository: PawnTicketRepository;
       inventoryItemRepository: InventoryItemRepository;
       storeTransactionRepository: any;
+      customerRepository: CustomerRepository;
       gunLogRepository: any;
       gunTransactionHistoryRepository: any;
       dbClient: PoolClient;
@@ -98,6 +110,7 @@ class MockPawnTicketUnitOfWork implements PawnTicketUnitOfWork {
       pawnTicketRepository: this.pawnTicketRepository, 
       inventoryItemRepository: this.inventoryItemRepository, 
       storeTransactionRepository: this.storeTransactionRepository, 
+      customerRepository: this.customerRepository,
       gunLogRepository: this.gunLogRepository,
       gunTransactionHistoryRepository: this.gunTransactionHistoryRepository,
       dbClient: this.mockDbClient 
@@ -263,7 +276,7 @@ describe('CreatePawnTicketWithItemsUseCase', () => {
     expect(gunLog.buyerFirstName).toBe('John');
 
     const history = uow.gunTransactionHistoryRepository.create.mock.calls[0][0];
-    expect(history.notes).toContain('Received from Customer');
+    expect(history.notes).toContain('Pawned from Customer');
     expect(history.inventoryNumber).toMatch(/^G-/);
   });
 });
