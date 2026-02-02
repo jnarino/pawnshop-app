@@ -44,6 +44,7 @@ describe('CreateStoreTransactionUseCase - Multiple Guns', () => {
 
         mockGunHistoryRepo = {
             create: jest.fn(),
+            getTransactionTypeIdByCode: jest.fn().mockResolvedValue('sale-type-id'), 
         } as any;
 
         mockAppUserRepo = {
