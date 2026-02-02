@@ -34,7 +34,15 @@ describe('PayPawnTicketUseCase', () => {
       updatePaymentFields: jest.fn(),
       addPayment: jest.fn(),
       setStatus: jest.fn(),
-      findById: jest.fn(),
+      findById: jest.fn().mockResolvedValue({
+        id: PAWN_TICKET_ID,
+        controlNumber: '123456',
+        customerId: CUSTOMER_ID,
+        amountFinanced: 100,
+        maturityDate: new Date(),
+        createdDate: new Date(),
+        dueDate: new Date(),
+      }),
       findByCriteria: jest.fn(),
       listByControlNumber: jest.fn(),
       create: jest.fn(),
@@ -52,7 +60,9 @@ describe('PayPawnTicketUseCase', () => {
       findAvailableByInventoryNumber: jest.fn(),
       findBySerialNumber: jest.fn(),
       getNextInventoryNumber: jest.fn(),
-      findByPawnTicketId: jest.fn().mockResolvedValue([]), // Default no items/guns
+      findByPawnTicketId: jest.fn().mockResolvedValue([
+        { itemDescription: 'Test Item', model: 'Model X' }
+      ]), 
     } as any;
     
     storeTransactionRepository = {
@@ -69,15 +79,19 @@ describe('PayPawnTicketUseCase', () => {
     
     gunTransactionHistoryRepository = {
         create: jest.fn(),
-        getTransactionTypeIdByCode: jest.fn(),
+        getTransactionTypeIdByCode: jest.fn().mockResolvedValue('type-uuid'),
     } as any;
     
     customerRepository = {
-        findById: jest.fn(),
+        findById: jest.fn().mockResolvedValue({
+            id: CUSTOMER_ID,
+            firstName: 'John',
+            lastName: 'Doe'
+        }),
     } as any;
     
     appUserRepository = {
-        findById: jest.fn(),
+        findById: jest.fn().mockResolvedValue({ username: 'clerk' }),
     } as any;
 
     getPawnTicketCurrentChargesUseCase = {
