@@ -47,4 +47,9 @@ export interface InventoryItemRepository {
    * Get inventory number by item ID
    */
   getInventoryNumberById(id: string): Promise<string | null>;
+
+  /**
+   * Find items linked to a pawn ticket.
+   */
+  findByPawnTicketId(pawnTicketId: string): Promise<InventoryItem[]>;
 }

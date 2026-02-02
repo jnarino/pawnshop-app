@@ -14,6 +14,12 @@ import { GunLog } from '../../../../domains/gun/GunLog';
 import { GunTransactionHistory } from '../../../../domains/gun/GunTransactionHistory';
 import { NotFoundError } from '../../../common/errors';
 
+// EST is UTC-5
+const getEstDate = () => {
+    const now = new Date();
+    return new Date(now.getTime() - (5 * 60 * 60 * 1000));
+};
+
 export class CreatePawnTicketWithItemsUseCase {
     constructor(
         private readonly pawnTicketUnitOfWork: PawnTicketUnitOfWork,
@@ -89,7 +95,7 @@ export class CreatePawnTicketWithItemsUseCase {
                             importer: attributes.importer,
                             
                             buyerAmount: createdItem.priceAmount || 0,
-                            buyerDate: new Date(),
+                            buyerDate: getEstDate(),
                             buyerFirstName: customer.firstName,
                             buyerMiddleName: customer.middleName || undefined,
                             buyerLastName: customer.lastName,
@@ -103,16 +109,19 @@ export class CreatePawnTicketWithItemsUseCase {
 
                         await gunLogRepository.create(gunLog);
 
+                        // Determine Transaction Type (PAWN or BUY)
+                        const typeCode = transactionType === 'PURCHASE' ? 'BUY' : 'PAWN';
+                        const typeId = await gunTransactionHistoryRepository.getTransactionTypeIdByCode(typeCode);
+
                         // Create GunTransactionHistory (Received)
                         const history = new GunTransactionHistory({
                             id: crypto.randomUUID(),
                             inventoryNumber: createdItem.inventoryNumber,
                             inventoryItemId: createdItem.id,
-                            transactionDate: new Date(),
-                            // 'Received from Customer' Type ID
-                            typeId: '56857245-a512-4652-a0b6-375f4269984b', 
+                            transactionDate: getEstDate(),
+                            typeId: typeId || '00000000-0000-0000-0000-000000000000', // Fallback
                             clerkUserId: clerkUserId,
-                            notes: 'Received from Customer'
+                            notes: transactionType === 'PURCHASE' ? 'Purchased from Customer' : 'Pawned from Customer'
                         });
 
                         await gunTransactionHistoryRepository.create(history);

@@ -1,0 +1,1 @@
+SELECT id FROM gun_transaction_type WHERE code = $1;

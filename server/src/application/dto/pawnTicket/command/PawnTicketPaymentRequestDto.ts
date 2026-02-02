@@ -17,7 +17,12 @@ export const pawnTicketTenderSchema = z.object({
 export const pawnTicketPaymentRequestSchema = z.object({
   items: z.array(pawnTicketPaymentItemSchema),
   tenders: z.array(pawnTicketTenderSchema),
-  clerkUserId: z.string().uuid()
+  clerkUserId: z.string().uuid(),
+  // Extended fields for gun redemption
+  nicstn: z.string().optional(),
+  gunNotes1: z.string().optional(),
+  gunNotes2: z.string().optional(),
+  gunFee: z.number().optional()
 });
 
 export type PawnTicketPaymentItemDto = z.infer<typeof pawnTicketPaymentItemSchema>;

@@ -2,6 +2,7 @@
 import { InventoryItemRepository } from '../../domains/inventory/InventoryItemRepository';
 import { PawnTicketRepository } from '../../domains/pawnTicket/PawnTicketRepository';
 import { StoreTransactionRepository } from '../../domains/storeTransaction/StoreTransactionRepository';
+import { CustomerRepository } from '../../domains/customer/CustomerRepository';
 import { GunLogRepository, GunTransactionHistoryRepository } from '../../domains/gun/GunRepository';
 import { PoolClient } from 'pg';
 
@@ -15,6 +16,7 @@ export interface PawnTicketUnitOfWork {
             inventoryItemRepository: InventoryItemRepository;
             pawnTicketRepository: PawnTicketRepository;
             storeTransactionRepository: StoreTransactionRepository;
+            customerRepository: CustomerRepository;
             gunLogRepository: GunLogRepository;
             gunTransactionHistoryRepository: GunTransactionHistoryRepository;
             dbClient: PoolClient;
