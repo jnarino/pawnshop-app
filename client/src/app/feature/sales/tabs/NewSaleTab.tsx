@@ -73,7 +73,7 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
   }, [customerId, taxExemptUsed]);
 
   // Step 2: User completes payment
-  const handlePaymentDone = useCallback(async (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; comments: string, gunFee: number }) => {
+  const handlePaymentDone = useCallback(async (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; notes: string; comments: string, gunFee: number }) => {
     if (!pendingSaleData) return;
     setShowPaymentModal(false);
 
@@ -95,6 +95,7 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
       ...(gunLogData && isFirearmSale ? {
         nicstn: gunLogData.nicsNumber,
         gunNotes1: gunLogData.comments,
+        gunNotes2: gunLogData.notes,
         gunFee: gunLogData.gunFee
       } : {})
     };

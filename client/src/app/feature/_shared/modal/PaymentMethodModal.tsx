@@ -49,6 +49,7 @@ export default function PaymentMethodModal({
 
   const [gunProcessingFee, setGunProcessingFee] = useState<string>("5.00");
   const [nicsNumber, setNicsNumber] = useState('');
+  const [notes, setNotes] = useState('');
   const [comments, setComments] = useState('Gun was picked up by the same customer');
 
   // Calculate effective total based on props
@@ -209,13 +210,23 @@ export default function PaymentMethodModal({
                     />
                   </div>
                   <div className="grid gap-2 text-left">
-                    <Label htmlFor="comments" className="text-xs font-semibold">Comments</Label>
+                    <Label htmlFor="notes" className="text-xs font-semibold">Notes:</Label>
                     <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Enter notes..."
+                      className="bg-background min-h-[80px]"
+                    />
+                  </div>
+                  <div className="grid gap-2 text-left">
+                    <Label htmlFor="comments" className="text-xs font-semibold">Comment:</Label>
+                    <Input
                       id="comments"
                       value={comments}
                       onChange={(e) => setComments(e.target.value)}
                       placeholder="Enter comments..."
-                      className="bg-background min-h-[80px]"
+                      className="bg-background"
                     />
                   </div>
                 </div>

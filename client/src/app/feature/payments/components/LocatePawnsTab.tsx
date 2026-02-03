@@ -195,7 +195,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
         }
     };
 
-    const handlePaymentMethodDone = useCallback(async (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; comments: string, gunFee: number }) => {
+    const handlePaymentMethodDone = useCallback(async (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; notes: string; comments: string, gunFee: number }) => {
         const items = Object.entries(paymentSelections)
             .filter(([_, selection]) => selection && selection.amount > 0)
             .map(([ticketId, selection]) => {
@@ -223,6 +223,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                 ...(gunLogData && isFirearmRedemption ? {
                     nicstn: gunLogData.nicsNumber,
                     gunNotes1: gunLogData.comments,
+                    gunNotes2: gunLogData.notes,
                     gunFee: gunLogData.gunFee
                 } : {})
             };
