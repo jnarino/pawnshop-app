@@ -79,7 +79,10 @@ export class StoreTransactionController {
       const actor = this.getActor(req);
       const dto = req.body as CreateStoreTransactionDto;
       const result = await this.createStoreTransactionUseCase.execute(dto, actor.id);
-      return res.status(201).json(result);
+      return res.status(201).json({
+        message: 'Transaction created',
+        ...result
+      });
     } catch (error) {
       return next(error);
     }

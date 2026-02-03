@@ -10,6 +10,8 @@ import { GunTransactionHistory } from '../../../../domains/gun/GunTransactionHis
 import { AppUserRepository } from '../../../../domains/appUser/AppUserRepository';
 import crypto from 'crypto';
 
+import { Customer } from '../../../../domains/customer/Customer';
+
 // EST is UTC-5
 const getEstDate = () => {
     const now = new Date();
@@ -26,13 +28,17 @@ export class CreateStoreTransactionUseCase {
         private readonly appUserRepository: AppUserRepository
     ) { }
 
-    async execute(input: CreateStoreTransactionDto, clerkUserId: string): Promise<StoreTransaction & { gunTransferNumber?: string }> {
+    async execute(input: CreateStoreTransactionDto, clerkUserId: string): Promise<StoreTransaction & { gunTransferNumber?: string, customer?: Customer | null, clerkUsername?: string }> {
         // 1. Calculate totals
         let subtotal = 0;
         const items: StoreTransactionItem[] = [];
         const inventoryUpdates: { id: string, quantity: number }[] = [];
         let gunTransferNumber: string | null = null;
         let gunTransactionTypeId: string | null = null;
+
+        // Fetch Clerk Info
+        const clerkUser = await this.appUserRepository.findById(clerkUserId);
+        const clerkUsername = clerkUser ? clerkUser.username : 'Unknown';
 
         const transactionId = crypto.randomUUID();
 
@@ -234,10 +240,6 @@ export class CreateStoreTransactionUseCase {
         if (gunFee > 0) {
             const feeTxId = crypto.randomUUID();
             
-            // Get Clerk Username
-            const clerkUser = await this.appUserRepository.findById(clerkUserId);
-            const clerkUsername = clerkUser ? clerkUser.username : 'Unknown';
-
             const feeTenders: StoreTransactionTender[] = feeTendersData.map((t, index) => new StoreTransactionTender({
                 id: crypto.randomUUID(),
                 storeTransactionId: feeTxId,
@@ -269,6 +271,13 @@ export class CreateStoreTransactionUseCase {
             await this.storeTransactionRepository.create(feeTx, []);
         }
 
-        return gunTransferNumber ? { ...createdTx, gunTransferNumber } : createdTx;
+        const response: StoreTransaction & { gunTransferNumber?: string, customer?: Customer | null, clerkUsername?: string } = {
+            ...createdTx,
+            gunTransferNumber: gunTransferNumber || undefined,
+            customer: customer || undefined,
+            clerkUsername: clerkUsername || undefined
+        };
+
+        return response;
     }
 }
