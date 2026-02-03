@@ -1,10 +1,18 @@
 import { http } from './http';
 
+export interface PawnTicketPaymentResponse {
+  message: string;
+  gunTransferNumber?: string;
+  receipts?: any;
+}
+
 export interface PawnTicketPayment {
   pawnTicketId: string;
   paymentDate: string;
   principalPaid: number;
   clerkUserId: string | null;
+  message: string;
+  gunTransferNumber: string;
 }
 
 export interface PawnTicketPaymentItem {
@@ -33,7 +41,7 @@ export const pawnTicketPaymentApi = {
 
 
   /* /api/pawnTicket/payment*/
-  create: async (payload: CreatePawnTicketPaymentPayload): Promise<PawnTicketPayment> => {
+  create: async (payload: CreatePawnTicketPaymentPayload): Promise<PawnTicketPaymentResponse> => {
     return http('/api/pawn-ticket/payment', {
       method: 'POST',
       body: JSON.stringify(payload),

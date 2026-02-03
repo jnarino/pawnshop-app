@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +22,8 @@ interface Props {
   totalAmount: number;
   allowedTenderTypes: number[];
   onCancel: () => void;
-  onDone: (tenders: TenderMethod[]) => void;
+
+  onDone: (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; comments: string; gunFee: number }) => void;
   readonly history?: {
     tenders: any[];
     change: number;
@@ -43,7 +46,10 @@ export default function PaymentMethodModal({
   const [availableTypes, setAvailableTypes] = useState<TenderType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [depositAmount, setDepositAmount] = useState<string>(String((totalAmount * 0.1).toFixed(2)));
+
   const [gunProcessingFee, setGunProcessingFee] = useState<string>("5.00");
+  const [nicsNumber, setNicsNumber] = useState('');
+  const [comments, setComments] = useState('Gun was picked up by the same customer');
 
   // Calculate effective total based on props
   const calculateEffectiveTotal = () => {
@@ -190,6 +196,29 @@ export default function PaymentMethodModal({
                     className="pl-8 text-right font-mono"
                   />
                 </div>
+
+                <div className="w-full mt-4 space-y-4 border-t pt-4">
+                  <div className="grid gap-2 text-left">
+                    <Label htmlFor="nicsNumber" className="text-xs font-semibold">NICS Number <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="nicsNumber"
+                      value={nicsNumber}
+                      onChange={(e) => setNicsNumber(e.target.value)}
+                      placeholder="Enter NICS Number"
+                      className="bg-background"
+                    />
+                  </div>
+                  <div className="grid gap-2 text-left">
+                    <Label htmlFor="comments" className="text-xs font-semibold">Comments</Label>
+                    <Textarea
+                      id="comments"
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      placeholder="Enter comments..."
+                      className="bg-background min-h-[80px]"
+                    />
+                  </div>
+                </div>
               </div>
             )}
             {showDeposit && (
@@ -304,8 +333,16 @@ export default function PaymentMethodModal({
             Cancel
           </Button>
           <Button
-            onClick={() => onDone(tenders)}
-            disabled={getTotalTendered() < totalAmountToPay || (showDeposit ? Number(depositAmount) >= totalAmount : false)}
+            onClick={() => onDone(tenders, showGunProcessingFee ? {
+              nicsNumber,
+              comments,
+              gunFee: parseFloat(gunProcessingFee) || 0
+            } : undefined)}
+            disabled={
+              getTotalTendered() < totalAmountToPay ||
+              (showDeposit ? Number(depositAmount) >= totalAmount : false) ||
+              (showGunProcessingFee && !nicsNumber)
+            }
             className={cn("w-full sm:w-auto", getTotalTendered() >= totalAmountToPay ? "bg-green-600 hover:bg-green-700" : "")}
           >
             Process {!!history ? "Return" : "Payment"}

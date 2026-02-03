@@ -5,9 +5,12 @@ import { useCreateSale } from '../hooks/useCreateSale';
 import { useSalesWorkflow } from '../contexts/SalesWorkflowContext';
 import { SaleForm, type SaleFormDraftState } from '../../_shared/sale/components/SaleForm';
 
-import PaymentMethodModal from '../../_shared/modal/PaymentMethodModal';
+import PaymentMethodModal, { TenderMethod } from '../../_shared/modal/PaymentMethodModal';
 import { useNavigate } from 'react-router-dom';
 import { InventoryItemDraft } from '../../_shared/inventory-item';
+import { useMemo } from 'react';
+import ConfirmModal from '@/app/shared/components/ConfirmModal';
+import { useReceiptPrint } from '@/app/core/hooks/useReceiptPrint';
 
 interface NewSaleTabProps {
   readonly customer: Customer | null;
@@ -31,6 +34,23 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
     eatTax: boolean;
   } | null>(null);
 
+
+
+  const [gunLogSuccessMessage, setGunLogSuccessMessage] = useState<string | null>(null);
+  const [showReceiptConfirmModal, setShowReceiptConfirmModal] = useState(false);
+  const [lastReceipts, setLastReceipts] = useState<any>(null);
+  const { printReceipt } = useReceiptPrint();
+
+  const isFirearmSale = useMemo(() => {
+    if (!pendingSaleData) return false;
+    return pendingSaleData.items.some(item =>
+    (!!item.inventoryItem
+      .attributes?.action)
+    );
+  }, [pendingSaleData]);
+
+  console.log("isFirearmSale", isFirearmSale);
+
   const customerId = customer?.id;
 
   const handleDraftChange = useCallback((draft: SaleFormDraftState) => {
@@ -53,7 +73,7 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
   }, [customerId, taxExemptUsed]);
 
   // Step 2: User completes payment
-  const handlePaymentDone = useCallback(async (tenders: any[]) => {
+  const handlePaymentDone = useCallback(async (tenders: TenderMethod[], gunLogData?: { nicsNumber: string; comments: string, gunFee: number }) => {
     if (!pendingSaleData) return;
     setShowPaymentModal(false);
 
@@ -71,19 +91,54 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
       tenders: tenders.map(t => ({
         tenderTypeId: t.tenderTypeId,
         amount: parseFloat(t.amount)
-      }))
+      })),
+      ...(gunLogData && isFirearmSale ? {
+        nicstn: gunLogData.nicsNumber,
+        gunNotes1: gunLogData.comments,
+        gunFee: gunLogData.gunFee
+      } : {})
     };
 
     const result = await createTicket(payload as any);
 
     if (result) {
-      resetPawnDraft();
-      if (onTicketCreated) {
-        onTicketCreated(result.id);
+      if (isFirearmSale && result.gunTransferNumber) {
+        setLastReceipts(result);
+        setGunLogSuccessMessage(`The assigned ATF 4473 number is - ${result.gunTransferNumber}`);
+        setShowReceiptConfirmModal(true);
+        // We delay the navigate/reset until after the confirm modal is handled or just let it stay open?
+        // In LocatePawnsTab, we don't navigate away, we just refresh.
+        // Here, a "New Sale" usually resets or navigates away.
+        // If we navigate immediately, the modal might be lost or we might navigate to a success page?
+        // User requirement says "show setShowReceiptConfirmModal".
+        // If I navigate immediately, the user won't see the modal on this screen.
+        // I should probably wait for the modal interaction.
+      } else {
+        resetPawnDraft();
+        if (onTicketCreated) {
+          onTicketCreated(result.id);
+        }
+        //navigate(`/`);
       }
-      navigate(`/`);
     }
-  }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated]);
+  }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated, navigate, isFirearmSale]);
+
+  const handleReceiptConfirm = async () => {
+    console.log("Print sale receipt confirmed", lastReceipts);
+    setShowReceiptConfirmModal(false);
+
+    if (!!lastReceipts) {
+      await printReceipt(lastReceipts, 'SALE');
+    }
+
+    resetPawnDraft();
+  };
+
+  const handleReceiptCancel = () => {
+    setShowReceiptConfirmModal(false);
+    resetPawnDraft();
+    navigate(`/`);
+  };
 
   const calculateTotal = useCallback(() => {
     if (!pendingSaleData) return 0;
@@ -100,7 +155,8 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
     }
 
     const tax = itemsTotal * 0.065;
-    return itemsTotal + tax;
+    console.log("calculateTotal", (itemsTotal + tax).toFixed(2));
+    return Number((itemsTotal + tax).toFixed(2));
   }, [pendingSaleData]);
 
   return (
@@ -155,8 +211,22 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
           allowedTenderTypes={[1, 2, 3, 4, 5, 6, 7, 8]} // CASH and DEBIT
           onCancel={() => setShowPaymentModal(false)}
           onDone={handlePaymentDone}
+          showGunProcessingFee={isFirearmSale}
         />
       )}
+
+      <ConfirmModal
+        open={showReceiptConfirmModal}
+        title={gunLogSuccessMessage ? "Success" : "Print Confirmation"}
+        message={gunLogSuccessMessage ?
+          `${gunLogSuccessMessage}. Do you want to print sale receipt?` :
+          "Do you want to print sale receipt?"
+        }
+        confirmText="Yes, print"
+        cancelText="No"
+        onConfirm={handleReceiptConfirm}
+        onCancel={handleReceiptCancel}
+      />
     </div>
   );
 }

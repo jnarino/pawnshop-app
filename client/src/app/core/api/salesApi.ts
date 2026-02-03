@@ -16,14 +16,8 @@ export interface CreateSalePayload {
     }[];
 }
 
-export interface SaleResponse {
-    id: string;
-    ticketNumber: string;
-    // Add other fields as needed
-}
-
 export const salesApi = {
-    create: async (payload: CreateSalePayload): Promise<SaleResponse> => {
+    create: async (payload: CreateSalePayload): Promise<any> => {
         return http('/api/store-transaction', {
             method: 'POST',
             body: JSON.stringify(payload)
