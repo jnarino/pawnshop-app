@@ -42,13 +42,7 @@ export class PgHoldRepository implements HoldRepository {
       updatedBy: row.updated_by,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      inventoryItemId: row.inventory_item_id,
-      model: row.model,
-      itemDescription: row.item_description,
-      serialNumber: row.serial_number,
-      inventoryNumber: row.inventory_number,
-      customerFirstName: row.first_name,
-      customerLastName: row.last_name
+      items: row.items
     }));
   }
 }

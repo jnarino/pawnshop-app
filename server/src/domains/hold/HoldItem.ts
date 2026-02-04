@@ -1,3 +1,20 @@
+export interface HoldInventoryItem {
+  id: string;
+  inventorySubcategory: { id: string; name: string };
+  inventoryCategory: { id: string; name: string };
+  status: string;
+  quantity: number;
+  brand: { id: string; name: string } | null;
+  model: string;
+  serialNumber: string;
+  colorId: string | null;
+  itemCondition: string;
+  ownerMark: string;
+  itemDescription: string;
+  priceAmount: number | null;
+  inventoryNumber: string;
+}
+
 export class HoldItem {
   readonly id: string;
   controlNumber: string;
@@ -22,14 +39,7 @@ export class HoldItem {
   createdAt: Date;
   updatedAt: Date;
 
-  // Joined properties for list view
-  inventoryItemId?: string;
-  model?: string;
-  itemDescription?: string;
-  serialNumber?: string;
-  inventoryNumber?: string;
-  customerFirstName?: string;
-  customerLastName?: string;
+  items: HoldInventoryItem[];
 
   constructor(params: {
     id: string;
@@ -54,13 +64,7 @@ export class HoldItem {
     updatedBy: string | null;
     createdAt: Date;
     updatedAt: Date;
-    inventoryItemId?: string;
-    model?: string;
-    itemDescription?: string;
-    serialNumber?: string;
-    inventoryNumber?: string;
-    customerFirstName?: string;
-    customerLastName?: string;
+    items?: HoldInventoryItem[];
   }) {
     this.id = params.id;
     this.controlNumber = params.controlNumber;
@@ -85,12 +89,6 @@ export class HoldItem {
     this.createdAt = params.createdAt;
     this.updatedAt = params.updatedAt;
 
-    this.inventoryItemId = params.inventoryItemId;
-    this.model = params.model;
-    this.itemDescription = params.itemDescription;
-    this.serialNumber = params.serialNumber;
-    this.inventoryNumber = params.inventoryNumber;
-    this.customerFirstName = params.customerFirstName;
-    this.customerLastName = params.customerLastName;
+    this.items = params.items || [];
   }
 }

@@ -1,9 +1,18 @@
 export type PoliceHoldItemDto = {
-  inventoryItemId: string;
-  inventoryNumber: string | null;
+  id: string;
+  inventorySubcategory: { id: string; name: string };
+  inventoryCategory: { id: string; name: string };
+  status: string;
+  quantity: number;
+  brand: { id: string; name: string } | null;
   model: string | null;
   serialNumber: string | null;
+  colorId: string | null;
+  itemCondition: string;
+  ownerMark: string;
   itemDescription: string | null;
+  priceAmount: number | null;
+  inventoryNumber: string | null;
 };
 
 export type PoliceHoldResponseDto = {
@@ -27,6 +36,5 @@ export type PoliceHoldResponseDto = {
   jurisdiction: string | null;
   legacyHcnId: string | null;
   updatedBy: string | null;
-  customerName: string | null;
   items: PoliceHoldItemDto[];
 };

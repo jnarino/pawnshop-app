@@ -163,7 +163,6 @@ export const options: swaggerJsdoc.Options = {
                     jurisdiction: { type: 'string', nullable: true },
                     legacyHcnId: { type: 'string', nullable: true },
                     updatedBy: { type: 'string', nullable: true },
-                    customerName: { type: 'string', nullable: true },
                     items: {
                         type: 'array',
                         items: {
