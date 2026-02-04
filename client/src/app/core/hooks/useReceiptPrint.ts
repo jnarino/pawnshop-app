@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { ReceiptPrinter, ReceiptPrintData } from '../printing/ReceiptPrinter';
 import { formatDate } from '@/lib/utils';
+import { tenderTypeApi } from '../api/tenderTypeApi';
 
 export function useReceiptPrint() {
     const [isPrinting, setIsPrinting] = useState(false);
@@ -11,15 +12,20 @@ export function useReceiptPrint() {
         setIsPrinting(true);
         setPrintError(null);
 
+        const types = await tenderTypeApi.list();
+
         try {
 
             const customer = data.customer;
             const printData: ReceiptPrintData = {
                 type,
                 ticketNumber: data.controlNumber || data.ticketNumber || 'N/A',
-                amount: data.amount ?? 0,
+                amount: type === 'SALE' ? (data.amount + (data.stateTax || 0)) : (data.amount ?? 0),
+                subtotal: data.amount - (data.stateTax || 0),
+                tax: data.stateTax,
                 employee: data.clerkUsername || 'N/A',
-                date: formatDate(data.newDate || new Date().toISOString()),
+                date: formatDate(data.newDate || data.occurredAt || new Date().toISOString()),
+                time: new Date(data.newDate || data.occurredAt || new Date()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
                 customer: {
                     firstName: customer?.firstName || '',
                     middleName: customer?.middleName || '',
@@ -35,6 +41,12 @@ export function useReceiptPrint() {
                 },
                 items: data.items || [],
                 amountPaid: data.amountPaid ?? 0,
+                tenders: data.tenders?.map((t: any) => {
+                    const typeName = types.find(type => type.id === t.tenderTypeId)?.name || t.name || 'Unknown';
+                    return { type: typeName, amount: t.amount }
+                }),
+                change: data.tenderChange,
+                totalTendered: data.tenders?.reduce((sum: number, t: any) => sum + (t.amount || 0), 0),
                 dateRedeemed: data.newDate ? formatDate(data.newDate) : undefined,
                 nextDueDate: data.nextDueDate ? formatDate(data.nextDueDate) : undefined,
                 nextPayment: data.nextPaymentAmount ?? undefined

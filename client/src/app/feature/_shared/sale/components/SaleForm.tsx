@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AlertModal } from '@/app/shared/components/AlertModal';
 import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
 import { SaleTransactionDetails } from './SaleTransactionDetails';
@@ -29,8 +29,28 @@ import PaymentMethodModal, { TenderMethod } from '@/app/feature/_shared/modal/Pa
 import { salesApi } from '@/app/core/api/salesApi';
 import { layawayApi } from '@/app/core/api/layawayApi';
 import { PaymentHistoryModal } from '@/app/feature/_shared/modal/PaymentHistoryModal';
+import { useReceiptPrint } from '@/app/core/hooks/useReceiptPrint';
 
 const TAX_RATE = 0.065;
+
+const calculateLineItem = (price: number, quantity: number, eatTax: boolean, taxExempt: boolean) => {
+  const rawTotal = price * quantity;
+  if (taxExempt) {
+    return { net: rawTotal, tax: 0, gross: rawTotal };
+  }
+  if (eatTax) {
+    // Input is Gross. Calculate Net.
+    const net = Number((rawTotal / (1 + TAX_RATE)).toFixed(2));
+    const tax = Number((rawTotal - net).toFixed(2));
+    return { net, tax, gross: rawTotal };
+  } else {
+    // Input is Net. Calculate Gross.
+    const net = rawTotal;
+    const tax = Number((net * TAX_RATE).toFixed(2));
+    const gross = Number((net + tax).toFixed(2));
+    return { net, tax, gross };
+  }
+};
 
 export interface SaleFormDraftState {
   inventoryNumber: string;
@@ -94,6 +114,7 @@ export function SaleForm({
   console.log({ initialData })
   const isViewMode = mode === 'VIEW';
   const { findAvailableItemByNumber } = useFindAvailableItemByNumber();
+  const { printReceipt } = useReceiptPrint();
   const isControlled = externalDraft !== undefined && onDraftChange !== undefined;
 
   const [showPaymentInfo, setShowPaymentInfo] = useState(false);
@@ -137,35 +158,36 @@ export function SaleForm({
   }, [isControlled, onDraftChange, externalDraft]);
 
   // Calculate totals
-  const subtotalSum = formData.items.reduce((sum, item) => {
-    const price = Number(item.priceEach) || 0;
-    const qty = Number(item.quantity) || 1;
-    return sum + (price * qty);
-  }, 0);
+  // Calculate totals
+  const calculatedTotals = useMemo(() => {
+    if (isViewMode && initialData?.amount !== undefined) {
+      return {
+        subtotal: initialData.amount - (initialData.stateTax || 0),
+        tax: initialData.stateTax || 0,
+        total: initialData.amount
+      };
+    }
 
-  let subtotal, taxAmount, totalAmount, totalDebt;
+    return formData.items.reduce((acc, item) => {
+      const { net, tax, gross } = calculateLineItem(
+        Number(item.priceEach) || 0,
+        Number(item.quantity) || 1,
+        formData.eatTax || false,
+        formData.taxExemptUsed || false
+      );
+      return {
+        subtotal: acc.subtotal + net,
+        tax: acc.tax + tax,
+        total: acc.total + gross
+      };
+    }, { subtotal: 0, tax: 0, total: 0 });
+  }, [formData.items, formData.eatTax, formData.taxExemptUsed, isViewMode, initialData]);
 
-  if (isViewMode && initialData?.amount !== undefined) {
-    subtotal = initialData.amount;
-    taxAmount = initialData.stateTax || 0;
-    totalAmount = subtotal + taxAmount;
-  } else if (formData.taxExemptUsed) {
-    subtotal = subtotalSum;
-    taxAmount = 0;
-    totalAmount = subtotalSum;
-  } else if (formData.eatTax) {
-    totalAmount = subtotalSum;
-    subtotal = totalAmount / 1.065;
-    taxAmount = totalAmount - subtotal;
-  } else {
-    subtotal = subtotalSum;
-    taxAmount = subtotal * TAX_RATE;
-    totalAmount = subtotal + taxAmount;
-  }
+  const subtotal = calculatedTotals.subtotal;
+  const taxAmount = calculatedTotals.tax;
+  const totalAmount = calculatedTotals.total;
 
-  if (isLayaway) {
-    totalDebt = totalAmount - (initialData?.totalOfPayments || 0);
-  }
+  const totalDebt = isLayaway ? (totalAmount - (initialData?.totalOfPayments || 0)) : 0;
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,7 +430,11 @@ export function SaleForm({
             <Button
               type="button"
               size="sm"
-              onClick={() => { }}
+              onClick={() => {
+                if (initialData) {
+                  printReceipt(initialData, 'SALE');
+                }
+              }}
             >
               Print ticket
             </Button>
@@ -451,7 +477,14 @@ export function SaleForm({
                       <TableCell>{item.description || ''}</TableCell>
                       <TableCell>{item.quantity || 1}</TableCell>
                       <TableCell>${Number(item.priceEach || item.lineAmount || 0).toFixed(2)}</TableCell>
-                      <TableCell className="font-medium">${(Number(item.priceEach || item.lineAmount || 0) * Number(item.quantity || 1)).toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">
+                        ${calculateLineItem(
+                          Number(item.priceEach || item.lineAmount || 0),
+                          Number(item.quantity || 1),
+                          formData.eatTax || false,
+                          formData.taxExemptUsed || false
+                        ).net.toFixed(2)}
+                      </TableCell>
                       <TableCell className="text-center">
                         <div className="flex gap-2 justify-center items-center">
                           <Button className='!p-0'
@@ -525,17 +558,15 @@ export function SaleForm({
               className="bg-slate-100"
             />
           </div>
-          {!isViewMode && (
-            <div className="flex gap-2 items-center pb-2">
-              <Checkbox
-                id="eatTax"
-                checked={formData.eatTax}
-                onCheckedChange={(checked) => updateFormData({ eatTax: checked === true })}
-                disabled={disabled}
-              />
-              <Label htmlFor="eatTax" className="mb-0">Eat tax?</Label>
-            </div>
-          )}
+          <div className="flex gap-2 items-center pb-2">
+            <Checkbox
+              id="eatTax"
+              checked={formData.eatTax}
+              onCheckedChange={(checked) => updateFormData({ eatTax: checked === true })}
+              disabled={disabled || isViewMode}
+            />
+            <Label htmlFor="eatTax" className="mb-0">Eat tax?</Label>
+          </div>
         </div>
       </form>
       {initialData && (

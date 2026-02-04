@@ -42,13 +42,14 @@ export const findCustomerRequestSchema = z
       (hasDob && hasLast && !hasFirst) ||
       (!hasDob && hasLast && !hasFirst) ||
       (!hasDob && hasLast && hasFirst) ||
-      (hasDob && hasLast && hasFirst);
+      (hasDob && hasLast && hasFirst) ||
+      (!hasDob && !hasLast && hasFirst);
 
     if (!valid) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
-          'Invalid search. Use DOB; DOB + last name; last name; last + first; DOB + last + first; or full ID (idType, idNumber, idState).'
+          'Invalid search. Use DOB; DOB + last name; last name; last + first; DOB + last + first; full ID (idType, idNumber, idState); or first name.'
       });
     }
   });

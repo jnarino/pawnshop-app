@@ -28,7 +28,7 @@ export function useCreateSale(): UseCreateSaleResult {
 
     try {
       const result = await salesApi.create(payload);
-      const successMessage = `Sale ${result.ticketNumber || result.id} created successfully!`;
+      const successMessage = `Sale ${result.controlNumber || result.id} created successfully!`;
       setSuccess(successMessage);
       return result;
     } catch (err) {

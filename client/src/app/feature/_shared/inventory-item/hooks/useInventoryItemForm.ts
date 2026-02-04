@@ -248,6 +248,11 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
       return;
     }
 
+    if (isFirearm && (!draft.caliber?.id || !draft.finish?.id || !draft.action?.id || !draft.barrel?.id || !draft.importer?.id)) {
+      setError('Caliber, Finish, Action, Barrel and Importer are required for firearms');
+      return;
+    }
+
     const itemData = {
       ...draft,
       id: draft.id || crypto.randomUUID()

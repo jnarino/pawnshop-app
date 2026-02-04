@@ -16,6 +16,10 @@ const sqlFindByLastNameFirstName = loadSql(
     'queries',
     'customer/customer_find_by_last_name_first_name'
 );
+const sqlFindByFirstName = loadSql(
+    'queries',
+    'customer/customer_find_by_first_name'
+);
 const sqlFindByDobLastName = loadSql(
     'queries',
     'customer/customer_find_by_dob_last_name'
@@ -206,6 +210,10 @@ export class PgCustomerRepository implements CustomerRepository {
             // date_of_birth + last_name + first_name
             sql = sqlFindByDobLastNameFirstName;
             params = [toPgDate(criteria.dateOfBirth ?? null), criteria.lastName, criteria.firstName];
+        } else if (!hasDob && !hasLast && hasFirst) {
+            // first_name only
+            sql = sqlFindByFirstName;
+            params = [criteria.firstName];
         } else {
             throw new Error('Invalid findCustomer criteria combination');
         }
@@ -292,7 +300,7 @@ export class PgCustomerRepository implements CustomerRepository {
         totalSalesAmount: number;
     } | null> {
         const result = await this.db.query(sqlGetStatistics, [customerId]);
-        
+
         if (result.rowCount === 0) return null;
 
         const row = result.rows[0];
