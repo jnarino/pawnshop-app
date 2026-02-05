@@ -536,7 +536,57 @@ export function createPawnTicketRouter(
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/UpdatePawnTicketItemsRequest'
+     *             type: object
+     *             required:
+     *               - pawnTicketId
+     *               - items
+     *             properties:
+     *               pawnTicketId:
+     *                 type: string
+     *                 format: uuid
+     *               items:
+     *                 type: array
+     *                 minItems: 1
+     *                 items:
+     *                   type: object
+     *                   required:
+     *                     - itemId
+     *                   properties:
+     *                     itemId:
+     *                       type: string
+     *                       format: uuid
+     *                     inventorySubcategoryId:
+     *                       type: string
+     *                       format: uuid
+     *                     brand:
+     *                       type: string
+     *                     model:
+     *                       type: string
+     *                     serialNumber:
+     *                       type: string
+     *                     colorId:
+     *                       type: string
+     *                     itemCondition:
+     *                       type: string
+     *                     ownerMark:
+     *                       type: string
+     *                     itemDescription:
+     *                       type: string
+     *                     attributes:
+     *                       type: object
+     *           example:
+     *             pawnTicketId: "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
+     *             items:
+     *               - itemId: "f1e2d3c4-b5a6-0987-6543-210fedcba987"
+     *                 inventorySubcategoryId: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+     *                 brand: "Makita"
+     *                 model: "XPH07"
+     *                 serialNumber: "SN-998877"
+     *                 itemDescription: "18V Hammer Drill with generic charger"
+     *                 itemCondition: "Used - Good"
+     *                 attributes:
+     *                   Power Source: "Battery"
+     *                   Voltage: "18V"
      *     responses:
      *       200:
      *         description: Items updated successfully

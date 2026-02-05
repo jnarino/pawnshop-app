@@ -140,6 +140,44 @@ export const options: swaggerJsdoc.Options = {
                         active: { type: 'boolean' },
                     },
                 },
+                PoliceHoldResponseDto: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    controlNumber: { type: 'string' },
+                    customerId: { type: 'string' },
+                    holdDate: { type: 'string' },
+                    agency: { type: 'string' },
+                    caseNumber: { type: 'string' },
+                    dateOut: { type: 'string', nullable: true },
+                    isHold: { type: 'boolean' },
+                    isInventory: { type: 'boolean' },
+                    comment: { type: 'string', nullable: true },
+                    agentLastName: { type: 'string', nullable: true },
+                    agentFirstName: { type: 'string', nullable: true },
+                    agentMiddleInitial: { type: 'string', nullable: true },
+                    badgeNumber: { type: 'string', nullable: true },
+                    phoneAreaCode: { type: 'string', nullable: true },
+                    phoneNumber: { type: 'string', nullable: true },
+                    phoneExtension: { type: 'string', nullable: true },
+                    jurisdiction: { type: 'string', nullable: true },
+                    legacyHcnId: { type: 'string', nullable: true },
+                    updatedBy: { type: 'string', nullable: true },
+                    items: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                inventoryItemId: { type: 'string' },
+                                inventoryNumber: { type: 'string', nullable: true },
+                                model: { type: 'string', nullable: true },
+                                serialNumber: { type: 'string', nullable: true },
+                                itemDescription: { type: 'string', nullable: true }
+                            }
+                        }
+                    }
+                  }
+                },
             },
         },
         security: [

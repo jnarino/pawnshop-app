@@ -106,6 +106,10 @@ import { VoidLayawayUseCase } from './application/use-case/layaway/command/VoidL
 import { PullLayawayUseCase } from './application/use-case/layaway/command/PullLayawayUseCase';
 import { UnpullLayawayUseCase } from './application/use-case/layaway/command/UnpullLayawayUseCase';
 import { LayawayController } from './interfaces/http/controller/layaway/LayawayController';
+import { PgHoldRepository } from './infrastructure/persistence/hold/PgHoldRepository';
+import { ListPoliceHoldUseCase } from './application/use-case/hold/query/ListPoliceHoldUseCase';
+import { PoliceController } from './interfaces/http/controller/police/PoliceController';
+
 
 export async function createApp() {
 
@@ -130,6 +134,8 @@ export async function createApp() {
   const layawayUnitOfWork = new PgLayawayUnitOfWork(pool);
   const gunLogRepo = new PgGunLogRepository(pool);
   const gunTxHistoryRepo = new PgGunTransactionHistoryRepository(pool);
+  const holdRepo = new PgHoldRepository(pool);
+
 
   // Services
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
@@ -212,6 +218,8 @@ export async function createApp() {
 
   // Police Report use-cases
   const generateDailyPoliceReportUseCase = new GenerateDailyPoliceReportUseCase(policeReportRepo, policeReportFixedWidthService);
+  const listPoliceHoldUseCase = new ListPoliceHoldUseCase(holdRepo);
+
   // Cash Drawer Report use-cases
   const generateCashDrawerDetailUseCase = new GenerateCashDrawerDetailUseCase(cashDrawerReportRepo);
 
@@ -341,6 +349,8 @@ export async function createApp() {
     unpullLayawayUseCase
   );
 
+  const policeController = new PoliceController(listPoliceHoldUseCase);
+
   const app = createExpressApp({
     authController,
     appUserController,
@@ -354,6 +364,7 @@ export async function createApp() {
     policeReportController,
     cashDrawerReportController,
     layawayController,
+    policeController,
     jwtSecret: env.jwtSecret
   });
 

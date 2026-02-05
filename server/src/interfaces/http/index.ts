@@ -30,6 +30,8 @@ import { CashDrawerReportController } from './controller/reports/cashDrawer/Cash
 import { createCashDrawerReportRouter } from './route/reports/cashDrawer/cashDrawerReportRoute';
 import { LayawayController } from './controller/layaway/LayawayController';
 import { createLayawayRouter } from './route/layaway/layawayRoute';
+import { PoliceController } from './controller/police/PoliceController';
+import { createPoliceRouter } from './route/police/policeRoute';
 
 export function createExpressApp(
   deps: {
@@ -46,6 +48,7 @@ export function createExpressApp(
     policeReportController: PoliceReportController;
     cashDrawerReportController: CashDrawerReportController;
     layawayController: LayawayController;
+    policeController: PoliceController;
   }
 ) {
   const app = express();
@@ -68,6 +71,7 @@ export function createExpressApp(
   app.use('/api/reports/police', createPoliceReportRouter(deps.policeReportController, deps.jwtSecret));
   app.use('/api/reports/cash-drawer', createCashDrawerReportRouter(deps.cashDrawerReportController, deps.jwtSecret));
   app.use('/api/layaway', createLayawayRouter(deps.layawayController, deps.jwtSecret));
+  app.use('/api/police', createPoliceRouter(deps.policeController, deps.jwtSecret));
 
   app.use(errorMiddleware);
 
