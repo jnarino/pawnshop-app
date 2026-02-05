@@ -22,6 +22,8 @@ declare global {
       onInventoryMaintain?: (cb: () => void) => () => void;
       onNewInventoryItem?: (cb: () => void) => () => void;
 
+      onPoliceHoldConfiscate?: (cb: () => void) => () => void;
+
       // ✅ Printing
       printLabels?: (items: Array<{
         inventoryNumber: string;

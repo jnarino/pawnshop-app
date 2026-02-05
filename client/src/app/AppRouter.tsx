@@ -25,6 +25,7 @@ import SalesMaintainWorkspace from '@/app/feature/sales/maintain/SalesMaintainWo
 import LayawayWorkspace from '@/app/feature/sales/layaway/LayawayWorkspace';
 import LayawayMaintainWorkspace from '@/app//feature/sales/layaway/maintain/LayawayMaintainWorkspace';
 import LayawayForfeitWorkspace from '@/app/feature/sales/forfeit/LayawayForfeitWorkspace';
+import HoldConfiscateWorkspace from './feature/police/hold-confiscate/HoldConfiscateWorkspace';
 
 export default function AppRouter() {
   return (
@@ -59,6 +60,9 @@ export default function AppRouter() {
       <Route path="/sales/layaway" element={<Protected><LayawayWorkspace /></Protected>} />
       <Route path="/sales/layaway/maintain" element={<Protected><LayawayMaintainWorkspace /></Protected>} />
       <Route path="/sales/layaway/forfeit" element={<Protected><LayawayForfeitWorkspace /></Protected>} />
+
+      {/* Police routes */}
+      <Route path="/police/hold-confiscate" element={<Protected><HoldConfiscateWorkspace /></Protected>} />
 
       {/* fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -175,6 +175,7 @@ export default function ElectronMenuBridge() {
       setFindInventoryOpen(true);
     },
     onNewInventoryItem: () => setShowNewInventoryItem(true),
+    onPoliceHoldConfiscate: () => navigate('/police/hold-confiscate', { replace: true }),
   });
 
   const handleFindInventory = useCallback(async (inventoryNumber: string) => {

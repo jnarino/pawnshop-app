@@ -142,6 +142,15 @@ function buildMenu() {
             click: () => mainWindow?.webContents.send('menu:inventory-new'),
           },
         ],
+      },
+      {
+        label: 'Police',
+        submenu: [
+          {
+            label: 'Hold / Confiscate',
+            click: () => mainWindow?.webContents.send('menu:police-hold-confiscate'),
+          },
+        ],
       }
     );
   }

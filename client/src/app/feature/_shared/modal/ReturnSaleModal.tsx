@@ -19,6 +19,8 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
     const [reason, setReason] = useState('');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
+    console.log({ items })
+
     const handleToggleItem = (itemId: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(itemId)) {

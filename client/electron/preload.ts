@@ -82,4 +82,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('menu:inventory-new', handler);
         return () => ipcRenderer.removeListener('menu:inventory-new', handler);
     },
+
+    onPoliceHoldConfiscate: (cb: () => void) => {
+        const handler = () => cb();
+        ipcRenderer.on('menu:police-hold-confiscate', handler);
+        return () => ipcRenderer.removeListener('menu:police-hold-confiscate', handler);
+    },
 });
