@@ -1,5 +1,13 @@
 import { InventoryItem } from './InventoryItem';
 
+export type InventoryItemSearchCriteria = {
+  brandName?: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  serialNumber?: string;
+  model?: string;
+};
+
 export interface InventoryItemRepository {
   create(item: InventoryItem): Promise<InventoryItem>;
   update(item: InventoryItem): Promise<InventoryItem>;
@@ -23,6 +31,11 @@ export interface InventoryItemRepository {
    * DB-side we will enforce uniqueness where appropriate.
    */
   findBySerialNumber(serialNumber: string): Promise<InventoryItem | null>;
+
+  /**
+   * Search inventory items by optional parameters.
+   */
+  findByParams(criteria: InventoryItemSearchCriteria): Promise<InventoryItem[]>;
 
   /**
  * Set status for all inventory items linked to a pawn ticket.

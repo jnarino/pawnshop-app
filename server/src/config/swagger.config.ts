@@ -98,6 +98,44 @@ export const options: swaggerJsdoc.Options = {
                         retailPrice: { type: 'number' },
                     },
                 },
+                InventoryItemSearchItem: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        inventorySubcategory: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string' },
+                                name: { type: 'string' }
+                            }
+                        },
+                        inventoryCategory: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string' },
+                                name: { type: 'string' }
+                            }
+                        },
+                        status: { type: 'string' },
+                        quantity: { type: 'number' },
+                        brand: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                                id: { type: 'string' },
+                                name: { type: 'string' }
+                            }
+                        },
+                        model: { type: 'string', nullable: true },
+                        serialNumber: { type: 'string', nullable: true },
+                        colorId: { type: 'string', nullable: true },
+                        itemCondition: { type: 'string', nullable: true },
+                        ownerMark: { type: 'string', nullable: true },
+                        itemDescription: { type: 'string', nullable: true },
+                        priceAmount: { type: 'number', nullable: true },
+                        inventoryNumber: { type: 'string', nullable: true }
+                    }
+                },
                 InventoryCategory: {
                     type: 'object',
                     properties: {

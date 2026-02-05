@@ -30,6 +30,7 @@ import { DeleteInventoryItemUseCase } from './application/use-case/inventory/com
 import { UpdateInventoryItemUseCase } from './application/use-case/inventory/command/UpdateInventoryItemUseCase';
 
 import { GetInventoryItemByInventoryNumberUseCase } from './application/use-case/inventory/query/GetInventoryItemByInventoryNumberUseCase';
+import { FindInventoryItemsByParamsUseCase } from './application/use-case/inventory/query/FindInventoryItemsByParamsUseCase';
 import { GetScrapInventoryNumbersUseCase } from './application/use-case/inventory/query/GetScrapInventoryNumbersUseCase';
 import { InventoryItemController } from './interfaces/http/controller/inventory/InventoryItemController';
 import { PgInventoryCategoryRepository } from './infrastructure/persistence/inventory/PgInventoryCategoryRepository';
@@ -173,6 +174,7 @@ export async function createApp() {
   const getInventoryItemBySerialNumberUseCase = new GetInventoryItemBySerialNumberUseCase(inventoryItemRepo);
   const getItemOnInventoryUseCase = new GetItemOnInventoryUseCase(inventoryItemRepo);
   const getScrapInventoryNumbersUseCase = new GetScrapInventoryNumbersUseCase(inventoryItemRepo);
+  const findInventoryItemsByParamsUseCase = new FindInventoryItemsByParamsUseCase(inventoryItemRepo);
 
   // Inventory Category use-cases 
   const getRootCategoriesUseCase = new GetRootCategoriesUseCase(inventoryCategoryRepo);
@@ -273,7 +275,8 @@ export async function createApp() {
     getInventoryItemByInventoryNumberUseCase,
     getInventoryItemBySerialNumberUseCase,
     getItemOnInventoryUseCase,
-    getScrapInventoryNumbersUseCase
+    getScrapInventoryNumbersUseCase,
+    findInventoryItemsByParamsUseCase
   );
 
   const inventoryCategoryController = new InventoryCategoryController(

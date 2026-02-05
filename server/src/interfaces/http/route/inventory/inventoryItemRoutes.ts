@@ -135,6 +135,51 @@ export function createInventoryItemRouter(
 
     /**
      * @openapi
+     * /api/inventory-items/findbyparam:
+     *   get:
+     *     tags:
+     *       - Inventory Items
+     *     summary: Find inventory items by optional parameters
+     *     description: Search inventory items by brand, category, subcategory, serial number, or model
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: brandName
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: categoryName
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: subcategoryName
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: serialNumber
+     *         schema:
+     *           type: string
+     *       - in: query
+     *         name: model
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Inventory items matching search criteria
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/InventoryItemSearchItem'
+     *       401:
+     *         description: Unauthorized
+     */
+    router.get('/findbyparam', auth, controller.findByParam);
+
+    /**
+     * @openapi
      * /api/inventory-items:
      *   post:
      *     tags:

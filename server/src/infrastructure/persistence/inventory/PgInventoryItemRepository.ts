@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { loadSql } from '../../db/sqlLoader';
-import { InventoryItemRepository } from '../../../domains/inventory/InventoryItemRepository';
+import { InventoryItemRepository, InventoryItemSearchCriteria } from '../../../domains/inventory/InventoryItemRepository';
 import { InventoryItem } from '../../../domains/inventory/InventoryItem';
 
 type DbClient = Pool | PoolClient;
@@ -17,6 +17,9 @@ const SQL_FIND_AVAILABLE_BY_INVENTORY_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_available_by_inventory_number');
 const SQL_FIND_BY_SERIAL_NUMBER = loadSql(
     'queries', 'inventory/inventory_item_find_by_serial_number'
+);
+const SQL_FIND_BY_PARAMS = loadSql(
+    'queries', 'inventory/inventory_item_find_by_params'
 );
 const SQL_FIND_BY_SCRAP_INVENTORY_NUMBERS = loadSql(
     'queries', 'inventory/inventory_item_find_by_scrap_inventory_numbers'
@@ -192,6 +195,17 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
         ]);
         if (result.rows.length === 0) return null;
         return mapRowToInventoryItem(result.rows[0]);
+    }
+
+    async findByParams(criteria: InventoryItemSearchCriteria): Promise<InventoryItem[]> {
+        const result = await this.db.query(SQL_FIND_BY_PARAMS, [
+            criteria.brandName ?? null,
+            criteria.categoryName ?? null,
+            criteria.subcategoryName ?? null,
+            criteria.serialNumber ?? null,
+            criteria.model ?? null
+        ]);
+        return result.rows.map(mapRowToInventoryItem);
     }
 
     async findByInventoryNumbers(

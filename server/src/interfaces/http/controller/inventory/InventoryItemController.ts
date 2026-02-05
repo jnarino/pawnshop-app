@@ -8,6 +8,7 @@ import { GetInventoryItemByInventoryNumberUseCase } from '../../../../applicatio
 import { GetInventoryItemBySerialNumberUseCase } from '../../../../application/use-case/inventory/query/GetInventoryItemBySerialNumberUseCase';
 import { GetItemOnInventoryUseCase } from '../../../../application/use-case/inventory/query/GetItemOnInventoryUseCase';
 import { GetScrapInventoryNumbersUseCase } from '../../../../application/use-case/inventory/query/GetScrapInventoryNumbersUseCase';
+import { FindInventoryItemsByParamsUseCase } from '../../../../application/use-case/inventory/query/FindInventoryItemsByParamsUseCase';
 
 export class InventoryItemController {
     constructor(
@@ -17,7 +18,8 @@ export class InventoryItemController {
         private readonly getInventoryItemByInventoryNumberUseCase: GetInventoryItemByInventoryNumberUseCase,
         private readonly getInventoryItemBySerialNumberUseCase: GetInventoryItemBySerialNumberUseCase,
         private readonly getItemOnInventoryUseCase: GetItemOnInventoryUseCase,
-        private readonly getScrapInventoryNumbersUseCase: GetScrapInventoryNumbersUseCase
+        private readonly getScrapInventoryNumbersUseCase: GetScrapInventoryNumbersUseCase,
+        private readonly findInventoryItemsByParamsUseCase: FindInventoryItemsByParamsUseCase
     ) { }
 
     /**
@@ -53,6 +55,29 @@ export class InventoryItemController {
             if (!result) {
                 return res.status(404).json({ message: 'Inventory item not found' });
             }
+
+            return res.json(result);
+        } catch (err) {
+            return next(err);
+        }
+    };
+
+    /**
+     * Find inventory items by optional parameters.
+     * GET /api/inventory-items/findbyparam
+     */
+    findByParam = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            const queryValue = (value: unknown) =>
+                Array.isArray(value) ? value[0] : value;
+
+            const result = await this.findInventoryItemsByParamsUseCase.execute({
+                brandName: queryValue(req.query.brandName),
+                categoryName: queryValue(req.query.categoryName),
+                subcategoryName: queryValue(req.query.subcategoryName),
+                serialNumber: queryValue(req.query.serialNumber),
+                model: queryValue(req.query.model)
+            });
 
             return res.json(result);
         } catch (err) {
