@@ -6,11 +6,12 @@ const optionalTrimmedString = z.preprocess(
 );
 
 export const findInventoryItemsByParamsRequestSchema = z.object({
-  brandName: optionalTrimmedString,
-  categoryName: optionalTrimmedString,
-  subcategoryName: optionalTrimmedString,
+  brandId: optionalTrimmedString,
+  categoryId: optionalTrimmedString,
+  subcategoryId: optionalTrimmedString,
   serialNumber: optionalTrimmedString,
-  model: optionalTrimmedString
+  model: optionalTrimmedString,
+  inventoryNumber: optionalTrimmedString
 });
 
 export type FindInventoryItemsByParamsRequestDto = z.infer<

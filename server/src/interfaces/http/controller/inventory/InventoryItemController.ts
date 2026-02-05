@@ -72,11 +72,12 @@ export class InventoryItemController {
                 Array.isArray(value) ? value[0] : value;
 
             const result = await this.findInventoryItemsByParamsUseCase.execute({
-                brandName: queryValue(req.query.brandName),
-                categoryName: queryValue(req.query.categoryName),
-                subcategoryName: queryValue(req.query.subcategoryName),
+                brandId: queryValue(req.query.brandId),
+                categoryId: queryValue(req.query.categoryId),
+                subcategoryId: queryValue(req.query.subcategoryId),
                 serialNumber: queryValue(req.query.serialNumber),
-                model: queryValue(req.query.model)
+                model: queryValue(req.query.model),
+                inventoryNumber: queryValue(req.query.inventoryNumber)
             });
 
             return res.json(result);

@@ -199,11 +199,12 @@ export class PgInventoryItemRepository implements InventoryItemRepository {
 
     async findByParams(criteria: InventoryItemSearchCriteria): Promise<InventoryItem[]> {
         const result = await this.db.query(SQL_FIND_BY_PARAMS, [
-            criteria.brandName ?? null,
-            criteria.categoryName ?? null,
-            criteria.subcategoryName ?? null,
+            criteria.brandId ?? null,
+            criteria.categoryId ?? null,
+            criteria.subcategoryId ?? null,
             criteria.serialNumber ?? null,
-            criteria.model ?? null
+            criteria.model ?? null,
+            criteria.inventoryNumber ?? null
         ]);
         return result.rows.map(mapRowToInventoryItem);
     }

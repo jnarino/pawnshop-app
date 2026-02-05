@@ -35,9 +35,11 @@ LEFT JOIN inventory_brand ib ON ib.id = ii.inventory_brand_id
 LEFT JOIN inventory_subcategory isc ON isc.id = ii.inventory_subcategory_id
 LEFT JOIN inventory_category ic ON ic.id = isc.inventory_category_id
 WHERE 1=1
-    AND ($1::text IS NULL OR ib.name = $1)
-    AND ($2::text IS NULL OR ic.name = $2)
-    AND ($3::text IS NULL OR isc.name = $3)
+    AND ii.status IN ('B', 'C', 'H', 'I', 'L', 'O', 'P')
+    AND ($1::text IS NULL OR ib.id = $1)
+    AND ($2::text IS NULL OR ic.id = $2)
+    AND ($3::text IS NULL OR isc.id = $3)
     AND ($4::text IS NULL OR ii.serial_number ILIKE '%' || $4 || '%')
     AND ($5::text IS NULL OR ii.model ILIKE '%' || $5 || '%')
+    AND ($6::text IS NULL OR ii.inventory_number ILIKE '%' || $6 || '%')
 ORDER BY ii.created_at DESC;

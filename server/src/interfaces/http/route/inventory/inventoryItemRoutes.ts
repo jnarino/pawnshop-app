@@ -144,16 +144,16 @@ export function createInventoryItemRouter(
      *     security:
      *       - bearerAuth: []
      *     parameters:
-     *       - in: query
-     *         name: brandName
+    *       - in: query
+    *         name: brandId
      *         schema:
      *           type: string
-     *       - in: query
-     *         name: categoryName
+    *       - in: query
+    *         name: categoryId
      *         schema:
      *           type: string
-     *       - in: query
-     *         name: subcategoryName
+    *       - in: query
+    *         name: subcategoryId
      *         schema:
      *           type: string
      *       - in: query
@@ -164,6 +164,10 @@ export function createInventoryItemRouter(
      *         name: model
      *         schema:
      *           type: string
+    *       - in: query
+    *         name: inventoryNumber
+    *         schema:
+    *           type: string
      *     responses:
      *       200:
      *         description: Inventory items matching search criteria

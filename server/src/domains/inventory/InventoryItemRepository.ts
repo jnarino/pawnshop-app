@@ -1,11 +1,12 @@
 import { InventoryItem } from './InventoryItem';
 
 export type InventoryItemSearchCriteria = {
-  brandName?: string;
-  categoryName?: string;
-  subcategoryName?: string;
+  brandId?: string;
+  categoryId?: string;
+  subcategoryId?: string;
   serialNumber?: string;
   model?: string;
+  inventoryNumber?: string;
 };
 
 export interface InventoryItemRepository {

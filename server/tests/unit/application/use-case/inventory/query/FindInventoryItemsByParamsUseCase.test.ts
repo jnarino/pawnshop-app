@@ -61,10 +61,10 @@ describe('FindInventoryItemsByParamsUseCase', () => {
 
     repo.findByParams.mockResolvedValue([item]);
 
-    const result = await useCase.execute({ brandName: 'Brand' });
+    const result = await useCase.execute({ brandId: 'brand-1' });
 
     expect(result).toHaveLength(1);
     expect(result[0].inventoryCategory.name).toBe('Cat');
-    expect(repo.findByParams).toHaveBeenCalledWith({ brandName: 'Brand' });
+    expect(repo.findByParams).toHaveBeenCalledWith({ brandId: 'brand-1' });
   });
 });
