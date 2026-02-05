@@ -108,6 +108,8 @@ import { UnpullLayawayUseCase } from './application/use-case/layaway/command/Unp
 import { LayawayController } from './interfaces/http/controller/layaway/LayawayController';
 import { PgHoldRepository } from './infrastructure/persistence/hold/PgHoldRepository';
 import { ListPoliceHoldUseCase } from './application/use-case/hold/query/ListPoliceHoldUseCase';
+import { CreatePoliceHoldUseCase } from './application/use-case/hold/command/CreatePoliceHoldUseCase';
+import { PgHoldUnitOfWork } from './infrastructure/db/PgHoldUnitOfWork';
 import { PoliceController } from './interfaces/http/controller/police/PoliceController';
 
 
@@ -135,6 +137,7 @@ export async function createApp() {
   const gunLogRepo = new PgGunLogRepository(pool);
   const gunTxHistoryRepo = new PgGunTransactionHistoryRepository(pool);
   const holdRepo = new PgHoldRepository(pool);
+  const holdUnitOfWork = new PgHoldUnitOfWork(pool);
 
 
   // Services
@@ -219,6 +222,7 @@ export async function createApp() {
   // Police Report use-cases
   const generateDailyPoliceReportUseCase = new GenerateDailyPoliceReportUseCase(policeReportRepo, policeReportFixedWidthService);
   const listPoliceHoldUseCase = new ListPoliceHoldUseCase(holdRepo);
+  const createPoliceHoldUseCase = new CreatePoliceHoldUseCase(holdUnitOfWork);
 
   // Cash Drawer Report use-cases
   const generateCashDrawerDetailUseCase = new GenerateCashDrawerDetailUseCase(cashDrawerReportRepo);
@@ -349,7 +353,7 @@ export async function createApp() {
     unpullLayawayUseCase
   );
 
-  const policeController = new PoliceController(listPoliceHoldUseCase);
+  const policeController = new PoliceController(listPoliceHoldUseCase, createPoliceHoldUseCase);
 
   const app = createExpressApp({
     authController,

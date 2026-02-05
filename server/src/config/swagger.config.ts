@@ -140,6 +140,30 @@ export const options: swaggerJsdoc.Options = {
                         active: { type: 'boolean' },
                     },
                 },
+                CreatePoliceHoldRequest: {
+                    type: 'object',
+                    required: ['holdDate', 'agency', 'caseNumber', 'isHold', 'isInventory', 'itemIds'],
+                    properties: {
+                        holdDate: { type: 'string', format: 'date' },
+                        agency: { type: 'string' },
+                        caseNumber: { type: 'string' },
+                        isHold: { type: 'boolean' },
+                        isInventory: { type: 'boolean' },
+                        comment: { type: 'string' },
+                        agentLastName: { type: 'string' },
+                        agentFirstName: { type: 'string' },
+                        agentMiddleInitial: { type: 'string' },
+                        badgeNumber: { type: 'string' },
+                        phoneAreaCode: { type: 'string' },
+                        phoneNumber: { type: 'string' },
+                        phoneExtension: { type: 'string' },
+                        jurisdiction: { type: 'string' },
+                        itemIds: { 
+                            type: 'array',
+                            items: { type: 'string', format: 'uuid' }
+                        }
+                    },
+                },
                 PoliceHoldResponseDto: {
                   type: 'object',
                   properties: {

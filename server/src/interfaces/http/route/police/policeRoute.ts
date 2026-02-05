@@ -53,6 +53,36 @@ export function createPoliceRouter(
    *         description: Unauthorized
    */
   router.get('/holds', auth, controller.listPoliceHold);
-
+  /**
+   * @openapi
+   * /api/police/holds:
+   *   post:
+   *     tags:
+   *       - Police
+   *     summary: Create a police hold
+   *     description: Create a new police hold for one or more inventory items
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreatePoliceHoldRequest'
+   *     responses:
+   *       201:
+   *         description: Police hold created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/PoliceHoldResponseDto'
+   *       400:
+   *         description: Invalid input or item validation error
+   *       404:
+   *         description: Inventory item not found
+   *       401:
+   *         description: Unauthorized
+   */
+  router.post('/holds', auth, controller.createPoliceHold);
   return router;
 }
