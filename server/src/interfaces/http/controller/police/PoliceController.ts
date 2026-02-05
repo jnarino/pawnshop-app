@@ -1,11 +1,25 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { CreatePoliceHoldUseCase } from '../../../../application/use-case/hold/command/CreatePoliceHoldUseCase';
 import { ListPoliceHoldUseCase } from '../../../../application/use-case/hold/query/ListPoliceHoldUseCase';
 
 export class PoliceController {
   constructor(
-    private readonly listPoliceHoldUseCase: ListPoliceHoldUseCase
+    private readonly listPoliceHoldUseCase: ListPoliceHoldUseCase,
+    private readonly createPoliceHoldUseCase: CreatePoliceHoldUseCase
   ) {}
+
+  /**
+   * POST /api/police/holds
+   */
+  createPoliceHold = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.createPoliceHoldUseCase.execute(req.body);
+      return res.status(201).json(result);
+    } catch (err) {
+      return next(err);
+    }
+  };
 
   /**
    * GET /api/police/holds

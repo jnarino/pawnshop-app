@@ -1,0 +1,43 @@
+INSERT INTO hold_item (
+    id,
+    control_number,
+    customer_id,
+    hold_date,
+    agency,
+    case_number,
+    date_out,
+    is_hold,
+    is_inventory,
+    comment,
+    agent_last_name,
+    agent_first_name,
+    agent_middle_initial,
+    badge_number,
+    phone_area_code,
+    phone_number,
+    phone_extension,
+    jurisdiction,
+    created_at,
+    updated_at
+) VALUES (
+    $1,
+    $2,
+    NULL, -- customer_id ignored
+    $3,
+    $4,
+    $5,
+    NULL, -- date_out
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    NOW(),
+    NOW()
+) RETURNING *;
