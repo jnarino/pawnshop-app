@@ -1,20 +1,30 @@
 import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from 'react';
-import type { InventoryItemDraft } from '@/app/feature/_shared/pawn-ticket';
-import { formatDate } from '@/lib/utils';
 import { useWorkspaceTabs } from '@/app/shared/hooks/useWorkspaceTabs';
 
 export type TabKey = 'list' | 'newHoldConfiscate';
 
 export interface HoldConfiscateDraftState {
-  type: 'PAWN' | 'PURCHASE';
-  periodicRate: string;
-  transactionDate: string;
-  maturityDate: string;
-  expirationDate: string;
-  items: InventoryItemDraft[];
+  holdDate: string;
+  releasedDate?: string;
+  caseNumber: string;
+  employee: string;
+  agency: string;
+  jurisdiction: string;
+  agentFirstName: string;
+  agentMiddleInitial?: string;
+  agentLastName: string;
+  badgeNumber: string;
+  phoneAreaCode: string;
+  phoneNumber: string;
+  phoneExtension?: string;
+  comment: string;
+  type: 'HOLD' | 'CONFISCATE';
+  fromInput: string;
+  items: PoliceHoldItem[];
 }
 
-import { policeApi, PoliceHold } from '@/app/core/api/policeApi';
+import { PoliceHold, PoliceHoldItem } from '@/app/core/api/policeApi';
+import { useAuthStore } from '@/app/core/store/useAuthStore';
 
 export interface HoldConfiscateWorkflowState {
   activeTab: TabKey;
@@ -31,20 +41,26 @@ export interface HoldConfiscateWorkflowState {
 
 const HoldConfiscateWorkflowContext = createContext<HoldConfiscateWorkflowState | null>(null);
 
-function createInitialDraft(): HoldConfiscateDraftState {
+function createInitialDraft(user: any): HoldConfiscateDraftState {
   const today = new Date();
-  const maturityDate = new Date(today);
-  maturityDate.setDate(maturityDate.getDate() + 30);
-  const expirationDate = new Date(today);
-  expirationDate.setDate(expirationDate.getDate() + 60);
-
 
   return {
-    type: 'PAWN',
-    periodicRate: '25',
-    transactionDate: formatDate(today),
-    maturityDate: formatDate(maturityDate),
-    expirationDate: formatDate(expirationDate),
+    holdDate: today.toISOString().split('T')[0],
+    releasedDate: '',
+    caseNumber: '',
+    employee: user?.username || '',
+    agency: '',
+    jurisdiction: '',
+    agentFirstName: '',
+    agentMiddleInitial: '',
+    agentLastName: '',
+    badgeNumber: '',
+    phoneAreaCode: '',
+    phoneNumber: '',
+    phoneExtension: '',
+    comment: '',
+    type: 'HOLD',
+    fromInput: '',
     items: []
   };
 }
@@ -54,7 +70,9 @@ export function HoldConfiscateWorkflowProvider({ children, initialTicket, mode }
     initialTab: 'list',
   });
 
-  const [holdConfiscateDraft, setHoldConfiscateDraft] = useState<HoldConfiscateDraftState>(createInitialDraft);
+  const user = useAuthStore((state) => state.user);
+
+  const [holdConfiscateDraft, setHoldConfiscateDraft] = useState<HoldConfiscateDraftState>(createInitialDraft(user));
   const [selectedHold, setSelectedHold] = useState<PoliceHold | null>(null);
 
   const updateHoldConfiscateDraft = useCallback((updates: Partial<HoldConfiscateDraftState>) => {
@@ -62,8 +80,8 @@ export function HoldConfiscateWorkflowProvider({ children, initialTicket, mode }
   }, []);
 
   const resetHoldConfiscateDraft = useCallback(() => {
-    setHoldConfiscateDraft(createInitialDraft());
-  }, []);
+    setHoldConfiscateDraft(createInitialDraft(user));
+  }, [user]);
 
   const value = useMemo(() => ({
     activeTab,

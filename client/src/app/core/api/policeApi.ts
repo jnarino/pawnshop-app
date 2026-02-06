@@ -6,6 +6,9 @@ export interface PoliceHoldItem {
     model: string;
     serialNumber: string;
     itemDescription: string;
+    quantity: number;
+    amount: number;
+    priceAmount: number;
 }
 
 export interface PoliceHold {
@@ -40,6 +43,24 @@ export interface PoliceHoldSearchParams {
     agency?: string;
 }
 
+export interface CreatePoliceHoldPayload {
+    holdDate: string;
+    agency: string;
+    caseNumber: string;
+    isHold: boolean;
+    isInventory: boolean;
+    comment: string;
+    agentLastName: string;
+    agentFirstName: string;
+    agentMiddleInitial: string;
+    badgeNumber: string;
+    phoneAreaCode: string;
+    phoneNumber: string;
+    phoneExtension: string;
+    jurisdiction: string;
+    itemIds: string[];
+}
+
 export const policeApi = {
     getHolds: async (params: PoliceHoldSearchParams): Promise<PoliceHold[]> => {
         const queryParams = new URLSearchParams();
@@ -50,5 +71,19 @@ export const policeApi = {
         if (params.agency) queryParams.append('agency', params.agency);
 
         return http(`/api/police/holds?${queryParams.toString()}`);
+    },
+
+    createHold: async (payload: CreatePoliceHoldPayload): Promise<PoliceHold> => {
+        return http('/api/police/holds', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    },
+
+    updateHold: async (id: string, payload: CreatePoliceHoldPayload): Promise<PoliceHold> => {
+        return http(`/api/police/holds/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        });
     }
 };
