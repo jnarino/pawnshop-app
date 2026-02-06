@@ -2,14 +2,22 @@ const execa = require('execa');
 const path = require('path');
 const fs = require('fs');
 const chalk = require('chalk');
+
+// Load environment variables
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+
 const { CONTAINER_NAMES } = require('./docker');
+
+const NETWORK_NAME = process.env.DOCKER_NETWORK || 'pawnshop-app_default';
+const PG_CONTAINER = process.env.CONTAINER_NAME_PG || 'pawnshop_postgres_prod';
+const SQL_CONTAINER = process.env.CONTAINER_NAME_SQL || 'pawnshop_sqlserver_prod';
 
 const MIGRATION_DIR = path.resolve(__dirname, '../../sql-server-to-postgresql');
 
 // Use production containers for installation
 // Container constants removed in favor of dynamic lookup
 
-async function runPythonScript(scriptName, args = [], env = 'prod') {
+async function runPythonScript(scriptName, args = []) {
     // Note: We might want to pass explicit env vars here if needed, 
     // but the python script relies on the .env file being correct (handled in runFullMigration)
     console.log(`Executing: python3 ${scriptName} ${args.join(' ')}`);
@@ -39,9 +47,12 @@ async function runPythonScript(scriptName, args = [], env = 'prod') {
         const dockerArgs = [
             'run',
             '--rm',
+            '--network', NETWORK_NAME,
             '-e', 'AUTO_CONFIRM=true',
-            '-e', 'POSTGRES_HOST=host.docker.internal',
-            '-e', 'SQLSERVER_HOST=host.docker.internal',
+            '-e', `POSTGRES_HOST=${PG_CONTAINER}`,
+            '-e', `SQLSERVER_HOST=${SQL_CONTAINER}`,
+            '-e', 'POSTGRES_PORT=5432', // Fixed internal port
+            '-e', 'SQLSERVER_PORT=1433', // Fixed internal port
             '-v', `${path.resolve(__dirname, '../../../.env')}:/migration/.env:ro`,
             '-v', `${MIGRATION_DIR}:/migration`,
             imageName,
@@ -56,10 +67,10 @@ async function runPythonScript(scriptName, args = [], env = 'prod') {
     }
 }
 
-async function restoreSqlServer(backupFile, env = 'prod') {
-    const SQL_CONTAINER = CONTAINER_NAMES[env].sqlserver;
+async function restoreSqlServer(backupFile) {
+    const SQL_CONTAINER = CONTAINER_NAMES.sqlserver;
 
-    console.log(`\n--- Restoring SQL Server Backup (${env}) ---`);
+    console.log(`\n--- Restoring SQL Server Backup (Production) ---`);
     console.log(`Target Container: ${SQL_CONTAINER}`);
     console.log(`Source File: ${backupFile}`);
 
@@ -162,12 +173,12 @@ async function exec_sql_cmd(container, query, capture = false) {
     }
 }
 
-async function runFullMigration(env = 'prod') {
-    const PG_CONTAINER = CONTAINER_NAMES[env].postgres;
-    const SQL_CONTAINER = CONTAINER_NAMES[env].sqlserver;
+async function runFullMigration() {
+    const PG_CONTAINER = CONTAINER_NAMES.postgres;
+    const SQL_CONTAINER = CONTAINER_NAMES.sqlserver;
 
-    console.log(`\n--- Configuring ${env.toUpperCase()} Environment ---`);
-    const envSource = env === 'prod' ? '.env.production' : '.env.development';
+    console.log(`\n--- Configuring Production Environment ---`);
+    const envSource = '.env.production';
     const envSourcePath = path.resolve(MIGRATION_DIR, `../../${envSource}`);
     const envDestPath = path.resolve(MIGRATION_DIR, '../../.env');
 
@@ -185,7 +196,7 @@ async function runFullMigration(env = 'prod') {
 
     // 1. Clean Postgres
     console.log('\n--- Cleaning PostgreSQL ---');
-    const success = await runPythonScript('clean_postgres_db.py', [], env);
+    const success = await runPythonScript('clean_postgres_db.py', []);
     if (!success) {
         console.error('Failed to clean database:', chalk.red('Command failed'));
         return false;
@@ -239,7 +250,7 @@ async function runFullMigration(env = 'prod') {
 
     // 4. Run Data Migration
     console.log('\n--- Running Data Migration ---');
-    return await runPythonScript('scripts/migrate_all.py', [], env);
+    return await runPythonScript('scripts/migrate_all.py', []);
 }
 
 module.exports = { runFullMigration, restoreSqlServer, runPythonScript };

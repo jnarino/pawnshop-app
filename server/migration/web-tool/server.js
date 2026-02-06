@@ -67,10 +67,10 @@ app.get('/api/containers', async (req, res) => {
 
 // API: Setup Production Containers
 app.post('/api/containers/setup', async (req, res) => {
-    const { env, setupType } = req.body;
-    log(`Setting up containers for ${env} (${setupType})...`, 'step');
+    const { setupType } = req.body;
+    log(`Setting up containers (Production) (${setupType})...`, 'step');
     try {
-        const success = await setupContainers(env, setupType);
+        const success = await setupContainers(setupType);
         if (success) {
             log('Containers ready!', 'success');
             res.json({ success: true });
@@ -120,8 +120,7 @@ const upload = multer({ dest: path.join(__dirname, 'uploads/') });
 
 // API: Run Migration (Handle File Upload)
 app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
-    const env = req.query.env || 'prod';
-    log(`Starting migration process for ${env}...`, 'step');
+    log(`Starting migration process for Production...`, 'step');
 
     let backupPath;
 
@@ -142,13 +141,13 @@ app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
     try {
         // 1. Restore
         log('Restoring SQL Server...', 'step');
-        const restoreSuccess = await restoreSqlServer(backupPath, env);
+        const restoreSuccess = await restoreSqlServer(backupPath);
         if (!restoreSuccess) throw new Error('Restore Failed');
         log('SQL Server Restored.', 'success');
 
         // 2. Migrate
         log('Running Python Migrations...', 'step');
-        const migrateSuccess = await runFullMigration(env);
+        const migrateSuccess = await runFullMigration();
         if (!migrateSuccess) throw new Error('Migration Scripts Failed');
 
         log('Migration Complete!', 'success');
@@ -160,9 +159,9 @@ app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
     } finally {
         // Cleanup uploaded file
         if (req.file) {
-            try { 
+            try {
                 if (fs.existsSync(backupPath)) {
-                    fs.unlinkSync(backupPath); 
+                    fs.unlinkSync(backupPath);
                     log('Cleaned up uploaded file.', 'info');
                 }
             } catch (e) {
@@ -174,15 +173,14 @@ app.post('/api/migrate', upload.single('backupFile'), async (req, res) => {
 
 // Fresh Install (no migration)
 app.post('/api/fresh-install', async (req, res) => {
-    const { env } = req.body;
-    log(`Starting fresh installation for ${env} (no migration)`);
+    log(`Starting fresh installation for Production (no migration)`);
 
     try {
         // Just apply the schema to PostgreSQL
         const path = require('path');
         const execa = require('execa');
 
-        const PG_CONTAINER = CONTAINER_NAMES[env].postgres;
+        const PG_CONTAINER = CONTAINER_NAMES.postgres;
         const schemaPath = path.resolve(__dirname, '../pawnshop-express/src/infrastructure/db/migrations/0001_11072025_initial.sql');
 
         log(`Applying PostgreSQL schema to ${PG_CONTAINER}...`);
@@ -206,9 +204,9 @@ app.post('/api/fresh-install', async (req, res) => {
 
 // API: Create Admin
 app.post('/api/admin', async (req, res) => {
-    const { username, password, env } = req.body;
+    const { username, password } = req.body;
     log(`Creating admin user: ${username}`);
-    const success = await createAdmin(username, password, env);
+    const success = await createAdmin(username, password, 'prod');
     if (success) {
         log('Admin user created.', 'success');
         res.json({ success: true });
@@ -220,9 +218,8 @@ app.post('/api/admin', async (req, res) => {
 
 // API: Install App
 app.post('/api/install', async (req, res) => {
-    const { env } = req.body;
     log('Installing backend application...', 'step');
-    const success = await installApplication(env);
+    const success = await installApplication('prod');
     if (success) {
         log('Application installed & backend shortcuts created.', 'success');
         res.json({ success: true });

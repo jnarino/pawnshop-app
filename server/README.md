@@ -89,3 +89,12 @@ Tests
 
 You can drop this whole structure into your pawnshop monorepo or adapt
 pieces (domains, use-cases, container.ts) as needed.
+
+
+Check you have node, python and docker
+
+
+Install all dependencies
+npm run install:all
+
+

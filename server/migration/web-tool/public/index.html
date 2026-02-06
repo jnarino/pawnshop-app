@@ -55,24 +55,21 @@
                     <h3 class="font-bold">1. Prerequisites</h3>
                     <p class="text-xs text-slate-400">Check Node.js, Python, Docker</p>
                 </div>
+                <!-- Step 2 (Env) Removed -->
                 <div id="step-2" class="step p-4 rounded-lg border-2 border-transparent transition-all">
-                    <h3 class="font-bold">2. Environment</h3>
-                    <p class="text-xs text-slate-400">Select Dev or Prod</p>
-                </div>
-                <div id="step-3" class="step p-4 rounded-lg border-2 border-transparent transition-all">
-                    <h3 class="font-bold">3. Setup Type</h3>
+                    <h3 class="font-bold">2. Setup Type</h3>
                     <p class="text-xs text-slate-400">Migrate or Fresh Install</p>
                 </div>
-                <div id="step-4" class="step p-4 rounded-lg border-2 border-transparent transition-all">
-                    <h3 class="font-bold">4. Docker Setup</h3>
+                <div id="step-3" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">3. Docker Setup</h3>
                     <p class="text-xs text-slate-400">Create Backend Containers</p>
                 </div>
-                <div id="step-5" class="step p-4 rounded-lg border-2 border-transparent transition-all">
-                    <h3 class="font-bold">5. Admin User</h3>
+                <div id="step-4" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">4. Admin User</h3>
                     <p class="text-xs text-slate-400">Create Setup Account</p>
                 </div>
-                <div id="step-6" class="step p-4 rounded-lg border-2 border-transparent transition-all">
-                    <h3 class="font-bold">6. Installation</h3>
+                <div id="step-5" class="step p-4 rounded-lg border-2 border-transparent transition-all">
+                    <h3 class="font-bold">5. Installation</h3>
                     <p class="text-xs text-slate-400">Build Backend API</p>
                 </div>
             </div>
@@ -191,7 +188,7 @@
                 }
                 // Next Button
                 html += `<div class="mt-6 flex justify-end">
-                    <button onclick="showEnvironmentSelection()" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Continue →</button>
+                    <button onclick="showSetupChoice()" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Continue →</button>
                 </div>`;
 
                 setViewHtml(html);
@@ -199,53 +196,6 @@
             } catch (e) {
                 logError(e.message);
             }
-        }
-
-        function showEnvironmentSelection() {
-            setActiveStep(2);
-            let html = `<h2 class="text-xl font-bold mb-4">Select Environment</h2>
-            <p class="mb-6 text-slate-400">Choose the environment for this installation:</p>
-            
-            <div class="space-y-4">
-                <!-- PROD -->
-                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-blue-500 transition-all cursor-pointer" onclick="selectEnvironment('prod')">
-                    <div class="flex items-start">
-                        <div class="text-4xl mr-4">🏭</div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-lg mb-2">Production (Default)</h3>
-                            <p class="text-sm text-slate-400">Standard deployment configuration.</p>
-                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
-                                <li>• Postgres Port: 54330</li>
-                                <li>• SQL Server Port: 14330</li>
-                                <li>• API Port: 3000</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- DEV -->
-                <div class="p-6 bg-slate-800 rounded-lg border-2 border-slate-600 hover:border-yellow-500 transition-all cursor-pointer" onclick="selectEnvironment('dev')">
-                    <div class="flex items-start">
-                        <div class="text-4xl mr-4">🛠️</div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-lg mb-2">Development</h3>
-                            <p class="text-sm text-slate-400">Isolated environment for testing/dev.</p>
-                            <ul class="mt-3 text-xs text-slate-500 space-y-1">
-                                <li>• Postgres Port: 54331</li>
-                                <li>• SQL Server Port: 14331</li>
-                                <li>• API Port: 3001</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-            setViewHtml(html);
-        }
-
-        function selectEnvironment(env) {
-            selectedEnvironment = env;
-            console.log('Selected Env:', env);
-            showSetupChoice();
         }
 
         async function showDockerSetup() {
@@ -334,7 +284,7 @@
         }
 
         async function showSetupChoice() {
-            setActiveStep(3);
+            setActiveStep(2);
 
             let html = `<h2 class="text-xl font-bold mb-4">Choose Setup Type</h2>
             <p class="mb-6 text-slate-400">How would you like to set up your database?</p>
@@ -384,7 +334,7 @@
         }
 
         async function showDockerSetup(setupType) {
-            setActiveStep(4);
+            setActiveStep(3);
             setView('Checking Docker Containers...', '<div class="animate-pulse flex justify-center"><div class="h-8 w-8 bg-blue-500 rounded-full"></div></div>');
 
             try {
@@ -395,42 +345,41 @@
                 const needsSqlServer = setupType === 'migrate';
 
                 // Render container status
-                const envLabel = selectedEnvironment === 'prod' ? 'Production' : 'Development';
                 let html = `<h2 class="text-xl font-bold mb-4">Docker Container Setup</h2>`;
-                html += `<p class="text-slate-400 mb-6">Setting up containers for ${setupType === 'migrate' ? 'migration' : 'fresh installation'} in <b>${selectedEnvironment.toUpperCase()}</b> environment:</p>`;
+                html += `<p class="text-slate-400 mb-6">Setting up containers for ${setupType === 'migrate' ? 'migration' : 'fresh installation'} in <b>Production</b> environment:</p>`;
                 html += '<div class="space-y-3">';
 
                 // SQL Server (only for migration)
                 if (needsSqlServer) {
-                    const sqlStatus = containers[selectedEnvironment].sqlserver;
+                    const sqlStatus = containers.prod.sqlserver;
                     const sqlIcon = sqlStatus === 'running' ? '✅' : sqlStatus === 'stopped' ? '⏸️' : '❌';
                     const sqlColor = sqlStatus === 'running' ? 'text-green-400' : sqlStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
                     html += `<div class="p-4 bg-slate-800 rounded ${sqlColor}">
                         <div class="flex items-center justify-between">
-                            <span class="font-mono">SQL Server (${envLabel})</span>
+                            <span class="font-mono">SQL Server (Production)</span>
                             <span class="capitalize">${sqlStatus} ${sqlIcon}</span>
                         </div>
-                        <div class="text-xs text-slate-400 mt-1">Port: ${selectedEnvironment === 'prod' ? '14330' : '14331'} • Required for migration</div>
+                        <div class="text-xs text-slate-400 mt-1">Port: 14330 • Required for migration</div>
                     </div>`;
                 }
 
                 // PostgreSQL
-                const pgStatus = containers[selectedEnvironment].postgres;
+                const pgStatus = containers.prod.postgres;
                 const pgIcon = pgStatus === 'running' ? '✅' : pgStatus === 'stopped' ? '⏸️' : '❌';
                 const pgColor = pgStatus === 'running' ? 'text-green-400' : pgStatus === 'stopped' ? 'text-yellow-400' : 'text-red-400';
                 html += `<div class="p-4 bg-slate-800 rounded ${pgColor}">
                     <div class="flex items-center justify-between">
-                        <span class="font-mono">PostgreSQL (${envLabel})</span>
+                        <span class="font-mono">PostgreSQL (Production)</span>
                         <span class="capitalize">${pgStatus} ${pgIcon}</span>
                     </div>
-                    <div class="text-xs text-slate-400 mt-1">Port: ${selectedEnvironment === 'prod' ? '54330' : '54331'} • Required</div>
+                    <div class="text-xs text-slate-400 mt-1">Port: 54330 • Required</div>
                 </div>`;
 
                 html += '</div>';
 
                 // Action buttons
-                const sqlNeedsSetup = needsSqlServer && (containers[selectedEnvironment].sqlserver === 'missing' || containers[selectedEnvironment].sqlserver === 'stopped');
-                const pgNeedsSetup = containers[selectedEnvironment].postgres === 'missing' || containers[selectedEnvironment].postgres === 'stopped';
+                const sqlNeedsSetup = needsSqlServer && (containers.prod.sqlserver === 'missing' || containers.prod.sqlserver === 'stopped');
+                const pgNeedsSetup = containers.prod.postgres === 'missing' || containers.prod.postgres === 'stopped';
                 const needsSetup = sqlNeedsSetup || pgNeedsSetup;
 
                 if (needsSetup) {
@@ -460,7 +409,7 @@
                 const res = await fetch('/api/containers/setup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ env: selectedEnvironment, setupType })
+                    body: JSON.stringify({ setupType })
                 });
                 const data = await res.json();
 
@@ -511,7 +460,7 @@
                 const res = await fetch('/api/fresh-install', {
                     method: 'POST',
 
-                    body: JSON.stringify({ env: selectedEnvironment })
+                    body: JSON.stringify({})
                 });
                 const data = await res.json();
 
@@ -544,7 +493,7 @@
 
             try {
                 // Determine URL based on env
-                const url = `/api/migrate?env=${selectedEnvironment}`;
+                const url = `/api/migrate`;
 
                 const res = await fetch(url, {
                     method: 'POST',
@@ -566,7 +515,7 @@
         }
 
         function showAdminConfig() {
-            setActiveStep(5);
+            setActiveStep(4);
             setViewHtml(`
                     <h2 class="text-xl font-bold mb-6">Create Admin User</h2>
                     <div class="space-y-4 max-w-sm mx-auto">
@@ -591,7 +540,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
 
-                body: JSON.stringify({ username, password, env: selectedEnvironment })
+                body: JSON.stringify({ username, password })
             });
 
             if ((await res.json()).success) {
@@ -600,13 +549,13 @@
         }
 
         async function startInstallApp() {
-            setActiveStep(6);
+            setActiveStep(5);
             setView('Installing Backend...', 'Building backend API and creating startup scripts...');
 
             const res = await fetch('/api/install', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ env: selectedEnvironment })
+                body: JSON.stringify({})
             });
             if ((await res.json()).success) {
                 showSuccess();
@@ -618,13 +567,12 @@
                 <div class="text-center space-y-6 pt-10">
                     <div class="text-6xl">🎉</div>
                     <h2 class="text-3xl font-bold text-green-400">Installation Complete!</h2>
-
                     
                     <div class="text-left bg-slate-800 p-6 rounded-lg text-sm font-mono space-y-2 border border-slate-700">
                         <p class="text-slate-400 border-b border-slate-600 pb-2 mb-2">Environment Configuration for Client:</p>
-                        <p><span class="text-blue-400">Environment:</span> <span class="text-white">${selectedEnvironment.toUpperCase()}</span></p>
-                        <p><span class="text-blue-400">API URL:</span> <span class="text-green-300">http://localhost:${selectedEnvironment === 'prod' ? '3000' : '3001'}</span></p>
-                        <p><span class="text-blue-400">DB Port:</span> <span class="text-white">${selectedEnvironment === 'prod' ? '54330' : '54331'}</span></p>
+                        <p><span class="text-blue-400">Environment:</span> <span class="text-white">PRODUCTION</span></p>
+                        <p><span class="text-blue-400">API URL:</span> <span class="text-green-300">http://localhost:3000</span></p>
+                        <p><span class="text-blue-400">DB Port:</span> <span class="text-white">54330</span></p>
                     </div>
 
                     <p class="text-slate-300">To run the client, update your <code>.env</code> or build config with these values.</p>
