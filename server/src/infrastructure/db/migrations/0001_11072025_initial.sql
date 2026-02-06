@@ -909,7 +909,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS hold_item (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   control_number TEXT, -- Matches LookupKey
-  customer_id UUID REFERENCES customer(id) ON DELETE SET NULL, -- Matches emp_fk
+  clerk_user_id UUID REFERENCES app_user(id) ON DELETE SET NULL, -- Matches emp_fk
   hold_date DATE, -- date
   agency TEXT, -- agency
   case_number TEXT, -- casenum
