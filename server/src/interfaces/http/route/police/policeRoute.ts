@@ -84,5 +84,44 @@ export function createPoliceRouter(
    *         description: Unauthorized
    */
   router.post('/holds', auth, controller.createPoliceHold);
+
+  /**
+   * @openapi
+   * /api/police/holds/{id}:
+   *   put:
+   *     tags:
+   *       - Police
+   *     summary: Update a police hold
+   *     description: Update an existing police hold and its linked items
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreatePoliceHoldRequest'
+   *     responses:
+   *       200:
+   *         description: Police hold updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/PoliceHoldResponseDto'
+   *       400:
+   *         description: Invalid input
+   *       404:
+   *         description: Police hold not found
+   *       401:
+   *         description: Unauthorized
+   */
+  router.put('/holds/:id', auth, controller.updatePoliceHold);
   return router;
 }

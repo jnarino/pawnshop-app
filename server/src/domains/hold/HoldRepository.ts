@@ -10,5 +10,7 @@ export interface HoldCriteria {
 
 export interface HoldRepository {
   findList(criteria: HoldCriteria): Promise<HoldItem[]>;
+  findById(id: string): Promise<HoldItem | null>;
   create(hold: HoldItem, inventoryItemIds: string[]): Promise<HoldItem>;
+  update(hold: HoldItem, inventoryItemIds: string[]): Promise<HoldItem | null>;
 }

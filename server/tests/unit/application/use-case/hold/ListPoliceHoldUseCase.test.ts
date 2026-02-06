@@ -10,10 +10,9 @@ describe('ListPoliceHoldUseCase', () => {
     beforeEach(() => {
         mockRepo = {
             findList: jest.fn(),
-            findById: jest.fn(),
             create: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn()
+            findById: jest.fn(),
+            update: jest.fn()
         } as unknown as jest.Mocked<HoldRepository>;
 
         useCase = new ListPoliceHoldUseCase(mockRepo);
