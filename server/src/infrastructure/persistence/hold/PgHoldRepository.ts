@@ -19,11 +19,9 @@ export class PgHoldRepository implements HoldRepository {
     const res = await this.pool.query(SQL_CREATE, [
       hold.id,
       hold.controlNumber,
-      // customer_id ignored in SQL
       hold.holdDate,
       hold.agency,
       hold.caseNumber,
-      // date_out ignored
       hold.isHold,
       hold.isInventory,
       hold.comment,
@@ -47,8 +45,7 @@ export class PgHoldRepository implements HoldRepository {
       ]);
     }
 
-    // Return mapped entity (simplified for now as we just created it)
-    // In a real app we might want to refetch or construct from row
+   
     return new HoldItem({
        ...hold,
        createdAt: row.created_at,
@@ -70,7 +67,6 @@ export class PgHoldRepository implements HoldRepository {
     return result.rows.map(row => new HoldItem({
       id: row.id,
       controlNumber: row.control_number,
-      customerId: row.customer_id,
       holdDate: row.hold_date,
       agency: row.agency,
       caseNumber: row.case_number,
@@ -87,7 +83,8 @@ export class PgHoldRepository implements HoldRepository {
       phoneExtension: row.phone_extension,
       jurisdiction: row.jurisdiction,
       legacyHcnId: row.legacy_hcn_id,
-      updatedBy: row.updated_by,
+      clerkUsername: row.clerk_username,
+      updatedBy: row.updated_by_username,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       items: row.items

@@ -17,7 +17,6 @@ export class ListPoliceHoldUseCase {
     return holds.map(hold => ({
       id: hold.id,
       controlNumber: hold.controlNumber,
-      customerId: hold.customerId,
       holdDate: hold.holdDate ? new Date(hold.holdDate).toISOString() : '',
       agency: hold.agency,
       caseNumber: hold.caseNumber,
@@ -34,7 +33,8 @@ export class ListPoliceHoldUseCase {
       phoneExtension: hold.phoneExtension,
       jurisdiction: hold.jurisdiction,
       legacyHcnId: hold.legacyHcnId,
-      updatedBy: hold.updatedBy,
+      clerkUsername: hold.clerkUsername,
+      updateBy: hold.updatedBy,
       items: hold.items.map(item => ({
         id: item.id,
         inventorySubcategory: item.inventorySubcategory,

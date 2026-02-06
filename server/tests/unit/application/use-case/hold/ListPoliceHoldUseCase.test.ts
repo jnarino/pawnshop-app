@@ -28,7 +28,6 @@ describe('ListPoliceHoldUseCase', () => {
         const mockHold = new HoldItem({
             id: 'hold-1',
             controlNumber: '1000',
-            customerId: 'cust-1',
             holdDate: mockDate,
             agency: 'Police',
             caseNumber: 'CASE-123',
@@ -45,6 +44,7 @@ describe('ListPoliceHoldUseCase', () => {
             phoneExtension: '101',
             jurisdiction: 'City',
             legacyHcnId: null,
+            clerkUsername: 'clerk1',
             updatedBy: null,
             createdAt: mockDate,
             updatedAt: mockDate,

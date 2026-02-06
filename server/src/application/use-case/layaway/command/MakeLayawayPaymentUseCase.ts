@@ -115,8 +115,7 @@ export class MakeLayawayPaymentUseCase {
       // But we filtered for 'Active' ones.
       
       // Calculate new default date (30 days from payment)
-      const newDefaultDate = new Date(dateNow);
-      newDefaultDate.setDate(newDefaultDate.getDate() + 30);
+      const newDefaultDate = new Date(dateNow.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       for (const item of activeItems) {
         // Update Agreement

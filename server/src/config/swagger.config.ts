@@ -207,7 +207,6 @@ export const options: swaggerJsdoc.Options = {
                   properties: {
                     id: { type: 'string' },
                     controlNumber: { type: 'string' },
-                    customerId: { type: 'string' },
                     holdDate: { type: 'string' },
                     agency: { type: 'string' },
                     caseNumber: { type: 'string' },
@@ -224,7 +223,8 @@ export const options: swaggerJsdoc.Options = {
                     phoneExtension: { type: 'string', nullable: true },
                     jurisdiction: { type: 'string', nullable: true },
                     legacyHcnId: { type: 'string', nullable: true },
-                    updatedBy: { type: 'string', nullable: true },
+                    clerkUsername: { type: 'string', nullable: true },
+                                        updateBy: { type: 'string', nullable: true },
                     items: {
                         type: 'array',
                         items: {

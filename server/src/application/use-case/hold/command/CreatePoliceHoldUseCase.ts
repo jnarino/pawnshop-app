@@ -18,7 +18,6 @@ export class CreatePoliceHoldUseCase {
       const hold = new HoldItem({
         id: crypto.randomUUID(),
         controlNumber: controlNumber,
-        customerId: '', // Not used
         holdDate: dto.holdDate ? new Date(dto.holdDate) : new Date(),
         agency: dto.agency,
         caseNumber: dto.caseNumber,
@@ -35,6 +34,7 @@ export class CreatePoliceHoldUseCase {
         phoneExtension: dto.phoneExtension || null,
         jurisdiction: dto.jurisdiction || null,
         legacyHcnId: null,
+        clerkUsername: null,
         updatedBy: null, // Should come from context user if available
         createdAt: new Date(),
         updatedAt: new Date()
@@ -56,7 +56,6 @@ export class CreatePoliceHoldUseCase {
       return {
         id: hold.id,
         controlNumber: hold.controlNumber,
-        customerId: hold.customerId,
         holdDate: hold.holdDate.toISOString(),
         agency: hold.agency,
         caseNumber: hold.caseNumber,
@@ -73,7 +72,8 @@ export class CreatePoliceHoldUseCase {
         phoneExtension: hold.phoneExtension,
         jurisdiction: hold.jurisdiction,
         legacyHcnId: hold.legacyHcnId,
-        updatedBy: hold.updatedBy,
+        clerkUsername: hold.clerkUsername,
+        updateBy: hold.updatedBy,
         items: [] // Returned empty as we didn't fetch them enriched. Frontend might need to refetch list.
       };
     });

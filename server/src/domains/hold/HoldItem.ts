@@ -18,7 +18,6 @@ export interface HoldInventoryItem {
 export class HoldItem {
   readonly id: string;
   controlNumber: string;
-  customerId: string;
   holdDate: Date;
   agency: string;
   caseNumber: string;
@@ -35,6 +34,7 @@ export class HoldItem {
   phoneExtension: string | null;
   jurisdiction: string | null;
   legacyHcnId: string | null;
+  clerkUsername: string | null;
   updatedBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -44,7 +44,6 @@ export class HoldItem {
   constructor(params: {
     id: string;
     controlNumber: string;
-    customerId: string;
     holdDate: Date;
     agency: string;
     caseNumber: string;
@@ -61,6 +60,7 @@ export class HoldItem {
     phoneExtension: string | null;
     jurisdiction: string | null;
     legacyHcnId: string | null;
+    clerkUsername: string | null;
     updatedBy: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -68,7 +68,6 @@ export class HoldItem {
   }) {
     this.id = params.id;
     this.controlNumber = params.controlNumber;
-    this.customerId = params.customerId;
     this.holdDate = params.holdDate;
     this.agency = params.agency;
     this.caseNumber = params.caseNumber;
@@ -85,6 +84,7 @@ export class HoldItem {
     this.phoneExtension = params.phoneExtension;
     this.jurisdiction = params.jurisdiction;
     this.legacyHcnId = params.legacyHcnId;
+    this.clerkUsername = params.clerkUsername;
     this.updatedBy = params.updatedBy;
     this.createdAt = params.createdAt;
     this.updatedAt = params.updatedAt;

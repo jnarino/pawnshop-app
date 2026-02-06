@@ -1,7 +1,6 @@
 SELECT 
     h.id,
     h.control_number,
-    h.customer_id,
     h.hold_date,
     h.agency,
     h.case_number,
@@ -18,7 +17,8 @@ SELECT
     h.phone_extension,
     h.jurisdiction,
     h.legacy_hcn_id,
-    h.updated_by,
+    MAX(clerk.username) AS clerk_username,
+    MAX(updater.username) AS updated_by_username,
     h.created_at,
     h.updated_at,
     COALESCE(
@@ -60,6 +60,8 @@ LEFT JOIN inventory_item ii ON ii.id = hi.inventory_item_id
 LEFT JOIN inventory_subcategory isc ON isc.id = ii.inventory_subcategory_id
 LEFT JOIN inventory_category ic ON ic.id = isc.inventory_category_id
 LEFT JOIN inventory_brand ib ON ib.id = ii.inventory_brand_id
+LEFT JOIN app_user clerk ON clerk.id = h.clerk_user_id
+LEFT JOIN app_user updater ON updater.id = h.updated_by
 WHERE 1=1
 -- Filters will be appended dynamically or via IS NULL checks
     AND ($1::text IS NULL OR h.control_number = $1)
