@@ -6,11 +6,13 @@ import uuid
 import os
 from tqdm import tqdm
 from config import SQLSERVER_CONFIG, POSTGRES_CONFIG
-import argon2
+import bcrypt
 
 # Default password hash for "user"
-ph = argon2.PasswordHasher()
-DEFAULT_PASSWORD_HASH = ph.hash("user")
+# bcrypt.hashpw requires bytes, so we encode "user"
+# keys are generated with a salt
+salt = bcrypt.gensalt()
+DEFAULT_PASSWORD_HASH = bcrypt.hashpw("user".encode('utf-8'), salt).decode('utf-8')
 
 def migrate_users():
     print("🚀 Starting Users Migration (v2)...")

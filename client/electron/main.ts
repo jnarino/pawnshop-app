@@ -20,7 +20,7 @@ let serverProcess: ChildProcess | null = null; // Reference to server process
 let isAuthed = false; // retained for possible future use, no longer required for menu rendering
 let appConfig = {
   mode: 'server', // 'server' (default) or 'client'
-  serverUrl: 'http://localhost:3001'
+  serverUrl: 'http://localhost:3300'
 };
 
 function loadConfig() {
@@ -54,7 +54,10 @@ function loadConfig() {
       if (json.mode) appConfig.mode = json.mode;
       if (json.serverUrl) appConfig.serverUrl = json.serverUrl;
     } else {
-      console.log('[Electron] No config.json found, using defaults:', appConfig);
+      console.warn('[Electron] No config.json found! Using default configuration.');
+      // Fallback: If no config, assume standard production port from typical .env
+      // Ideally this should fail or ask user, but for now we default to 3300
+      appConfig.serverUrl = 'http://localhost:3300';
     }
   } catch (err) {
     console.error('[Electron] Failed to load config:', err);

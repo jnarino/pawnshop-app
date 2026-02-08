@@ -1,4 +1,4 @@
-const argon2 = require('argon2');
+const bcrypt = require('bcryptjs');
 const { Client } = require('pg');
 const dotenv = require('dotenv');
 const path = require('path');
@@ -33,8 +33,8 @@ async function createAdmin() {
 
         console.log(`Configuring admin user: ${username}`);
 
-        // Hash password using Node argon2 (defaults used by the app)
-        const passwordHash = await argon2.hash(password);
+        // Hash password using bcryptjs (matches application logic)
+        const passwordHash = await bcrypt.hash(password, 10);
 
         // Check if user exists
         const res = await client.query('SELECT id FROM app_user WHERE username = $1', [username]);

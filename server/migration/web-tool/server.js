@@ -3,6 +3,11 @@ const fs = require('fs');
 const http = require('http');
 const { Server } = require("socket.io");
 const path = require('path');
+
+// Load environment from server root
+const SERVER_ROOT = path.resolve(__dirname, '../../');
+require('dotenv').config({ path: path.join(SERVER_ROOT, '.env') });
+
 const { checkDependencies } = require('./lib/dependencies');
 const { runFullMigration, restoreSqlServer } = require('./lib/migration');
 const { createAdmin } = require('./lib/admin');
@@ -19,7 +24,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 3000;
+// Admin Tool runs on its own port (9000) to allow Backend (3300) to run simultaneously
+const ADMIN_PORT = 9000;
+// We still read the APP PORT from .env for configuration purposes
+const APP_PORT = process.env.PORT || 3300;
+
+const BUILD_ROOT_DIR = path.resolve(__dirname, '../../../client');
+const RESOURCES_DIR = path.join(BUILD_ROOT_DIR, 'resources');
+
+global.isBuilding = false;
 
 // Serve static UI
 app.use(express.static(path.join(__dirname, 'public')));
@@ -229,9 +242,109 @@ app.post('/api/install', async (req, res) => {
     }
 });
 
-server.listen(PORT, async () => {
-    console.log(`Installer running on http://localhost:${PORT}`);
-    // Open browser (dynamic import for ESM package compatibility)
-    const open = (await import('open')).default;
-    await open(`http://localhost:${PORT}`);
+// API: Start Build (Generator)
+app.post('/api/build', async (req, res) => {
+    const { mode, serverUrl, env } = req.body;
+
+    if (global.isBuilding) {
+        return res.status(409).json({ error: 'Build already in progress' });
+    }
+
+    global.isBuilding = true;
+    // Helper to log specifically for build
+    const buildLog = (msg, type = 'info') => {
+        log(`[BUILD] ${msg}`, type);
+    };
+
+    buildLog('Starting build process...', 'step');
+
+    try {
+        // 1. Write config.json
+        buildLog('Configuring application mode...', 'step');
+        if (!fs.existsSync(RESOURCES_DIR)) {
+            fs.mkdirSync(RESOURCES_DIR, { recursive: true });
+        }
+
+        // Generate config.json for the client
+        // This ensures the client knows which port to connect to (defined in server/.env)
+        const config = {
+            mode: mode, // 'server' or 'client'
+            serverUrl: serverUrl || `http://localhost:${APP_PORT}`
+        };
+
+        console.log(`[BUILD] Generating client config with Server URL: ${config.serverUrl}`);
+        fs.writeFileSync(path.join(RESOURCES_DIR, 'config.json'), JSON.stringify(config, null, 2));
+        buildLog(`Created config.json: ${JSON.stringify(config)}`, 'success');
+
+        // 2. Run Build
+        buildLog('Running electron-builder...', 'step');
+        buildLog('This may take several minutes. Please wait...');
+
+        const args = ['run', 'package', '--'];
+        if (req.body.platform === 'win') {
+            args.push('--win');
+        } else if (req.body.platform === 'mac') {
+            args.push('--mac');
+        }
+
+        buildLog(`Executing: npm ${args.join(' ')}`, 'step');
+
+        const execa = require('execa'); // Ensure execa is available here
+        const buildProcess = execa('npm', args, {
+            cwd: BUILD_ROOT_DIR,
+            env: {
+                ...process.env,
+                ...env // Inject user provided env vars
+            },
+            all: true
+        });
+
+        // Stream logs
+        buildProcess.all.on('data', (chunk) => {
+            const lines = chunk.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) buildLog(line.trim());
+            });
+        });
+
+        await buildProcess;
+
+        buildLog('Build completed successfully!', 'success');
+        global.isBuilding = false;
+        res.json({ success: true });
+
+    } catch (e) {
+        buildLog(`Build failed: ${e.message}`, 'error');
+        global.isBuilding = false;
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// API: Open Output Directory
+app.post('/api/open-dist', async (req, res) => {
+    const distPath = path.join(BUILD_ROOT_DIR, 'release');
+    try {
+        const open = (await import('open')).default;
+        await open(distPath);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+server.listen(ADMIN_PORT, async () => {
+    console.log('\n==================================================');
+    console.log(`   Admin Tool Running at: http://localhost:${ADMIN_PORT}`);
+    console.log('==================================================\n');
+    console.log('Attempting to open browser...');
+
+    try {
+        // Open browser (dynamic import for ESM package compatibility)
+        const open = (await import('open')).default;
+        await open(`http://localhost:${ADMIN_PORT}`);
+    } catch (e) {
+        console.error('\n[WARN] Failed to open browser automatically.');
+        console.error(`Please open http://localhost:${ADMIN_PORT} in your browser manually.\n`);
+        console.error(`Error details: ${e.message}`);
+    }
 });

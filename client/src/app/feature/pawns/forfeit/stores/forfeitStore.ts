@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { TicketByControlNumber, pawnTicketApi, InventoryItem } from '@/app/core/api/pawnTicketApi';
 import { InventoryItemDraft } from '@/app/feature/_shared/inventory-item';
 import { transformStones } from '@/app/shared/components/ElectronMenuBridge';
+import { getScrapInventoryNumbers } from '@/app/core/api/inventoryItemApi';
 
 interface SearchCriteria {
     from: string;
@@ -218,7 +219,6 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
 
     fetchScrapItems: async () => {
         try {
-            const { getScrapInventoryNumbers } = await import('@/app/core/api/inventoryItemApi');
             const items = await getScrapInventoryNumbers();
             set({ scrapItems: items });
         } catch (error) {

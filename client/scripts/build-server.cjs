@@ -48,28 +48,16 @@ esbuild.build({
         console.warn('⚠️ Migrations folder not found at:', migrationsSrc);
     }
 
-    // Copy .env.production for bundled app
-    const envSrc = path.resolve(__dirname, '../../server/.env.production');
-    const envDest = path.resolve(__dirname, '../dist-electron/.env.production');
+    // Copy .env for bundled app
+    const envSrc = path.resolve(__dirname, '../../server/.env');
+    const envDest = path.resolve(__dirname, '../dist-electron/.env');
 
     if (fs.existsSync(envSrc)) {
-        console.log('📂 Copying .env.production...');
+        console.log('📂 Copying .env...');
         fs.copyFileSync(envSrc, envDest);
-        console.log('✅ .env.production copied.');
+        console.log('✅ .env copied.');
     } else {
-        console.warn('⚠️ .env.production not found at:', envSrc);
-    }
-
-    // Copy .env.development for bundled app (Dev mode)
-    const envDevSrc = path.resolve(__dirname, '../../server/.env.development');
-    const envDevDest = path.resolve(__dirname, '../dist-electron/.env.development');
-
-    if (fs.existsSync(envDevSrc)) {
-        console.log('📂 Copying .env.development...');
-        fs.copyFileSync(envDevSrc, envDevDest);
-        console.log('✅ .env.development copied.');
-    } else {
-        console.log('ℹ️ .env.development not found (skipping).');
+        console.warn('⚠️ .env not found at:', envSrc);
     }
 
     // Generate Swagger JSON for bundled app

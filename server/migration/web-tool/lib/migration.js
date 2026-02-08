@@ -27,17 +27,15 @@ async function runPythonScript(scriptName, args = []) {
 
     try {
         // Check if image exists
-        const { stdout } = await execa('docker', ['images', '-q', imageName]);
-
-        if (!stdout.trim()) {
-            console.log(chalk.blue('Building migration container image...'));
-            await execa('docker', [
-                'build',
-                '-f', path.resolve(__dirname, '../Dockerfile.migration'),
-                '-t', imageName,
-                path.resolve(__dirname, '../../..')
-            ], { stdio: 'inherit' });
-        }
+        // Always attempt to build/update the image to ensure requirements.txt is fresh.
+        // Docker layer caching will make this fast if nothing changed.
+        console.log(chalk.blue('Building/Updating migration container image...'));
+        await execa('docker', [
+            'build',
+            '-f', path.resolve(__dirname, '../Dockerfile.migration'),
+            '-t', imageName,
+            path.resolve(__dirname, '../../..')
+        ], { stdio: 'inherit' });
 
         // Determine .env file to mount
         // runFullMigration copies the correct env to .env, so we just mount that.
