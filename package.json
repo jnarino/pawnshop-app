@@ -18,5 +18,8 @@
     "escpos": "^3.0.0-alpha.6",
     "escpos-usb": "^3.0.0-alpha.4",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.19"
   }
 }
