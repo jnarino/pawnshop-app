@@ -1,5 +1,9 @@
 const execa = require('execa');
 const chalk = require('chalk');
+const path = require('path');
+
+// Load environment variables
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 /**
  * Docker Management Module
@@ -12,26 +16,16 @@ const IMAGES = {
 };
 
 const CONTAINER_NAMES = {
-    dev: {
-        sqlserver: 'pawnshop_sqlserver_dev',
-        postgres: 'pawnshop_postgres_dev'
-    },
-    prod: {
-        sqlserver: 'pawnshop_sqlserver_prod',
-        postgres: 'pawnshop_postgres_prod'
-    }
+    sqlserver: process.env.CONTAINER_NAME_SQL || 'pawnshop_sqlserver_prod',
+    postgres: process.env.CONTAINER_NAME_PG || 'pawnshop_postgres_prod'
 };
 
 const PORTS = {
-    dev: {
-        sqlserver: '14331',
-        postgres: '54331'
-    },
-    prod: {
-        sqlserver: '14330',
-        postgres: '54330'
-    }
+    sqlserver: process.env.SQLSERVER_PORT || '14330', // Host Port
+    postgres: process.env.DB_PORT || process.env.POSTGRES_PORT || '54330' // Host Port
 };
+
+const NETWORK_NAME = process.env.DOCKER_NETWORK || 'pawnshop-app_default';
 
 /**
  * Check if Docker daemon is running
@@ -125,9 +119,52 @@ async function startContainer(containerName) {
 /**
  * Create SQL Server container
  */
-async function createSqlServerContainer(env = 'prod') {
-    const containerName = CONTAINER_NAMES[env].sqlserver;
-    const port = PORTS[env].sqlserver;
+/**
+ * Ensure Docker network exists
+ */
+async function ensureNetworkExists(networkName) {
+    try {
+        const { stdout } = await execa('docker', ['network', 'ls', '--filter', `name=^${networkName}$`, '--format', '{{.Name}}']);
+        if (stdout.trim() === networkName) {
+            return true;
+        }
+
+        console.log(chalk.blue(`Creating network: ${networkName}...`));
+        await execa('docker', ['network', 'create', networkName]);
+        console.log(chalk.green(`✓ Network created: ${networkName}`));
+        return true;
+    } catch (e) {
+        console.error(chalk.red(`Failed to create network: ${networkName}`), e.message);
+        return false;
+    }
+}
+
+/**
+ * Ensure Docker network exists
+ */
+async function ensureNetworkExists(networkName = NETWORK_NAME) {
+    try {
+        const { stdout } = await execa('docker', ['network', 'ls', '--filter', `name=^${networkName}$`, '--format', '{{.Name}}']);
+        if (stdout.trim() === networkName) {
+            return true;
+        }
+
+        console.log(chalk.blue(`Creating network: ${networkName}...`));
+        await execa('docker', ['network', 'create', networkName]);
+        console.log(chalk.green(`✓ Network created: ${networkName}`));
+        return true;
+    } catch (e) {
+        console.error(chalk.red(`Failed to create network: ${networkName}`), e.message);
+        return false;
+    }
+}
+
+/**
+ * Create SQL Server container
+ */
+async function createSqlServerContainer() {
+    const containerName = CONTAINER_NAMES.sqlserver;
+    const port = PORTS.sqlserver;
 
     console.log(chalk.blue(`Creating SQL Server container: ${containerName}...`));
 
@@ -136,6 +173,7 @@ async function createSqlServerContainer(env = 'prod') {
             'run',
             '-d',
             '--name', containerName,
+            '--network', NETWORK_NAME,
             '-e', 'ACCEPT_EULA=Y',
             '-e', 'SA_PASSWORD=YourStrong!Passw0rd',
             '-p', `${port}:1433`,
@@ -159,9 +197,9 @@ async function createSqlServerContainer(env = 'prod') {
 /**
  * Create PostgreSQL container
  */
-async function createPostgresContainer(env = 'prod') {
-    const containerName = CONTAINER_NAMES[env].postgres;
-    const port = PORTS[env].postgres;
+async function createPostgresContainer() {
+    const containerName = CONTAINER_NAMES.postgres;
+    const port = PORTS.postgres;
 
     console.log(chalk.blue(`Creating PostgreSQL container: ${containerName}...`));
 
@@ -170,6 +208,7 @@ async function createPostgresContainer(env = 'prod') {
             'run',
             '-d',
             '--name', containerName,
+            '--network', NETWORK_NAME,
             '-e', 'POSTGRES_PASSWORD=postgres',
             '-e', 'POSTGRES_DB=pawnshop',
             '-p', `${port}:5432`,
@@ -224,11 +263,8 @@ async function ensurePostgresDatabase(containerName, dbName) {
 /**
  * Setup all production containers
  */
-/**
- * Setup containers for specific environment
- */
-async function setupContainers(env = 'prod', setupType = 'migrate') {
-    console.log(chalk.bold(`\n=== Setting Up ${env.toUpperCase()} Containers ===\n`));
+async function setupContainers(setupType = 'migrate') {
+    console.log(chalk.bold(`\n=== Setting Up Production Containers ===\n`));
 
     // Check Docker is running
     if (!await checkDockerRunning()) {
@@ -245,13 +281,18 @@ async function setupContainers(env = 'prod', setupType = 'migrate') {
         }
     }
 
+    // Ensure Network Exists
+    if (!await ensureNetworkExists(NETWORK_NAME)) {
+        return false;
+    }
+
     // Create SQL Server container (Only if migrating)
     if (setupType === 'migrate') {
-        const sqlServerName = CONTAINER_NAMES[env].sqlserver;
+        const sqlServerName = CONTAINER_NAMES.sqlserver;
         const sqlServerStatus = await getContainerStatus(sqlServerName);
 
         if (sqlServerStatus === 'missing') {
-            if (!await createSqlServerContainer(env)) return false;
+            if (!await createSqlServerContainer()) return false;
         } else if (sqlServerStatus === 'stopped') {
             if (!await startContainer(sqlServerName)) return false;
         } else {
@@ -260,11 +301,11 @@ async function setupContainers(env = 'prod', setupType = 'migrate') {
     }
 
     // Create PostgreSQL container
-    const postgresName = CONTAINER_NAMES[env].postgres;
+    const postgresName = CONTAINER_NAMES.postgres;
     const postgresStatus = await getContainerStatus(postgresName);
 
     if (postgresStatus === 'missing') {
-        if (!await createPostgresContainer(env)) return false;
+        if (!await createPostgresContainer()) return false;
     } else if (postgresStatus === 'stopped') {
         if (!await startContainer(postgresName)) return false;
     } else {
@@ -274,7 +315,7 @@ async function setupContainers(env = 'prod', setupType = 'migrate') {
     // Ensure pawnshop database exists
     await ensurePostgresDatabase(postgresName, 'pawnshop');
 
-    console.log(chalk.bold.green(`\n✅ ${env.toUpperCase()} containers ready!\n`));
+    console.log(chalk.bold.green(`\n✅ Production containers ready!\n`));
     return true;
 }
 
@@ -283,13 +324,9 @@ async function setupContainers(env = 'prod', setupType = 'migrate') {
  */
 async function getAllContainersStatus() {
     const status = {
-        dev: {
-            sqlserver: await getContainerStatus(CONTAINER_NAMES.dev.sqlserver),
-            postgres: await getContainerStatus(CONTAINER_NAMES.dev.postgres)
-        },
         prod: {
-            sqlserver: await getContainerStatus(CONTAINER_NAMES.prod.sqlserver),
-            postgres: await getContainerStatus(CONTAINER_NAMES.prod.postgres)
+            sqlserver: await getContainerStatus(CONTAINER_NAMES.sqlserver),
+            postgres: await getContainerStatus(CONTAINER_NAMES.postgres)
         }
     };
 

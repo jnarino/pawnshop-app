@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { AppUserRepository } from '../../domains/appUser/AppUserRepository';
 import { AppUserSessionRepository } from '../../infrastructure/persistence/session/AppUserSessionRepository';
@@ -32,7 +32,7 @@ export class AuthService {
       throw new InvalidCredentialsError('Invalid username or password');
     }
 
-    const passwordOk = await argon2.verify(user.passwordHash, password);
+    const passwordOk = await bcrypt.compare(password, user.passwordHash);
     if (!passwordOk) {
       throw new InvalidCredentialsError('Invalid username or password');
     }

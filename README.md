@@ -2,235 +2,123 @@
 
 A desktop application for managing pawnshop operations, built with Electron, React, and Node.js.
 
-## Architecture
+## 🚀 Admin Tool (Primary Workflow)
 
-- **Client**: Electron + React + TypeScript + Vite
-- **Server**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL
-- **Cache**: Redis
+The **Admin Tool** is the central hub for this project. It handles:
+1.  **Database Migration**: Moving data from legacy SQL Server to PostgreSQL (Docker).
+2.  **Installer Generation**: Building the standalone `.exe` installer.
+3.  **Environment Configuration**: managing `.env` files.
 
-## Prerequisites
+### Starting the Admin Tool
 
-- Node.js (v18 or higher)
-- Docker Desktop (running)
-- PostgreSQL database (running on port 5432)
+**Windows:**
+Double-click `AdminTool.bat` in the root directory.
 
-## Quick Start
+**Linux / macOS:**
+Run the following terminal command:
+```bash
+./AdminTool.sh
+```
 
-### 1. Install All Dependencies
+---
 
-Run this command once to install dependencies for root, client, and server:
+## 📋 Requirements
 
+Before starting, ensure you have:
+-   **Node.js**: v18 or higher (v20+ recommended).
+-   **Docker Desktop**: Must be installed and **Running**.
+-   **Visual Studio Build Tools** (Windows only): Required for native module compilation (e.g., `bcrypt`, `sqlite`).
+
+---
+
+## ⚙️ Environment Variables
+
+The application is configured via two main `.env` files.
+
+### 1. Server Configuration (`server/.env`)
+Controls the backend API and database connections.
+
+```env
+# Node Environment
+NODE_ENV=development
+PORT=3300           # The port the backend server runs on
+
+# Docker / Database Ports
+DB_PORT=54330       # External port for PostgreSQL container
+POSTGRES_PORT=54330 # Internal port mapping
+
+# Legacy SQL Server (Source for Migration)
+SQLSERVER_HOST=localhost
+SQLSERVER_PORT=14330
+SQLSERVER_DB=PawnMaster_v2
+SQLSERVER_USER=sa
+SQLSERVER_PASSWORD=YourStrong!Passw0rd
+```
+
+### 2. Client Configuration (`client/.env`)
+Controls the frontend and build settings.
+
+```env
+# API Connection
+VITE_API_BASE_URL=http://localhost
+VITE_API_PORT=3300 # Must match server PORT
+
+# Store Information (Displayed in App)
+VITE_STORE_NAME="LARRY'S ESTATE JEWELRY & PAWN"
+VITE_STORE_ADDRESS1="3316 CLEVELAND AVE."
+```
+
+---
+
+## 🛠️ Migration & Build Guide (Step-by-Step)
+
+Follow these steps to set up the application from scratch using the Admin Tool.
+
+### Step 1: Start Docker
+Ensure Docker Desktop is running. The Admin Tool will automatically spin up the required containers (`pawnshop_postgres_prod` and `pawnshop_sqlserver_prod`).
+
+### Step 2: Open Admin Tool
+Run `AdminTool.bat` (or `./AdminTool.sh`). This will open a web interface in your browser (usually `http://localhost:3000`).
+
+### Step 3: Run Migration
+1.  Navigate to the **Migration** tab.
+2.  Follow the wizard steps to connect to your legacy SQL Server.
+3.  The tool will migrate users, inventory, and transactions to the new PostgreSQL database.
+4.  **Note**: This process creates a specialized "bcrypt-compatible" Docker image for the database.
+
+### Step 4: Generate Installer
+1.  Navigate to the **Build / Generator** tab (or "Tools" section).
+2.  Click **"Build Application"**.
+3.  The tool will:
+    *   Compile the Server (TypeScript -> JS).
+    *   Compile the Client (React -> Static Files).
+    *   Package everything into a standalone `.exe`.
+4.  Once complete, click **"Open Release Folder"** to find your installer (e.g., `Pawnshop App Setup 1.0.0.exe`).
+
+---
+
+## 💻 Development (Manual)
+
+If you prefer to run the project manually for development:
+
+### 0. Install All Dependencies
 ```bash
 npm run install:all
 ```
 
-This will:
-- Install root dependencies
-- Install client dependencies
-- Install server dependencies
-
-### 2. Start the Application
-
-Start the entire application stack with a single command:
-
-```bash
-npm start
-```
-
-This will:
-- Start Redis container via Docker Compose
-- Start the backend server (Express API)
-- Start the Electron desktop application
-
-## Available Scripts
-
-### Installation
-
-- `npm run install:all` - Install dependencies for all packages (root, client, server)
-
-### Running the Application
-
-- `npm start` - Start the complete application (Docker + Server + Client)
-- `npm run start:server` - Start only the backend server
-- `npm run start:client` - Start only the Electron client
-
-### Docker Management
-
-- `npm run docker:up` - Start Docker services (Redis)
-- `npm run docker:down` - Stop Docker services
-- `npm run docker:logs` - View Docker container logs
-
-## Manual Setup
-
-If you prefer to start components individually:
-
-### 1. Start Redis
-
-```bash
-docker-compose up -d
-```
-
-### 2. Start Server
-
-```bash
-cd server
-npm run dev
-```
-
-The server will run on `http://localhost:3000` (or configured port).
-
-### 3. Start Client
-
-```bash
-cd client
-npm run start:dev
-```
-
-This will:
-- Start Vite dev server on `http://localhost:5173`
-- Build and launch the Electron application
-
-## Project Structure
-
-```
-pawnshop-app/
-├── client/              # Electron + React frontend
-│   ├── src/            # React source code
-│   ├── dist-electron/  # Compiled Electron code
-│   └── package.json    # Client dependencies
-├── server/             # Express backend
-│   ├── src/           # Server source code
-│   └── package.json   # Server dependencies
-├── docker-compose.yml  # Docker services configuration
-├── package.json       # Root scripts and shared dependencies
-└── README.md          # This file
-```
-
-## Development
-
-### Client Development
-
-The client uses:
-- **Electron** for desktop application
-- **React 19** for UI
-- **TypeScript** for type safety
-- **Vite** for fast development
-- **Tailwind CSS** for styling
-- **shadcn/ui** for UI components
-
-Client scripts:
-- `npm run start:react` - Start only Vite dev server (no Electron)
-- `npm run start:electron` - Start only Electron
-- `npm run build` - Build for production
-
-### Server Development
-
-The server uses:
-- **Express** for REST API
-- **TypeScript** for type safety
-- **PostgreSQL** for database
-- **Redis** for caching
-
-Server scripts:
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Compile TypeScript
-- `npm run db:migrate` - Run database migrations
-
-## Environment Variables
-
-### Server (.env)
-
-Create a `.env` file in the `server` directory:
-
-```env
-# Database
-DATABASE_URL=postgresql://postgres:123456@localhost:5432/pawnshop
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Server
-PORT=3000
-NODE_ENV=development
-
-# JWT
-JWT_SECRET=your-secret-key
-```
-
-## Database Setup
-
-Make sure you have a PostgreSQL database named `pawnshop`:
-
-```bash
-# Connect to existing PostgreSQL container
-docker exec -it shoesx-postgres-db-1 psql -U postgres -c "CREATE DATABASE pawnshop;"
-```
-
-Run migrations:
-
-```bash
-cd server
-npm run db:migrate
-```
-
-## Troubleshooting
-
-### Docker not running
-
-If you see "Cannot connect to the Docker daemon":
-- Start Docker Desktop
-- Wait until it shows "Docker Desktop is running"
-
-### Port already in use
-
-If ports 3000, 5173, or 6379 are in use:
-- Stop other applications using these ports
-- Or modify the port configuration in the respective config files
-
-### Redis connection failed
-
-Check if Redis is running:
-```bash
-docker ps | grep redis
-```
-
-If not running:
+### 1. Start Database
 ```bash
 npm run docker:up
 ```
 
-### Database connection failed
-
-Verify PostgreSQL is running and the database exists:
+### 2. Start Backend
 ```bash
-docker exec -it shoesx-postgres-db-1 psql -U postgres -l
+npm run start:server
+# Runs on http://localhost:3300
 ```
 
-## Building for Production
-
-### Build Client
-
+### 3. Start Frontend
 ```bash
-cd client
-npm run build
+npm run start:client
+# Runs on http://localhost:5173 (Proxies /api -> localhost:3300)
 ```
-
-This creates:
-- `dist/` - Compiled React app
-- `dist-electron/` - Compiled Electron main process
-
-### Build Server
-
-```bash
-cd server
-npm run build
-```
-
-This creates:
-- `dist/` - Compiled server code
-
-## License
-
-ISC

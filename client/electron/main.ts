@@ -10,7 +10,10 @@ import dotenv from 'dotenv'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-dotenv.config({ path: join(__dirname, '../.env') })
+// Load correct .env file based on NODE_ENV
+const isDev = !app.isPackaged;
+const envFile = isDev ? '../.env.development' : '../.env';
+dotenv.config({ path: join(__dirname, envFile) });
 
 const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'http://localhost';
 const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
@@ -18,9 +21,11 @@ const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
 let mainWindow: BrowserWindow
 let serverProcess: ChildProcess | null = null; // Reference to server process
 let isAuthed = false; // retained for possible future use, no longer required for menu rendering
+
+// Default Config
 let appConfig = {
-  mode: 'server', // 'server' (default) or 'client'
-  serverUrl: 'http://localhost:3001'
+  mode: isDev ? 'client' : 'server', // Dev defaults to client (connects to external server)
+  serverUrl: `http://localhost:${process.env.VITE_API_PORT || 3300}`
 };
 
 function loadConfig() {
@@ -33,8 +38,6 @@ function loadConfig() {
     const userDataConfigPath = join(app.getPath('userData'), 'config.json');
 
     // Check in resources (bundled with installer)
-    // In dev: process.resourcesPath is usually node_modules/electron/dist/resources (not useful)
-    // In prod: it's inside the app bundle or next to it
     const resourcesConfigPath = join(process.resourcesPath, 'config.json');
 
     let configPath = '';
@@ -53,8 +56,12 @@ function loadConfig() {
       const json = JSON.parse(data);
       if (json.mode) appConfig.mode = json.mode;
       if (json.serverUrl) appConfig.serverUrl = json.serverUrl;
+    } else if (isDev) {
+      console.log('[Electron] Dev Mode: Using .env configuration');
+      // In dev, we stick to defaults set above from .env
     } else {
-      console.log('[Electron] No config.json found, using defaults:', appConfig);
+      console.warn('[Electron] No config.json found! Using default configuration.');
+      appConfig.serverUrl = 'http://localhost:3300';
     }
   } catch (err) {
     console.error('[Electron] Failed to load config:', err);

@@ -4,9 +4,11 @@ const ACCESS_TOKEN_KEY = 'pawnshopApp.auth.accessToken';
 const REFRESH_TOKEN_KEY = 'pawnshopApp.auth.refreshToken';
 const ACCESS_EXPIRES_AT_KEY = 'pawnshopApp.auth.accessExpiresAt';
 
-const REFRESH_ENDPOINT = '/api/auth/refresh';
-const LOGIN_ENDPOINT = '/api/auth/login';
-const LOGOUT_ENDPOINT = '/api/auth/logout';
+import { getApiBaseUrl } from '../api/apiConfig';
+
+const REFRESH_ENDPOINT = () => `${getApiBaseUrl()}/api/auth/refresh`;
+const LOGIN_ENDPOINT = () => `${getApiBaseUrl()}/api/auth/login`;
+const LOGOUT_ENDPOINT = () => `${getApiBaseUrl()}/api/auth/logout`;
 
 const REFRESH_LEEWAY_MS = 60_000;
 
@@ -50,7 +52,7 @@ function notifyElectronAuthChange(isAuthenticated: boolean): void {
 
 export async function login(username: string, password: string): Promise<boolean> {
   try {
-    const response = await fetch(LOGIN_ENDPOINT, {
+    const response = await fetch(LOGIN_ENDPOINT(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -62,10 +64,21 @@ export async function login(username: string, password: string): Promise<boolean
       notifyElectronAuthChange(true);
       return true;
     }
-    return false;
+
+    // Server responded with an error (e.g. 401, 500)
+    if (response.status === 401) {
+      console.warn('Login failed: Invalid credentials');
+      return false; // Let UI handle "Invalid username or password" specifically for 401
+    }
+
+    // For other errors (500, etc), throw specific message
+    const errorText = await response.text();
+    throw new Error(`Server Error (${response.status}): ${errorText || response.statusText}`);
+
   } catch (error) {
     console.error('Login failed:', error);
-    return false;
+    // Re-throw network errors so UI shows them instead of "Invalid username or password"
+    throw error;
   }
 }
 
@@ -74,7 +87,7 @@ export async function logout(): Promise<void> {
 
   try {
     if (refreshToken) {
-      await fetch(LOGOUT_ENDPOINT, {
+      await fetch(LOGOUT_ENDPOINT(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken })
@@ -111,7 +124,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const response = await fetch(REFRESH_ENDPOINT, {
+    const response = await fetch(REFRESH_ENDPOINT(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken })

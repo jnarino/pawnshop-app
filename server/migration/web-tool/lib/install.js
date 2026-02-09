@@ -22,7 +22,21 @@ async function installNpmDependencies(dir, name) {
 async function createStartupScript(env = 'prod') {
     console.log(chalk.blue('Creating startup script...'));
 
-    const PORT = env === 'prod' ? 3000 : 3001;
+    // Read PORT from .env file directly to ensure it matches configuration
+    let PORT = env === 'prod' ? 3300 : 3301; // Fallback
+    try {
+        const envPath = path.join(EXPRESS_DIR, '.env');
+        if (fs.existsSync(envPath)) {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const match = envContent.match(/^PORT=(\d+)/m);
+            if (match && match[1]) {
+                PORT = parseInt(match[1]);
+                console.log(chalk.gray(`Found PORT=${PORT} in .env`));
+            }
+        }
+    } catch (e) {
+        console.warn('Could not read .env for PORT, using default:', PORT);
+    }
     const NODE_ENV = env === 'prod' ? 'production' : 'development';
 
     const isWin = process.platform === 'win32';
@@ -62,8 +76,17 @@ npm run start
 }
 
 async function installApplication(env = 'prod') {
-    // 1. Install & Build Express (Build might not be needed if just running node src/server.js, but let's assume 'build' compiles TS if present or does cleanup)
+    // 1. Install & Build Express
     if (!await installNpmDependencies(EXPRESS_DIR, 'Backend API')) return false;
+
+    // Explicitly run build to compile TypeScript -> dist/
+    console.log(chalk.blue('Building Backend API (TypeScript)...'));
+    try {
+        await execa('npm', ['run', 'build'], { cwd: EXPRESS_DIR, stdio: 'inherit' });
+    } catch (e) {
+        console.error('Failed to build backend:', e.message);
+        return false;
+    }
 
     // 2. Create Startup Script
     const scriptPath = await createStartupScript(env);

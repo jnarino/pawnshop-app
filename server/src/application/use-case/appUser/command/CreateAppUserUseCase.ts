@@ -1,4 +1,4 @@
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import { AppUser } from '../../../../domains/appUser/AppUser';
 import { AppUserRepository } from '../../../../domains/appUser/AppUserRepository';
 import { Actor } from '../../../common/Actor';
@@ -21,7 +21,7 @@ export class CreateAppUserUseCase {
     this.assertCanManage(actor);
     const dto = createAppUserSchema.parse(input) as CreateAppUserRequestDto;
 
-    const passwordHash = await argon2.hash(dto.password);
+    const passwordHash = await bcrypt.hash(dto.password, 10);
     const now = new Date();
     const startingDate = dto.startingDate ? new Date(dto.startingDate) : now;
     const birthDate = dto.birthDate ? new Date(dto.birthDate) : null;

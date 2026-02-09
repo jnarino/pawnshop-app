@@ -196,49 +196,49 @@ export const options: swaggerJsdoc.Options = {
                         phoneNumber: { type: 'string' },
                         phoneExtension: { type: 'string' },
                         jurisdiction: { type: 'string' },
-                        itemIds: { 
+                        itemIds: {
                             type: 'array',
                             items: { type: 'string', format: 'uuid' }
                         }
                     },
                 },
                 PoliceHoldResponseDto: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    controlNumber: { type: 'string' },
-                    holdDate: { type: 'string' },
-                    agency: { type: 'string' },
-                    caseNumber: { type: 'string' },
-                    dateOut: { type: 'string', nullable: true },
-                    isHold: { type: 'boolean' },
-                    isInventory: { type: 'boolean' },
-                    comment: { type: 'string', nullable: true },
-                    agentLastName: { type: 'string', nullable: true },
-                    agentFirstName: { type: 'string', nullable: true },
-                    agentMiddleInitial: { type: 'string', nullable: true },
-                    badgeNumber: { type: 'string', nullable: true },
-                    phoneAreaCode: { type: 'string', nullable: true },
-                    phoneNumber: { type: 'string', nullable: true },
-                    phoneExtension: { type: 'string', nullable: true },
-                    jurisdiction: { type: 'string', nullable: true },
-                    legacyHcnId: { type: 'string', nullable: true },
-                    clerkUsername: { type: 'string', nullable: true },
-                                        updateBy: { type: 'string', nullable: true },
-                    items: {
-                        type: 'array',
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        controlNumber: { type: 'string' },
+                        customerId: { type: 'string' },
+                        holdDate: { type: 'string' },
+                        agency: { type: 'string' },
+                        caseNumber: { type: 'string' },
+                        dateOut: { type: 'string', nullable: true },
+                        isHold: { type: 'boolean' },
+                        isInventory: { type: 'boolean' },
+                        comment: { type: 'string', nullable: true },
+                        agentLastName: { type: 'string', nullable: true },
+                        agentFirstName: { type: 'string', nullable: true },
+                        agentMiddleInitial: { type: 'string', nullable: true },
+                        badgeNumber: { type: 'string', nullable: true },
+                        phoneAreaCode: { type: 'string', nullable: true },
+                        phoneNumber: { type: 'string', nullable: true },
+                        phoneExtension: { type: 'string', nullable: true },
+                        jurisdiction: { type: 'string', nullable: true },
+                        legacyHcnId: { type: 'string', nullable: true },
+                        updatedBy: { type: 'string', nullable: true },
                         items: {
-                            type: 'object',
-                            properties: {
-                                inventoryItemId: { type: 'string' },
-                                inventoryNumber: { type: 'string', nullable: true },
-                                model: { type: 'string', nullable: true },
-                                serialNumber: { type: 'string', nullable: true },
-                                itemDescription: { type: 'string', nullable: true }
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    inventoryItemId: { type: 'string' },
+                                    inventoryNumber: { type: 'string', nullable: true },
+                                    model: { type: 'string', nullable: true },
+                                    serialNumber: { type: 'string', nullable: true },
+                                    itemDescription: { type: 'string', nullable: true }
+                                }
                             }
                         }
                     }
-                  }
                 },
             },
         },
@@ -261,10 +261,10 @@ const staticPath = path.join(__dirname, 'swagger.json');
 const staticPathCwd = path.join(process.cwd(), 'swagger.json'); // Check CWD too
 
 if (fs.existsSync(staticPath)) {
-    console.log('[Swagger] Loading static spec from:', staticPath);
+    console.error('[Swagger] Loading static spec from:', staticPath);
     spec = JSON.parse(fs.readFileSync(staticPath, 'utf8'));
 } else if (fs.existsSync(staticPathCwd)) {
-    console.log('[Swagger] Loading static spec from CWD:', staticPathCwd);
+    console.error('[Swagger] Loading static spec from CWD:', staticPathCwd);
     spec = JSON.parse(fs.readFileSync(staticPathCwd, 'utf8'));
 } else {
     // Fallback to dynamic generation
@@ -286,7 +286,7 @@ export const swaggerUiOptions = {
                         // Programmatically set the authorization
                         // @ts-ignore
                         window.ui.preauthorizeApiKey("bearerAuth", token);
-                        console.log('[Swagger Auto-Auth] Token set automatically');
+                        console.error('[Swagger Auto-Auth] Token set automatically');
                     }
                 } catch (e) {
                     console.error('[Swagger Auto-Auth] Failed to set token', e);
