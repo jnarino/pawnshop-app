@@ -16,6 +16,7 @@ export interface LayawayDraftState {
   maturityDate: string;
   expirationDate: string;
   items: InventoryItemDraft[];
+  isPull: boolean;
 }
 
 export interface LayawayWorkflowState {
@@ -23,6 +24,7 @@ export interface LayawayWorkflowState {
   customer: Customer | null;
   mode: any;
   isLayaway: boolean;
+  isPull: boolean;
   initialTicket: any;
   setCustomer: (customer: Customer | null) => void;
   pawnDraft: LayawayDraftState;
@@ -52,7 +54,7 @@ function createInitialDraft(): LayawayDraftState {
   };
 }
 
-export function LayawayWorkflowProvider({ children, initialTicket, mode, isLayaway }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }>) {
+export function LayawayWorkflowProvider({ children, initialTicket, mode, isLayaway, isPull }: Readonly<{ children: ReactNode, initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean, isPull?: boolean }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   const canNavigateToTab = useCallback((tab: TabKey) => {
@@ -91,6 +93,7 @@ export function LayawayWorkflowProvider({ children, initialTicket, mode, isLayaw
     customer,
     mode: mode || 'CREATE',
     isLayaway: isLayaway || false,
+    isPull: isPull || false,
     initialTicket,
     setCustomer,
     pawnDraft,

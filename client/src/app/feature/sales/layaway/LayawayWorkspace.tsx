@@ -15,7 +15,8 @@ function LayawayWorkspaceContent() {
     isLayaway,
     initialTicket,
     setCustomer,
-    navigateToTab
+    navigateToTab,
+    isPull
   } = useLayawayWorkflow();
 
   const handleTabChange = (tab: string) => {
@@ -59,6 +60,7 @@ function LayawayWorkspaceContent() {
             isLayaway={isLayaway}
             initialTicket={initialTicket}
             customer={customer}
+            isPull={isPull}
           />
         </TabsContent>
       </Tabs>
@@ -66,9 +68,9 @@ function LayawayWorkspaceContent() {
   );
 }
 
-export default function LayawayWorkspace({ initialTicket, mode, isLayaway }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean }) {
+export default function LayawayWorkspace({ initialTicket, mode, isLayaway, isPull }: { initialTicket?: any, mode?: 'VIEW' | 'CREATE', isLayaway?: boolean, isPull?: boolean }) {
   return (
-    <LayawayWorkflowProvider initialTicket={initialTicket} mode={mode} isLayaway={isLayaway}>
+    <LayawayWorkflowProvider initialTicket={initialTicket} mode={mode} isLayaway={isLayaway} isPull={isPull}>
       <LayawayWorkspaceContent />
     </LayawayWorkflowProvider>
   );

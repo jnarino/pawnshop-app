@@ -15,9 +15,10 @@ interface NewLayawayTabProps {
   readonly mode: any;
   readonly isLayaway: boolean;
   readonly initialTicket?: any | null;
+  readonly isPull?: boolean;
 }
 
-export default function NewLayawayTab({ customer, onTicketCreated, mode, isLayaway, initialTicket }: NewLayawayTabProps) {
+export default function NewLayawayTab({ customer, onTicketCreated, mode, isLayaway, initialTicket, isPull }: NewLayawayTabProps) {
   const navigate = useNavigate();
   const { createTicket, isLoading, error, success } = useCreateLayaway();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = useLayawayWorkflow();
@@ -146,6 +147,7 @@ export default function NewLayawayTab({ customer, onTicketCreated, mode, isLayaw
           disabled={isLoading || mode === 'VIEW'}
           mode={mode}
           isLayaway={isLayaway}
+          isPull={isPull}
           initialData={mode === 'VIEW' ? initialTicket : undefined}
         />
       </div>

@@ -1,71 +1,75 @@
 import { Button } from '@/components/ui/button';
 import { FieldLegend, FieldSet } from '@/components/ui/field';
 import { CancelButton } from '@/app/shared/components/CancelButton';
-import { PrintLabelsModal } from '@/app/feature/_shared/pawn-ticket/components/PrintLabelsModal';
-// import { PawnList } from './PawnList';
-// import { PawnItemList } from './PawnItemList';
-import { useForfeitStore } from '@/app/feature/pawns/forfeit/stores/forfeitStore';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ForfeitSearchBar } from '@/app/shared/components/ForfeitSearchBar';
+import { LayawayForfeitSearchBar } from './ForfeitSearchBar';
+import { useState } from 'react';
+import { layawayApi } from '@/app/core/api/layawayApi';
+import { LayawayList } from '../layaway/maintain/LayawayList';
+import LayawayWorkspace from '../layaway/LayawayWorkspace';
 
 function LayawayForfeitWorkspaceContent() {
-  const { submitForfeit, selectedItems, reset, createdItems, closePrintModal, selectedPawn, loadingProcessPull, submitError } = useForfeitStore();
+
+  const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+
+  const searchLayaways = async ({ from, to, ticketNumber }: { from: string; to: string; ticketNumber: string }) => {
+    try {
+      let results: any[] = [];
+
+      if (ticketNumber.trim()) {
+        results = await layawayApi.getByDateRange(from, to, 'defaulted', ticketNumber.trim());
+      } else if (from && to) {
+        results = await layawayApi.getByDateRange(from, to, 'defaulted');
+      }
+
+      console.log(results);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching pawns:', error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenTicket = (row: any) => {
+    setSelectedTicket(row);
+  };
 
   return (
     <>
       <h1 className="text-2xl font-extrabold mb-2.5">Layaway Forfeit (Pull)</h1>
 
+
       <div className="flex flex-col space-y-4">
-        <div className='self-end'>
-          <CancelButton onCancelTransaction={reset} />
-        </div>
-
-        <div className="grid grid-cols-5 gap-4">
-          <FieldSet className="card section col-span-2">
-            <FieldLegend className="mb-2 text-sm">Personal Information</FieldLegend>
-            <ForfeitSearchBar />
-          </FieldSet>
-          <div className='col-span-3'>
-            {/* <PawnList /> */}
+        {!selectedTicket && (
+          <><div className='self-end'>
+            <CancelButton />
           </div>
-        </div>
 
-        <div className='mt-4'>
-          {/* <PawnItemList /> */}
-        </div>
+            <div className="grid grid-cols-5 gap-4">
+              <FieldSet className="card section col-span-2">
+                <FieldLegend className="mb-2 text-sm">Personal Information</FieldLegend>
+                <LayawayForfeitSearchBar searchLayaways={searchLayaways} loading={loading} />
+              </FieldSet>
+            </div>
 
-        {selectedItems.length > 0 && (
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={submitForfeit}
-              disabled={!selectedItems.every(item => item.status === 'Pulled')}
-            >
-              Process Pull
-            </Button>
+            <div className='mt-4'>
+              <LayawayList layaways={searchResults} loading={loading} handleOpenTicket={handleOpenTicket} />
+            </div>
+          </>
+        )}
 
-            {loadingProcessPull && (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            )}
+        {selectedTicket && (
+          <div className="space-y-4">
+            <LayawayWorkspace initialTicket={selectedTicket} mode="VIEW" isLayaway={true} isPull />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
+            </div>
           </div>
         )}
 
-        <PrintLabelsModal
-          open={createdItems.length > 0}
-          controlNumber={selectedPawn?.controlNumber || ''}
-          items={createdItems}
-          onPrint={(counts) => {
-            closePrintModal();
-          }}
-          onCancel={closePrintModal}
-        />
-
-        {(submitError) && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        )}
       </div>
     </>
   );
