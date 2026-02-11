@@ -18,7 +18,6 @@ export type PoliceHoldItemDto = {
 export type PoliceHoldResponseDto = {
   id: string;
   controlNumber: string;
-  customerId: string;
   holdDate: string; // ISO
   agency: string;
   caseNumber: string;
@@ -35,6 +34,7 @@ export type PoliceHoldResponseDto = {
   phoneExtension: string | null;
   jurisdiction: string | null;
   legacyHcnId: string | null;
-  updatedBy: string | null;
+  clerkUsername: string | null;
+  updateBy: string | null;
   items: PoliceHoldItemDto[];
 };

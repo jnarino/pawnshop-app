@@ -4,8 +4,10 @@ import { HoldRepository, HoldCriteria } from '../../../domains/hold/HoldReposito
 import { HoldItem } from '../../../domains/hold/HoldItem';
 
 const SQL_LIST = loadSql('queries', 'hold/hold_item_list');
+const SQL_FIND_BY_ID = loadSql('queries', 'hold/hold_item_find_by_id');
 const SQL_CREATE = loadSql('commands', 'hold/hold_item_create');
 const SQL_CREATE_ITEM = loadSql('commands', 'hold/hold_item_inventory_create');
+const SQL_UPDATE = loadSql('commands', 'hold/hold_item_update');
 
 type DbClient = Pool | PoolClient;
 
@@ -19,11 +21,9 @@ export class PgHoldRepository implements HoldRepository {
     const res = await this.pool.query(SQL_CREATE, [
       hold.id,
       hold.controlNumber,
-      // customer_id ignored in SQL
       hold.holdDate,
       hold.agency,
       hold.caseNumber,
-      // date_out ignored
       hold.isHold,
       hold.isInventory,
       hold.comment,
@@ -47,12 +47,80 @@ export class PgHoldRepository implements HoldRepository {
       ]);
     }
 
-    // Return mapped entity (simplified for now as we just created it)
-    // In a real app we might want to refetch or construct from row
+   
     return new HoldItem({
        ...hold,
        createdAt: row.created_at,
        updatedAt: row.updated_at
+    });
+  }
+
+  async findById(id: string): Promise<HoldItem | null> {
+    const result = await this.pool.query(SQL_FIND_BY_ID, [id]);
+    if (result.rowCount === 0) return null;
+    const row = result.rows[0];
+
+    return new HoldItem({
+      id: row.id,
+      controlNumber: row.control_number,
+      holdDate: row.hold_date,
+      agency: row.agency,
+      caseNumber: row.case_number,
+      dateOut: row.date_out,
+      isHold: row.is_hold,
+      isInventory: row.is_inventory,
+      comment: row.comment,
+      agentLastName: row.agent_last_name,
+      agentFirstName: row.agent_first_name,
+      agentMiddleInitial: row.agent_middle_initial,
+      badgeNumber: row.badge_number,
+      phoneAreaCode: row.phone_area_code,
+      phoneNumber: row.phone_number,
+      phoneExtension: row.phone_extension,
+      jurisdiction: row.jurisdiction,
+      legacyHcnId: row.legacy_hcn_id,
+      clerkUsername: row.clerk_username,
+      updatedBy: row.updated_by_username,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      items: row.items
+    });
+  }
+
+  async update(hold: HoldItem, inventoryItemIds: string[]): Promise<HoldItem | null> {
+    const result = await this.pool.query(SQL_UPDATE, [
+      hold.id,
+      hold.holdDate,
+      hold.agency,
+      hold.caseNumber,
+      hold.isHold,
+      hold.isInventory,
+      hold.comment,
+      hold.agentLastName,
+      hold.agentFirstName,
+      hold.agentMiddleInitial,
+      hold.badgeNumber,
+      hold.phoneAreaCode,
+      hold.phoneNumber,
+      hold.phoneExtension,
+      hold.jurisdiction
+    ]);
+
+    if (result.rowCount === 0) return null;
+
+    for (const itemId of inventoryItemIds) {
+      await this.pool.query(SQL_CREATE_ITEM, [
+        crypto.randomUUID(),
+        hold.id,
+        itemId
+      ]);
+    }
+
+    const row = result.rows[0];
+    return new HoldItem({
+      ...hold,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     });
   }
 
@@ -70,7 +138,6 @@ export class PgHoldRepository implements HoldRepository {
     return result.rows.map(row => new HoldItem({
       id: row.id,
       controlNumber: row.control_number,
-      customerId: row.customer_id,
       holdDate: row.hold_date,
       agency: row.agency,
       caseNumber: row.case_number,
@@ -87,7 +154,8 @@ export class PgHoldRepository implements HoldRepository {
       phoneExtension: row.phone_extension,
       jurisdiction: row.jurisdiction,
       legacyHcnId: row.legacy_hcn_id,
-      updatedBy: row.updated_by,
+      clerkUsername: row.clerk_username,
+      updatedBy: row.updated_by_username,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       items: row.items

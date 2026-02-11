@@ -8,4 +8,5 @@ INSERT INTO hold_item_inventory (
     $2,
     $3,
     NOW()
-);
+)
+ON CONFLICT (hold_item_id, inventory_item_id) DO NOTHING;

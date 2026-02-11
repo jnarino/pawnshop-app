@@ -1,12 +1,14 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { CreatePoliceHoldUseCase } from '../../../../application/use-case/hold/command/CreatePoliceHoldUseCase';
+import { UpdatePoliceHoldUseCase } from '../../../../application/use-case/hold/command/UpdatePoliceHoldUseCase';
 import { ListPoliceHoldUseCase } from '../../../../application/use-case/hold/query/ListPoliceHoldUseCase';
 
 export class PoliceController {
   constructor(
     private readonly listPoliceHoldUseCase: ListPoliceHoldUseCase,
-    private readonly createPoliceHoldUseCase: CreatePoliceHoldUseCase
+    private readonly createPoliceHoldUseCase: CreatePoliceHoldUseCase,
+    private readonly updatePoliceHoldUseCase: UpdatePoliceHoldUseCase
   ) {}
 
   /**
@@ -16,6 +18,19 @@ export class PoliceController {
     try {
       const result = await this.createPoliceHoldUseCase.execute(req.body);
       return res.status(201).json(result);
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * PUT /api/police/holds/:id
+   */
+  updatePoliceHold = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const payload = { ...req.body, id: req.params.id };
+      const result = await this.updatePoliceHoldUseCase.execute(payload);
+      return res.json(result);
     } catch (err) {
       return next(err);
     }

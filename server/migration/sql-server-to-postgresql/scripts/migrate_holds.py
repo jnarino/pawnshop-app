@@ -24,14 +24,6 @@ def safe_str(value):
 def migrate_holds():
     print("🚀 Starting Police Hold Migration...")
     
-    # Load Customer Map
-    try:
-        with open('customer_map.json', 'r') as f:
-            customer_map = json.load(f)
-    except FileNotFoundError:
-        print("❌ customer_map.json not found. Run migrate_customers first.")
-        customer_map = {}
-
     # Load User Map
     try:
         with open('user_map.json', 'r') as f:
@@ -62,9 +54,9 @@ def migrate_holds():
                 # Map Fields
                 control_number = safe_str(row.get('LookupKey'))
                 
-                # Map Customer (emp_fk)
+                # Map Clerk User (emp_fk)
                 emp_fk = safe_str(row.get('emp_fk'))
-                customer_id = customer_map.get(emp_fk) if emp_fk else None
+                clerk_user_id = user_map.get(emp_fk) if emp_fk else None
                 
                 # Map User (LastUpdatedUSR_ID)
                 # This field was a FK to USR in SQL Server? Inspect output says it was UUID '5c8e6a...'
@@ -97,7 +89,7 @@ def migrate_holds():
                 batch_data.append((
                     safe_str(row.get('HCN_id')) or str(uuid.uuid4()), # id (Use HCN_id if valid UUID)
                     control_number,
-                    customer_id,
+                    clerk_user_id,
                     hold_date,
                     safe_str(row.get('agency')),
                     safe_str(row.get('casenum')),
@@ -115,7 +107,8 @@ def migrate_holds():
                     safe_str(row.get('ext1')),
                     safe_str(row.get('jurisdict')),
                     safe_str(row.get('HCN_id')), # legacy_hcn_id
-                    updated_by
+                    updated_by,
+                    hold_date
                 ))
                 
                 if len(batch_data) >= batch_size:
@@ -144,11 +137,11 @@ def migrate_holds():
 def _insert_batch(cursor, data):
     sql = """
         INSERT INTO hold_item (
-            id, control_number, customer_id, hold_date, agency, case_number,
+            id, control_number, clerk_user_id, hold_date, agency, case_number,
             date_out, is_hold, is_inventory, item_list, comment,
             agent_last_name, agent_first_name, agent_middle_initial, badge_number,
             phone_area_code, phone_number, phone_extension, jurisdiction,
-            legacy_hcn_id, updated_by
+            legacy_hcn_id, updated_by, created_at
         ) VALUES %s
         ON CONFLICT (id) DO NOTHING
     """

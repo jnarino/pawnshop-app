@@ -62,12 +62,6 @@ LEFT JOIN inventory_category ic ON ic.id = isc.inventory_category_id
 LEFT JOIN inventory_brand ib ON ib.id = ii.inventory_brand_id
 LEFT JOIN app_user clerk ON clerk.id = h.clerk_user_id
 LEFT JOIN app_user updater ON updater.id = h.updated_by
-WHERE 1=1
--- Filters will be appended dynamically or via IS NULL checks
-    AND ($1::text IS NULL OR h.control_number = $1)
-    AND ($2::text IS NULL OR h.case_number = $2)
-    AND ($3::text IS NULL OR ii.inventory_number = $3)
-    AND ($4::text IS NULL OR h.jurisdiction ILIKE '%' || $4 || '%')
-    AND ($5::text IS NULL OR h.agency ILIKE '%' || $5 || '%')
+WHERE h.id = $1
 GROUP BY h.id
 ORDER BY h.hold_date DESC;

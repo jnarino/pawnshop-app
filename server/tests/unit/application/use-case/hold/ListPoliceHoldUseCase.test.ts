@@ -10,10 +10,9 @@ describe('ListPoliceHoldUseCase', () => {
     beforeEach(() => {
         mockRepo = {
             findList: jest.fn(),
-            findById: jest.fn(),
             create: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn()
+            findById: jest.fn(),
+            update: jest.fn()
         } as unknown as jest.Mocked<HoldRepository>;
 
         useCase = new ListPoliceHoldUseCase(mockRepo);
@@ -28,7 +27,6 @@ describe('ListPoliceHoldUseCase', () => {
         const mockHold = new HoldItem({
             id: 'hold-1',
             controlNumber: '1000',
-            customerId: 'cust-1',
             holdDate: mockDate,
             agency: 'Police',
             caseNumber: 'CASE-123',
@@ -45,6 +43,7 @@ describe('ListPoliceHoldUseCase', () => {
             phoneExtension: '101',
             jurisdiction: 'City',
             legacyHcnId: null,
+            clerkUsername: 'clerk1',
             updatedBy: null,
             createdAt: mockDate,
             updatedAt: mockDate,

@@ -28,6 +28,14 @@ SELECT
   la.item_last_updated_user_id,
   la.items_id,
   la.created_at,
-  la.updated_at
+  la.updated_at,
+  c.first_name as customer_first_name,
+  c.middle_name as customer_middle_name,
+  c.last_name as customer_last_name,
+  c.date_of_birth as customer_date_of_birth,
+  c.phone_number as customer_phone_number,
+  c.cell_phone as customer_cell_phone,
+  c.email as customer_email
 FROM layaway_agreement la
+LEFT JOIN customer c ON c.id = la.customer_id
 WHERE la.ticketnum = $1;
