@@ -33,7 +33,7 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
 
     const handleToggleAll = (checked: boolean) => {
         if (checked) {
-            const allIds = items.map(i => i.id || '').filter(Boolean);
+            const allIds = items.map(i => i.inventoryNumber || '').filter(Boolean);
             setSelectedItems(new Set(allIds));
         } else {
             setSelectedItems(new Set());
@@ -41,12 +41,12 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
     };
 
     const handleSubmit = () => {
-        const itemsToReturn = items.filter(i => i.id && selectedItems.has(i.id));
+        const itemsToReturn = items.filter(i => i.inventoryNumber && selectedItems.has(i.inventoryNumber));
         onConfirm(itemsToReturn, reason);
     };
 
     const totalRefund = items
-        .filter(i => i.id && selectedItems.has(i.id))
+        .filter(i => i.inventoryNumber && selectedItems.has(i.inventoryNumber))
         .reduce((sum, i) => sum + (Number(i.amount) || Number((i as any).lineAmount) || Number(i.priceEach) || 0), 0);
 
     if (!open) return null;
@@ -89,11 +89,11 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
                             </TableHeader>
                             <TableBody>
                                 {items.map((item) => (
-                                    <TableRow key={item.id}>
+                                    <TableRow key={item.inventoryNumber}>
                                         <TableCell>
                                             <Checkbox
-                                                checked={item.id ? selectedItems.has(item.id) : false}
-                                                onCheckedChange={() => item.id && handleToggleItem(item.id)}
+                                                checked={item.inventoryNumber ? selectedItems.has(item.inventoryNumber) : false}
+                                                onCheckedChange={() => item.inventoryNumber && handleToggleItem(item.inventoryNumber)}
                                             />
                                         </TableCell>
                                         <TableCell>

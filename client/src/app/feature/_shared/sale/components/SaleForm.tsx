@@ -337,10 +337,10 @@ export function SaleForm({
       console.log({ payload })
 
       if (isLayaway) {
-        // await layawayApi.voidLayaway(initialData.id, payload);
+        await layawayApi.voidLayaway(initialData.id, payload);
         setAlertMessage('Layaway voided/returned successfully');
       } else {
-        // await salesApi.voidSale(initialData.id, payload);
+        await salesApi.voidSale(initialData.id, payload);
         setAlertMessage('Sale voided/returned successfully');
       }
       setShowRefundPaymentModal(false);
