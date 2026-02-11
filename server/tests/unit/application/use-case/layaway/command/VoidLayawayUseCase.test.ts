@@ -22,6 +22,7 @@ describe('VoidLayawayUseCase', () => {
             create: jest.fn(),
         };
         mockInventoryRepo = {
+            findById: jest.fn(),
             updateStatusAndQuantity: jest.fn(),
         };
 
@@ -67,11 +68,17 @@ describe('VoidLayawayUseCase', () => {
 
     it('should void layaway, return items to inventory, and create negative transaction', async () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue(layawayItems);
+        mockInventoryRepo.findById.mockResolvedValue({ id: '56064fbb-428e-49cc-abeb-6571886b4f5f', status: 'L' });
 
         const input = {
-            ticketnum: ticketnum,
-            amountToReturn: 50,
-            tenderTypeId: 1, // Cash
+            controlNumber: ticketnum,
+            items: [
+                { inventoryItemId: '56064fbb-428e-49cc-abeb-6571886b4f5f', description: 'Guitar', quantity: 1, price: 200 },
+                { inventoryItemId: '56064fbb-428e-49cc-abeb-6571886b4f60', description: 'Amp', quantity: 1, price: 200 }
+            ],
+            tenders: [
+                { tenderTypeId: 1, amount: 400 } // Cash
+            ],
             note: 'Customer cancellation'
         };
 
@@ -96,11 +103,11 @@ describe('VoidLayawayUseCase', () => {
         expect(mockStoreTxRepo.create).toHaveBeenCalled();
         const tx = mockStoreTxRepo.create.mock.calls[0][0];
         expect(tx.typeId).toBe(StoreTransactionTypeId.VOIDED_LAYAWAY);
-        expect(tx.amount).toBe(-50); // Negative amount
-        expect(tx.controlNumber).toBe(ticketnum); // Should match ticket num
+        expect(tx.amount).toBe(-400); // Negative amount (total from tenders)
+        expect(tx.controlNumber).toBe(ticketnum); // Should match control number
         expect(tx.customerId).toBe('cust-1');
         expect(tx.tenders[0].tenderTypeId).toBe(1);
-        expect(tx.tenders[0].amount).toBe(-50);
+        expect(tx.tenders[0].amount).toBe(-400); // Negative for refund
         expect(tx.note).toBe('Customer cancellation');
     });
 
@@ -108,9 +115,13 @@ describe('VoidLayawayUseCase', () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([]);
 
         const input = {
-            ticketnum: 'NON-EXISTENT',
-            amountToReturn: 0,
-            tenderTypeId: 1
+            controlNumber: 'NON-EXISTENT',
+            items: [
+                { inventoryItemId: '56064fbb-428e-49cc-abeb-6571886b4f5f', description: 'Guitar', quantity: 1, price: 200 }
+            ],
+            tenders: [
+                { tenderTypeId: 1, amount: 200 }
+            ]
         };
 
         await expect(useCase.execute(input, clerkId))
@@ -121,9 +132,13 @@ describe('VoidLayawayUseCase', () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...layawayItems[0], status: 'Voided' }]);
 
         const input = {
-            ticketnum: ticketnum,
-            amountToReturn: 0,
-            tenderTypeId: 1
+            controlNumber: ticketnum,
+            items: [
+                { inventoryItemId: '56064fbb-428e-49cc-abeb-6571886b4f5f', description: 'Guitar', quantity: 1, price: 200 }
+            ],
+            tenders: [
+                { tenderTypeId: 1, amount: 200 }
+            ]
         };
 
         await expect(useCase.execute(input, clerkId))
@@ -134,9 +149,13 @@ describe('VoidLayawayUseCase', () => {
         mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...layawayItems[0], status: 'Sold' }]);
 
         const input = {
-            ticketnum: ticketnum,
-            amountToReturn: 0,
-            tenderTypeId: 1
+            controlNumber: ticketnum,
+            items: [
+                { inventoryItemId: '56064fbb-428e-49cc-abeb-6571886b4f5f', description: 'Guitar', quantity: 1, price: 200 }
+            ],
+            tenders: [
+                { tenderTypeId: 1, amount: 200 }
+            ]
         };
 
         await expect(useCase.execute(input, clerkId))

@@ -179,7 +179,7 @@ export function createLayawayRouter(
    *   post:
    *     tags:
    *       - Layaways
-   *     summary: Void a layaway agreement request
+   *     summary: Void a layaway agreement
    *     description: Voids the layaway, returns items to inventory, and creates a negative transaction (refund).
    *     security:
    *       - bearerAuth: []
@@ -189,16 +189,48 @@ export function createLayawayRouter(
    *         application/json:
    *           schema:
    *             type: object
+   *             required:
+   *               - controlNumber
+   *               - tenders
    *             properties:
-   *               ticketnum:
+   *               controlNumber:
    *                 type: string
-   *                 description: The ticket number of the layaway to void
-   *               amountToReturn:
-   *                 type: number
-   *                 description: The amount to be returned to the customer
-   *               tenderTypeId:
-   *                 type: integer
-   *                 description: The ID of the tender type used for the refund
+   *                 description: The ticket number / control number of the layaway to void
+   *               items:
+   *                 type: array
+   *                 description: Items to include in the void transaction
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     inventoryItemId:
+   *                       type: string
+   *                       format: uuid
+   *                       nullable: true
+   *                     description:
+   *                       type: string
+   *                     quantity:
+   *                       type: number
+   *                       default: 1
+   *                     price:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Unit price (lineAmount = price × quantity)
+   *               tenders:
+   *                 type: array
+   *                 minItems: 1
+   *                 description: Tender(s) for the void transaction (refund method)
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - tenderTypeId
+   *                     - amount
+   *                   properties:
+   *                     tenderTypeId:
+   *                       type: integer
+   *                       description: The ID of the tender type (e.g., 1 for CASH)
+   *                     amount:
+   *                       type: number
+   *                       description: The amount for this tender
    *               note:
    *                 type: string
    *                 description: Reason for voiding
