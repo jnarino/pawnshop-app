@@ -80,3 +80,5 @@ server/build/
 
 # Migration Artifacts
 *_map.json
+
+/installer

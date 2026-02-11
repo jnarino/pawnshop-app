@@ -21,7 +21,7 @@
     "productName": "Pawnshop App",
     "copyright": "Copyright © 2025 Pawnshop",
     "directories": {
-      "output": "release/${version}"
+      "output": "../installer/${version}"
     },
     "mac": {
       "target": [

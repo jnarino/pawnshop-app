@@ -103,8 +103,26 @@ export class DockerManager {
     }
 
     static async ensureDatabase(env: 'dev' | 'prod' = 'prod'): Promise<{ success: boolean; message?: string }> {
-        if (!await this.checkDockerRunning()) {
-            return { success: false, message: 'Docker is not running. Please start Docker Desktop.' };
+        // 1. Check if Docker is running
+        let isRunning = await this.checkDockerRunning();
+
+        // 2. If not, try to start it
+        if (!isRunning) {
+            console.log('[DockerManager] Docker is not running. Starting it...');
+
+            // 3. Poll for Docker API readiness (up to 60s)
+            console.log('[DockerManager] Waiting for Docker to be ready...');
+            let attempts = 0;
+            while (!isRunning && attempts < 10) { // 30 * 2s = 60s
+                await new Promise(r => setTimeout(r, 2000));
+                isRunning = await this.checkDockerRunning();
+                attempts++;
+                if (isRunning) console.log('[DockerManager] Docker is now ready!');
+            }
+
+            if (!isRunning) {
+                return { success: false, message: 'Timed out waiting for Docker Desktop to start. Please try again manually.' };
+            }
         }
 
         const containerName = CONTAINER_NAMES[env].postgres;
