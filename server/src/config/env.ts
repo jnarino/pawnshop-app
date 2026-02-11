@@ -10,7 +10,8 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL ??
     `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`,
   jwtSecret: process.env.JWT_SECRET ?? 'H/wu3l1NCv3Dmd4aRXXsJHYDvhdk1KlUnn8GnB4f7gHmqTLUKNpgwYNtWSl/Z7bOjV7w/kfoUkJTWfC3kAYhdg==',
-  port: Number(process.env.PORT ?? 3000)
+  port: Number(process.env.PORT ?? 3000),
+  salesTaxRate: Number(process.env.SALES_TAX_RATE ?? 0.065),
 };
 
 if (!env.databaseUrl) {

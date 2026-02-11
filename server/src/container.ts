@@ -84,6 +84,10 @@ import { PoliceReportController } from './interfaces/http/controller/reports/pol
 import { PgCashDrawerReportRepository } from './infrastructure/persistence/reports/cashDrawer/PgCashDrawerReportRepository';
 import { GenerateCashDrawerDetailUseCase } from './application/use-case/reports/cashDrawer/query/GenerateCashDrawerDetailUseCase';
 import { CashDrawerReportController } from './interfaces/http/controller/reports/cashDrawer/CashDrawerReportController';
+import { PgSalesTaxReportRepository } from './infrastructure/persistence/reports/taxes/PgSalesTaxReportRepository';
+import { GetSalesTaxesUseCase } from './application/use-case/reports/taxes/query/GetSalesTaxesUseCase';
+import { SalesTaxTotalsService } from './application/service/reports/taxes/SalesTaxTotalsService';
+import { TaxesReportController } from './interfaces/http/controller/reports/taxes/TaxesReportController';
 import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
@@ -134,6 +138,7 @@ export async function createApp() {
   const tenderTypeRepository = new PgTenderTypeRepository(pool);
   const policeReportRepo = new PgPoliceReportRepository(pool);
   const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
+  const salesTaxReportRepo = new PgSalesTaxReportRepository(pool);
   const layawayRepo = new PgLayawayRepository(pool);
   const layawayUnitOfWork = new PgLayawayUnitOfWork(pool);
   const gunLogRepo = new PgGunLogRepository(pool);
@@ -146,6 +151,7 @@ export async function createApp() {
   const authService = new AuthService(appUserRepo, sessionRepo, env.jwtSecret);
   const itemAttributeMapper = new ItemAttributeMapper(inventoryCategoryRepo);
   const policeReportFixedWidthService = new PoliceReportFixedWidthService();
+  const salesTaxTotalsService = new SalesTaxTotalsService(env.salesTaxRate);
 
 
   // Auth use-cases
@@ -230,6 +236,7 @@ export async function createApp() {
 
   // Cash Drawer Report use-cases
   const generateCashDrawerDetailUseCase = new GenerateCashDrawerDetailUseCase(cashDrawerReportRepo);
+  const getSalesTaxesUseCase = new GetSalesTaxesUseCase(salesTaxReportRepo, salesTaxTotalsService);
 
   // Layaway use-cases
   const getLayawaysUseCase = new GetLayawaysUseCase(layawayRepo);
@@ -343,6 +350,9 @@ export async function createApp() {
   const cashDrawerReportController = new CashDrawerReportController(
     generateCashDrawerDetailUseCase
   );
+  const taxesReportController = new TaxesReportController(
+    getSalesTaxesUseCase
+  );
 
   const layawayController = new LayawayController(
     getLayawaysUseCase, 
@@ -376,6 +386,7 @@ export async function createApp() {
     tenderTypeController,
     policeReportController,
     cashDrawerReportController,
+    taxesReportController,
     layawayController,
     policeController,
     jwtSecret: env.jwtSecret
