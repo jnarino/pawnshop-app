@@ -1,4 +1,4 @@
 {
   "mode": "server",
-  "serverUrl": "http://localhost:3300"
+  "serverUrl": "http://localhost:3000"
 }
