@@ -49,13 +49,13 @@ describe('PullLayawayUseCase', () => {
         expect(result.message).toBe('Layaway pulled successfully');
         
         expect(mockLayawayRepo.update).toHaveBeenCalled();
-        expect(mockLayawayRepo.update.mock.calls[0][0].status).toBe('Defaulted');
+        expect(mockLayawayRepo.update.mock.calls[0][0].status).toBe('defaulted');
         
         expect(mockInventoryRepo.updateStatusAndQuantity).toHaveBeenCalledWith('inv-1', 'I', 1);
     });
 
     it('should throw error if already defaulted', async () => {
-        mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...activeItem, status: 'Defaulted' }]);
+        mockLayawayRepo.findByTicketNum.mockResolvedValue([{ ...activeItem, status: 'defaulted' }]);
 
         await expect(useCase.execute({ ticketnum, customerId }, clerkId))
             .rejects.toThrow(/already defaulted/);

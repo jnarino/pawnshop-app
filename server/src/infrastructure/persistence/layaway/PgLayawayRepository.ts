@@ -66,6 +66,7 @@ export class PgLayawayRepository implements LayawayRepository {
       layaway.totalOfPayments,
       layaway.status,
       layaway.numberSold,
+      layaway.itemStatus,
       layaway.lastUpdatedUserId,
     ]);
 

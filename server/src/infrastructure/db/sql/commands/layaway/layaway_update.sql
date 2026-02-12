@@ -3,8 +3,9 @@ SET
   total_of_payments = $2,
   status = $3,
   number_sold = $4,
+  item_status = $5,
   last_updated_at = NOW(),
-  last_updated_user_id = $5,
+  last_updated_user_id = $6,
   updated_at = NOW()
 WHERE id = $1
 RETURNING 
