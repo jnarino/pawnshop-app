@@ -50,6 +50,7 @@ export const HoldConfiscateTab = () => {
                 comment: selectedHold.comment,
                 items: selectedHold.items,
                 employee: selectedHold.updatedBy,
+                fromInput: selectedHold.isInventory ? `Inventory #: ${selectedHold.controlNumber}` : `Ticket #: ${selectedHold.controlNumber}`,
             });
         }
     }, [selectedHold, updateHoldConfiscateDraft]);
@@ -235,15 +236,16 @@ export const HoldConfiscateTab = () => {
                                 />
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="badge">Badge</Label>
+                            <Input
+                                id="badge"
+                                value={holdConfiscateDraft.badgeNumber}
+                                onChange={(e) => updateHoldConfiscateDraft({ badgeNumber: e.target.value })}
+                            />
+                        </div>
                         <div className="flex gap-4">
-                            <div className="w-1/3 space-y-2">
-                                <Label htmlFor="badge">Badge</Label>
-                                <Input
-                                    id="badge"
-                                    value={holdConfiscateDraft.badgeNumber}
-                                    onChange={(e) => updateHoldConfiscateDraft({ badgeNumber: e.target.value })}
-                                />
-                            </div>
+
                             <div className="flex-1 space-y-2">
                                 <Label>Phone</Label>
                                 <div className="flex gap-2 items-center">
@@ -326,18 +328,18 @@ export const HoldConfiscateTab = () => {
                         </Button>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-auto min-h-0">
-                        <Table>
+                        <Table stickyHeader>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[50px]">
+                                    <TableHead sticky className="w-[50px] bg-background z-20">
                                         <Checkbox
                                             checked={holdConfiscateDraft.items?.length === selectedItemIds.size && holdConfiscateDraft.items?.length > 0}
                                             onCheckedChange={(checked) => handleSelectAll(!!checked)}
                                         />
                                     </TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead className="w-[80px]">Qty</TableHead>
-                                    <TableHead className="w-[100px] text-right">Amount</TableHead>
+                                    <TableHead sticky className="bg-background z-20">Description</TableHead>
+                                    <TableHead sticky className="w-[80px] bg-background z-20">Qty</TableHead>
+                                    <TableHead sticky className="w-[100px] text-right bg-background z-20">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

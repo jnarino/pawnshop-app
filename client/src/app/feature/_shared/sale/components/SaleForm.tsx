@@ -63,6 +63,7 @@ export interface SaleFormDraftState {
 interface SaleTicketFormProps {
   readonly mode?: FormMode;
   readonly isLayaway?: boolean;
+  readonly isPull?: boolean;
   readonly initialData?: {
     readonly id?: string;
     readonly controlNumber?: string;
@@ -84,6 +85,7 @@ interface SaleTicketFormProps {
     readonly tenders?: any[];
     readonly typeName?: string;
     readonly totalOfPayments?: number;
+    readonly status?: string;
   };
   readonly externalDraft?: SaleFormDraftState;
   readonly onDraftChange?: (draft: SaleFormDraftState) => void;
@@ -105,6 +107,7 @@ export function SaleForm({
   mode = 'CREATE',
   initialData,
   isLayaway,
+  isPull,
   externalDraft,
   onDraftChange,
   customer,
@@ -138,7 +141,7 @@ export function SaleForm({
     items: initialData?.items || [] as any[], // TODO: any
     taxExemptUsed: initialData?.taxExemptUsed || false,
     eatTax: initialData?.eatTax || false,
-    status: initialData?.typeName
+    status: initialData?.typeName || initialData?.status
   });
 
   const formData = {
@@ -310,6 +313,29 @@ export function SaleForm({
     setShowReturnModal(true);
   };
 
+  const handlePullUnpullClick = async () => {
+    try {
+      if (isLayaway) {
+        if (initialData?.status === 'active') {
+          await layawayApi.pull({
+            ticketnum: initialData?.controlNumber,
+            customerId: formData.customerId
+          });
+          updateFormData({ status: 'pull' });
+        } else {
+          await layawayApi.unpull({
+            ticketnum: initialData?.controlNumber,
+            customerId: formData.customerId
+          });
+          updateFormData({ status: 'active' });
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to pull ${isLayaway ? 'layaway' : 'sale'}`, error);
+      setAlertMessage(`Failed to pull ${isLayaway ? 'layaway' : 'sale'}`);
+    }
+  };
+
   const handleReturnConfirm = (selectedItems: any[], reason: string) => {
     const total = selectedItems.reduce((sum, i) => sum + Number(i.lineAmount) || 0, 0);
 
@@ -337,10 +363,10 @@ export function SaleForm({
       console.log({ payload })
 
       if (isLayaway) {
-        // await layawayApi.voidLayaway(initialData.id, payload);
+        await layawayApi.voidLayaway(initialData.id, payload);
         setAlertMessage('Layaway voided/returned successfully');
       } else {
-        // await salesApi.voidSale(initialData.id, payload);
+        await salesApi.voidSale(initialData.id, payload);
         setAlertMessage('Sale voided/returned successfully');
       }
       setShowRefundPaymentModal(false);
@@ -371,6 +397,7 @@ export function SaleForm({
     }
   };
 
+  console.log({ initialData, formData })
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -395,51 +422,75 @@ export function SaleForm({
         />
         {isViewMode && (
           <div className="flex items-center justify-end my-2 gap-2 items-end">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleReturnClick}
-              disabled={!initialData?.id || initialData.items?.some(i => i.status === 'V')} // Disable if already voided (status check simplified)
-            >
-              Return
-            </Button>
-            {isLayaway ? (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setShowPaymentHistory(true)}
-                >
-                  Payment history
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setShowMakePayment(true)}
-                >
-                  Make payment
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setShowPaymentInfo(true)}
-              >
-                Payment information
-              </Button>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                if (initialData) {
-                  printReceipt(initialData, 'SALE');
-                }
-              }}
-            >
-              Print ticket
-            </Button>
+            {isPull ?
+              (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handlePullUnpullClick}
+                  >
+                    Pull
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setShowPaymentHistory(true)}
+                  >
+                    Payment history
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleReturnClick}
+                    disabled={!initialData?.id || initialData.items?.some(i => i.status === 'V')} // Disable if already voided (status check simplified)
+                  >
+                    Return
+                  </Button>
+                  {isLayaway ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setShowPaymentHistory(true)}
+                      >
+                        Payment history
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setShowMakePayment(true)}
+                      >
+                        Make payment
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setShowPaymentInfo(true)}
+                    >
+                      Payment information
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      if (initialData) {
+                        printReceipt(initialData, 'SALE');
+                      }
+                    }}
+                  >
+                    Print ticket
+                  </Button>
+                </>
+              )
+            }
+
           </div>
         )
         }

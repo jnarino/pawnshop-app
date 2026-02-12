@@ -322,7 +322,8 @@ app.post('/api/build', async (req, res) => {
 
 // API: Open Output Directory
 app.post('/api/open-dist', async (req, res) => {
-    const distPath = path.join(BUILD_ROOT_DIR, 'release');
+    // New path is <project-root>/installer
+    const distPath = path.resolve(BUILD_ROOT_DIR, '../installer');
     try {
         const open = (await import('open')).default;
         await open(distPath);

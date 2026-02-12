@@ -46,13 +46,25 @@ export const layawayApi = {
     getByCustomer: async (customerId: string): Promise<any[]> => {
         return http(`/api/layaway/customer/${customerId}`);
     },
-    getByDateRange: async (startDate: string, endDate: string, status?: string): Promise<any[]> => {
+    getByDateRange: async (startDate: string, endDate: string, status?: string, ticketNumber?: string): Promise<any[]> => {
         if (status === 'defaulted') {
-            return http(`/api/layaway/defaulted?startDate=${startDate}&endDate=${endDate}`);
+            return http(`/api/layaway/defaulted?startDate=${startDate}&endDate=${endDate}${ticketNumber ? `&ticketNumber=${ticketNumber}` : ''}`);
         }
         return http(`/api/layaway?${status ? `status=${status}&` : ''}startDate=${startDate}&endDate=${endDate}`);
     },
     getPaymentHistory: async (controlNumber: string, customerId: string): Promise<any[]> => {
         return http(`/api/layaway/history/${customerId}/${controlNumber}`);
-    }
+    },
+    pull: async (payload: any): Promise<any> => {
+        return http(`/api/layaway/pull`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    },
+    unpull: async (payload: any): Promise<any> => {
+        return http(`/api/layaway/unpull`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    },
 };
