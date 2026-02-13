@@ -52,6 +52,8 @@ export function TransactionDetails({
   onExpirationDateChange,
   onForfeitDateChange,
 }: TransactionDetailsProps) {
+
+  console.log('TransactionDetails', { isViewMode, controlNumber, clerkUsername });
   return (
     <Card className="border-2 mb-6">
       <CardHeader className="bg-slate-50 border-b py-4">
@@ -61,7 +63,7 @@ export function TransactionDetails({
         {/* Radio Group */}
         <div className="flex gap-3">
           <div className="flex flex-col gap-3">
-            <Label>Transaction type</Label>
+            <Label><strong>Transaction type</strong></Label>
             <RadioGroup
               value={type}
               onValueChange={(value) => onTypeChange(value as 'PAWN' | 'PURCHASE')}
@@ -78,18 +80,14 @@ export function TransactionDetails({
               </div>
             </RadioGroup>
           </div>
-          {isViewMode && (
-            <>
-              <p><strong>Ticket number:</strong> {controlNumber}</p>
-              <p><strong>Entered by:</strong> {clerkUsername}</p>
-            </>
-          )}
+          {controlNumber && <p><strong>Ticket number:</strong> {controlNumber}</p>}
+          {clerkUsername && <p><strong>Entered by:</strong> {clerkUsername}</p>}
         </div>
 
         {type === 'PAWN' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label>Amount Finance</Label>
+              <Label><strong>Amount Finance</strong></Label>
               <div className="text-2xl font-bold">
                 ${totalValue.toFixed(2)}
               </div>
@@ -106,7 +104,7 @@ export function TransactionDetails({
               />
             </div>
             <div className="space-y-2">
-              <Label>Date In</Label>
+              <Label><strong>Date In</strong></Label>
               <DatePicker
                 value={transactionDate}
                 onChange={(date) => onTransactionDateChange(date || '')}
@@ -114,7 +112,7 @@ export function TransactionDetails({
               />
             </div>
             <div className="space-y-2">
-              <Label>Expiration Date</Label>
+              <Label><strong>Expiration Date</strong></Label>
               <DatePicker
                 value={expirationDate}
                 onChange={(date) => onExpirationDateChange(date || '')}
@@ -125,7 +123,7 @@ export function TransactionDetails({
             {isViewMode && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Service charge</Label>
+                  <Label htmlFor="rate"><strong>Service charge</strong></Label>
                   <Input
                     id="rate"
                     type="number"
@@ -136,7 +134,7 @@ export function TransactionDetails({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Redemption price</Label>
+                  <Label htmlFor="rate"><strong>Redemption price</strong></Label>
                   <Input
                     id="rate"
                     type="number"
@@ -147,7 +145,7 @@ export function TransactionDetails({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Forfeit</Label>
+                  <Label htmlFor="rate"><strong>Forfeit</strong></Label>
                   <DatePicker
                     value={forfeitDate}
                     onChange={(date) => onForfeitDateChange(date || '')}
@@ -155,7 +153,7 @@ export function TransactionDetails({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Total paid</Label>
+                  <Label htmlFor="rate"><strong>Total paid</strong></Label>
                   <Input
                     id="rate"
                     type="number"
@@ -170,7 +168,7 @@ export function TransactionDetails({
           </div>
         ) : (
           <div className="space-y-2">
-            <Label>Purchase Value</Label>
+            <Label><strong>Purchase Value</strong></Label>
             <div className="text-2xl font-bold">
               ${totalValue.toFixed(2)}
             </div>
