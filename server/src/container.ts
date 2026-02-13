@@ -88,6 +88,9 @@ import { PgSalesTaxReportRepository } from './infrastructure/persistence/reports
 import { GetSalesTaxesUseCase } from './application/use-case/reports/taxes/query/GetSalesTaxesUseCase';
 import { SalesTaxTotalsService } from './application/service/reports/taxes/SalesTaxTotalsService';
 import { TaxesReportController } from './interfaces/http/controller/reports/taxes/TaxesReportController';
+import { PgActivePawnReportRepository } from './infrastructure/persistence/reports/pawn/PgActivePawnReportRepository';
+import { GetActivePawnsUseCase } from './application/use-case/reports/pawn/query/GetActivePawnsUseCase';
+import { PawnReportController } from './interfaces/http/controller/reports/pawn/PawnReportController';
 import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
@@ -139,6 +142,7 @@ export async function createApp() {
   const policeReportRepo = new PgPoliceReportRepository(pool);
   const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
   const salesTaxReportRepo = new PgSalesTaxReportRepository(pool);
+  const activePawnReportRepo = new PgActivePawnReportRepository(pool);
   const layawayRepo = new PgLayawayRepository(pool);
   const layawayUnitOfWork = new PgLayawayUnitOfWork(pool);
   const gunLogRepo = new PgGunLogRepository(pool);
@@ -196,7 +200,6 @@ export async function createApp() {
   const getInventoryAttributeValuesByTypeUseCase = new GetInventoryAttributeValuesByTypeUseCase(inventoryAttributeRepo);
   const createInventoryAttributeValueUseCase = new CreateInventoryAttributeValueUseCase(inventoryAttributeRepo);
 
-
   // Pawn Ticket use-cases  
   const createPawnTicketWithItemsUseCase = new CreatePawnTicketWithItemsUseCase(pawnTicketUnitOfWork, itemAttributeMapper, controlNumberRepository, customerRepo);
   const listPawnTicketsByControlNumberUseCase = new ListPawnTicketsByControlNumberUseCase(
@@ -213,6 +216,9 @@ export async function createApp() {
   const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPreviousItemsByCustomerUseCase = new ListPreviousItemsByCustomerUseCase(pawnTicketRepo);
   const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
+
+  // Reports - pawn
+  const getActivePawnsUseCase = new GetActivePawnsUseCase(activePawnReportRepo, getPawnTicketCurrentChargesUseCase);
 
   // Store Transaction use-cases
   const createStoreTransactionUseCase = new CreateStoreTransactionUseCase(storeTransactionRepo, inventoryItemRepo, customerRepo, gunLogRepo, gunTxHistoryRepo, appUserRepo);
@@ -332,6 +338,10 @@ export async function createApp() {
     updatePawnTicketItemsUseCase
   );
 
+  const pawnReportController = new PawnReportController(
+    getActivePawnsUseCase
+  );
+
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
     listStoreTransactionsByDateRangeUseCase,
@@ -387,6 +397,7 @@ export async function createApp() {
     policeReportController,
     cashDrawerReportController,
     taxesReportController,
+    pawnReportController,
     layawayController,
     policeController,
     jwtSecret: env.jwtSecret
