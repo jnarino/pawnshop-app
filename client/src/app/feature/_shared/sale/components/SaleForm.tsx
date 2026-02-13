@@ -322,7 +322,7 @@ export function SaleForm({
             customerId: formData.customerId
           });
           updateFormData({ status: 'pull' });
-        } else {
+        } else if (initialData?.status === 'defaulted') {
           await layawayApi.unpull({
             ticketnum: initialData?.controlNumber,
             customerId: formData.customerId
@@ -452,6 +452,15 @@ export function SaleForm({
                   </Button>
                   {isLayaway ? (
                     <>
+                      {initialData?.status === 'defaulted' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handlePullUnpullClick}
+                        >
+                          Unpull
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         size="sm"
