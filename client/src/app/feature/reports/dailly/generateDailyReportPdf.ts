@@ -3,7 +3,7 @@ import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 import { CashDrawerDetailWithSummaryResponseDto } from '@/app/core/dto/CashDrawerReportDto';
 import { drawPdfHeader, drawStoreInfo, addPageNumbers } from '@/lib/pdfUtils';
 
-export async function generateDailyReportPdf(data: CashDrawerDetailWithSummaryResponseDto, dateRange: { from: string; to: string }): Promise<Blob> {
+export async function generateDailyReportPdf(data: CashDrawerDetailWithSummaryResponseDto, dateRange: { from: string; to: string }, onlyTotals?: boolean): Promise<Blob> {
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -120,89 +120,96 @@ export async function generateDailyReportPdf(data: CashDrawerDetailWithSummaryRe
         w = fontBold.widthOfTextAtSize(balText, fontSize);
         page.drawText(balText, { x: balX - w, y, size: fontSize, font: fontBold });
 
-        const startBalVal = formatMoney(data.summary.startingBalance);
-        const startBalW = font.widthOfTextAtSize(startBalVal, fontSize);
-        page.drawText(startBalVal, { x: balX - startBalW, y: y - lineHeight, size: fontSize, font });
+        // Removed starting balance line from header logic when onlyTotals is true?
+        // Actually, starting balance is usually printed in the header area or first line.
+        // In previous code it was drawn here:
+        if (!onlyTotals) {
+            const startBalVal = formatMoney(data.summary.startingBalance);
+            const startBalW = font.widthOfTextAtSize(startBalVal, fontSize);
+            page.drawText(startBalVal, { x: balX - startBalW, y: y - lineHeight, size: fontSize, font });
+        }
 
         y -= lineHeight + 15;
     };
 
-    drawTableHeaders();
+    if (!onlyTotals) {
+        drawTableHeaders();
 
-    // Transactions
-    data.transactions.forEach((tx) => {
-        const dateTime = formatDate(tx.dateTime, true);
-        const method = (tx.paymentMethod || '').toUpperCase();
-        const neededLines = 2 + (tx.tenderChange > 0 ? 1 : 0);
-        if (checkPageBreak(neededLines)) {
-            drawTableHeaders();
-        }
+        // Transactions
+        data.transactions.forEach((tx) => {
+            const dateTime = formatDate(tx.dateTime, true);
+            const method = (tx.paymentMethod || '').toUpperCase();
+            const neededLines = 2 + (tx.tenderChange > 0 ? 1 : 0);
+            if (checkPageBreak(neededLines)) {
+                drawTableHeaders();
+            }
 
-        let x = margin;
-        const rowY = y;
+            let x = margin;
+            const rowY = y;
 
-        // Col 1: Date & Time / Method
-        page.drawText(dateTime, { x, y: rowY, size: fontSize, font });
-        page.drawText(method, { x, y: rowY - lineHeight, size: fontSize, font: fontBold });
-        x += colWidths.col1;
+            // Col 1: Date & Time / Method
+            page.drawText(dateTime, { x, y: rowY, size: fontSize, font });
+            page.drawText(method, { x, y: rowY - lineHeight, size: fontSize, font: fontBold });
+            x += colWidths.col1;
 
-        // Col 2: Ticket # (Right Align)
-        const ticketNum = tx.ticketNumber || '';
-        const ticketRowW = font.widthOfTextAtSize(ticketNum, fontSize);
-        page.drawText(ticketNum, { x: x + colWidths.col2 - ticketRowW - 5, y: rowY, size: fontSize, font });
-        x += colWidths.col2;
+            // Col 2: Ticket # (Right Align)
+            const ticketNum = tx.ticketNumber || '';
+            const ticketRowW = font.widthOfTextAtSize(ticketNum, fontSize);
+            page.drawText(ticketNum, { x: x + colWidths.col2 - ticketRowW - 5, y: rowY, size: fontSize, font });
+            x += colWidths.col2;
 
-        // Col 3: Cust #
-        page.drawText(tx.customerNumber || '', { x, y: rowY, size: fontSize, font });
-        x += colWidths.col3;
+            // Col 3: Cust #
+            page.drawText(tx.customerNumber || '', { x, y: rowY, size: fontSize, font });
+            x += colWidths.col3;
 
-        // Col 4: Emp
-        page.drawText(tx.employee || '', { x, y: rowY, size: fontSize, font });
-        x += colWidths.col4;
+            // Col 4: Emp
+            page.drawText(tx.employee || '', { x, y: rowY, size: fontSize, font });
+            x += colWidths.col4;
 
-        // Col 5: Type
-        page.drawText((tx.transactionType || '').toUpperCase(), { x, y: rowY, size: fontSize, font });
-        x += colWidths.col5;
+            // Col 5: Type
+            page.drawText((tx.transactionType || '').toUpperCase(), { x, y: rowY, size: fontSize, font });
+            x += colWidths.col5;
 
-        // Col 6: Amount (Right Align)
-        const amount = formatMoney(tx.amount);
-        const amountW = font.widthOfTextAtSize(amount, fontSize);
-        page.drawText(amount, { x: x + colWidths.col6 - amountW - 5, y: rowY, size: fontSize, font });
+            // Col 6: Amount (Right Align)
+            const amount = formatMoney(tx.amount);
+            const amountW = font.widthOfTextAtSize(amount, fontSize);
+            page.drawText(amount, { x: x + colWidths.col6 - amountW - 5, y: rowY, size: fontSize, font });
 
-        if (tx.tenderChange > 0) {
-            const change = `Change: ${formatMoney(tx.tenderChange)}`;
-            const changeW = font.widthOfTextAtSize(change, fontSize);
-            page.drawText(change, { x: x + colWidths.col6 - changeW - 5, y: rowY - lineHeight, size: fontSize, font });
-        }
-        x += colWidths.col6;
+            if (tx.tenderChange > 0) {
+                const change = `Change: ${formatMoney(tx.tenderChange)}`;
+                const changeW = font.widthOfTextAtSize(change, fontSize);
+                page.drawText(change, { x: x + colWidths.col6 - changeW - 5, y: rowY - lineHeight, size: fontSize, font });
+            }
+            x += colWidths.col6;
 
-        // Col 7: Remarks
-        // Simple truncation for remarks to fit one line
-        const remarks = (tx.remarks || '').toUpperCase();
-        const maxIdd = 26; // Approx chars
-        const displayRemarks = remarks.length > maxIdd ? remarks.substring(0, maxIdd) + '...' : remarks;
-        page.drawText(displayRemarks, { x, y: rowY, size: fontSize, font });
-        x += colWidths.col7;
+            // Col 7: Remarks
+            // Simple truncation for remarks to fit one line
+            const remarks = (tx.remarks || '').toUpperCase();
+            const maxIdd = 26; // Approx chars
+            const displayRemarks = remarks.length > maxIdd ? remarks.substring(0, maxIdd) + '...' : remarks;
+            page.drawText(displayRemarks, { x, y: rowY, size: fontSize, font });
+            x += colWidths.col7;
 
-        // Col 8: Balance
-        const balance = formatMoney(tx.balance);
-        const balanceW = font.widthOfTextAtSize(balance, fontSize);
+            // Col 8: Balance
+            const balance = formatMoney(tx.balance);
+            const balanceW = font.widthOfTextAtSize(balance, fontSize);
 
-        // Simpler right align for balance
-        page.drawText(balance, { x: pageWidth - margin - balanceW - 5, y: rowY, size: fontSize, font });
+            // Simpler right align for balance
+            page.drawText(balance, { x: pageWidth - margin - balanceW - 5, y: rowY, size: fontSize, font });
 
-        // Separator
-        y -= (lineHeight * 2);
-        if (tx.tenderChange > 0) y -= lineHeight;
+            // Separator
+            y -= (lineHeight * 2);
+            if (tx.tenderChange > 0) y -= lineHeight;
 
-        page.drawLine({
-            start: { x: margin, y: y + 8 },
-            end: { x: pageWidth - margin, y: y + 8 },
-            thickness: 0.5,
-            color: rgb(0.9, 0.9, 0.9),
+            page.drawLine({
+                start: { x: margin, y: y + 8 },
+                end: { x: pageWidth - margin, y: y + 8 },
+                thickness: 0.5,
+                color: rgb(0.9, 0.9, 0.9),
+            });
+
         });
-
-    });
+    }
 
     // Summary Section
     checkPageBreak(15);

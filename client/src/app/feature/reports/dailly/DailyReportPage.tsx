@@ -9,6 +9,13 @@ import { Loader2, Printer, Download } from "lucide-react";
 import { CashDrawerDetailWithSummaryResponseDto } from "@/app/core/dto/CashDrawerReportDto";
 import { generateDailyReportPdf } from "./generateDailyReportPdf";
 import { AlertModal } from '@/app/shared/components/AlertModal';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+const reportOptions = [
+    { label: 'All information', value: 'all' },
+    { label: 'Totals only', value: 'totals' }
+];
 
 export const DailyReportPage = () => {
     const today = new Date();
@@ -25,10 +32,11 @@ export const DailyReportPage = () => {
                 from: localToday,
                 to: localToday
             },
+            reportType: 'all'
         }
     });
 
-    const submit = async (data: { dateRange: { from: string; to: string } }) => {
+    const submit = async (data: { dateRange: { from: string; to: string }, reportType: string }) => {
         setLoading(true);
         setPdfUrl(null);
         try {
@@ -48,7 +56,8 @@ export const DailyReportPage = () => {
                     return;
                 }
 
-                const pdfBlob = await generateDailyReportPdf(result, { from, to });
+                const onlyTotals = data.reportType === 'totals';
+                const pdfBlob = await generateDailyReportPdf(result, { from, to }, onlyTotals);
                 const url = window.URL.createObjectURL(pdfBlob);
                 setPdfUrl(url);
             } else {
@@ -109,23 +118,47 @@ export const DailyReportPage = () => {
             </div>
 
             <form onSubmit={form.handleSubmit(submit)} className="shrink-0">
-                <FieldSet className="card section">
-                    <FieldLegend className="mb-2 text-sm text-foreground/70">Select Report Date</FieldLegend>
-                    <div className="flex items-end gap-2">
+                <FieldSet className="card section space-y-4">
+                    <div>
+                        <FieldLegend className="mb-2 text-sm text-foreground/70">Select Report Type</FieldLegend>
                         <Controller
                             control={form.control}
-                            name="dateRange"
+                            name="reportType"
                             render={({ field }) => (
-                                <RangeDatePicker
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                />
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-row space-x-4"
+                                >
+                                    {reportOptions.map((option) => (
+                                        <div key={option.value} className="flex items-center space-x-2">
+                                            <RadioGroupItem value={option.value} id={option.value} />
+                                            <Label htmlFor={option.value}>{option.label}</Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
                             )}
                         />
-                        <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            Generate Report
-                        </Button>
+                    </div>
+
+                    <div>
+                        <FieldLegend className="mb-2 text-sm text-foreground/70">Select Report Date</FieldLegend>
+                        <div className="flex items-end gap-2">
+                            <Controller
+                                control={form.control}
+                                name="dateRange"
+                                render={({ field }) => (
+                                    <RangeDatePicker
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                    />
+                                )}
+                            />
+                            <Button type="submit" disabled={loading}>
+                                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Generate Report
+                            </Button>
+                        </div>
                     </div>
                 </FieldSet>
             </form>
