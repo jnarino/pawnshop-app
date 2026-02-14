@@ -7,7 +7,17 @@ export class InventoryReportController {
 
   getAllItemsInventory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-      const result = await this.getAllItemsInventoryUseCase.execute({});
+      const excludeParam = req.query.excludeJewelryAndFirearm;
+      const excludeJewelryAndFirearm =
+        typeof excludeParam === 'string' ? excludeParam.toLowerCase() === 'true' : Boolean(excludeParam);
+
+      const input = {
+        categoryId: req.query.categoryId as string | undefined,
+        subcategoryId: req.query.subcategoryId as string | undefined,
+        excludeJewelryAndFirearm,
+      };
+
+      const result = await this.getAllItemsInventoryUseCase.execute(input);
       return res.json(result);
     } catch (err) {
       return next(err);
