@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ActionCard } from "@/components/ui/ActionCard";
 import PoliceIcon from '@/assets/icons/police.svg?react';
 import { Coins, ArrowBigLeft, ArrowDownToLine } from 'lucide-react';
+import SellIcon from '@/assets/icons/sell.svg?react';
 
 
 export default function ReportsPage() {
@@ -29,6 +30,12 @@ export default function ReportsPage() {
         subtitle="Daily report"
         title="Daily report"
         to="/reports/daily"
+      />
+      <ActionCard
+        icon={SellIcon}
+        subtitle="Tax sales"
+        title="Tax sales"
+        to="/reports/tax-sales"
       />
     </div>
   </>

@@ -45,7 +45,14 @@ export function formatTime(dateStr: string | Date | null | undefined): string {
 }
 
 export function formatCurrency(amount?: number | string | null): string {
-  if (!amount && amount !== 0) return '$0.00';
+  if (amount === null || amount === undefined || amount === '') return '$0.00';
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return Number.isNaN(numAmount) ? '$0.00' : `$${numAmount.toFixed(2)}`;
+  if (Number.isNaN(numAmount)) return '$0.00';
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numAmount);
 }

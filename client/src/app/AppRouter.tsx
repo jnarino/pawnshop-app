@@ -19,6 +19,7 @@ import ReportsPage from '@/app/feature/reports/ReportsPage';
 import { DailyReportPage } from './feature/reports/dailly/DailyReportPage';
 import { PoliceReportPage } from './feature/reports/police/PoliceReportPage';
 import { ForfeitReportPage } from './feature/reports/forfeit/ForfeitReportPage';
+import { TaxSalesReportPage } from './feature/reports/tax-sales/TaxSalesReportPage';
 
 import SalesWorkspace from '@/app/feature/sales/SalesWorkspace';
 import SalesMaintainWorkspace from '@/app/feature/sales/maintain/SalesMaintainWorkspace';
@@ -53,6 +54,7 @@ export default function AppRouter() {
       <Route path="/reports/daily" element={<Protected><DailyReportPage /></Protected>} />
       <Route path="/reports/police" element={<Protected><PoliceReportPage /></Protected>} />
       <Route path="/reports/forfeit" element={<Protected><ForfeitReportPage /></Protected>} />
+      <Route path="/reports/tax-sales" element={<Protected><TaxSalesReportPage /></Protected>} />
 
       {/* Sales routes */}
       <Route path="/sales" element={<Protected><SalesWorkspace /></Protected>} />

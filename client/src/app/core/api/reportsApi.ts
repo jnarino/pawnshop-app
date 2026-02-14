@@ -104,4 +104,47 @@ export const reportsApi = {
       method: 'GET',
     });
   },
+
+  taxSalesReport: async (payload: CreatePoliceReportPayload & { onlyTotals: boolean }): Promise<TaxSalesReportData> => {
+    return http(`/api/reports/taxes/sales?startDate=${payload.from}&endDate=${payload.to}&onlyTotals=${payload.onlyTotals}`, {
+      method: 'GET',
+    });
+  },
 };
+
+export interface TaxSalesReportData {
+  rows: {
+    date: string;
+    type: string;
+    ticketNumber: string;
+    grossAmount: number;
+    taxableAmount: number;
+    taxCollected: number;
+  }[];
+  totals: {
+    stateTax: {
+      collected: number;
+      taxRate: number;
+    };
+    countyTax: {
+      collected: number;
+      taxRate: number | null;
+    };
+    localTax: {
+      collected: number;
+      taxRate: number | null;
+    };
+    grossSales: number;
+    exemptSales: number;
+    taxableSales: number;
+    stateTaxCalculated: number;
+    countyTaxCalculated: number;
+    localTaxCalculated: number;
+    collectionAllowances: {
+      stateTax: number;
+      countyTax: number;
+      localTax: number;
+    };
+    amountDueWithReturn: number;
+  };
+}
