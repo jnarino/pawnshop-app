@@ -3,7 +3,7 @@ import { ActionCard } from "@/components/ui/ActionCard";
 import PoliceIcon from '@/assets/icons/police.svg?react';
 import { Coins, ArrowBigLeft, ArrowDownToLine } from 'lucide-react';
 import SellIcon from '@/assets/icons/sell.svg?react';
-
+import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 
 export default function ReportsPage() {
   return <>
@@ -36,6 +36,12 @@ export default function ReportsPage() {
         subtitle="Tax sales"
         title="Tax sales"
         to="/reports/tax-sales"
+      />
+      <ActionCard
+        icon={HandshakeIcon}
+        subtitle="Pawns"
+        title="Items in pawns"
+        to="/reports/items-in-pawns"
       />
     </div>
   </>

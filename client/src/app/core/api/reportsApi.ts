@@ -110,9 +110,62 @@ export const reportsApi = {
       method: 'GET',
     });
   },
+
+  pawnActiveReport: async (params: {
+    categoryId?: string;
+    subcategoryId?: string;
+    brandId?: string;
+    exclude?: boolean;
+    invNumber?: string;
+    serialNumber?: string;
+    modelNumber?: string;
+  }): Promise<ItemsInPawnsReportData> => {
+    const query = new URLSearchParams();
+    if (params.categoryId) query.append('categoryId', params.categoryId);
+    if (params.subcategoryId) query.append('subcategoryId', params.subcategoryId);
+    if (params.brandId) query.append('brandId', params.brandId);
+    if (params.exclude !== undefined) query.append('exclude', String(params.exclude));
+    if (params.invNumber) query.append('invNumber', params.invNumber);
+    if (params.serialNumber) query.append('serialNumber', params.serialNumber);
+    if (params.modelNumber) query.append('modelNumber', params.modelNumber);
+
+    return http(`/api/reports/pawn/active?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
 };
 
+export interface ItemsInPawnsReportData {
+  rows: {
+    pawnTicketId: string;
+    ticketNumber: string;
+    customer: string;
+    employee: string;
+    dateIn: string;
+    dateOut: string;
+    serviceChargeDue: number;
+    currentCharges: number;
+    pawnAmount: number;
+    itemAmount: number;
+    quantity: number;
+    itemDescription: string;
+    status: string;
+    itemsCount: number;
+    items: {
+      description: string;
+      amount: number;
+      quantity: number;
+      brand: string;
+      model: string;
+      serialNumber: string;
+      extra?: Record<string, any>;
+      attributes?: Record<string, any>;
+    }[];
+  }[];
+}
+
 export interface TaxSalesReportData {
+  // ... existing TaxSalesReportData logic ...
   rows: {
     date: string;
     type: string;
