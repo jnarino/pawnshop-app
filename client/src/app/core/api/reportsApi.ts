@@ -116,20 +116,31 @@ export const reportsApi = {
     subcategoryId?: string;
     brandId?: string;
     exclude?: boolean;
-    invNumber?: string;
-    serialNumber?: string;
-    modelNumber?: string;
   }): Promise<ItemsInPawnsReportData> => {
     const query = new URLSearchParams();
     if (params.categoryId) query.append('categoryId', params.categoryId);
     if (params.subcategoryId) query.append('subcategoryId', params.subcategoryId);
     if (params.brandId) query.append('brandId', params.brandId);
-    if (params.exclude !== undefined) query.append('exclude', String(params.exclude));
-    if (params.invNumber) query.append('invNumber', params.invNumber);
-    if (params.serialNumber) query.append('serialNumber', params.serialNumber);
-    if (params.modelNumber) query.append('modelNumber', params.modelNumber);
+    if (params.exclude !== undefined) query.append('excludeJewelryAndFirearm', String(params.exclude));
 
     return http(`/api/reports/pawn/active?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  inventoryActiveReport: async (params: {
+    categoryId?: string;
+    subcategoryId?: string;
+    brandId?: string;
+    exclude?: boolean;
+  }): Promise<InventoryReportData> => {
+    const query = new URLSearchParams();
+    if (params.categoryId) query.append('categoryId', params.categoryId);
+    if (params.subcategoryId) query.append('subcategoryId', params.subcategoryId);
+    if (params.brandId) query.append('brandId', params.brandId);
+    if (params.exclude !== undefined) query.append('excludeJewelryAndFirearm', String(params.exclude));
+
+    return http(`/api/reports/inventory/items?${query.toString()}`, {
       method: 'GET',
     });
   },
@@ -162,6 +173,34 @@ export interface ItemsInPawnsReportData {
       attributes?: Record<string, any>;
     }[];
   }[];
+  totals: {
+    totalPawns: number;
+    totalItems: number;
+    totalPawnAmount: number;
+    totalServiceChargesDue: number;
+    totalPoliceHoldAmount: number;
+  };
+}
+
+export interface InventoryReportData {
+  rows: {
+    inventoryNumber: string;
+    itemType: string;
+    type: string;
+    brand: string;
+    itemDescription: string;
+    model: string;
+    serialNumber: string;
+    quantity: number;
+    cost: number;
+    resale: number;
+  }[];
+  totals: {
+    totalItems: number;
+    totalQuantity: number;
+    totalCost: number;
+    totalResale: number;
+  };
 }
 
 export interface TaxSalesReportData {

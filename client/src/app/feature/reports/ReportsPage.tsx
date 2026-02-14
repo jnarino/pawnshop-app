@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ActionCard } from "@/components/ui/ActionCard";
 import PoliceIcon from '@/assets/icons/police.svg?react';
-import { Coins, ArrowBigLeft, ArrowDownToLine } from 'lucide-react';
+import { Coins, ArrowBigLeft, ArrowDownToLine, Warehouse } from 'lucide-react';
 import SellIcon from '@/assets/icons/sell.svg?react';
 import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 
@@ -42,6 +42,12 @@ export default function ReportsPage() {
         subtitle="Pawns"
         title="Items in pawns"
         to="/reports/items-in-pawns"
+      />
+      <ActionCard
+        icon={Warehouse}
+        subtitle="Inventory"
+        title="Items in inventory"
+        to="/reports/items-in-inventory"
       />
     </div>
   </>
