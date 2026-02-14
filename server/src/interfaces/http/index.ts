@@ -30,6 +30,8 @@ import { CashDrawerReportController } from './controller/reports/cashDrawer/Cash
 import { createCashDrawerReportRouter } from './route/reports/cashDrawer/cashDrawerReportRoute';
 import { TaxesReportController } from './controller/reports/taxes/TaxesReportController';
 import { createTaxesReportRouter } from './route/reports/taxes/taxesReportRoute';
+import { PawnReportController } from './controller/reports/pawn/PawnReportController';
+import { createPawnReportRouter } from './route/reports/pawn/pawnReportRoute';
 import { LayawayController } from './controller/layaway/LayawayController';
 import { createLayawayRouter } from './route/layaway/layawayRoute';
 import { PoliceController } from './controller/police/PoliceController';
@@ -50,6 +52,7 @@ export function createExpressApp(
     policeReportController: PoliceReportController;
     cashDrawerReportController: CashDrawerReportController;
     taxesReportController: TaxesReportController;
+    pawnReportController: PawnReportController;
     layawayController: LayawayController;
     policeController: PoliceController;
   }
@@ -74,6 +77,7 @@ export function createExpressApp(
   app.use('/api/reports/police', createPoliceReportRouter(deps.policeReportController, deps.jwtSecret));
   app.use('/api/reports/cash-drawer', createCashDrawerReportRouter(deps.cashDrawerReportController, deps.jwtSecret));
   app.use('/api/reports/taxes', createTaxesReportRouter(deps.taxesReportController, deps.jwtSecret));
+  app.use('/api/reports/pawn', createPawnReportRouter(deps.pawnReportController, deps.jwtSecret));
   app.use('/api/layaway', createLayawayRouter(deps.layawayController, deps.jwtSecret));
   app.use('/api/police', createPoliceRouter(deps.policeController, deps.jwtSecret));
 
