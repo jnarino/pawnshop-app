@@ -56,11 +56,46 @@ describe('GetAllItemsInventoryUseCase', () => {
       totalCost: 650,
       totalResale: 1050,
     });
+    expect(repo.findAllItems).toHaveBeenCalledWith({
+      categoryId: undefined,
+      subcategoryId: undefined,
+      excludeJewelryAndFirearm: false,
+    });
   });
 
   it('throws NotFoundError when no items', async () => {
     repo.findAllItems.mockResolvedValue([]);
 
     await expect(useCase.execute({})).rejects.toThrow(NotFoundError);
+  });
+
+  it('passes filters to repository', async () => {
+    const record = new InventoryItemRecord({
+      itemType: 'Laptop',
+      type: 'Electronics',
+      brand: 'BrandA',
+      itemDescription: 'Gaming Laptop',
+      model: 'X1',
+      serialNumber: 'SN-1',
+      quantity: 2,
+      cost: 500,
+      resale: 800,
+    });
+    repo.findAllItems.mockResolvedValue([record]);
+
+    const categoryId = '11111111-1111-1111-1111-111111111111';
+    const subcategoryId = '22222222-2222-2222-2222-222222222222';
+
+    await useCase.execute({
+      categoryId,
+      subcategoryId,
+      excludeJewelryAndFirearm: true,
+    });
+
+    expect(repo.findAllItems).toHaveBeenCalledWith({
+      categoryId,
+      subcategoryId,
+      excludeJewelryAndFirearm: true,
+    });
   });
 });

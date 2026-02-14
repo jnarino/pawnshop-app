@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { InventoryReportRepository } from '../../../../domains/reports/inventory/InventoryReportRepository';
+import { InventoryItemsCriteria, InventoryReportRepository } from '../../../../domains/reports/inventory/InventoryReportRepository';
 import { InventoryItemRecord } from '../../../../domains/reports/inventory/InventoryItemRecord';
 import { loadSql } from '../../../db/sqlLoader';
 
@@ -8,8 +8,14 @@ const sqlGetAllItems = loadSql('queries', 'reports/inventory/inventory_all_items
 export class PgInventoryReportRepository implements InventoryReportRepository {
   constructor(private readonly pool: Pool) {}
 
-  async findAllItems(): Promise<InventoryItemRecord[]> {
-    const result = await this.pool.query(sqlGetAllItems);
+  async findAllItems(criteria: InventoryItemsCriteria = {}): Promise<InventoryItemRecord[]> {
+    const params = [
+      criteria.categoryId ?? null,
+      criteria.subcategoryId ?? null,
+      criteria.excludeJewelryAndFirearm ?? false,
+    ];
+
+    const result = await this.pool.query(sqlGetAllItems, params);
     return result.rows.map((row: any) => new InventoryItemRecord({
       itemType: row.item_type,
       type: row.type,

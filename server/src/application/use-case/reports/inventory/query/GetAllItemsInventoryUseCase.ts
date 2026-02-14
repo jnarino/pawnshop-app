@@ -9,10 +9,12 @@ export class GetAllItemsInventoryUseCase {
 
   async execute(input: unknown): Promise<InventoryReportResponseDto> {
     const dto: GetAllItemsInventoryRequestDto = getAllItemsInventoryRequestSchema.parse(input);
-    // dto currently unused but parsed for future filters
-    void dto;
 
-    const records = await this.repo.findAllItems();
+    const records = await this.repo.findAllItems({
+      categoryId: dto.categoryId,
+      subcategoryId: dto.subcategoryId,
+      excludeJewelryAndFirearm: dto.excludeJewelryAndFirearm ?? false,
+    });
     if (!records.length) {
       throw new NotFoundError('No inventory items found');
     }

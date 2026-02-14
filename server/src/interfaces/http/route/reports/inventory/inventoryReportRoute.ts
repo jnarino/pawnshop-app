@@ -16,6 +16,27 @@ export function createInventoryReportRouter(controller: InventoryReportControlle
    *     description: Returns all inventory items with quantities, cost, and resale values where status = 'I'. Includes totals for quantity, cost, and resale.
    *     security:
    *       - bearerAuth: []
+  *     parameters:
+  *       - in: query
+  *         name: categoryId
+  *         required: false
+  *         schema:
+  *           type: string
+  *           format: uuid
+  *         description: Filter by inventory category id.
+  *       - in: query
+  *         name: subcategoryId
+  *         required: false
+  *         schema:
+  *           type: string
+  *           format: uuid
+  *         description: Filter by inventory subcategory id.
+  *       - in: query
+  *         name: excludeJewelryAndFirearm
+  *         required: false
+  *         schema:
+  *           type: boolean
+  *         description: When true, exclude items in categories JEWELRY and FIREARM.
    *     responses:
    *       200:
    *         description: Inventory items with totals

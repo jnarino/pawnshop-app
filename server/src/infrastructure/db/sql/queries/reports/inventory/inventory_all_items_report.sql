@@ -13,4 +13,7 @@ JOIN inventory_subcategory ON inventory_subcategory.id = inventory_item.inventor
 JOIN inventory_category ON inventory_category.id = inventory_subcategory.inventory_category_id
 JOIN inventory_brand ON inventory_item.inventory_brand_id = inventory_brand.id
 WHERE inventory_item.status = 'I'
-ORDER BY inventory_subcategory.name, inventory_item.item_description;
+  AND ($1::uuid IS NULL OR inventory_category.id = $1)
+  AND ($2::uuid IS NULL OR inventory_subcategory.id = $2)
+  AND ($3::boolean IS FALSE OR inventory_category.name NOT IN ('JEWELRY', 'FIREARM'))
+ORDER BY inventory_item.inventory_number ASC
