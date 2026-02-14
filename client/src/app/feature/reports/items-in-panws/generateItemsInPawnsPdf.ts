@@ -134,7 +134,7 @@ export async function generateItemsInPawnsPdf(
 
     drawTableHeaders();
 
-    let totalLoanAmount = 0;
+
 
     data.rows.forEach(row => {
         // Calculate needed height
@@ -186,7 +186,6 @@ export async function generateItemsInPawnsPdf(
         // Col 8: Amount
         const amt = formatMoney(row.pawnAmount);
         page.drawText(amt, { x: x + 2, y, size: fontSize, font: fontBold });
-        totalLoanAmount += row.pawnAmount;
         x += colWidths.col8;
 
         y -= lineHeight;
@@ -243,16 +242,26 @@ export async function generateItemsInPawnsPdf(
     y -= 10;
 
     // Total Summary
-    checkPageBreak(3);
-    const totalLabel = "Total Loan Amount:";
-    const totalVal = formatMoney(totalLoanAmount);
+    checkPageBreak(5);
+    const summaryX = margin + 20;
+    const summaryY = y - 20;
 
-    // Position total near amount column
-    // The amount column is the last one (Col 8)
-    const totalX = margin + colWidths.col1 + colWidths.col2 + colWidths.col3 + colWidths.col4 + colWidths.col5 + colWidths.col6 + colWidths.col7;
+    if (data.totals) {
+        let currentY = summaryY;
+        const gap = 15;
 
-    page.drawText(totalLabel, { x: totalX - 80, y, size: 10, font: fontBold });
-    page.drawText(totalVal, { x: totalX + 2, y, size: 10, font: fontBold });
+        page.drawText(`Total Pawns: ${data.totals.totalPawns}`, { x: summaryX, y: currentY, size: 10, font });
+        currentY -= gap;
+        page.drawText(`Total Items: ${data.totals.totalItems}`, { x: summaryX, y: currentY, size: 10, font });
+        currentY -= gap;
+        page.drawText(`Total Pawn Amount: ${formatMoney(data.totals.totalPawnAmount)}`, { x: summaryX, y: currentY, size: 10, font: fontBold });
+        currentY -= gap;
+        page.drawText(`Total Service Charges: ${formatMoney(data.totals.totalServiceChargesDue)}`, { x: summaryX, y: currentY, size: 10, font });
+        currentY -= gap;
+        page.drawText(`Total Police Hold: ${formatMoney(data.totals.totalPoliceHoldAmount)}`, { x: summaryX, y: currentY, size: 10, font });
+    } else {
+        // Fallback or legacy support
+    }
 
 
     addPageNumbers({
