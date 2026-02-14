@@ -20,6 +20,7 @@ export class PgInventoryReportRepository implements InventoryReportRepository {
       itemType: row.item_type,
       type: row.type,
       brand: row.brand,
+      inventoryNumber: row.inventory_number,
       itemDescription: row.item_description,
       model: row.model ?? null,
       serialNumber: row.serial_number ?? null,

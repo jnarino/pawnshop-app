@@ -2,6 +2,7 @@ SELECT
   inventory_subcategory.name AS item_type,
   inventory_category.name AS type,
   inventory_brand.name AS brand,
+  inventory_item.inventory_number,
   inventory_item.item_description,
   inventory_item.model,
   inventory_item.serial_number,

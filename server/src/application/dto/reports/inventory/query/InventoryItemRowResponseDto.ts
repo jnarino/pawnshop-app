@@ -2,6 +2,7 @@ export type InventoryItemRowResponseDto = {
   itemType: string;
   type: string;
   brand: string;
+  inventoryNumber: string;
   itemDescription: string;
   model: string | null;
   serialNumber: string | null;
