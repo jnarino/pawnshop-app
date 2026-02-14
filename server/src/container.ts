@@ -91,6 +91,9 @@ import { TaxesReportController } from './interfaces/http/controller/reports/taxe
 import { PgActivePawnReportRepository } from './infrastructure/persistence/reports/pawn/PgActivePawnReportRepository';
 import { GetActivePawnsUseCase } from './application/use-case/reports/pawn/query/GetActivePawnsUseCase';
 import { PawnReportController } from './interfaces/http/controller/reports/pawn/PawnReportController';
+import { PgInventoryReportRepository } from './infrastructure/persistence/reports/inventory/PgInventoryReportRepository';
+import { GetAllItemsInventoryUseCase } from './application/use-case/reports/inventory/query/GetAllItemsInventoryUseCase';
+import { InventoryReportController } from './interfaces/http/controller/reports/inventory/InventoryReportController';
 import { RemoveCashFromMainDrawerUseCase } from './application/use-case/storeTransaction/command/RemoveCashFromMainDrawerUseCase';
 import { AddMoneyToMainDrawerUseCase } from './application/use-case/storeTransaction/command/AddMoneyToMainDrawerUseCase';
 import { ListBalanceCashDrawerUseCase } from './application/use-case/storeTransaction/query/ListBalanceCashDrawerUseCase';
@@ -143,6 +146,7 @@ export async function createApp() {
   const cashDrawerReportRepo = new PgCashDrawerReportRepository(pool);
   const salesTaxReportRepo = new PgSalesTaxReportRepository(pool);
   const activePawnReportRepo = new PgActivePawnReportRepository(pool);
+  const inventoryReportRepo = new PgInventoryReportRepository(pool);
   const layawayRepo = new PgLayawayRepository(pool);
   const layawayUnitOfWork = new PgLayawayUnitOfWork(pool);
   const gunLogRepo = new PgGunLogRepository(pool);
@@ -216,6 +220,9 @@ export async function createApp() {
   const listPawnTicketsByDateRangeUseCase = new ListPawnTicketsByDateRangeUseCase(pawnTicketRepo, getPawnTicketCurrentChargesUseCase);
   const listPreviousItemsByCustomerUseCase = new ListPreviousItemsByCustomerUseCase(pawnTicketRepo);
   const listHistoryPawnsByCustomerUseCase = new ListHistoryPawnsByCustomerUseCase(pawnTicketRepo);
+
+  // Reports - inventory
+  const getAllItemsInventoryUseCase = new GetAllItemsInventoryUseCase(inventoryReportRepo);
 
   // Reports - pawn
   const getActivePawnsUseCase = new GetActivePawnsUseCase(activePawnReportRepo, getPawnTicketCurrentChargesUseCase);
@@ -342,6 +349,10 @@ export async function createApp() {
     getActivePawnsUseCase
   );
 
+  const inventoryReportController = new InventoryReportController(
+    getAllItemsInventoryUseCase
+  );
+
   const storeTransactionController = new StoreTransactionController(
     listStoreTransactionsByCustomerUseCase,
     listStoreTransactionsByDateRangeUseCase,
@@ -397,6 +408,7 @@ export async function createApp() {
     policeReportController,
     cashDrawerReportController,
     taxesReportController,
+    inventoryReportController,
     pawnReportController,
     layawayController,
     policeController,
