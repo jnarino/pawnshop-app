@@ -6,6 +6,7 @@ export function toInventoryItemRowDto(record: InventoryItemRecord): InventoryIte
     itemType: record.itemType,
     type: record.type,
     brand: record.brand,
+    inventoryNumber: record.inventoryNumber,
     itemDescription: record.itemDescription,
     model: record.model,
     serialNumber: record.serialNumber,

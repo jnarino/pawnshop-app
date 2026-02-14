@@ -2,6 +2,7 @@ export type InventoryItemRecordProps = {
   itemType: string;
   type: string;
   brand: string;
+  inventoryNumber: string;
   itemDescription: string;
   model: string | null;
   serialNumber: string | null;
@@ -14,6 +15,7 @@ export class InventoryItemRecord {
   readonly itemType: string;
   readonly type: string;
   readonly brand: string;
+  readonly inventoryNumber: string;
   readonly itemDescription: string;
   readonly model: string | null;
   readonly serialNumber: string | null;
@@ -25,6 +27,7 @@ export class InventoryItemRecord {
     this.itemType = props.itemType;
     this.type = props.type;
     this.brand = props.brand;
+    this.inventoryNumber = props.inventoryNumber;
     this.itemDescription = props.itemDescription;
     this.model = props.model;
     this.serialNumber = props.serialNumber;
