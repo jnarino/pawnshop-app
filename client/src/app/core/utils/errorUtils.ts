@@ -7,7 +7,6 @@ interface ErrorResponse {
 
 export function getFriendlyErrorMessage(error: any): string {
 
-    console.log(error, 'error')
     if (!error) return 'An unexpected error occurred';
 
     // Handle Network/Fetch errors

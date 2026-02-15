@@ -58,7 +58,7 @@ export class DockerManager {
 
     static async startContainer(name: string): Promise<boolean> {
         try {
-            console.log(`[DockerManager] Starting container ${name}...`);
+            console.info(`[DockerManager] Starting container ${name}...`);
             await execa('docker', ['start', name]);
             return true;
         } catch (e) {
@@ -73,12 +73,12 @@ export class DockerManager {
         const image = IMAGES.postgres;
 
         try {
-            console.log(`[DockerManager] Creating container ${name} on port ${port}...`);
+            console.info(`[DockerManager] Creating container ${name} on port ${port}...`);
             // Check if image exists
             try {
                 await execa('docker', ['image', 'inspect', image]);
             } catch {
-                console.log(`[DockerManager] Pulling image ${image}...`);
+                console.info(`[DockerManager] Pulling image ${image}...`);
                 await execa('docker', ['pull', image]);
             }
 
@@ -108,16 +108,16 @@ export class DockerManager {
 
         // 2. If not, try to start it
         if (!isRunning) {
-            console.log('[DockerManager] Docker is not running. Starting it...');
+            console.info('[DockerManager] Docker is not running. Starting it...');
 
             // 3. Poll for Docker API readiness (up to 60s)
-            console.log('[DockerManager] Waiting for Docker to be ready...');
+            console.info('[DockerManager] Waiting for Docker to be ready...');
             let attempts = 0;
             while (!isRunning && attempts < 10) { // 30 * 2s = 60s
                 await new Promise(r => setTimeout(r, 2000));
                 isRunning = await this.checkDockerRunning();
                 attempts++;
-                if (isRunning) console.log('[DockerManager] Docker is now ready!');
+                if (isRunning) console.info('[DockerManager] Docker is now ready!');
             }
 
             if (!isRunning) {

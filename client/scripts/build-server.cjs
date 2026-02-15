@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 const path = require('path');
 
-console.log('📦 Bundling Server for Electron...');
+console.info('📦 Bundling Server for Electron...');
 
 esbuild.build({
     entryPoints: [path.resolve(__dirname, '../../server/src/server.ts')],
@@ -22,9 +22,9 @@ esbuild.build({
     const destDir = path.resolve(__dirname, '../dist-electron/sql');
 
     if (fs.existsSync(srcDir)) {
-        console.log('📂 Copying SQL files...');
+        console.info('📂 Copying SQL files...');
         fs.cpSync(srcDir, destDir, { recursive: true });
-        console.log('✅ SQL files copied.');
+        console.info('✅ SQL files copied.');
     } else {
         console.warn('⚠️ SQL folder not found at:', srcDir);
     }
@@ -33,17 +33,17 @@ esbuild.build({
     const migrationsDest = path.resolve(__dirname, '../dist-electron/migrations');
 
     if (fs.existsSync(migrationsSrc)) {
-        console.log('📂 Copying Migration files...');
+        console.info('📂 Copying Migration files...');
         fs.cpSync(migrationsSrc, migrationsDest, { recursive: true });
-        console.log('✅ Migration files copied.');
+        console.info('✅ Migration files copied.');
     } else {
         console.warn('⚠️ Migrations folder not found at:', migrationsSrc);
     }
 
     if (fs.existsSync(migrationsSrc)) {
-        console.log('📂 Copying Migration files...');
+        console.info('📂 Copying Migration files...');
         fs.cpSync(migrationsSrc, migrationsDest, { recursive: true });
-        console.log('✅ Migration files copied.');
+        console.info('✅ Migration files copied.');
     } else {
         console.warn('⚠️ Migrations folder not found at:', migrationsSrc);
     }
@@ -53,15 +53,15 @@ esbuild.build({
     const envDest = path.resolve(__dirname, '../dist-electron/.env');
 
     if (fs.existsSync(envSrc)) {
-        console.log('📂 Copying .env...');
+        console.info('📂 Copying .env...');
         fs.copyFileSync(envSrc, envDest);
-        console.log('✅ .env copied.');
+        console.info('✅ .env copied.');
     } else {
         console.warn('⚠️ .env not found at:', envSrc);
     }
 
     // Generate Swagger JSON for bundled app
-    console.log('📄 Generating Swagger JSON...');
+    console.info('📄 Generating Swagger JSON...');
     const { execSync } = require('child_process');
     try {
         const genScript = path.resolve(__dirname, '../../server/scripts/generate-swagger.ts');
@@ -81,12 +81,12 @@ esbuild.build({
         const swaggerJson = execSync(`npx ts-node "${genScript}"`, { cwd: serverDir }).toString();
         fs.writeFileSync(swaggerDest, swaggerJson);
 
-        console.log('✅ Swagger JSON generated an copied.');
+        console.info('✅ Swagger JSON generated an copied.');
     } catch (err) {
         console.error('❌ Failed to generate Swagger JSON:', err.message);
         if (err.stderr) console.error(err.stderr.toString());
         // Don't fail build, just warn?
     }
 
-    console.log('✅ Server bundled to dist-electron/server.cjs');
+    console.info('✅ Server bundled to dist-electron/server.cjs');
 }).catch(() => process.exit(1));

@@ -49,8 +49,6 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
     );
   }, [pendingSaleData]);
 
-  console.log("isFirearmSale", isFirearmSale);
-
   const customerId = customer?.id;
 
   const handleDraftChange = useCallback((draft: SaleFormDraftState) => {
@@ -125,7 +123,6 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
   }, [pendingSaleData, createTicket, resetPawnDraft, onTicketCreated, navigate, isFirearmSale]);
 
   const handleReceiptConfirm = async () => {
-    console.log("Print sale receipt confirmed", lastReceipts);
     setShowReceiptConfirmModal(false);
 
     if (!!lastReceipts) {
@@ -156,7 +153,6 @@ export default function NewSaleTab({ customer, mode, initialTicket, onTicketCrea
     }
 
     const tax = itemsTotal * 0.065;
-    console.log("calculateTotal", (itemsTotal + tax).toFixed(2));
     return Number((itemsTotal + tax).toFixed(2));
   }, [pendingSaleData]);
 

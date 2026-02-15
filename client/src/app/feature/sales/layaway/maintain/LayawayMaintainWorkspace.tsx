@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { http } from '@/app/core/api/http';
 import LayawayWorkspace from '../LayawayWorkspace';
 import { LayawayList } from './LayawayList';
+import { Loader2 } from 'lucide-react';
 
 export const statusOptionsMap = {
-  'defaulted': 'Defaulted',
-  'active': 'Layaway',
-  'sold': 'Sold',
-  'voided': 'Voided',
+  'defaulted': 'DEFAULTED',
+  'active': 'LAYAWAY',
+  'sold': 'SOLD',
+  'voided': 'VOIDED',
 }
 
 const today = new Date();
@@ -39,19 +40,28 @@ function LayawayMaintainWorkspaceContent() {
   const handleLayawaysResponse = (layaways: any[]) => {
     setLayaways(layaways);
     setShowTicketTable(true);
+    setLoading(false);
   }
 
   const getLayawayByCustomer = async (customerId: string) => {
+    setLoading(true);
     const layaways = await layawayApi.getByCustomer(customerId);
     handleLayawaysResponse(layaways);
   }
 
   const getLayawayByControlNumber = async (controlNumber: string) => {
-    const layaway = await layawayApi.findByControlNumber(controlNumber);
-    handleLayawaysResponse(layaway ? [layaway] : []);
+    setLoading(true);
+    try {
+      const layaway = await layawayApi.findByControlNumber(controlNumber);
+      handleLayawaysResponse(layaway ? [layaway] : []);
+    } catch (error) {
+      console.error('Error fetching layaway by control number:', error);
+      setLoading(false);
+    }
   }
 
   const getLayawayByDateRange = async (startDate: string, endDate: string, status?: string) => {
+    setLoading(true);
     const layaways = await layawayApi.getByDateRange(startDate, endDate, status);
     handleLayawaysResponse(layaways);
   }
@@ -130,13 +140,24 @@ function LayawayMaintainWorkspaceContent() {
         </div>
       )}
 
-      {showTicketTable && !selectedTicket && (
-        <div className="border rounded-lg mt-8">
-          <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Layaways for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
-            <span className="text-xs">Status: {statusOptionsMap[status]}</span>
+      {loading && !selectedTicket && (
+        <div className="h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading layaways...</p>
           </div>
-          <LayawayList layaways={layaways} loading={loading} handleOpenTicket={handleOpenTicket} />
+        </div>
+      )}
+
+      {showTicketTable && !loading && !selectedTicket && (
+        <div className="border rounded-lg mt-8">
+          {selectedCustomer && (
+            <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
+              <span>Layaways for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
+              <span className="text-xs">Status: {statusOptionsMap[status]}</span>
+            </div>
+          )}
+          <LayawayList layaways={layaways} showCustomer={!!selectedCustomer} loading={loading} handleOpenTicket={handleOpenTicket} />
         </div>
       )}
 

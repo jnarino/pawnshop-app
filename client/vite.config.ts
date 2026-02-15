@@ -33,14 +33,14 @@ export default defineConfig(({ mode }) => {
           timeout: 10000,
           configure: (proxy, options) => {
             proxy.on('error', (err, req, res) => {
-              console.log('🔴 Proxy error:', err.message);
-              console.log(`🔍 Check if server is running on ${apiUrl}`);
+              console.info('🔴 Proxy error:', err.message);
+              console.info(`🔍 Check if server is running on ${apiUrl}`);
             });
             proxy.on('proxyReq', (proxyReq, req, res) => {
               const target = options.target || apiUrl;
               const url = req.url || '/unknown';
               const method = req.method || 'GET';
-              console.log('📤 Proxying:', method, url, '→', target + url);
+              console.info('📤 Proxying:', method, url, '→', target + url);
             });
           }
         }

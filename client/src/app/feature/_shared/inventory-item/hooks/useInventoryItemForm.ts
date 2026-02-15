@@ -85,7 +85,6 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
   }, [mode, initial]);
 
   const loadSubcategoriesAndBrands = async () => {
-    console.log('Loading subcategories and brands...');
     try {
       const [subcategoriesData, brandsData] = await Promise.all([
         getSubcategories(draft.type),
@@ -137,7 +136,6 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
         gender: undefined,
         weightUnit: 'Grams'
       };
-      console.log('useInventoryItemForm', { formData, initial });
       setDraft(formData);
       setError(null);
     }
@@ -182,7 +180,6 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
   const handleSubcategoryChange = useCallback((subcategoryId: string) => {
     if (!subcategoryId) return;
     const subcategory = subcategories.find(s => s.id === subcategoryId);
-    console.log('handle subcategory change', subcategoryId);
     setDraft(prev => ({
       ...prev,
       subcategoryId,
@@ -220,8 +217,6 @@ export function useInventoryItemForm({ open, initial, onSave, mode = ViewMode.CR
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    console.log('draft', draft);
 
     if (!draft.type.trim()) {
       setError('Type is required');

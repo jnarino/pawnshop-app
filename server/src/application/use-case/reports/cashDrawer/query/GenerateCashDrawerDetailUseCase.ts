@@ -29,25 +29,17 @@ export class GenerateCashDrawerDetailUseCase {
 
             // If the last close happened on any prior calendar day, accumulate.
             if (daysDifference > 1) {
-                console.log('Accumulating from last close:', lastCloseDate, 'to report day:', reportDay);
                 // Process transactions from last close timestamp up to start of report day
                 // Add one minute to lastCloseDate to exclude the close transaction itself
                 const accumulationStartDate = new Date(lastCloseDate.getTime() + 60000);
                 // Set accumulation end to the last moment before the report day (end of previous day)
                 const accumulationEndDate = new Date(start.getTime() - 1);
-                console.log('Accumulation window - Start (after close):', accumulationStartDate, 'End (before report):', accumulationEndDate);
                 const accumulationRecords = await this.processRecordsWithBalance(accumulationStartDate, accumulationEndDate, closingAmount);
                 const transactionDtos = accumulationRecords.map(toCashDrawerDetailDto);
-                console.log('Accumulation records count:', accumulationRecords.length);
-                if (accumulationRecords.length > 0) {
-                    console.log('First accumulation record:', transactionDtos[0]);
-                    console.log('Last accumulation record:', transactionDtos[accumulationRecords.length - 1]);
-                }
                 // Extract the final balance before the report start date
                 const carryover = accumulationRecords.length > 0
                     ? accumulationRecords[accumulationRecords.length - 1].balance - closingAmount
                     : 0;
-                console.log('Carryover balance:', carryover, '= final balance', accumulationRecords.length > 0 ? accumulationRecords[accumulationRecords.length - 1].balance : 0, '- close amount', closingAmount);
                 openingBalance = closingAmount + carryover;
             } else {
                 openingBalance = closingAmount;

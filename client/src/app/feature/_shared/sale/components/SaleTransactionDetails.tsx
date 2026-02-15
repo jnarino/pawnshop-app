@@ -20,6 +20,7 @@ interface SaleTransactionDetailsProps {
   readonly description?: string;
   readonly customer?: Customer;
   readonly taxExemptUsed?: boolean;
+  readonly totalOfPayments?: number;
   readonly priceEach?: number | string;
   readonly onSearchInventoryItem: (value: string) => void;
   readonly handleSaveItem: (item: any) => void; // TODO: any
@@ -40,6 +41,7 @@ export function SaleTransactionDetails({
   description,
   customer,
   taxExemptUsed,
+  totalOfPayments,
   setTaxExemptUsed,
   priceEach,
   onSearchInventoryItem,
@@ -60,6 +62,7 @@ export function SaleTransactionDetails({
             <p><strong>Ticket Number:</strong> {inventoryNumber}</p>
             <p><strong>Status:</strong> {status}</p>
             <p><strong>Date in:</strong> {formatDate(occurredAt)}</p>
+            {totalOfPayments && totalOfPayments > 0 && <p><strong>Total of payments:</strong> {totalOfPayments}</p>}
           </>) : (
             <>
               <div className="flex flex-col space-y-2">
@@ -91,7 +94,9 @@ export function SaleTransactionDetails({
                     <Button variant="outline" onClick={(e) => {
                       e.preventDefault();
                       onSearchInventoryItem(inventoryNumber || '')
-                    }}>Find</Button>
+                    }}
+                      disabled={disabled || isEditing}
+                    >Find</Button>
                   </div>
                 </div>
                 <div>

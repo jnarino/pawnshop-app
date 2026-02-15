@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/utils';
 import { extractId, transformStones } from '@/app/shared/components/ElectronMenuBridge';
 import { MaintainSearch, ScopeFilter } from '@/app/shared/components/MaintainSearch';
 import PawnsWorkspace from '../PawnsWorkspace';
+import { Badge } from '@/components/ui/badge';
 
 type TicketResult = CustomerActivePawnTicket | TicketByControlNumber;
 
@@ -287,9 +288,11 @@ function PawnsMaintainWorkspaceContent() {
   }
 
   const getPawnsByDateRange = async (startDate: string, endDate: string) => {
+    setLoading(true);
     const pawns = await pawnTicketApi.findByDateRange(startDate, endDate);
     setTicketResults(pawns);
     setShowTicketTable(true);
+    setLoading(false);
   }
 
   const handleSearchByDateRange = (startDate: string, endDate: string) => {
@@ -312,18 +315,31 @@ function PawnsMaintainWorkspaceContent() {
         </div>
       )}
 
-      {showTicketTable && !selectedTicket && (
+      {loading && !selectedTicket && (
+        <div className="h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading pawns...</p>
+          </div>
+        </div>
+      )}
+
+      {showTicketTable && !loading && !selectedTicket && (
         <div className="border rounded-lg mt-8">
           <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Tickets for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
-            <span className="text-xs">Scope: {scope}</span>
+            {selectedCustomer && (
+              <>
+                <span>Tickets for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
+                <span>Tickets for {scope}</span>
+                <span className="text-xs">Scope: {scope}</span>
+              </>
+            )}
           </div>
           <Table stickyHeader>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-28">Ticket #</TableHead>
                 <TableHead className="w-20">Type</TableHead>
-                <TableHead className="w-28">Status</TableHead>
                 <TableHead className="w-24">Amount</TableHead>
                 <TableHead className="w-32">Transaction</TableHead>
                 <TableHead className="w-16 text-right">Actions</TableHead>
@@ -337,8 +353,11 @@ function PawnsMaintainWorkspaceContent() {
                 return (
                   <TableRow key={`${row.controlNumber}-${row.id}`}>
                     <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                    <TableCell className="uppercase">{row.transactionType}</TableCell>
-                    <TableCell className="capitalize">{(row as CustomerActivePawnTicket).pawnStatus || '—'}</TableCell>
+                    <TableCell className="uppercase">
+                      <Badge variant="default">
+                        {row.transactionType}
+                      </Badge>
+                    </TableCell>
                     <TableCell>${amount}</TableCell>
                     <TableCell>{row.createdDate ? formatDate(row.createdDate) : '—'}</TableCell>
                     <TableCell className="text-right">

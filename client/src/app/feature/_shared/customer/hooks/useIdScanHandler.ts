@@ -43,7 +43,7 @@ export function useIdScanHandler({
       return;
     }
 
-    console.log('[IDScan] 🔍 Searching for customer:', {
+    console.info('[IDScan] 🔍 Searching for customer:', {
       idType: 'DRIVERS LICENSE',
       idState: d.stateUs,
       idNumber: d.idNumber
@@ -59,10 +59,10 @@ export function useIdScanHandler({
 
       const customers = await http(`/api/customer?${params.toString()}`);
 
-      console.log('[IDScan] Search results:', { count: customers?.length || 0 });
+      console.info('[IDScan] Search results:', { count: customers?.length || 0 });
 
       if (!customers || !Array.isArray(customers) || customers.length === 0) {
-        console.log('[IDScan] ❌ No customer found by Driver License + State + ID Number');
+        console.info('[IDScan] ❌ No customer found by Driver License + State + ID Number');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
@@ -79,7 +79,7 @@ export function useIdScanHandler({
       });
 
       if (!idMatch) {
-        console.log('[IDScan] ⚠️ No exact ID match found');
+        console.info('[IDScan] ⚠️ No exact ID match found');
         setModalEmpty(true);
         setSearchFromScan(true);
         setLastScanData(d);
@@ -89,7 +89,7 @@ export function useIdScanHandler({
 
       const customerRecord = apiToRecordLoose(idMatch);
 
-      console.log('[IDScan] ✅ Customer found:', {
+      console.info('[IDScan] ✅ Customer found:', {
         id: idMatch.id,
         name: `${idMatch.firstName} ${idMatch.lastName}`,
         idType: idMatch.idType,
@@ -101,7 +101,7 @@ export function useIdScanHandler({
       onChange?.(recordToDto(customerRecord, idMatch.id));
       onSelected?.(idMatch.id);
 
-      console.log('[IDScan] ✅ Customer loaded successfully');
+      console.info('[IDScan] ✅ Customer loaded successfully');
 
     } catch (err) {
       console.error('[IDScan] ❌ Search failed:', err);
@@ -133,7 +133,7 @@ export function useIdScanHandler({
       setIdConflictData(null);
       setStatusMessage('ID number updated successfully.');
 
-      console.log('[IDScan] ✅ ID number updated');
+      console.info('[IDScan] ✅ ID number updated');
     } catch (err: any) {
       setError(err.message || 'Unable to update ID number');
     } finally {
@@ -142,7 +142,7 @@ export function useIdScanHandler({
   };
 
   const handleKeepExistingId = () => {
-    console.log('[IDScan] User chose to keep existing ID number');
+    console.info('[IDScan] User chose to keep existing ID number');
     setIdConflictModalOpen(false);
     setIdConflictData(null);
   };

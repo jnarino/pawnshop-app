@@ -4,14 +4,17 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { statusOptionsMap } from './LayawayMaintainWorkspace';
+import { Badge } from '@/components/ui/badge';
 
-export const LayawayList = ({ layaways, loading, handleOpenTicket }: { layaways: any[]; loading: boolean; handleOpenTicket: (row: any) => void }) => {
+export const LayawayList = ({ layaways, showCustomer, loading, handleOpenTicket }: { layaways: any[]; showCustomer: boolean; loading: boolean; handleOpenTicket: (row: any) => void }) => {
     return (
         <Table stickyHeader>
             <TableHeader>
                 <TableRow>
                     <TableHead className="w-28">Ticket #</TableHead>
-                    <TableHead className="w-56">Customer</TableHead>
+                    {showCustomer &&
+                        <TableHead className="w-56">Customer</TableHead>
+                    }
                     <TableHead className="w-28">Date IN</TableHead>
                     <TableHead className="w-28">Date Due</TableHead>
                     <TableHead className="w-28">Status</TableHead>
@@ -28,10 +31,16 @@ export const LayawayList = ({ layaways, loading, handleOpenTicket }: { layaways:
                     return (
                         <TableRow key={`${row.controlNumber}-${row.id}`}>
                             <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                            <TableCell className="uppercase">{customerName}</TableCell>
+                            {showCustomer &&
+                                <TableCell className="uppercase">{customerName}</TableCell>
+                            }
                             <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                             <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
-                            <TableCell className="capitalize">{row.typeName || statusOptionsMap[row.status] || '—'}</TableCell>
+                            <TableCell className="capitalize">
+                                <Badge variant="default">
+                                    {row.typeName || statusOptionsMap[row.status] || '—'}
+                                </Badge>
+                            </TableCell>
                             <TableCell>{formatCurrency(row.taxSales + row.stateTax)}</TableCell>
                             <TableCell>{formatCurrency((row.taxSales + row.stateTax) - row.totalOfPayments)}</TableCell>
                             <TableCell className="text-right">

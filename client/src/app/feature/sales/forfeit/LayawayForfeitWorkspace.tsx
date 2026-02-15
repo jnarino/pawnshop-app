@@ -23,7 +23,6 @@ function LayawayForfeitWorkspaceContent() {
         results = await layawayApi.getByDateRange(from, to, 'defaulted');
       }
 
-      console.log(results);
       setSearchResults(results);
     } catch (error) {
       console.error('Error searching pawns:', error);

@@ -57,7 +57,6 @@ export class LabelPrinter {
    */
   async printMultiple(labels: LabelPrintData[]): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log(`[LabelPrinter] Printing ${labels.length} labels`);
 
       const html = this.generateMultipleLabelsHTML(labels);
       const printWindow = window.open('', '_blank');

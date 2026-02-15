@@ -301,7 +301,7 @@ export const MaintainSearch = ({
                         />
                     </div>
                     <div className="col-span-6 flex justify-end gap-2">
-                        <Button onClick={() => handleSearchControlNumber(ticketNumber)} disabled={loading}>
+                        <Button onClick={() => handleSearchControlNumber(ticketNumber)} disabled={loading || !ticketNumber}>
                             {loading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

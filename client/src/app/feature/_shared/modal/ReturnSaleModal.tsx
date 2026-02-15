@@ -19,8 +19,6 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
     const [reason, setReason] = useState('');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-    console.log({ items })
-
     const handleToggleItem = (itemId: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(itemId)) {
@@ -50,8 +48,6 @@ export function ReturnSaleModal({ open, isLayaway, items, onCancel, onConfirm }:
         .reduce((sum, i) => sum + (Number(i.amount) || Number((i as any).lineAmount) || Number(i.priceEach) || 0), 0);
 
     if (!open) return null;
-
-    console.log({ items });
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>

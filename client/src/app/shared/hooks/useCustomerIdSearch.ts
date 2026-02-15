@@ -62,7 +62,7 @@ export function useCustomerIdSearch(
       if (data.lastName) params.set('lastName', data.lastName);
       params.set('limit', '10');
 
-      console.log('[IDScan] 🔍 Searching for customer:', {
+      console.info('[IDScan] 🔍 Searching for customer:', {
         dob: dobISO,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -70,25 +70,25 @@ export function useCustomerIdSearch(
       });
 
       const customers = await http(`/api/customer?${params.toString()}`);
-      
-      console.log('[IDScan] Search results:', { count: customers?.length || 0 });
+
+      console.info('[IDScan] Search results:', { count: customers?.length || 0 });
 
       if (!customers || !Array.isArray(customers) || customers.length === 0) {
-        console.log('[IDScan] ❌ No customer found');
+        console.info('[IDScan] ❌ No customer found');
         onNotFoundRef.current({ idNumber, dobISO, aamva: data });
         return;
       }
 
       // ✅ Find exact match by ID number
-      const match = customers.find((c: any) => 
+      const match = customers.find((c: any) =>
         c.idNumber?.toUpperCase() === idNumber?.toUpperCase()
       );
 
       if (match) {
-        console.log('[IDScan] ✅ Customer found:', match.id);
+        console.info('[IDScan] ✅ Customer found:', match.id);
         onFoundRef.current(match);
       } else {
-        console.log('[IDScan] ⚠️ Customers found but no ID match');
+        console.info('[IDScan] ⚠️ Customers found but no ID match');
         onNotFoundRef.current({ idNumber, dobISO, aamva: data });
       }
     } catch (error) {

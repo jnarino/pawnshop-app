@@ -16,7 +16,7 @@ async function initConfig() {
     try {
       const config = await window.electronAPI.getApiConfig();
       if (config?.serverUrl) {
-        console.log(`[HTTP] Configuring API URL from Electron: ${config.serverUrl}`);
+        console.info(`[HTTP] Configuring API URL from Electron: ${config.serverUrl}`);
         BASE_URL = config.serverUrl;
       }
     } catch (err) {
@@ -35,7 +35,7 @@ export async function http(
     await initConfig();
   }
 
-  console.log(`🌐 Making request to: ${path}`);
+  console.info(`🌐 Making request to: ${path}`);
 
   // ✅ Check for duplicate requests
   const cacheKey = `${options.method || 'GET'}:${path}`;
@@ -43,7 +43,7 @@ export async function http(
   const cached = requestCache.get(cacheKey);
 
   if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-    console.log(`🔄 Using cached request for: ${path}`);
+    console.info(`🔄 Using cached request for: ${path}`);
     return cached.promise;
   }
 
@@ -76,7 +76,7 @@ async function makeRequest(path: string, options: CustomRequestInit = {}): Promi
     const fullUrl = path.startsWith('/') ? path : `/${path}`;
     const absoluteUrl = path.startsWith('http') ? path : `${BASE_URL}${fullUrl}`;
 
-    //console.log(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
+    //console.info(`📤 Request: ${options.method || 'GET'} ${absoluteUrl}`);
 
     const response = await fetch(absoluteUrl, {
       ...options,
@@ -87,7 +87,7 @@ async function makeRequest(path: string, options: CustomRequestInit = {}): Promi
       },
     });
 
-    // console.log(`📥 Response: ${response.status} ${response.statusText}`);
+    // console.info(`📥 Response: ${response.status} ${response.statusText}`);
 
     if (response.status === 204) {
       return null;
@@ -131,7 +131,7 @@ async function makeRequest(path: string, options: CustomRequestInit = {}): Promi
     }
 
     const data = await response.json();
-    // console.log(`✅ Success:`, data);
+    // console.info(`✅ Success:`, data);
     return data;
 
   } catch (error) {

@@ -53,7 +53,6 @@ export function useReceiptPrint() {
             };
 
             const printer = new ReceiptPrinter();
-            console.log("printData", printData);
             const result = await printer.print(printData);
 
             if (!result.success) {

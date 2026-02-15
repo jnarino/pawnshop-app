@@ -53,7 +53,6 @@ export function TransactionDetails({
   onForfeitDateChange,
 }: TransactionDetailsProps) {
 
-  console.log('TransactionDetails', { isViewMode, controlNumber, clerkUsername });
   return (
     <Card className="border-2 mb-6">
       <CardHeader className="bg-slate-50 border-b py-4">
@@ -177,7 +176,7 @@ export function TransactionDetails({
             </p>
           </div>
         )}
-        {isViewMode && customer && (
+        {customer && (
           <p><b>Customer:</b> {customer?.firstName + ' ' + customer?.lastName}</p>
         )}
       </CardContent>

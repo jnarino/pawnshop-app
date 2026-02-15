@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo, useEffect } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { formatDate, formatCurrency as formatMoney } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,12 +31,10 @@ type PaymentSelectionType = 'current' | 'redemption' | 'other' | null;
 
 interface Props {
     pawnTicketsData: ReturnType<typeof useCustomerPawnTickets>;
-    onBack: () => void;
-    onPawnSelected: (pawn: CustomerActivePawnTicket) => void;
     onViewPawn: (pawn: CustomerActivePawnTicket) => void;
 }
 
-export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected, onViewPawn }: Props) {
+export default function LocatePawnsTab({ pawnTicketsData, onViewPawn }: Props) {
     const {
         filteredTickets,
         loading,
@@ -139,7 +137,6 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
     }, [paymentSelections]);
 
     const handleSave = useCallback(() => {
-        console.log('Save clicked', paymentSelections);
         setShowPaymentModal(true);
     }, [paymentSelections]);
 
@@ -162,6 +159,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
     const handleClearSelections = useCallback(() => {
         setPaymentSelections({});
         setOtherAmounts({});
+        selectTicket(null);
     }, []);
 
     const handleSearch = useCallback(() => {
@@ -254,7 +252,6 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
     }, [paymentSelections, filteredTickets, applyFilter, isFirearmRedemption]);
 
     const handleReceiptConfirm = async () => {
-        console.log("Print redemptions receipt confirmed");
         setShowReceiptConfirmModal(false);
 
         if (lastReceipts) {
@@ -335,9 +332,9 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                 <TableHead className="w-[100px]">Date Out</TableHead>
                                 <TableHead className="w-[90px] text-right">Amount</TableHead>
                                 <TableHead className="w-[80px]">Status</TableHead>
-                                <TableHead className="w-[140px] text-center">Current Charges</TableHead>
-                                <TableHead className="w-[120px] text-center">Redemption</TableHead>
-                                <TableHead className="w-[140px] text-center">Other Payments</TableHead>
+                                <TableHead className="w-[140px] text-end">Current Charges</TableHead>
+                                <TableHead className="w-[120px] text-end">Redemption</TableHead>
+                                <TableHead className="w-[140px] text-end">Other Payments</TableHead>
                                 <TableHead className="w-[80px] text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -358,7 +355,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                     <TableCell className="w-[100px]">
                                         {formatDate(ticket.createdDate)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="w-[100px]">
                                         {formatDate(ticket.defaultDate)}
                                     </TableCell>
                                     <TableCell className="w-[90px] text-right">
@@ -370,7 +367,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="w-[140px]">
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center justify-end gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'current'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'current')}
@@ -379,7 +376,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                         </div>
                                     </TableCell>
                                     <TableCell className="w-[120px]">
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center justify-end gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'redemption'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'redemption')}
@@ -388,7 +385,7 @@ export default function LocatePawnsTab({ pawnTicketsData, onBack, onPawnSelected
                                         </div>
                                     </TableCell>
                                     <TableCell className="w-[140px]">
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center justify-end gap-2">
                                             <Checkbox
                                                 checked={paymentSelections[ticket.id]?.type === 'other'}
                                                 onCheckedChange={() => handlePaymentTypeChange(ticket.id, 'other')}

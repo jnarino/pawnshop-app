@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { http } from '@/app/core/api/http';
 import SalesWorkspace from '../SalesWorkspace';
+import { Badge } from '@/components/ui/badge';
 
 function SalesMaintainWorkspaceContent() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -27,19 +28,23 @@ function SalesMaintainWorkspaceContent() {
   const handleSalesResponse = (sales: any[]) => {
     setSales(sales);
     setShowTicketTable(true);
+    setLoading(false);
   }
 
   const getSalesByCustomer = async (customerId: string) => {
+    setLoading(true);
     const sales = await salesApi.getByCustomer(customerId);
     handleSalesResponse(sales);
   }
 
   const getSalesByControlNumber = async (controlNumber: string) => {
+    setLoading(true);
     const sales = await salesApi.findByControlNumber(controlNumber);
     handleSalesResponse(sales);
   }
 
   const getSalesByDateRange = async (startDate: string, endDate: string) => {
+    setLoading(true);
     const sales = await salesApi.getByDateRange(startDate, endDate);
     handleSalesResponse(sales);
   }
@@ -115,17 +120,32 @@ function SalesMaintainWorkspaceContent() {
         </div>
       )}
 
-      {showTicketTable && !selectedTicket && (
+      {loading && !selectedTicket && (
+        <div className="h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading sales...</p>
+          </div>
+        </div>
+      )}
+
+      {showTicketTable && !loading && !selectedTicket && (
         <div className="border rounded-lg mt-8">
           <div className="p-3 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Sales for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
-            <span className="text-xs">Scope: {scope}</span>
+            {selectedCustomer &&
+              <>
+                <span>Sales for {selectedCustomer?.firstName || ''} {selectedCustomer?.lastName || ''}</span>
+                <span className="text-xs">Scope: {scope}</span>
+              </>
+            }
           </div>
           <Table stickyHeader>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-28">Ticket #</TableHead>
-                <TableHead className="w-56">Customer</TableHead>
+                {!selectedCustomer &&
+                  <TableHead className="w-56">Customer</TableHead>
+                }
                 <TableHead className="w-28">Date IN</TableHead>
                 <TableHead className="w-28">Date Due</TableHead>
                 <TableHead className="w-28">Status</TableHead>
@@ -136,15 +156,21 @@ function SalesMaintainWorkspaceContent() {
             <TableBody>
               {sales.map((row) => {
                 const customerName = row.customer?.id
-                  ? `${row.customer.lastName || ''}, ${row.customer.firstName || ''}`
+                  ? `${row.customer.lastName || ''}${row.customer.firstName ? ', ' + row.customer.firstName : ''}`
                   : row.customerId ? row.customerId : '';
                 return (
                   <TableRow key={`${row.controlNumber}-${row.id}`}>
                     <TableCell className="font-semibold">{row.controlNumber}</TableCell>
-                    <TableCell className="uppercase">{customerName}</TableCell>
+                    {!selectedCustomer &&
+                      <TableCell className="uppercase">{customerName}</TableCell>
+                    }
                     <TableCell className="capitalize">{formatDate(row.createdAt) || '—'}</TableCell>
                     <TableCell className="capitalize">{formatDate(row.updatedAt) || '—'}</TableCell>
-                    <TableCell className="capitalize">{row.typeName || row.status || '—'}</TableCell>
+                    <TableCell className="capitalize">
+                      <Badge variant="default">
+                        {row.typeName || row.status || '—'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>${row.amount}</TableCell>
                     <TableCell className="text-right">
                       <Tooltip content="View sale">

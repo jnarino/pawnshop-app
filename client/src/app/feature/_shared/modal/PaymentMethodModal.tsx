@@ -147,8 +147,6 @@ export default function PaymentMethodModal({
 
   if (!open) return null;
 
-  console.log({ totalAmount })
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="sm:max-w-[500px]">

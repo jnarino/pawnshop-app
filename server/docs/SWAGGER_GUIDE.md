@@ -209,7 +209,7 @@ Then reference them with `$ref: '#/components/schemas/CategorySimple'`
 ## Viewing Documentation
 
 1. Start your server: `npm run dev`
-2. Open browser: `http://localhost:3000/api-docs`
+2. Open browser: `http://localhost:3301/api-docs`
 3. Test endpoints directly from Swagger UI
 
 ## Advantages of This Approach

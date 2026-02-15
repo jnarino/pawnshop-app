@@ -114,7 +114,6 @@ export function SaleForm({
   onSubmit,
   disabled = false
 }: SaleTicketFormProps) {
-  console.log({ initialData })
   const isViewMode = mode === 'VIEW';
   const { findAvailableItemByNumber } = useFindAvailableItemByNumber();
   const { printReceipt } = useReceiptPrint();
@@ -141,7 +140,8 @@ export function SaleForm({
     items: initialData?.items || [] as any[], // TODO: any
     taxExemptUsed: initialData?.taxExemptUsed || false,
     eatTax: initialData?.eatTax || false,
-    status: initialData?.typeName || initialData?.status
+    status: initialData?.typeName || initialData?.status,
+    totalOfPayments: initialData?.totalOfPayments || 0
   });
 
   const formData = {
@@ -288,6 +288,7 @@ export function SaleForm({
   const handleOnSearchInventoryItem = useCallback(async (inventoryItem: string) => {
     if (inventoryItem?.includes("G-") && !customer?.id) {
       setAlertMessage("You need to assign this sell to a customer, please select a customer first");
+      updateFormData({ inventoryNumber: '' });
       return;
     }
     try {
@@ -360,8 +361,6 @@ export function SaleForm({
         }))
       };
 
-      console.log({ payload })
-
       if (isLayaway) {
         await layawayApi.voidLayaway(initialData.id, payload);
         setAlertMessage('Layaway voided/returned successfully');
@@ -397,7 +396,6 @@ export function SaleForm({
     }
   };
 
-  console.log({ initialData, formData })
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -419,6 +417,7 @@ export function SaleForm({
           setTaxExemptUsed={(value) => updateFormData({ taxExemptUsed: value })}
           isEditing={!!editingRowId}
           onCancelEdit={handleCancelEdit}
+          totalOfPayments={formData.totalOfPayments}
         />
         {isViewMode && (
           <div className="flex items-center justify-end my-2 gap-2 items-end">

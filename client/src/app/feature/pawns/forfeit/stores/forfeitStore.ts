@@ -185,7 +185,6 @@ export const useForfeitStore = create<ForfeitStore>((set, get) => ({
         };
 
         try {
-            console.log("Submitting Forfeit/Pull Payload:", payload);
             const responseItems = await pawnTicketApi.pullToInventory(payload);
 
             if (responseItems && responseItems.length > 0) {

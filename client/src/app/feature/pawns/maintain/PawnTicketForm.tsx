@@ -319,8 +319,6 @@ export function PawnTicketForm({
 
   const isPawnVoided = statusPawn === "V";
 
-  console.log({ isPawnVoided });
-
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <form onSubmit={handleSubmit}>

@@ -51,13 +51,13 @@ function loadConfig() {
     }
 
     if (configPath) {
-      console.log('[Electron] Loading config from:', configPath);
+      console.info('[Electron] Loading config from:', configPath);
       const data = readFileSync(configPath, 'utf-8');
       const json = JSON.parse(data);
       if (json.mode) appConfig.mode = json.mode;
       if (json.serverUrl) appConfig.serverUrl = json.serverUrl;
     } else if (isDev) {
-      console.log('[Electron] Dev Mode: Using .env configuration');
+      console.info('[Electron] Dev Mode: Using .env configuration');
       // In dev, we stick to defaults set above from .env
     } else {
       console.warn('[Electron] No config.json found! Using default configuration.');
@@ -170,7 +170,7 @@ function startServer() {
   if (app.isPackaged) {
     serverPath = serverPath.replace('app.asar', 'app.asar.unpacked');
   }
-  console.log('[Electron] Starting embedded server from:', serverPath);
+  console.info('[Electron] Starting embedded server from:', serverPath);
 
 
   // Check if server file exists
@@ -188,7 +188,7 @@ function startServer() {
     });
 
     if (serverProcess.stdout) {
-      serverProcess.stdout.on('data', (data) => console.log(`[Server] ${data}`));
+      serverProcess.stdout.on('data', (data) => console.info(`[Server] ${data}`));
     }
     if (serverProcess.stderr) {
       serverProcess.stderr.on('data', (data) => console.error(`[Server Error] ${data}`));
@@ -228,12 +228,12 @@ function createMainWindow() {
 
   if (isDev) {
     const url = `${FRONTEND_HOST}:${FRONTEND_PORT}/#/login`
-    console.log('[Electron] Loading DEV URL:', url)
+    console.info('[Electron] Loading DEV URL:', url)
     mainWindow.loadURL(url)
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     const indexHtml = join(__dirname, '../dist/index.html')
-    console.log('[Electron] Loading PROD file:', indexHtml, 'hash=login')
+    console.info('[Electron] Loading PROD file:', indexHtml, 'hash=login')
     mainWindow.loadFile(indexHtml, { hash: 'login' })
   }
 
@@ -244,7 +244,7 @@ function createMainWindow() {
 
 ipcMain.handle('print-labels', async (event, items) => {
   try {
-    console.log('[Electron] Printing labels:', items);
+    console.info('[Electron] Printing labels:', items);
 
     // TODO: Implement GoDEX printer communication
     // For now, use system printer as fallback
@@ -296,7 +296,7 @@ app.whenReady().then(async () => {
   if (appConfig.mode === 'server') {
     // Ensure Database is running
     const env = app.isPackaged ? 'prod' : 'dev';
-    console.log(`[Electron] Ensuring database container for ${env}...`);
+    console.info(`[Electron] Ensuring database container for ${env}...`);
     const dbResult = await DockerManager.ensureDatabase(env);
 
     if (!dbResult.success) {
@@ -307,7 +307,7 @@ app.whenReady().then(async () => {
 
     startServer();
   } else {
-    console.log(`[Electron] Running in CLIENT mode. Connecting to: ${appConfig.serverUrl}`);
+    console.info(`[Electron] Running in CLIENT mode. Connecting to: ${appConfig.serverUrl}`);
   }
 
   createMainWindow();
@@ -315,7 +315,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (serverProcess) {
-    console.log('[Electron] Killing server process...');
+    console.info('[Electron] Killing server process...');
     serverProcess.kill();
     serverProcess = null;
   }
