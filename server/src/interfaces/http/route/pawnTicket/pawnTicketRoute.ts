@@ -585,8 +585,8 @@ export function createPawnTicketRouter(
      *                 itemDescription: "18V Hammer Drill with generic charger"
      *                 itemCondition: "Used - Good"
      *                 attributes:
-     *                   Power Source: "Battery"
-     *                   Voltage: "18V"
+     *                   weight: "6.4"
+     *                   weightUnit: "GRMS"
      *     responses:
      *       200:
      *         description: Items updated successfully
