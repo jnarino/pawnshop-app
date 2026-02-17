@@ -156,6 +156,26 @@ export const reportsApi = {
     */
   },
 
+  gunTransactionHistoryReport: async (payload: { from: string; to: string }): Promise<GunTransactionHistoryItem[]> => {
+    // Mock Data
+    const mockItems: GunTransactionHistoryItem[] = Array.from({ length: 10 }, (_, i) => ({
+      date: new Date().toISOString(),
+      ticketNumber: `${30000 + i}`,
+      customer: `Customer ${i + 1}`,
+      nsciNumber: `NSCI-${500 + i}`,
+      transactionNumber: `TXN-${8000 + i}`,
+      inventoryNumber: `INV-${1000 + i}`
+    }));
+
+    return new Promise(resolve => setTimeout(() => resolve(mockItems), 500));
+
+    /*
+    // Uncomment when the endpoint is ready and delete mock data above
+    return http(`/api/reports/gun-transaction-history?startDate=${payload.from}&endDate=${payload.to}`, {
+      method: 'GET',
+    }); */
+  },
+
   pawnActiveReport: async (params: {
     categoryId?: string;
     subcategoryId?: string;
@@ -276,6 +296,15 @@ export interface FirearmsCountReportData {
     policeHold: number;
     total: number;
   };
+}
+
+export interface GunTransactionHistoryItem {
+  date: string;
+  ticketNumber: string;
+  customer: string;
+  nsciNumber: string;
+  transactionNumber: string;
+  inventoryNumber: string;
 }
 
 export interface TaxSalesReportData {

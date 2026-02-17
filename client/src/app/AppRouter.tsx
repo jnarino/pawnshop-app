@@ -30,6 +30,7 @@ import HoldConfiscateWorkspace from './feature/police/hold-confiscate/HoldConfis
 import { ItemsInPawnsReportPage } from './feature/reports/items-in-panws/ItemsInPawnsReportPage';
 import { ItemsInInventoryReportPage } from './feature/reports/items-in-inventory/ItemsInInventoryReportPage';
 import { FirearmsCountReportPage } from './feature/reports/firearms-count/FirearmsCountReportPage';
+import { GunTransactionHistoryReportPage } from './feature/reports/gun-transaction-history/GunTransactionHistoryReportPage';
 
 export default function AppRouter() {
   return (
@@ -61,6 +62,7 @@ export default function AppRouter() {
       <Route path="/reports/items-in-pawns" element={<Protected><ItemsInPawnsReportPage /></Protected>} />
       <Route path="/reports/items-in-inventory" element={<Protected><ItemsInInventoryReportPage /></Protected>} />
       <Route path="/reports/firearms-count" element={<Protected><FirearmsCountReportPage /></Protected>} />
+      <Route path="/reports/gun-transaction-history" element={<Protected><GunTransactionHistoryReportPage /></Protected>} />
 
       {/* Sales routes */}
       <Route path="/sales" element={<Protected><SalesWorkspace /></Protected>} />

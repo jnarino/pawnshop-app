@@ -55,6 +55,12 @@ export default function ReportsPage() {
         title="Firearms Count"
         to="/reports/firearms-count"
       />
+      <ActionCard
+        icon={Crosshair}
+        subtitle="Firearms"
+        title="Gun transaction history"
+        to="/reports/gun-transaction-history"
+      />
     </div>
   </>
 }
