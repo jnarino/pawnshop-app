@@ -177,6 +177,13 @@ export const pawnTicketApi = {
     });
   },
 
+  update: async (payload: any): Promise<PawnTicketResponse> => {
+    return http('/api/pawn-ticket/items', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   findByControlNumber: async (controlNumber: string): Promise<TicketByControlNumber[]> => {
     return http(`/api/pawn-ticket/control/${encodeURIComponent(controlNumber)}`);
   },

@@ -391,7 +391,6 @@ function PawnsMaintainWorkspaceContent() {
           <PawnsWorkspace mode="MODIFY" initialTicket={selectedTicket} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setSelectedTicket(null)}>Back to results</Button>
-            <Button disabled={selectedTicket.pawnStatus === "V"} onClick={() => { /* TODO: Implement update pawn endpoint */ }}>Update Pawn</Button>
           </div>
         </div>
       )}

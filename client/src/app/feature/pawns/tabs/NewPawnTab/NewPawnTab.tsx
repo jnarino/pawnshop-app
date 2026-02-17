@@ -28,7 +28,7 @@ interface PrintState {
 export default function NewPawnTab({ customer, mode, initialTicket, onTicketCreated }: NewPawnTabProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { createTicket, isLoading, error, success } = useCreatePawnTicket();
+  const { createTicket, updateTicket, isLoading, error, success } = useCreatePawnTicket();
   const { pawnDraft, updatePawnDraft, resetPawnDraft } = usePawnWorkflow();
   const { transformToPrintInformation, printTransactionForm, printLabels, buildPrintItems, formError, labelsError } = usePawnPrint();
   const customerId = customer?.id;
@@ -102,7 +102,13 @@ export default function NewPawnTab({ customer, mode, initialTicket, onTicketCrea
 
     const payload = transformTicketsToPayload(pawnData, formData);
 
-    const ticketResponse = await createTicket(payload);
+    let ticketResponse: TicketByControlNumber | null = null;
+    if (payload.pawnTicketId) {
+      ticketResponse = await updateTicket(payload);
+    } else {
+      ticketResponse = await createTicket(payload);
+    }
+
     if (ticketResponse && customer) {
       onTicketCreated?.(ticketResponse.id);
 
@@ -173,6 +179,7 @@ export default function NewPawnTab({ customer, mode, initialTicket, onTicketCrea
 
   const transformTicketsToPayload = (pawnData: any, formData: any) => {
     return {
+      pawnTicketId: pawnData.id,
       pawn: pawnData,
       items: formData.items.map((item: any) => {
         const attributes = removeNullish({

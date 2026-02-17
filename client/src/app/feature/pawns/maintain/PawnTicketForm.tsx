@@ -198,6 +198,7 @@ export function PawnTicketForm({
     }
 
     const submitData = {
+      id: formData.id,
       customerId: formData.customerId,
       type: formData.type,
       amountFinanced: formData.type === 'PAWN' ? totalValue : undefined,
@@ -487,14 +488,26 @@ export function PawnTicketForm({
         />
 
         {mode === 'CREATE' && (
-          <div className="flex justify-center mt-6">
+          <div className="flex justify-end mt-6">
             <Button
               type="submit"
               disabled={disabled || formData.items.length === 0}
               size="lg"
               className="px-8"
             >
-              {disabled ? 'Processing...' : `Create ${formData.type} Ticket`}
+              {disabled ? 'Processing...' : `Create ${formData.type.toLowerCase()} ticket`}
+            </Button>
+          </div>
+        )}
+
+        {mode === 'MODIFY' && (
+          <div className="flex justify-end mt-6">
+            <Button
+              type="submit"
+              size="lg"
+              className="px-8"
+            >
+              Update {formData.type.toLowerCase()} ticket
             </Button>
           </div>
         )}
