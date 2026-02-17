@@ -4,7 +4,7 @@ import { formatDate } from './utils';
 interface DrawHeaderOptions {
     page: PDFPage;
     title: string;
-    dateRange: { from: string; to: string };
+    dateRange: { from: string; to: string } | null;
     pageWidth: number;
     pageHeight: number;
     margin: number;
@@ -27,8 +27,10 @@ export function drawPdfHeader({
     page.drawText(title, { x: margin, y, size: 10, font: fontBold });
     y -= 10;
 
-    page.drawText(`From: ${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`, { x: margin, y, size: 8, font });
-    y -= 15;
+    if (dateRange) {
+        page.drawText(`From: ${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`, { x: margin, y, size: 8, font });
+        y -= 15;
+    }
 
     page.drawLine({
         start: { x: margin, y },

@@ -29,6 +29,7 @@ import LayawayForfeitWorkspace from '@/app/feature/sales/forfeit/LayawayForfeitW
 import HoldConfiscateWorkspace from './feature/police/hold-confiscate/HoldConfiscateWorkspace';
 import { ItemsInPawnsReportPage } from './feature/reports/items-in-panws/ItemsInPawnsReportPage';
 import { ItemsInInventoryReportPage } from './feature/reports/items-in-inventory/ItemsInInventoryReportPage';
+import { FirearmsCountReportPage } from './feature/reports/firearms-count/FirearmsCountReportPage';
 
 export default function AppRouter() {
   return (
@@ -59,6 +60,7 @@ export default function AppRouter() {
       <Route path="/reports/tax-sales" element={<Protected><TaxSalesReportPage /></Protected>} />
       <Route path="/reports/items-in-pawns" element={<Protected><ItemsInPawnsReportPage /></Protected>} />
       <Route path="/reports/items-in-inventory" element={<Protected><ItemsInInventoryReportPage /></Protected>} />
+      <Route path="/reports/firearms-count" element={<Protected><FirearmsCountReportPage /></Protected>} />
 
       {/* Sales routes */}
       <Route path="/sales" element={<Protected><SalesWorkspace /></Protected>} />
