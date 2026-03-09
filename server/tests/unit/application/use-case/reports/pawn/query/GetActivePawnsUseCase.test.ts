@@ -132,6 +132,28 @@ describe('GetActivePawnsUseCase', () => {
     expect(result.totals.totalServiceChargesDue).toBe(25);
   });
 
+  it('sums service charges once per ticket', async () => {
+    const firstItem = new ActivePawnRecord({
+      ...sampleRecord,
+      itemAmount: 100,
+      itemDescription: 'Watch',
+    });
+    const secondItemSameTicket = new ActivePawnRecord({
+      ...sampleRecord,
+      itemAmount: 80,
+      itemDescription: 'Chain',
+    });
+
+    repo.findActive.mockResolvedValue([firstItem, secondItemSameTicket]);
+    chargesUseCase.execute.mockResolvedValue({ pawnTicketId: 'pt-1', currentCharges: 15, pawnAmount: 180, periodsBehind: 0, redemptionAmount: 0 });
+
+    const result = await useCase.execute({});
+
+    expect(result.totals.totalServiceChargesDue).toBe(15);
+    expect(chargesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(chargesUseCase.execute).toHaveBeenCalledWith({ controlNumber: '123' });
+  });
+
   it('passes exclusion flag to repository', async () => {
     repo.findActive.mockResolvedValue([sampleRecord]);
     chargesUseCase.execute.mockResolvedValue({ pawnTicketId: 'pt-1', currentCharges: 12, pawnAmount: 200, periodsBehind: 0, redemptionAmount: 0 });

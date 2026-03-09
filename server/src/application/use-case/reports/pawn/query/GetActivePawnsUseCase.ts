@@ -55,13 +55,13 @@ export class GetActivePawnsUseCase {
       totalItems += recordCount;
 
       const charges = await this.getPawnTicketCurrentChargesUseCase.execute({ controlNumber: first.ticketNumber });
+      const ticketServiceChargesDue = charges.currentCharges ?? 0;
 
       // Per request: pawn amount = amount_financed (from SQL), service charges due = item_amount (sum by ticket)
       const pawnAmount = first.serviceChargeDue;
-      const serviceChargeDue = charges.currentCharges ?? 0;
 
       totalPawnAmount += pawnAmount;
-      totalServiceChargesDue += serviceChargeDue;
+      totalServiceChargesDue += ticketServiceChargesDue;
       if ((first.status ?? '').toUpperCase() === 'H') {
         totalPoliceHoldAmount += pawnAmount;
       }
@@ -73,8 +73,8 @@ export class GetActivePawnsUseCase {
         employee: first.employeeUsername,
         dateIn: first.dateIn.toISOString(),
         dateOut: first.dateOut.toISOString(),
-        serviceChargeDue,
-        currentCharges: charges.currentCharges ?? 0,
+        serviceChargeDue: ticketServiceChargesDue,
+        currentCharges: ticketServiceChargesDue,
         pawnAmount,
         itemAmount: group.aggregateItemAmount,
         quantity: group.aggregateQuantity,
