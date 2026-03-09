@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ActionCard } from "@/components/ui/ActionCard";
 import PoliceIcon from '@/assets/icons/police.svg?react';
-import { Coins, ArrowBigLeft, ArrowDownToLine, Warehouse } from 'lucide-react';
+import { Coins, ArrowBigLeft, ArrowDownToLine, Warehouse, Crosshair } from 'lucide-react';
 import SellIcon from '@/assets/icons/sell.svg?react';
 import HandshakeIcon from '@/assets/icons/handshake.svg?react';
 
@@ -48,6 +48,18 @@ export default function ReportsPage() {
         subtitle="Inventory"
         title="Items in inventory"
         to="/reports/items-in-inventory"
+      />
+      <ActionCard
+        icon={Crosshair}
+        subtitle="Firearms"
+        title="Firearms Count"
+        to="/reports/firearms-count"
+      />
+      <ActionCard
+        icon={Crosshair}
+        subtitle="Firearms"
+        title="Gun transaction history"
+        to="/reports/gun-transaction-history"
       />
     </div>
   </>

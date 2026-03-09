@@ -3,6 +3,7 @@ import { pawnTicketApi, CreatePawnTicketPayload, PawnTicketResponse } from '@/ap
 
 interface UseCreatePawnTicketResult {
   createTicket: (payload: CreatePawnTicketPayload) => Promise<PawnTicketResponse | null>;
+  updateTicket: (payload: any) => Promise<PawnTicketResponse | null>;
   isLoading: boolean;
   error: string | null;
   success: string | null;
@@ -39,8 +40,28 @@ export function useCreatePawnTicket(): UseCreatePawnTicketResult {
     }
   }, []);
 
+  const updateTicket = useCallback(async (payload: any): Promise<PawnTicketResponse | null> => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await pawnTicketApi.update(payload);
+      const successMessage = `Pawn ticket ${result.controlNumber || result.id} updated successfully!`;
+      setSuccess(successMessage);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update pawn ticket';
+      setError(errorMessage);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     createTicket,
+    updateTicket,
     isLoading,
     error,
     success,

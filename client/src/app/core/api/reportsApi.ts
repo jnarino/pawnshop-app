@@ -111,6 +111,71 @@ export const reportsApi = {
     });
   },
 
+  firearmsCountReport: async (): Promise<FirearmsCountReportData> => {
+    // Mock data
+    const mockItem = (prefix: string, i: number): FirearmsItem => ({
+      inventoryNum: `${prefix}-${1000 + i}`,
+      type: "PISTOL",
+      serial: `SN${9000 + i}`,
+      brand: "GLOCK",
+      ticketNumber: `${20000 + i}`,
+      model: "19 GEN 5",
+      customer: "John Doe",
+      caliber: "9MM",
+      Action: "SEMI-AUTO"
+    });
+
+    const generateItems = (prefix: string, count: number) => Array.from({ length: count }, (_, i) => mockItem(prefix, i));
+
+    const response: FirearmsCountReportData = {
+      buy: generateItems("B", 3),
+      holdPeriod: generateItems("HP", 2),
+      inventory: generateItems("INV", 5),
+      layaway: generateItems("LAY", 1),
+      pawn: generateItems("P", 4),
+      policeHold: generateItems("PH", 2),
+      totals: {
+        buy: 3,
+        holdPeriod: 2,
+        inventory: 5,
+        layaway: 1,
+        pawn: 4,
+        policeHold: 2,
+        total: 17
+      }
+    };
+
+    return new Promise(resolve => setTimeout(() => resolve(response), 500));
+
+
+    /* 
+    // Uncomment when the endpoint is ready and delete mock data above
+    return http(`/api/reports/firearms-count`, {
+      method: 'GET',
+    }); 
+    */
+  },
+
+  gunTransactionHistoryReport: async (payload: { from: string; to: string }): Promise<GunTransactionHistoryItem[]> => {
+    // Mock Data
+    const mockItems: GunTransactionHistoryItem[] = Array.from({ length: 10 }, (_, i) => ({
+      date: new Date().toISOString(),
+      ticketNumber: `${30000 + i}`,
+      customer: `Customer ${i + 1}`,
+      nsciNumber: `NSCI-${500 + i}`,
+      transactionNumber: `TXN-${8000 + i}`,
+      inventoryNumber: `INV-${1000 + i}`
+    }));
+
+    return new Promise(resolve => setTimeout(() => resolve(mockItems), 500));
+
+    /*
+    // Uncomment when the endpoint is ready and delete mock data above
+    return http(`/api/reports/gun-transaction-history?startDate=${payload.from}&endDate=${payload.to}`, {
+      method: 'GET',
+    }); */
+  },
+
   pawnActiveReport: async (params: {
     categoryId?: string;
     subcategoryId?: string;
@@ -201,6 +266,45 @@ export interface InventoryReportData {
     totalCost: number;
     totalResale: number;
   };
+}
+
+export interface FirearmsItem {
+  inventoryNum: string;
+  type: string;
+  serial: string;
+  brand: string;
+  ticketNumber: string;
+  model: string;
+  customer: string;
+  caliber: string;
+  Action: string;
+}
+
+export interface FirearmsCountReportData {
+  buy: FirearmsItem[];
+  holdPeriod: FirearmsItem[];
+  inventory: FirearmsItem[];
+  layaway: FirearmsItem[];
+  pawn: FirearmsItem[];
+  policeHold: FirearmsItem[];
+  totals: {
+    buy: number;
+    holdPeriod: number;
+    inventory: number;
+    layaway: number;
+    pawn: number;
+    policeHold: number;
+    total: number;
+  };
+}
+
+export interface GunTransactionHistoryItem {
+  date: string;
+  ticketNumber: string;
+  customer: string;
+  nsciNumber: string;
+  transactionNumber: string;
+  inventoryNumber: string;
 }
 
 export interface TaxSalesReportData {

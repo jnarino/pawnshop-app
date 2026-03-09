@@ -46,7 +46,7 @@ export function BasicInfoFields({ draft, updateField, isFirearm, disabled = fals
               value={draft.quantity || '1'}
               onChange={(e) => updateField('quantity', e.target.value)}
               placeholder="1"
-              disabled={disabled}
+              disabled={disabled || disabledPrice}
               className="h-8 text-xs text-center"
             />
           </div>
